@@ -1,0 +1,396 @@
+"use client"
+
+import * as React from "react"
+import {
+  IconArrowsDownUp,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconChevronLeft,
+  IconChevronRight,
+  IconDotsVertical,
+  IconPlus,
+} from "@tabler/icons-react"
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  ColumnFiltersState,
+  SortingState,
+  useReactTable,
+} from "@tanstack/react-table"
+import { toast } from "sonner"
+import { Database } from "@/lib/database.types"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+  Select,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
+
+// Define the structure of our data, combining tables from Supabase
+type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
+  transaction_details:
+    | Database["public"]["Tables"]["transaction_details"]["Row"]
+    | null
+  transaction_legs: Database["public"]["Tables"]["transaction_legs"]["Row"][]
+}
+
+// Define the columns for our new transaction table
+const columns: ColumnDef<Transaction>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "transaction_date",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Date
+          <IconArrowsDownUp className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const date = new Date(row.original.transaction_date)
+      return <span>{date.toLocaleDateString()}</span>
+    },
+  },
+  {
+    accessorKey: "type",
+    header: "Type",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="capitalize">
+        {row.original.type.replace("_", " ")}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
+  },
+  {
+    id: "amount",
+    header: () => <div className="text-right">Amount</div>,
+    cell: ({ row }) => {
+      // Calculate the primary amount from the transaction legs
+      const primaryLeg = row.original.transaction_legs.find(
+        (leg) => leg.amount > 0
+      )
+      const amount = primaryLeg?.amount ?? 0
+      const currency = primaryLeg?.currency_code || "USD"
+
+      // Get currency-specific formatting options
+      const formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+      })
+      const { minimumFractionDigits, maximumFractionDigits } =
+        formatter.resolvedOptions()
+
+      return (
+        <div className="text-right font-medium">
+          {new Intl.NumberFormat("en-US", {
+            minimumFractionDigits,
+            maximumFractionDigits,
+          }).format(amount)}{" "}
+          {currency}
+        </div>
+      )
+    },
+  },
+  {
+    id: "actions",
+    cell: () => (
+      <div className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="size-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <IconDotsVertical className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive">
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ),
+  },
+]
+
+export function TransactionTable() {
+  const [data, setData] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [pagination, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
+
+  React.useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true)
+      const { data: transactions, error } = await supabase
+        .from("transactions")
+        .select(
+          `
+          *,
+          transaction_details (*),
+          transaction_legs (*)
+        `
+        )
+        .order("transaction_date", { ascending: false })
+
+      if (error) {
+        toast.error("Failed to fetch transactions: " + error.message)
+        console.error(error)
+      } else {
+        setData(transactions as Transaction[])
+      }
+      setLoading(false)
+    }
+
+    fetchTransactions()
+  }, [])
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      pagination,
+      rowSelection,
+      columnFilters,
+    },
+    getRowId: (row) => row.id.toString(),
+    enableRowSelection: true,
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  })
+
+  return (
+    <div className="@container/main flex flex-1 flex-col gap-2 px-4 lg:px-6">
+      <div className="flex items-center justify-between py-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Filter by description..."
+            value={(table.getColumn("description")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("description")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <IconPlus className="mr-2 size-4" />
+            Add Transaction
+          </Button>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Loading transactions...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.original.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No transactions found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between px-4 py-2">
+        <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="flex w-full items-center gap-8 lg:w-fit">
+          <div className="hidden items-center gap-2 lg:flex">
+            <Label htmlFor="rows-per-page" className="text-sm font-medium">
+              Rows per page
+            </Label>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value))
+              }}
+            >
+              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex w-fit items-center justify-center text-sm font-medium">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <Button
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to first page</span>
+              <IconChevronsLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <IconChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to next page</span>
+              <IconChevronRight />
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden size-8 lg:flex"
+              size="icon"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to last page</span>
+              <IconChevronsRight />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
