@@ -1,12 +1,76 @@
+"use client"
+
+import * as React from "react"
+import { type DateRange } from "react-day-picker"
 import { AppSidebar } from "@/components/app-sidebar"
 import { TransactionTable } from "@/components/transaction-table"
+import DateRangePicker from "@/components/date-range-picker"
 import { SiteHeader } from "@/components/site-header"
+import { Button } from "@/components/ui/button"
+import { IconPlus } from "@tabler/icons-react"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { Database } from "@/lib/database.types"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import { toast } from "sonner"
+
+type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
+  transaction_details:
+    | Database["public"]["Tables"]["transaction_details"]["Row"]
+    | null
+  transaction_legs: Database["public"]["Tables"]["transaction_legs"]["Row"][]
+}
+
+/**
+ * Converts a Date object to a YYYY-MM-DD string, ignoring timezone.
+ * This is to ensure the correct date is used in the Supabase query.
+ * @param date The date to convert.
+ * @returns A string in YYYY-MM-DD format.
+ */
+const toYYYYMMDD = (date: Date) => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const day = date.getDate().toString().padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 export default function Page() {
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined)
+  const [data, setData] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true)
+      let query = supabase
+        .from("transactions")
+        .select(`*, transaction_details (*), transaction_legs (*)`)
+
+      if (date?.from) {
+        query = query.gte("transaction_date", toYYYYMMDD(date.from))
+      }
+      if (date?.to) {
+        query = query.lte("transaction_date", toYYYYMMDD(date.to))
+      }
+
+      const { data: transactions, error } = await query.order(
+        "transaction_date",
+        { ascending: false }
+      )
+
+      if (error) {
+        toast.error("Failed to fetch transactions: " + error.message)
+      } else {
+        setData(transactions as Transaction[])
+      }
+      setLoading(false)
+    }
+
+    fetchTransactions()
+  }, [date])
+
   return (
     <SidebarProvider
       style={
@@ -20,10 +84,15 @@ export default function Page() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 md:gap-6">
-              <TransactionTable />
+          <div className="@container/main flex flex-1 flex-col">
+            <div className="flex items-center justify-between py-4 px-4 lg:px-6">
+              <DateRangePicker selected={date} onSelect={setDate} />
+              <Button variant="outline" size="sm">
+                <IconPlus className="mr-2 size-4" />
+                Add Transaction
+              </Button>
             </div>
+            <TransactionTable data={data} loading={loading} />
           </div>
         </div>
       </SidebarInset>

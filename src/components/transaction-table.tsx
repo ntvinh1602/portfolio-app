@@ -8,7 +8,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconDotsVertical,
-  IconPlus,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -21,13 +20,10 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table"
-import { toast } from "sonner"
 import { Database } from "@/lib/database.types"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +41,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import {
   Select,
   SelectValue,
   SelectTrigger,
@@ -64,6 +54,11 @@ type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
     | Database["public"]["Tables"]["transaction_details"]["Row"]
     | null
   transaction_legs: Database["public"]["Tables"]["transaction_legs"]["Row"][]
+}
+
+interface TransactionTableProps {
+  data: Transaction[]
+  loading: boolean
 }
 
 // Define the columns for our new transaction table
@@ -180,9 +175,7 @@ const columns: ColumnDef<Transaction>[] = [
   },
 ]
 
-export function TransactionTable() {
-  const [data, setData] = React.useState<Transaction[]>([])
-  const [loading, setLoading] = React.useState(true)
+export function TransactionTable({ data, loading }: TransactionTableProps) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
@@ -192,32 +185,6 @@ export function TransactionTable() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-
-  React.useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true)
-      const { data: transactions, error } = await supabase
-        .from("transactions")
-        .select(
-          `
-          *,
-          transaction_details (*),
-          transaction_legs (*)
-        `
-        )
-        .order("transaction_date", { ascending: false })
-
-      if (error) {
-        toast.error("Failed to fetch transactions: " + error.message)
-        console.error(error)
-      } else {
-        setData(transactions as Transaction[])
-      }
-      setLoading(false)
-    }
-
-    fetchTransactions()
-  }, [])
 
   const table = useReactTable({
     data,
@@ -241,25 +208,7 @@ export function TransactionTable() {
   })
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2 px-4 lg:px-6">
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter by description..."
-            value={(table.getColumn("description")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("description")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <IconPlus className="mr-2 size-4" />
-            Add Transaction
-          </Button>
-        </div>
-      </div>
+    <div className="@container/main flex flex-1 flex-col px-4 lg:px-6">
       <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
@@ -307,14 +256,14 @@ export function TransactionTable() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No transactions found.
+                  No transactions found for the selected date range.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className="flex items-center justify-between px-4 py-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
