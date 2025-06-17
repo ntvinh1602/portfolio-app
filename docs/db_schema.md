@@ -12,14 +12,14 @@ The design is based on a double-entry accounting principle. The core idea is to 
 erDiagram
     profiles {
         uuid id PK "FK to auth.users.id"
-        varchar display_currency FK "e.g., 'USD'"
+        varchar(10) display_currency FK "e.g., 'USD'"
     }
 
     accounts {
         uuid id PK
         uuid user_id FK
         text name
-        enum type
+        enum type "('brokerage', 'crypto_exchange', 'epf', 'bank', 'wallet', 'conceptual')"
     }
 
     assets {
@@ -27,15 +27,15 @@ erDiagram
         uuid user_id FK
         text ticker
         text name
-        enum asset_class
-        varchar currency_code FK
+        enum asset_class "('cash', 'stock', 'crypto', 'epf', 'equity', 'liability')"
+        varchar(10) currency_code FK
     }
 
     transactions {
         uuid id PK
         uuid user_id FK
         date transaction_date
-        enum type
+        enum type "('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment')"
         text description
         uuid related_debt_id FK
     }
@@ -54,7 +54,7 @@ erDiagram
         uuid asset_id FK
         numeric quantity
         numeric amount
-        varchar currency_code FK
+        varchar(10) currency_code FK
     }
 
     debts {
@@ -62,22 +62,22 @@ erDiagram
         uuid user_id FK
         text lender_name
         numeric principal_amount
-        varchar currency_code FK
+        varchar(10) currency_code FK
         numeric interest_rate
         date start_date
-        enum status
+        enum status "('active', 'paid_off')"
     }
 
     currencies {
-        varchar code PK
+        varchar(10) code PK
         text name
-        enum type
+        enum type "('fiat', 'crypto')"
     }
 
     exchange_rates {
         bigint id PK
-        varchar from_currency_code FK
-        varchar to_currency_code FK
+        varchar(10) from_currency_code FK
+        varchar(10) to_currency_code FK
         numeric rate
         date date
     }
