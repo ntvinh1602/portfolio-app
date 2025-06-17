@@ -34,7 +34,7 @@ erDiagram
     transactions {
         uuid id PK
         uuid user_id FK
-        timestamptz transaction_date
+        date transaction_date
         enum type
         text description
         uuid related_debt_id FK
@@ -149,7 +149,7 @@ Represents the different places where you hold your assets.
 | `id` | `uuid` | **Primary Key** | Unique identifier for the account. |
 | `user_id` | `uuid` | Foreign Key to `profiles.id`, Not Null | The user who owns this account. |
 | `name` | `text` | Not Null | A descriptive name (e.g., "VNDirect Brokerage"). |
-| `type` | `enum` | Not Null, ('brokerage', 'crypto_exchange', 'epf', 'bank', 'wallet') | The type of account. |
+| `type` | `enum` | Not Null, ('brokerage', 'crypto_exchange', 'epf', 'bank', 'wallet', 'conceptual') | The type of account. |
 
 ---
 
@@ -160,7 +160,7 @@ A master list of all assets you can invest in.
 | :--- | :--- | :--- | :--- |
 | `id` | `uuid` | **Primary Key** | Unique identifier for the asset. |
 | `user_id` | `uuid` | Foreign Key to `profiles.id`, Not Null | The user who owns this asset type. |
-| `asset_class` | `enum` | Not Null, ('cash', 'stock', 'crypto', 'epf') | The high-level asset classification. |
+| `asset_class` | `enum` | Not Null, ('cash', 'stock', 'crypto', 'epf', 'equity', 'liability') | The high-level asset classification. |
 | `ticker` | `text` | Not Null | The asset's ticker (e.g., 'HPG', 'VND_CASH'). |
 | `name` | `text` | Not Null | The full name of the asset (e.g., "Hoa Phat Group"). |
 | `currency_code` | `varchar(10)` | Foreign Key to `currencies.code`, Not Null | The currency the asset is valued in. |
@@ -193,7 +193,7 @@ Represents a single financial event (e.g., "Buy HPG Stock").
 | :--- | :--- | :--- | :--- |
 | `id` | `uuid` | **Primary Key** | Unique identifier for the transaction event. |
 | `user_id` | `uuid` | Foreign Key to `profiles.id`, Not Null | The user who owns this transaction. |
-| `transaction_date`| `timestamptz`| Not Null | The exact date and time of the transaction. |
+| `transaction_date`| `date`| Not Null | The date of the transaction. |
 | `type` | `enum` | Not Null, ('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment') | The type of transaction. |
 | `description` | `text` | Nullable | Optional user notes. |
 | `related_debt_id` | `uuid` | Foreign Key to `debts.id`, Nullable | Links a transaction to a specific debt. |
