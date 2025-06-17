@@ -1,10 +1,10 @@
-# Equity and Cost Basis Tracking Plan
+# Equity and Cost Basis Tracking Mechanism
 
-This document outlines the architectural plan for accurately tracking equity components (Paid-in Capital, Retained Earnings) and implementing a robust FIFO (First-In, First-Out) cost basis tracking system for assets.
+This document outlines the conceptual mechanism for accurately tracking equity components (Paid-in Capital, Retained Earnings) and implementing a robust FIFO (First-In, First-Out) cost basis tracking system for assets. The database schema details are defined in the `db_schema.md` document.
 
 ## 1. High-Level Strategy
 
-The core of the strategy is to enhance the existing double-entry system to provide granular tracking of asset acquisitions and disposals. This is achieved by introducing two new tables to manage "tax lots" explicitly, rather than relying on virtual, on-the-fly calculations.
+The core of the strategy is to enhance the existing double-entry system to provide granular tracking of asset acquisitions and disposals. This is achieved by managing "tax lots" explicitly, rather than relying on virtual, on-the-fly calculations.
 
 This approach provides:
 -   **Accuracy**: Implements a true FIFO system.
@@ -21,75 +21,10 @@ This approach provides:
 
 ### Equity Assets
 -   Two assets will be created in the `assets` table with the `asset_class` of `'equity'`.
-    -   **Paid-in Capital (`PIC`)**: Tracks all capital contributions (e.g., cash deposits).
-    -   **Retained Earnings (`RE`)**: Tracks all profits from operations (dividends, interest) and realized gains from asset sales.
+    -   **Paid-in Capital (`CAPITAL`)**: Tracks all capital contributions (e.g., cash deposits).
+    -   **Retained Earnings (`EARNINGS`)**: Tracks all profits from operations (dividends, interest) and realized gains from asset sales.
 
-## 3. Schema Modifications
-
-Two new tables will be added to the database.
-
-### New Table: `tax_lots`
-This table is the definitive record of every asset acquisition event.
-
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | `uuid` | **Primary Key** | Unique identifier for the tax lot. |
-| `user_id` | `uuid` | FK to `profiles.id`, Not Null | The user who owns this lot. |
-| `asset_id` | `uuid` | FK to `assets.id`, Not Null | The asset this lot belongs to. |
-| `creation_transaction_id` | `uuid` | FK to `transactions.id`, Not Null | The transaction that created this lot. |
-| `origin` | `enum` | Not Null, `('purchase', 'split')` | How the lot was created. |
-| `creation_date` | `date` | Not Null | The acquisition date, for FIFO ordering. |
-| `original_quantity` | `numeric` | Not Null | The quantity of shares in this lot at creation. |
-| `cost_basis` | `numeric` | Not Null | The total cost basis for this lot. |
-| `remaining_quantity` | `numeric` | Not Null | Shares left in this lot. Updated on every sale. |
-
-### New Table: `lot_consumptions`
-This table creates an explicit, immutable link between a sale and the specific lots it drew from, providing a perfect audit trail.
-
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `sell_transaction_leg_id` | `uuid` | **PK**, FK to `transaction_legs.id` | The sale leg that consumed the shares. |
-| `tax_lot_id` | `uuid` | **PK**, FK to `tax_lots.id` | The tax lot that was consumed. |
-| `quantity_consumed` | `numeric` | Not Null | The number of shares consumed from this lot. |
-
-### Updated ERD Diagram
-
-```mermaid
-erDiagram
-    transactions ||--o{ tax_lots : "creates"
-    transaction_legs ||--o{ lot_consumptions : "is recorded in"
-    tax_lots ||--o{ lot_consumptions : "is consumed by"
-    
-    assets ||--o{ tax_lots : "has"
-    profiles ||--o{ tax_lots : "owns"
-
-    transactions {
-        uuid id PK
-        date transaction_date
-        enum type
-    }
-    transaction_legs {
-        uuid id PK
-        uuid transaction_id FK
-        uuid asset_id FK
-        numeric quantity
-    }
-    tax_lots {
-        uuid id PK
-        uuid asset_id FK
-        uuid creation_transaction_id FK
-        date creation_date
-        enum origin
-        numeric remaining_quantity
-    }
-    lot_consumptions {
-        uuid sell_transaction_leg_id PK
-        uuid tax_lot_id PK
-        numeric quantity_consumed
-    }
-```
-
-## 4. Transaction Workflows
+## 3. Transaction Workflows
 
 ### `buy` Transaction
 1.  Create the `buy` transaction and its legs as usual.
@@ -101,13 +36,12 @@ erDiagram
 
 ### `split` Transaction
 This workflow correctly handles the Vietnamese tax on new shares from a split.
-1.  Add `'split'` to the `transactions.type` enum.
-2.  When a split occurs, create a `split` transaction.
-3.  This transaction creates **one new lot** in `tax_lots`:
+1.  When a split occurs, create a `split` transaction.
+2.  This transaction creates **one new lot** in `tax_lots`:
     -   `origin`: `'split'`
     -   `original_quantity` & `remaining_quantity`: The number of new shares received.
     -   `cost_basis`: The amount of tax paid to acquire the new shares.
-4.  The cost basis and quantity of the original lots are **not** modified.
+3.  The cost basis and quantity of the original lots are **not** modified.
 
 ### `sell` Transaction (FIFO Logic)
 1.  When selling `N` shares, query the `tax_lots` table for that asset where `remaining_quantity > 0`, ordered by `creation_date` ASC.

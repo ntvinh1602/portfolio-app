@@ -35,7 +35,7 @@ erDiagram
         uuid id PK
         uuid user_id FK
         date transaction_date
-        enum type "('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment')"
+        enum type "('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment', 'split')"
         text description
         uuid related_debt_id FK
     }
@@ -82,18 +82,39 @@ erDiagram
         date date
     }
 
+    tax_lots {
+        uuid id PK
+        uuid user_id FK
+        uuid asset_id FK
+        uuid creation_transaction_id FK
+        enum origin "('purchase', 'split')"
+        date creation_date
+        numeric original_quantity
+        numeric cost_basis
+        numeric remaining_quantity
+    }
+
+    lot_consumptions {
+        uuid sell_transaction_leg_id PK "FK to transaction_legs.id"
+        uuid tax_lot_id PK "FK to tax_lots.id"
+        numeric quantity_consumed
+    }
+
     profiles ||--o{ accounts : "has"
     profiles ||--o{ assets : "owns"
     profiles ||--o{ transactions : "has"
     profiles ||--o{ debts : "has"
     profiles }|..|| currencies : "prefers display"
+    profiles ||--o{ tax_lots : "owns"
 
     transactions ||--o{ transaction_legs : "consists of"
     transactions }|..|| debts : "related to"
     transactions ||--|| transaction_details : "has details"
+    transactions ||--o{ tax_lots : "creates"
 
     accounts ||--o{ transaction_legs : "involved in"
     assets ||--o{ transaction_legs : "is"
+    assets ||--o{ tax_lots : "has"
 
     currencies ||--o{ assets : "denominated in"
     currencies ||--o{ debts : "denominated in"
@@ -101,6 +122,8 @@ erDiagram
     currencies ||--o{ exchange_rates : "is from"
     currencies ||--o{ exchange_rates : "is to"
 
+    transaction_legs ||--o{ lot_consumptions : "is recorded in"
+    tax_lots ||--o{ lot_consumptions : "is consumed by"
 ```
 
 ### Table Definitions
@@ -194,7 +217,7 @@ Represents a single financial event (e.g., "Buy HPG Stock").
 | `id` | `uuid` | **Primary Key** | Unique identifier for the transaction event. |
 | `user_id` | `uuid` | Foreign Key to `profiles.id`, Not Null | The user who owns this transaction. |
 | `transaction_date`| `date`| Not Null | The date of the transaction. |
-| `type` | `enum` | Not Null, ('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment') | The type of transaction. |
+| `type` | `enum` | Not Null, ('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment', 'split') | The type of transaction. |
 | `description` | `text` | Nullable | Optional user notes. |
 | `related_debt_id` | `uuid` | Foreign Key to `debts.id`, Nullable | Links a transaction to a specific debt. |
 
@@ -220,3 +243,31 @@ Represents the asset movements that make up a transaction.
 | `quantity` | `numeric` | Not Null | The change in the quantity of the asset. For cash, this is the amount. |
 | `amount` | `numeric` | Not Null | The total value of this leg, including capitalized costs for trades. |
 | `currency_code` | `varchar(10)` | Foreign Key to `currencies.code`, Not Null | The currency of the `amount`. |
+
+---
+
+#### 8. `tax_lots`
+This table is the definitive record of every asset acquisition event.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` | **Primary Key** | Unique identifier for the tax lot. |
+| `user_id` | `uuid` | FK to `profiles.id`, Not Null | The user who owns this lot. |
+| `asset_id` | `uuid` | FK to `assets.id`, Not Null | The asset this lot belongs to. |
+| `creation_transaction_id` | `uuid` | FK to `transactions.id`, Not Null | The transaction that created this lot. |
+| `origin` | `enum` | Not Null, `('purchase', 'split')` | How the lot was created. |
+| `creation_date` | `date` | Not Null | The acquisition date, for FIFO ordering. |
+| `original_quantity` | `numeric` | Not Null | The quantity of shares in this lot at creation. |
+| `cost_basis` | `numeric` | Not Null | The total cost basis for this lot. |
+| `remaining_quantity` | `numeric` | Not Null | Shares left in this lot. Updated on every sale. |
+
+---
+
+#### 9. `lot_consumptions`
+This table creates an explicit, immutable link between a sale and the specific lots it drew from, providing a perfect audit trail.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `sell_transaction_leg_id` | `uuid` | **PK**, FK to `transaction_legs.id` | The sale leg that consumed the shares. |
+| `tax_lot_id` | `uuid` | **PK**, FK to `tax_lots.id` | The tax lot that was consumed. |
+| `quantity_consumed` | `numeric` | Not Null | The number of shares consumed from this lot. |
