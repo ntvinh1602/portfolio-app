@@ -15,9 +15,9 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { Database } from "@/lib/database.types"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
+import { type Database } from "@/lib/database.types"
 
 
 /**
@@ -33,6 +33,21 @@ const toYYYYMMDD = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
+type Transaction = Database["public"]["Tables"]["transactions"]["Row"]
+type TransactionLeg = Database["public"]["Tables"]["transaction_legs"]["Row"]
+type Account = Database["public"]["Tables"]["accounts"]["Row"]
+type Asset = Database["public"]["Tables"]["assets"]["Row"]
+type TransactionDetail =
+  Database["public"]["Tables"]["transaction_details"]["Row"]
+
+type TransactionWithRelations = Transaction & {
+  transaction_details: TransactionDetail | null
+  transaction_legs: (TransactionLeg & {
+    accounts: Account | null
+    assets: Asset | null
+  })[]
+}
+
 export default function Page() {
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [data, setData] = React.useState<TransactionLegRow[]>([])
@@ -43,7 +58,7 @@ export default function Page() {
       setLoading(true)
       let query = supabase
         .from("transactions")
-        .select(
+        .select<string, TransactionWithRelations>(
           `*, transaction_details(*), transaction_legs(*, accounts(*), assets(*))`
         )
 
@@ -64,7 +79,7 @@ export default function Page() {
       } else {
         const legRows = (transactions || []).flatMap((transaction) => {
           const { transaction_legs, ...restOfTransaction } = transaction
-          return (transaction_legs as any[]).map((leg) => ({
+          return transaction_legs.map((leg) => ({
             ...leg,
             transaction: restOfTransaction,
           }))
