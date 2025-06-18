@@ -1,6 +1,11 @@
 "use client"
 
 import * as React from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Database } from "@/lib/database.types"
+import { Label } from "@/components/ui/label"
 import {
   IconArrowsDownUp,
   IconChevronsLeft,
@@ -16,14 +21,9 @@ import {
   getPaginationRowModel,
   getFilteredRowModel,
   getSortedRowModel,
-  ColumnFiltersState,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table"
-import { Database } from "@/lib/database.types"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +31,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -63,6 +62,7 @@ export type TransactionLegRow = TransactionLeg & {
 interface TransactionTableProps {
   data: TransactionLegRow[]
   loading: boolean
+  assetType: string
 }
 
 // Define the columns for our new transaction table
@@ -94,6 +94,7 @@ const columns: ColumnDef<TransactionLegRow>[] = [
     enableHiding: false,
   },
   {
+    id: "transaction.transaction_date",
     accessorKey: "transaction.transaction_date",
     header: ({ column }) => {
       return (
@@ -112,10 +113,7 @@ const columns: ColumnDef<TransactionLegRow>[] = [
     },
   },
   {
-    accessorKey: "assets.asset_class",
-    header: "Asset",
-  },
-  {
+    id: "transaction.type",
     accessorKey: "transaction.type",
     header: "Type",
     cell: ({ row }) => (
@@ -125,22 +123,30 @@ const columns: ColumnDef<TransactionLegRow>[] = [
     ),
   },
   {
+    id: "assets.ticker",
     accessorKey: "assets.ticker",
     header: "Ticker",
   },
   {
+    id: "transaction.description",
     accessorKey: "transaction.description",
     header: "Description",
   },
   {
+    id: "quantity",
     accessorKey: "quantity",
     header: () => <div className="text-right">Quantity</div>,
     cell: ({ row }) => {
       const quantity = row.original.quantity
-      return <div className="text-right">{quantity}</div>
+      return (
+        <div className="text-right">
+          {new Intl.NumberFormat("en-US", {}).format(quantity)}
+        </div>
+      )
     },
   },
   {
+    id: "amount",
     accessorKey: "amount",
     header: () => <div className="text-right">Amount</div>,
     cell: ({ row }) => {
@@ -156,7 +162,7 @@ const columns: ColumnDef<TransactionLegRow>[] = [
         formatter.resolvedOptions()
 
       return (
-        <div className="text-right font-medium">
+        <div className="text-right">
           {new Intl.NumberFormat("en-US", {
             minimumFractionDigits,
             maximumFractionDigits,
@@ -191,32 +197,43 @@ const columns: ColumnDef<TransactionLegRow>[] = [
   },
 ]
 
-export function TransactionTable({ data, loading }: TransactionTableProps) {
+export function TransactionTable({
+  data,
+  loading,
+  assetType,
+}: TransactionTableProps) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
+
+  const visibleColumns = React.useMemo(() => {
+    if (assetType === "cash" || assetType === "epf") {
+      return columns.filter(
+        (c) => c.id !== "assets.ticker" && c.id !== "quantity"
+      )
+    }
+    if (assetType === "stock") {
+      return columns.filter((c) => c.id !== "transaction.description")
+    }
+    return columns
+  }, [assetType])
 
   const table = useReactTable({
     data,
-    columns,
+    columns: visibleColumns,
     state: {
       sorting,
       pagination,
       rowSelection,
-      columnFilters,
     },
     getRowId: (row) => row.id.toString(),
     enableRowSelection: true,
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -246,7 +263,10 @@ export function TransactionTable({ data, loading }: TransactionTableProps) {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={visibleColumns.length}
+                  className="h-24 text-center"
+                >
                   Loading transactions...
                 </TableCell>
               </TableRow>
@@ -269,10 +289,10 @@ export function TransactionTable({ data, loading }: TransactionTableProps) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={visibleColumns.length}
                   className="h-24 text-center"
                 >
-                  No transaction legs found for the selected date range.
+                  No transaction entries found for the selected date range.
                 </TableCell>
               </TableRow>
             )}
@@ -301,7 +321,7 @@ export function TransactionTable({ data, loading }: TransactionTableProps) {
                 />
               </SelectTrigger>
               <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
+                {[10, 20, 40].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>

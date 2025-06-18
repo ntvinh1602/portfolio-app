@@ -19,7 +19,7 @@ interface Calendar23Props {
 
 export default function DateRangePicker({ selected, onSelect }: Calendar23Props) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -40,6 +40,16 @@ export default function DateRangePicker({ selected, onSelect }: Calendar23Props)
             captionLayout="dropdown"
             onSelect={onSelect}
           />
+          <div className="p-2 text-xs">
+           
+          <Button
+            variant="outline"
+            className="w-full" 
+            onClick={() => onSelect(undefined)}
+          >
+            Clear Selection
+          </Button>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
