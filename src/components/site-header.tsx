@@ -1,8 +1,6 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
@@ -16,13 +14,7 @@ const getTitle = (pathname: string) => {
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const router = useRouter()
   const title = getTitle(pathname)
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -34,14 +26,6 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden sm:flex"
-            onClick={handleSignOut}
-          >
-            Logout
-          </Button>
         </div>
       </div>
     </header>

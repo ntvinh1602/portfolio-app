@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import React from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import {
@@ -31,6 +32,13 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavUser() {
+  const router = useRouter()
+  
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
+
   const { isMobile } = useSidebar()
 
   const [user, setUser] = React.useState({
@@ -121,7 +129,7 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
               <IconLogout />
               Log out
             </DropdownMenuItem>
