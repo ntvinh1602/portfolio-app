@@ -3,7 +3,10 @@
 import * as React from "react"
 import { type DateRange } from "react-day-picker"
 import { AppSidebar } from "@/components/app-sidebar"
-import { TransactionTable } from "@/components/transaction-table"
+import {
+  TransactionTable,
+  type TransactionLegRow,
+} from "@/components/transaction-table"
 import DateRangePicker from "@/components/date-range-picker"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
@@ -16,12 +19,6 @@ import { Database } from "@/lib/database.types"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 
-type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
-  transaction_details:
-    | Database["public"]["Tables"]["transaction_details"]["Row"]
-    | null
-  transaction_legs: Database["public"]["Tables"]["transaction_legs"]["Row"][]
-}
 
 /**
  * Converts a Date object to a YYYY-MM-DD string, ignoring timezone.
@@ -38,7 +35,7 @@ const toYYYYMMDD = (date: Date) => {
 
 export default function Page() {
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
-  const [data, setData] = React.useState<Transaction[]>([])
+  const [data, setData] = React.useState<TransactionLegRow[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -46,7 +43,9 @@ export default function Page() {
       setLoading(true)
       let query = supabase
         .from("transactions")
-        .select(`*, transaction_details (*), transaction_legs (*)`)
+        .select(
+          `*, transaction_details(*), transaction_legs(*, accounts(*), assets(*))`
+        )
 
       if (date?.from) {
         query = query.gte("transaction_date", toYYYYMMDD(date.from))
@@ -63,7 +62,14 @@ export default function Page() {
       if (error) {
         toast.error("Failed to fetch transactions: " + error.message)
       } else {
-        setData(transactions as Transaction[])
+        const legRows = (transactions || []).flatMap((transaction) => {
+          const { transaction_legs, ...restOfTransaction } = transaction
+          return (transaction_legs as any[]).map((leg) => ({
+            ...leg,
+            transaction: restOfTransaction,
+          }))
+        })
+        setData(legRows as TransactionLegRow[])
       }
       setLoading(false)
     }

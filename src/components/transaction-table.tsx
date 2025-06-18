@@ -49,20 +49,24 @@ import {
 } from "@/components/ui/select"
 
 // Define the structure of our data, combining tables from Supabase
-type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
-  transaction_details:
-    | Database["public"]["Tables"]["transaction_details"]["Row"]
-    | null
-  transaction_legs: Database["public"]["Tables"]["transaction_legs"]["Row"][]
+type Transaction = Database["public"]["Tables"]["transactions"]["Row"]
+type TransactionLeg = Database["public"]["Tables"]["transaction_legs"]["Row"]
+type Account = Database["public"]["Tables"]["accounts"]["Row"]
+type Asset = Database["public"]["Tables"]["assets"]["Row"]
+
+export type TransactionLegRow = TransactionLeg & {
+  transaction: Transaction
+  accounts: Account | null
+  assets: Asset | null
 }
 
 interface TransactionTableProps {
-  data: Transaction[]
+  data: TransactionLegRow[]
   loading: boolean
 }
 
 // Define the columns for our new transaction table
-const columns: ColumnDef<Transaction>[] = [
+const columns: ColumnDef<TransactionLegRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -90,7 +94,7 @@ const columns: ColumnDef<Transaction>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "transaction_date",
+    accessorKey: "transaction.transaction_date",
     header: ({ column }) => {
       return (
         <Button
@@ -98,38 +102,50 @@ const columns: ColumnDef<Transaction>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Date
-          <IconArrowsDownUp className="ml-2 h-4 w-4" />
+          <IconArrowsDownUp className="h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }) => {
-      const date = new Date(row.original.transaction_date)
+      const date = new Date(row.original.transaction.transaction_date)
       return <span>{date.toLocaleDateString()}</span>
     },
   },
   {
-    accessorKey: "type",
+    accessorKey: "assets.asset_class",
+    header: "Asset",
+  },
+  {
+    accessorKey: "transaction.type",
     header: "Type",
     cell: ({ row }) => (
       <Badge variant="outline" className="capitalize">
-        {row.original.type.replace("_", " ")}
+        {row.original.transaction.type.replace("_", " ")}
       </Badge>
     ),
   },
   {
-    accessorKey: "description",
+    accessorKey: "assets.ticker",
+    header: "Ticker",
+  },
+  {
+    accessorKey: "transaction.description",
     header: "Description",
   },
   {
-    id: "amount",
+    accessorKey: "quantity",
+    header: () => <div className="text-right">Quantity</div>,
+    cell: ({ row }) => {
+      const quantity = row.original.quantity
+      return <div className="text-right">{quantity}</div>
+    },
+  },
+  {
+    accessorKey: "amount",
     header: () => <div className="text-right">Amount</div>,
     cell: ({ row }) => {
-      // Calculate the primary amount from the transaction legs
-      const primaryLeg = row.original.transaction_legs.find(
-        (leg) => leg.amount > 0
-      )
-      const amount = primaryLeg?.amount ?? 0
-      const currency = primaryLeg?.currency_code || "USD"
+      const amount = row.original.amount
+      const currency = row.original.currency_code || "USD"
 
       // Get currency-specific formatting options
       const formatter = new Intl.NumberFormat("en-US", {
@@ -256,7 +272,7 @@ export function TransactionTable({ data, loading }: TransactionTableProps) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No transactions found for the selected date range.
+                  No transaction legs found for the selected date range.
                 </TableCell>
               </TableRow>
             )}
