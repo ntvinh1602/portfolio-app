@@ -3,13 +3,13 @@ project_id = "pamvtxbkdjnvkzeutmjk"
 
 [api]
 port = 54321
-schemas = ["public", "storage", "graphql"]
+schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
 port = 54322
-major_version = 15
+major_version = 17
 
 [studio]
 port = 54323
@@ -52,4 +52,4 @@ otp_expiry = 1800
 [auth.email.template]
 [auth.sms]
 enable_signup = false
-[auth.sms.template]
+template = "Your code is {{ .Code }}"

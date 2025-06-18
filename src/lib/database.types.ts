@@ -221,14 +221,17 @@ export type Database = {
       profiles: {
         Row: {
           display_currency: string
+          display_name: string | null
           id: string
         }
         Insert: {
           display_currency: string
+          display_name?: string | null
           id: string
         }
         Update: {
           display_currency?: string
+          display_name?: string | null
           id?: string
         }
         Relationships: [
@@ -238,6 +241,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }

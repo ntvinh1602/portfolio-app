@@ -13,6 +13,7 @@ erDiagram
     profiles {
         uuid id PK "FK to auth.users.id"
         varchar(10) display_currency FK "e.g., 'USD'"
+        text display_name
     }
 
     accounts {
@@ -136,6 +137,7 @@ Stores user-specific application settings.
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `uuid` | **Primary Key**, Foreign Key to `auth.users.id` | The user's unique identifier. |
+| `display_name` | `text` | Nullable | The user's preferred display name in the application. |
 | `display_currency` | `varchar(10)` | Foreign Key to `currencies.code`, Not Null | The user's preferred currency for reporting. |
 
 ---

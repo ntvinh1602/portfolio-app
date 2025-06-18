@@ -8,13 +8,16 @@ import {
   IconReportMoney,
   IconPigMoney,
   IconSettings,
+  IconHelp,
 } from "@tabler/icons-react"
-
-import { NavMain } from "@/components/sidebar-content"
+import { NavPrimary } from "@/components/sidebar-primary"
+import { NavSecondary } from "@/components/sidebar-secondary"
+import { NavUser } from "@/components/sidebar-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -42,10 +45,17 @@ const data = {
       url: "/performance",
       icon: IconDeviceAnalytics,
     },
+  ],
+  navSecondary: [
     {
       title: "Settings",
       url: "/settings",
       icon: IconSettings,
+    },
+    {
+      title: "Help",
+      url: "/help",
+      icon: IconHelp
     }
   ]
 }
@@ -62,15 +72,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconReportMoney className="!size-5" />
-                <span className="text-base font-semibold">My Investments</span>
+                <span className="text-base font-semibold">
+                  My Investments
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavPrimary items={data.navMain} />
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
     </Sidebar>
   )
 }
