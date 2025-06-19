@@ -44,7 +44,9 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
   const [debts, setDebts] = React.useState<Tables<"debts">[]>([])
   const [transactionType, setTransactionType] =
     React.useState<TransactionType>("deposit")
-  const [formState, setFormState] = React.useState<Record<string, any>>({})
+  const [formState, setFormState] = React.useState<
+    Record<string, string | undefined>
+  >({})
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
