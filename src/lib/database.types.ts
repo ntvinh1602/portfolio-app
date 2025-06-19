@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -242,13 +242,6 @@ export type Database = {
             referencedRelation: "currencies"
             referencedColumns: ["code"]
           },
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       tax_lots: {
@@ -258,7 +251,7 @@ export type Database = {
           creation_date: string
           creation_transaction_id: string
           id: string
-          origin: Database["public"]["Enums"]["transaction_type"]
+          origin: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity: number
           remaining_quantity: number
           user_id: string
@@ -269,7 +262,7 @@ export type Database = {
           creation_date: string
           creation_transaction_id: string
           id?: string
-          origin: Database["public"]["Enums"]["transaction_type"]
+          origin: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity: number
           remaining_quantity: number
           user_id: string
@@ -280,7 +273,7 @@ export type Database = {
           creation_date?: string
           creation_transaction_id?: string
           id?: string
-          origin?: Database["public"]["Enums"]["transaction_type"]
+          origin?: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity?: number
           remaining_quantity?: number
           user_id?: string
@@ -457,6 +450,7 @@ export type Database = {
       asset_class: "cash" | "stock" | "crypto" | "epf" | "equity" | "liability"
       currency_type: "fiat" | "crypto"
       debt_status: "active" | "paid_off"
+      tax_lot_origin: "purchase" | "split"
       transaction_type:
         | "buy"
         | "sell"
@@ -464,11 +458,10 @@ export type Database = {
         | "withdraw"
         | "expense"
         | "income"
-        | "contribution"
         | "dividend"
         | "debt_payment"
-        | "interest_payment"
         | "split"
+        | "borrow"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -496,7 +489,7 @@ export type Tables<
     ? R
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-      DefaultSchema["Views"])
+        DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
         DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
@@ -595,6 +588,7 @@ export const Constants = {
       asset_class: ["cash", "stock", "crypto", "epf", "equity", "liability"],
       currency_type: ["fiat", "crypto"],
       debt_status: ["active", "paid_off"],
+      tax_lot_origin: ["purchase", "split"],
       transaction_type: [
         "buy",
         "sell",
@@ -602,11 +596,10 @@ export const Constants = {
         "withdraw",
         "expense",
         "income",
-        "contribution",
         "dividend",
         "debt_payment",
-        "interest_payment",
         "split",
+        "borrow",
       ],
     },
   },

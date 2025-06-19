@@ -36,7 +36,7 @@ erDiagram
         uuid id PK
         uuid user_id FK
         date transaction_date
-        enum type "('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment', 'split')"
+        enum type "('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'dividend', 'debt_payment', 'split', 'borrow')"
         text description
         uuid related_debt_id FK
     }
@@ -88,7 +88,7 @@ erDiagram
         uuid user_id FK
         uuid asset_id FK
         uuid creation_transaction_id FK
-        enum origin "('purchase', 'split')"
+        enum origin "('purchase', 'split')" -- Uses the dedicated 'tax_lot_origin' enum type
         date creation_date
         numeric original_quantity
         numeric cost_basis
@@ -219,7 +219,7 @@ Represents a single financial event (e.g., "Buy HPG Stock").
 | `id` | `uuid` | **Primary Key** | Unique identifier for the transaction event. |
 | `user_id` | `uuid` | Foreign Key to `profiles.id`, Not Null | The user who owns this transaction. |
 | `transaction_date`| `date`| Not Null | The date of the transaction. |
-| `type` | `enum` | Not Null, ('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'contribution', 'dividend', 'debt_payment', 'interest_payment', 'split') | The type of transaction. |
+| `type` | `enum` | Not Null, ('buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'dividend', 'debt_payment', 'split', 'borrow') | The type of transaction. |
 | `description` | `text` | Nullable | Optional user notes. |
 | `related_debt_id` | `uuid` | Foreign Key to `debts.id`, Nullable | Links a transaction to a specific debt. |
 
@@ -257,7 +257,7 @@ This table is the definitive record of every asset acquisition event.
 | `user_id` | `uuid` | FK to `profiles.id`, Not Null | The user who owns this lot. |
 | `asset_id` | `uuid` | FK to `assets.id`, Not Null | The asset this lot belongs to. |
 | `creation_transaction_id` | `uuid` | FK to `transactions.id`, Not Null | The transaction that created this lot. |
-| `origin` | `enum` | Not Null, `('purchase', 'split')` | How the lot was created. |
+| `origin` | `enum` | Not Null, `('purchase', 'split')` | How the lot was created. Uses the `tax_lot_origin` type. |
 | `creation_date` | `date` | Not Null | The acquisition date, for FIFO ordering. |
 | `original_quantity` | `numeric` | Not Null | The quantity of shares in this lot at creation. |
 | `cost_basis` | `numeric` | Not Null | The total cost basis for this lot. |

@@ -29,7 +29,7 @@ export default function DateRangePicker({ selected, onSelect }: Calendar23Props)
           >
             {selected?.from && selected?.to
               ? `${selected.from.toLocaleDateString()} - ${selected.to.toLocaleDateString()}`
-              : "Select date"}
+              : "Filter by date..."}
             <ChevronDownIcon />
           </Button>
         </PopoverTrigger>
