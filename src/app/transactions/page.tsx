@@ -7,6 +7,7 @@ import {
   TransactionTable,
   type TransactionLegRow,
 } from "@/components/transaction-table"
+import { TransactionForm } from "@/components/transaction-form"
 import DateRangePicker from "@/components/date-range-picker"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
@@ -154,10 +155,12 @@ export default function Page() {
               </Tabs>
               <div className="flex items-center gap-2">
                 <DateRangePicker selected={date} onSelect={setDate} />
-                <Button variant="default" size="sm">
-                  <IconPlus className="size-4" />
-                  <span className="hidden sm:inline">Add Transaction</span>
-                </Button>
+                <TransactionForm>
+                  <Button variant="default" size="sm">
+                    <IconPlus className="size-4" />
+                    <span className="hidden sm:inline">Add Transaction</span>
+                  </Button>
+                </TransactionForm>
               </div>
             </div>
             <TransactionTable data={data} loading={loading} assetType={assetType} />
