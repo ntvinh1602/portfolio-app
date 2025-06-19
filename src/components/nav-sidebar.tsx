@@ -10,9 +10,8 @@ import {
   IconSettings,
   IconHelp,
 } from "@tabler/icons-react"
-import { NavPrimary } from "@/components/sidebar-primary"
-import { NavSecondary } from "@/components/sidebar-secondary"
-import { NavUser } from "@/components/sidebar-user"
+import { NavItems } from "@/components/nav-items"
+import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -28,12 +27,12 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: IconDashboard,
+      icon: IconDeviceAnalytics,
     },
     {
       title: "Assets",
       url: "/assets",
-      icon: IconPigMoney,
+      icon: IconReportMoney,
     },
     {
       title: "Transactions",
@@ -43,7 +42,7 @@ const data = {
     {
       title: "Performance",
       url: "/performance",
-      icon: IconDeviceAnalytics,
+      icon: IconDashboard,
     },
   ],
   navSecondary: [
@@ -71,9 +70,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconReportMoney className="!size-5" />
-                <span className="text-base font-semibold">
-                  My Investments
+                <IconPigMoney className="!size-8" />
+                <span className="text-lg font-semibold">
+                  Investment Tracker
                 </span>
               </a>
             </SidebarMenuButton>
@@ -81,8 +80,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavPrimary items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavItems items={data.navMain} />
+        <NavItems items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

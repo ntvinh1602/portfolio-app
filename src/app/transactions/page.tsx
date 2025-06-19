@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { type DateRange } from "react-day-picker"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/nav-sidebar"
 import {
   TransactionTable,
   type TransactionLegRow,
