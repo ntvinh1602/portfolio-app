@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Investment Tracker",
-  description: "A simple investment tracker to monitor your portfolio performance.",
+  title: "Portfolio Tracker",
+  description: "Double-entry accounting portfolio tracking app.",
   
   // Disable indexing for search engines
   robots: {

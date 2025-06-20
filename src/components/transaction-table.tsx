@@ -95,7 +95,6 @@ const toYYYYMMDD = (date: Date) => {
 }
 
 export function TransactionTable() {
-  const [rowSelection, setRowSelection] = React.useState({})
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -106,7 +105,6 @@ export function TransactionTable() {
   const [loading, setLoading] = React.useState(true)
   const [assetType, setAssetType] = React.useState("stock")
   const isMobile = useIsMobile()
-
   const columns: ColumnDef<TransactionLegRow>[] = React.useMemo(
     () => [
       {
@@ -279,12 +277,9 @@ export function TransactionTable() {
     state: {
       sorting,
       pagination,
-      rowSelection,
     },
     getRowId: (row) => row.id.toString(),
-    enableRowSelection: true,
     onSortingChange: setSorting,
-    onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     getFilteredRowModel: getFilteredRowModel(),
     getCoreRowModel: getCoreRowModel(),

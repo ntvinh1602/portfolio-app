@@ -70,9 +70,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconPigMoney className="!size-8" />
+                <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
+                  <IconPigMoney />
+                </div> 
                 <span className="text-lg font-semibold">
-                  Investment Tracker
+                  Portfolio Tracker
                 </span>
               </a>
             </SidebarMenuButton>

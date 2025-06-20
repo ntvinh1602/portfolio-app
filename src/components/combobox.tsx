@@ -56,7 +56,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between font-normal text-muted-foreground", className)}
+          className={cn("w-full justify-between font-normal", className)}
         >
           {selectedItem ? selectedItem.label : placeholder}
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -79,9 +79,9 @@ export function Combobox({
               {items.map(item => (
                 <CommandItem
                   key={item.value}
-                  value={item.value}
-                  onSelect={currentValue => {
-                    onChange(currentValue === value ? undefined : currentValue)
+                  value={item.label}
+                  onSelect={() => {
+                    onChange(item.value === value ? undefined : item.value)
                     setOpen(false)
                   }}
                 >
