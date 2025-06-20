@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
+import { type DateRange } from "react-day-picker"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Database } from "@/lib/database.types"
+import { type Database } from "@/lib/database.types"
 import { Label } from "@/components/ui/label"
 import {
   IconArrowsDownUp,
@@ -13,7 +15,17 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconDotsVertical,
+  IconPlus,
 } from "@tabler/icons-react"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import { toast } from "sonner"
+import { TransactionForm } from "@/components/transaction-form"
+import DateRangePicker from "@/components/date-range-picker"
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import {
   ColumnDef,
   flexRender,
@@ -50,8 +62,17 @@ import {
 // Define the structure of our data, combining tables from Supabase
 type Transaction = Database["public"]["Tables"]["transactions"]["Row"]
 type TransactionLeg = Database["public"]["Tables"]["transaction_legs"]["Row"]
+type TransactionDetail = Database["public"]["Tables"]["transaction_details"]["Row"]
 type Account = Database["public"]["Tables"]["accounts"]["Row"]
 type Asset = Database["public"]["Tables"]["assets"]["Row"]
+
+type TransactionWithRelations = Transaction & {
+  transaction_details: TransactionDetail | null
+  transaction_legs: (TransactionLeg & {
+    accounts: Account | null
+    assets: Asset | null
+  })[]
+}
 
 export type TransactionLegRow = TransactionLeg & {
   transaction: Transaction
@@ -60,39 +81,26 @@ export type TransactionLegRow = TransactionLeg & {
 }
 
 interface TransactionTableProps {
-  data: TransactionLegRow[]
-  loading: boolean
-  assetType: string
+  // data: TransactionLegRow[]
+  // loading: boolean
+  // assetType: string
+}
+
+/**
+ * Converts a Date object to a YYYY-MM-DD string, ignoring timezone.
+ * This is to ensure the correct date is used in the Supabase query.
+ * @param date The date to convert.
+ * @returns A string in YYYY-MM-DD format.
+ */
+const toYYYYMMDD = (date: Date) => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const day = date.getDate().toString().padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 // Define the columns for our new transaction table
 const columns: ColumnDef<TransactionLegRow>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     id: "transaction.transaction_date",
     accessorKey: "transaction.transaction_date",
@@ -102,14 +110,16 @@ const columns: ColumnDef<TransactionLegRow>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Date
+          <span className="pl-2">Date</span>
           <IconArrowsDownUp className="h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }) => {
+      const isMobile = useIsMobile()
+      const dateFormat = isMobile ? "dd/MM/yy" : "dd/MM/yyyy"
       const date = new Date(row.original.transaction.transaction_date)
-      return <span>{date.toLocaleDateString()}</span>
+      return <span className="pl-2">{format(date, dateFormat)}</span>
     },
   },
   {
@@ -135,7 +145,11 @@ const columns: ColumnDef<TransactionLegRow>[] = [
   {
     id: "quantity",
     accessorKey: "quantity",
-    header: () => <div className="text-right">Quantity</div>,
+    header: () => {
+      const isMobile = useIsMobile()
+      const label = isMobile ? "Qty." : "Quantity"
+      return <div className="text-right">{label}</div>
+    },
     cell: ({ row }) => {
       const quantity = row.original.quantity
       return (
@@ -197,17 +211,57 @@ const columns: ColumnDef<TransactionLegRow>[] = [
   },
 ]
 
-export function TransactionTable({
-  data,
-  loading,
-  assetType,
-}: TransactionTableProps) {
+export function TransactionTable({}: TransactionTableProps) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined)
+  const [data, setData] = React.useState<TransactionLegRow[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [assetType, setAssetType] = React.useState("stock")
+
+  React.useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true)
+      let query = supabase
+        .from("transactions")
+        .select<string, TransactionWithRelations>(
+          `*, transaction_details(*), transaction_legs!inner(*, accounts(*), assets!inner(*))`
+        )
+        .eq("transaction_legs.assets.asset_class", assetType)
+
+      if (date?.from) {
+        query = query.gte("transaction_date", toYYYYMMDD(date.from))
+      }
+      if (date?.to) {
+        query = query.lte("transaction_date", toYYYYMMDD(date.to))
+      }
+
+      const { data: transactions, error } = await query.order(
+        "transaction_date",
+        { ascending: false }
+      )
+
+      if (error) {
+        toast.error("Failed to fetch transactions: " + error.message)
+      } else {
+        const legRows = (transactions || []).flatMap((transaction) => {
+          const { transaction_legs, ...restOfTransaction } = transaction
+          return transaction_legs.map((leg) => ({
+            ...leg,
+            transaction: restOfTransaction,
+          }))
+        })
+        setData(legRows as TransactionLegRow[])
+      }
+      setLoading(false)
+    }
+
+    fetchTransactions()
+  }, [date, assetType])
 
   const visibleColumns = React.useMemo(() => {
     if (assetType === "cash" || assetType === "epf") {
@@ -241,8 +295,51 @@ export function TransactionTable({
   })
 
   return (
-    <div className="@container/main flex flex-1 flex-col px-4 lg:px-6">
-      <div className="overflow-hidden rounded-lg border">
+    <div className="@container/main flex flex-1 flex-col">
+      <div className="flex items-center justify-between py-4 px-4">
+        <Tabs
+          defaultValue="stock"
+          className="w-full flex-col justify-start gap-6"
+          onValueChange={setAssetType}
+          value={assetType}
+        >
+          <Select
+            defaultValue="stock"
+            onValueChange={setAssetType}
+            value={assetType}
+          >
+            <SelectTrigger
+              className="flex w-fit @4xl/main:hidden"
+              size="sm"
+              id="view-selector"
+            >
+              <SelectValue placeholder="Select a view" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="stock">Stock</SelectItem>
+              <SelectItem value="epf">EPF</SelectItem>
+              <SelectItem value="crypto">Crypto</SelectItem>
+            </SelectContent>
+          </Select>
+          <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
+            <TabsTrigger value="cash">Cash</TabsTrigger>
+            <TabsTrigger value="stock">Stock</TabsTrigger>
+            <TabsTrigger value="epf">EPF</TabsTrigger>
+            <TabsTrigger value="crypto">Crypto</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2">
+          <DateRangePicker selected={date} onSelect={setDate} />
+          <TransactionForm>
+            <Button variant="default" size="sm">
+              <IconPlus className="size-4" />
+              <span className="hidden sm:inline">Add Transaction</span>
+            </Button>
+          </TransactionForm>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-lg border mx-2 lg:mx-4">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
