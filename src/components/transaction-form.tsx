@@ -33,6 +33,7 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { Tables, Enums } from "@/lib/database.types"
 import { Constants } from "@/lib/database.types"
+import { AssetPicker } from "./asset-picker"
 
 type TransactionType = Enums<"transaction_type">
 
@@ -57,6 +58,10 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
     setFormState(prev => ({ ...prev, [name]: value }))
   }
 
+  const handlePickerChange = (name: string) => (value: string | undefined) => {
+    setFormState(prev => ({ ...prev, [name]: value }))
+  }
+
   React.useEffect(() => {
     // Reset form state when transaction type changes
     setFormState({})
@@ -67,12 +72,14 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
       const { data: accountsData, error: accountsError } = await supabase
         .from("accounts")
         .select("*")
+        .not("type", "eq", "conceptual")
       if (accountsError) console.error("Error fetching accounts:", accountsError)
       else setAccounts(accountsData || [])
 
       const { data: assetsData, error: assetsError } = await supabase
         .from("assets")
         .select("*")
+        .not("asset_class", "in", "(equity,liability)")
       if (assetsError) console.error("Error fetching assets:", assetsError)
       else setAssets(assetsData || [])
 
@@ -159,17 +166,6 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-3 col-span-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                className="text-sm"
-                id="description"
-                placeholder="Enter transaction description..."
-                name="description"
-                value={formState.description || ""}
-                onChange={handleInputChange}
-              />
-            </div>
 
             {/* --- Dynamic Fields Start --- */}
             {[
@@ -191,7 +187,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     onValueChange={handleSelectChange("account")}
                     value={formState.account}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -217,42 +213,41 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 {transactionType === "dividend" && (
                   <div className="grid gap-3 col-span-2">
                     <Label htmlFor="dividend-asset">Asset</Label>
-                    <Select
-                      name="dividend-asset"
-                      onValueChange={handleSelectChange("dividend-asset")}
+                    <AssetPicker
+                      items={assets
+                        .filter(
+                          asset =>
+                            asset.asset_class === "stock" ||
+                            asset.asset_class === "epf",
+                        )
+                        .map(asset => ({
+                          value: asset.id,
+                          label: `${asset.ticker} - ${asset.name}`,
+                        }))}
                       value={formState["dividend-asset"]}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select asset..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {assets
-                          .filter(
-                            asset =>
-                              asset.asset_class === "stock" ||
-                              asset.asset_class === "equity",
-                          )
-                          .map(asset => (
-                            <SelectItem key={asset.id} value={asset.id}>
-                              {asset.name} ({asset.ticker})
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={handlePickerChange("dividend-asset")}
+                      placeholder="Select asset..."
+                      searchPlaceholder="Search assets..."
+                      emptyPlaceholder="No assets found."
+                    />
                   </div>
                 )}
               </>
             )}
 
-            {transactionType === "buy" && (
+            {[
+              "buy",
+              "sell"
+            ].includes(transactionType) && (
               <>
-                <div className="grid gap-3">
-                  <Label htmlFor="buy-account">Account</Label>
+                <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="account">Account</Label>
                   <Select
-                    name="buy-account"
-                    onValueChange={handleSelectChange("buy-account")}
+                    name="account"
+                    onValueChange={handleSelectChange("account")}
+                    value={formState.account}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -264,23 +259,19 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="buy-asset">Asset</Label>
-                  <Select
-                    name="buy-asset"
-                    onValueChange={handleSelectChange("buy-asset")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select asset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets.map(asset => (
-                        <SelectItem key={asset.id} value={asset.id}>
-                          {asset.name} ({asset.ticker})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="asset">Asset</Label>
+                  <AssetPicker
+                    items={assets.map(asset => ({
+                      value: asset.id,
+                      label: `${asset.ticker} - ${asset.name}`,
+                    }))}
+                    value={formState.asset}
+                    onChange={handlePickerChange("asset")}
+                    placeholder="Select asset..."
+                    searchPlaceholder="Search assets..."
+                    emptyPlaceholder="No assets found."
+                  />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="quantity">Quantity</Label>
@@ -312,80 +303,6 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     type="number"
                     placeholder="0.00"
                     value={formState.fees || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </>
-            )}
-
-            {transactionType === "sell" && (
-              <>
-                <div className="grid gap-3">
-                  <Label htmlFor="sell-account">Account</Label>
-                  <Select
-                    name="sell-account"
-                    onValueChange={handleSelectChange("sell-account")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map(account => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="sell-asset">Asset</Label>
-                  <Select
-                    name="sell-asset"
-                    onValueChange={handleSelectChange("sell-asset")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select asset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets.map(asset => (
-                        <SelectItem key={asset.id} value={asset.id}>
-                          {asset.name} ({asset.ticker})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="sell-quantity">Quantity</Label>
-                  <Input
-                    id="sell-quantity"
-                    name="sell-quantity"
-                    type="number"
-                    placeholder="0"
-                    value={formState["sell-quantity"] || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="sell-price">Price</Label>
-                  <Input
-                    id="sell-price"
-                    name="sell-price"
-                    type="number"
-                    placeholder="0.00"
-                    value={formState["sell-price"] || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="grid gap-3 col-span-2">
-                  <Label htmlFor="sell-fees">Fees</Label>
-                  <Input
-                    id="sell-fees"
-                    name="sell-fees"
-                    type="number"
-                    placeholder="0.00"
-                    value={formState["sell-fees"] || ""}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -432,7 +349,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     name="deposit-account"
                     onValueChange={handleSelectChange("deposit-account")}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -449,14 +366,14 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
 
             {transactionType === "debt_payment" && (
               <>
-                <div className="grid gap-3 col-span-2">
+                <div className="grid gap-3">
                   <Label htmlFor="debt">Debt</Label>
                   <Select
                     name="debt"
                     onValueChange={handleSelectChange("debt")}
                     value={formState.debt}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select debt..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -475,7 +392,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     onValueChange={handleSelectChange("from-account")}
                     value={formState["from-account"]}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -514,14 +431,14 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
 
             {transactionType === "split" && (
               <>
-                <div className="grid gap-3">
-                  <Label htmlFor="split-account">Account</Label>
+                <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="account">Account</Label>
                   <Select
-                    name="split-account"
-                    onValueChange={handleSelectChange("split-account")}
-                    value={formState["split-account"]}
+                    name="account"
+                    onValueChange={handleSelectChange("account")}
+                    value={formState.account}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -533,26 +450,21 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="split-asset">Asset</Label>
-                  <Select
-                    name="split-asset"
-                    onValueChange={handleSelectChange("split-asset")}
-                    value={formState["split-asset"]}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select asset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets
-                        .filter(asset => asset.asset_class === "stock")
-                        .map(asset => (
-                          <SelectItem key={asset.id} value={asset.id}>
-                            {asset.name} ({asset.ticker})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="asset">Asset</Label>
+                  <AssetPicker
+                    items={assets
+                      .filter(asset => asset.asset_class === "stock")
+                      .map(asset => ({
+                        value: asset.id,
+                        label: `${asset.ticker} - ${asset.name}`,
+                      }))}
+                    value={formState.asset}
+                    onChange={handlePickerChange("asset")}
+                    placeholder="Select asset..."
+                    searchPlaceholder="Search assets..."
+                    emptyPlaceholder="No assets found."
+                  />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="split-quantity">New Shares Quantity</Label>
