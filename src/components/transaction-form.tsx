@@ -33,7 +33,7 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { Tables, Enums } from "@/lib/database.types"
 import { Constants } from "@/lib/database.types"
-import { AssetPicker } from "./asset-picker"
+import { Combobox } from "@/components/combobox"
 
 type TransactionType = Enums<"transaction_type">
 
@@ -160,7 +160,10 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 <SelectContent>
                   {Constants.public.Enums.transaction_type.map(type => (
                     <SelectItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {type
+                        .split("_")
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(" ")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -213,7 +216,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 {transactionType === "dividend" && (
                   <div className="grid gap-3 col-span-2">
                     <Label htmlFor="dividend-asset">Asset</Label>
-                    <AssetPicker
+                    <Combobox
                       items={assets
                         .filter(
                           asset =>
@@ -261,11 +264,13 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="grid gap-3 col-span-2">
                   <Label htmlFor="asset">Asset</Label>
-                  <AssetPicker
-                    items={assets.map(asset => ({
-                      value: asset.id,
-                      label: `${asset.ticker} - ${asset.name}`,
-                    }))}
+                  <Combobox
+                    items={assets
+                      .filter(asset => asset.asset_class === "stock")
+                      .map(asset => ({
+                        value: asset.id,
+                        label: `${asset.ticker} - ${asset.name}`,
+                      }))}
                     value={formState.asset}
                     onChange={handlePickerChange("asset")}
                     placeholder="Select asset..."
@@ -452,7 +457,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="grid gap-3 col-span-2">
                   <Label htmlFor="asset">Asset</Label>
-                  <AssetPicker
+                  <Combobox
                     items={assets
                       .filter(asset => asset.asset_class === "stock")
                       .map(asset => ({

@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
-
+import { 
+  CheckIcon,
+  ChevronsUpDownIcon
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,13 +21,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-export type PickerItem = {
+export type ComboboxItem = {
   value: string
   label: string
 }
 
-type AssetPickerProps = {
-  items: PickerItem[]
+type ComboboxProps = {
+  items: ComboboxItem[]
   value?: string
   onChange: (value: string | undefined) => void
   placeholder?: string
@@ -34,7 +36,7 @@ type AssetPickerProps = {
   className?: string
 }
 
-export function AssetPicker({
+export function Combobox({
   items,
   value,
   onChange,
@@ -42,7 +44,7 @@ export function AssetPicker({
   searchPlaceholder = "Search...",
   emptyPlaceholder = "No item found.",
   className,
-}: AssetPickerProps) {
+}: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
   const selectedItem = items.find(item => item.value === value)
@@ -54,7 +56,7 @@ export function AssetPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between font-normal text-muted-foreground", className)}
         >
           {selectedItem ? selectedItem.label : placeholder}
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
