@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
+import { format, formatISO } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -34,12 +34,16 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { Tables, Enums } from "@/lib/database.types"
 import { Constants } from "@/lib/database.types"
 import { Combobox } from "@/components/combobox"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 type TransactionType = Enums<"transaction_type">
 
 export function TransactionForm({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [accounts, setAccounts] = React.useState<Tables<"accounts">[]>([])
   const [assets, setAssets] = React.useState<Tables<"assets">[]>([])
   const [debts, setDebts] = React.useState<Tables<"debts">[]>([])
@@ -94,13 +98,122 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
     fetchInitialData()
   }, [])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    console.log({
-      date,
-      transactionType,
-      ...formState,
-    })
+    if (!date) {
+      toast.error("Please select a date.")
+      return
+    }
+    setIsSubmitting(true)
+
+    let body
+
+    try {
+      const baseBody = {
+        transaction_date: formatISO(date, { representation: "date" }),
+        transaction_type: transactionType,
+        description: formState.description,
+      }
+
+      switch (transactionType) {
+        case "deposit":
+        case "withdraw":
+        case "income":
+        case "expense":
+          body = {
+            ...baseBody,
+            account: formState.account,
+            amount: parseFloat(formState.amount || "0"),
+          }
+          break
+        case "dividend":
+          body = {
+            ...baseBody,
+            account: formState.account,
+            amount: parseFloat(formState.amount || "0"),
+            "dividend-asset": formState["dividend-asset"],
+          }
+          break
+        case "buy":
+        case "sell":
+          body = {
+            ...baseBody,
+            account: formState.account,
+            asset: formState.asset,
+            quantity: parseFloat(formState.quantity || "0"),
+            price: parseFloat(formState.price || "0"),
+            fees: parseFloat(formState.fees || "0"),
+          }
+          break
+        case "borrow":
+          body = {
+            ...baseBody,
+            lender: formState.lender,
+            principal: parseFloat(formState.principal || "0"),
+            "interest-rate": parseFloat(formState["interest-rate"] || "0"),
+            "deposit-account": formState["deposit-account"],
+          }
+          break
+        case "debt_payment":
+          body = {
+            ...baseBody,
+            debt: formState.debt,
+            "from-account": formState["from-account"],
+            "principal-payment": parseFloat(
+              formState["principal-payment"] || "0",
+            ),
+            "interest-payment": parseFloat(
+              formState["interest-payment"] || "0",
+            ),
+          }
+          break
+        case "split":
+          body = {
+            transaction_date: formatISO(date, { representation: "date" }),
+            transaction_type: "split",
+            asset: formState.asset,
+            "split-quantity": parseFloat(formState["split-quantity"] || "0"),
+          }
+          break
+        default:
+          toast.error(
+            `Transaction type "${transactionType}" is not yet supported.`,
+          )
+          setIsSubmitting(false)
+          return
+      }
+
+      const response = await fetch("/api/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        const errorMessage =
+          result.error?.issues?.[0]?.message ||
+          result.error ||
+          "An unknown error occurred."
+        throw new Error(errorMessage)
+      }
+
+      toast.success("Transaction saved successfully!")
+      setFormState({})
+      document.getElementById("close-dialog")?.click()
+      router.refresh()
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(`Failed to save transaction: ${error.message}`)
+      } else {
+        toast.error("An unexpected error occurred.")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -437,25 +550,6 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             {transactionType === "split" && (
               <>
                 <div className="grid gap-3 col-span-2">
-                  <Label htmlFor="account">Account</Label>
-                  <Select
-                    name="account"
-                    onValueChange={handleSelectChange("account")}
-                    value={formState.account}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select account..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map(account => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-3 col-span-2">
                   <Label htmlFor="asset">Asset</Label>
                   <Combobox
                     items={assets
@@ -471,7 +565,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     emptyPlaceholder="No assets found."
                   />
                 </div>
-                <div className="grid gap-3">
+                <div className="grid gap-3 col-span-2">
                   <Label htmlFor="split-quantity">New Shares Quantity</Label>
                   <Input
                     id="split-quantity"
@@ -482,26 +576,17 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="split-tax">Tax Paid (Cost Basis)</Label>
-                  <Input
-                    id="split-tax"
-                    name="split-tax"
-                    type="number"
-                    placeholder="0.00"
-                    value={formState["split-tax"] || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
               </>
             )}
             {/* --- Dynamic Fields End --- */}
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" id="close-dialog">Cancel</Button>
             </DialogClose>
-            <Button type="submit">Save</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </form>
