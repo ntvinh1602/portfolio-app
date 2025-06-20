@@ -80,11 +80,6 @@ export type TransactionLegRow = TransactionLeg & {
   assets: Asset | null
 }
 
-interface TransactionTableProps {
-  // data: TransactionLegRow[]
-  // loading: boolean
-  // assetType: string
-}
 
 /**
  * Converts a Date object to a YYYY-MM-DD string, ignoring timezone.
@@ -99,119 +94,7 @@ const toYYYYMMDD = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
-// Define the columns for our new transaction table
-const columns: ColumnDef<TransactionLegRow>[] = [
-  {
-    id: "transaction.transaction_date",
-    accessorKey: "transaction.transaction_date",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          <span className="pl-2">Date</span>
-          <IconArrowsDownUp className="h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const isMobile = useIsMobile()
-      const dateFormat = isMobile ? "dd/MM/yy" : "dd/MM/yyyy"
-      const date = new Date(row.original.transaction.transaction_date)
-      return <span className="pl-2">{format(date, dateFormat)}</span>
-    },
-  },
-  {
-    id: "transaction.type",
-    accessorKey: "transaction.type",
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="capitalize">
-        {row.original.transaction.type.replace("_", " ")}
-      </Badge>
-    ),
-  },
-  {
-    id: "assets.ticker",
-    accessorKey: "assets.ticker",
-    header: "Ticker",
-  },
-  {
-    id: "transaction.description",
-    accessorKey: "transaction.description",
-    header: "Description",
-  },
-  {
-    id: "quantity",
-    accessorKey: "quantity",
-    header: () => {
-      const isMobile = useIsMobile()
-      const label = isMobile ? "Qty." : "Quantity"
-      return <div className="text-right">{label}</div>
-    },
-    cell: ({ row }) => {
-      const quantity = row.original.quantity
-      return (
-        <div className="text-right">
-          {new Intl.NumberFormat("en-US", {}).format(quantity)}
-        </div>
-      )
-    },
-  },
-  {
-    id: "amount",
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = row.original.amount
-      const currency = row.original.currency_code || "USD"
-
-      // Get currency-specific formatting options
-      const formatter = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-      })
-      const { minimumFractionDigits, maximumFractionDigits } =
-        formatter.resolvedOptions()
-
-      return (
-        <div className="text-right">
-          {new Intl.NumberFormat("en-US", {
-            minimumFractionDigits,
-            maximumFractionDigits,
-          }).format(amount)}{" "}
-          {currency}
-        </div>
-      )
-    },
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="size-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <IconDotsVertical className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-  },
-]
-
-export function TransactionTable({}: TransactionTableProps) {
+export function TransactionTable() {
   const [rowSelection, setRowSelection] = React.useState({})
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
@@ -222,6 +105,121 @@ export function TransactionTable({}: TransactionTableProps) {
   const [data, setData] = React.useState<TransactionLegRow[]>([])
   const [loading, setLoading] = React.useState(true)
   const [assetType, setAssetType] = React.useState("stock")
+  const isMobile = useIsMobile()
+
+  const columns: ColumnDef<TransactionLegRow>[] = React.useMemo(
+    () => [
+      {
+        id: "transaction.transaction_date",
+        accessorKey: "transaction.transaction_date",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              <span className="pl-2">Date</span>
+              <IconArrowsDownUp className="h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => {
+          const dateFormat = isMobile ? "dd/MM/yy" : "dd/MM/yyyy"
+          const date = new Date(row.original.transaction.transaction_date)
+          return <span className="pl-2">{format(date, dateFormat)}</span>
+        },
+      },
+      {
+        id: "transaction.type",
+        accessorKey: "transaction.type",
+        header: "Type",
+        cell: ({ row }) => (
+          <Badge variant="outline" className="capitalize">
+            {row.original.transaction.type.replace("_", " ")}
+          </Badge>
+        ),
+      },
+      {
+        id: "assets.ticker",
+        accessorKey: "assets.ticker",
+        header: "Ticker",
+      },
+      {
+        id: "transaction.description",
+        accessorKey: "transaction.description",
+        header: "Description",
+      },
+      {
+        id: "quantity",
+        accessorKey: "quantity",
+        header: () => {
+          const label = isMobile ? "Qty." : "Quantity"
+          return <div className="text-right">{label}</div>
+        },
+        cell: ({ row }) => {
+          const quantity = row.original.quantity
+          return (
+            <div className="text-right">
+              {new Intl.NumberFormat("en-US", {}).format(quantity)}
+            </div>
+          )
+        },
+      },
+      {
+        id: "amount",
+        accessorKey: "amount",
+        header: () => <div className="text-right">Amount</div>,
+        cell: ({ row }) => {
+          const amount = row.original.amount
+          const currency = row.original.currency_code || "USD"
+
+          // Get currency-specific formatting options
+          const formatter = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+          })
+          const { minimumFractionDigits, maximumFractionDigits } =
+            formatter.resolvedOptions()
+
+          return (
+            <div className="text-right">
+              {new Intl.NumberFormat("en-US", {
+                minimumFractionDigits,
+                maximumFractionDigits,
+              }).format(amount)}{" "}
+              {currency}
+            </div>
+          )
+        },
+      },
+      {
+        id: "actions",
+        cell: () => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="size-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <IconDotsVertical className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>View Details</DropdownMenuItem>
+                <DropdownMenuItem>Edit</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive">
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+      },
+    ],
+    [isMobile]
+  )
 
   React.useEffect(() => {
     const fetchTransactions = async () => {
@@ -273,7 +271,7 @@ export function TransactionTable({}: TransactionTableProps) {
       return columns.filter((c) => c.id !== "transaction.description")
     }
     return columns
-  }, [assetType])
+  }, [assetType, columns])
 
   const table = useReactTable({
     data,
