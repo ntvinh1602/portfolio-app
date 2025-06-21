@@ -8,6 +8,7 @@ const depositSchema = z.object({
   account: z.string().uuid(),
   amount: z.number().positive(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const withdrawSchema = z.object({
@@ -16,6 +17,7 @@ const withdrawSchema = z.object({
   account: z.string().uuid(),
   amount: z.number().positive(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const buySchema = z.object({
@@ -174,15 +176,32 @@ async function handleDeposit(
   userId: string,
   data: z.infer<typeof depositSchema>
 ) {
-  const { transaction_date, account, amount, description } = data
+  const { transaction_date, account, amount, description, asset } = data
 
-  const { error, data: result } = await supabase.rpc("handle_deposit_transaction", {
-    p_user_id: userId,
-    p_transaction_date: transaction_date,
-    p_account_id: account,
-    p_amount: amount,
-    p_description: description,
-  })
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", account)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription = description || `Deposit to ${accountData.name}`
+
+  const { error, data: result } = await supabase.rpc(
+    "handle_deposit_transaction",
+    {
+      p_user_id: userId,
+      p_transaction_date: transaction_date,
+      p_account_id: account,
+      p_amount: amount,
+      p_description: finalDescription,
+      p_asset_id: asset,
+    },
+  )
 
   if (error) {
     console.error("Error calling handle_deposit_transaction:", error)
@@ -201,15 +220,32 @@ async function handleWithdraw(
   userId: string,
   data: z.infer<typeof withdrawSchema>
 ) {
-  const { transaction_date, account, amount, description } = data
+  const { transaction_date, account, amount, description, asset } = data
 
-  const { error, data: result } = await supabase.rpc("handle_withdraw_transaction", {
-    p_user_id: userId,
-    p_transaction_date: transaction_date,
-    p_account_id: account,
-    p_amount: amount,
-    p_description: description,
-  })
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", account)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription = description || `Withdrawal from ${accountData.name}`
+
+  const { error, data: result } = await supabase.rpc(
+    "handle_withdraw_transaction",
+    {
+      p_user_id: userId,
+      p_transaction_date: transaction_date,
+      p_account_id: account,
+      p_amount: amount,
+      p_description: finalDescription,
+      p_asset_id: asset,
+    },
+  )
 
   if (error) {
     console.error("Error calling handle_withdraw_transaction:", error)
@@ -228,7 +264,22 @@ async function handleBuy(
   userId: string,
   data: z.infer<typeof buySchema>
 ) {
-  const { transaction_date, account, asset, quantity, price, fees, description } = data
+  const { transaction_date, account, asset, quantity, price, fees, description } =
+    data
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("assets")
+    .select("ticker")
+    .eq("id", asset)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
+
+  const finalDescription =
+    description || `Buy ${quantity} ${assetData.ticker} at ${price}`
 
   const { error } = await supabase.rpc("handle_buy_transaction", {
     p_user_id: userId,
@@ -238,7 +289,7 @@ async function handleBuy(
     p_quantity: quantity,
     p_price: price,
     p_fees: fees,
-    p_description: description || "Asset purchase",
+    p_description: finalDescription,
   })
 
   if (error) {
@@ -256,12 +307,25 @@ async function handleIncome(
 ) {
   const { transaction_date, account, amount, description } = data
 
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", account)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription = description || `Income to ${accountData.name}`
+
   const { error } = await supabase.rpc("handle_income_expense_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
     p_amount: amount,
-    p_description: description || "Income",
+    p_description: finalDescription,
     p_transaction_type: "income",
   })
 
@@ -280,12 +344,25 @@ async function handleExpense(
 ) {
   const { transaction_date, account, amount, description } = data
 
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", account)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription = description || `Expense from ${accountData.name}`
+
   const { error } = await supabase.rpc("handle_income_expense_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
     p_amount: amount,
-    p_description: description || "Expense",
+    p_description: finalDescription,
     p_transaction_type: "expense",
   })
 
@@ -307,7 +384,33 @@ async function handleDividend(
     account: account_id,
     amount,
     "dividend-asset": asset_id,
+    description,
   } = data
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("assets")
+    .select("ticker")
+    .eq("id", asset_id)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
+
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", account_id)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription =
+    description || `Dividend from ${assetData.ticker} to ${accountData.name}`
 
   const { error } = await supabase.rpc("handle_dividend_transaction", {
     p_user_id: userId,
@@ -315,6 +418,7 @@ async function handleDividend(
     p_amount: amount,
     p_transaction_date: transaction_date,
     p_asset_id: asset_id,
+    p_description: finalDescription,
   })
 
   if (error) {
@@ -336,7 +440,11 @@ async function handleBorrow(
     principal,
     "interest-rate": interest_rate,
     "deposit-account": deposit_account_id,
+    description,
   } = data
+
+  const finalDescription =
+    description || `Loan from ${lender} at ${interest_rate}% p.a`
 
   const { error } = await supabase.rpc("handle_borrow_transaction", {
     p_user_id: userId,
@@ -345,6 +453,7 @@ async function handleBorrow(
     p_interest_rate: interest_rate,
     p_transaction_date: transaction_date,
     p_deposit_account_id: deposit_account_id,
+    p_description: finalDescription,
   })
 
   if (error) {
@@ -366,7 +475,34 @@ async function handleDebtPayment(
     "from-account": from_account_id,
     "principal-payment": principal_payment,
     "interest-payment": interest_payment,
+    description,
   } = data
+
+  const { data: debtData, error: debtError } = await supabase
+    .from("debts")
+    .select("lender_name")
+    .eq("id", debt_id)
+    .single()
+
+  if (debtError) {
+    console.error("Error fetching debt details:", debtError)
+    throw new Error(`Failed to fetch debt details: ${debtError.message}`)
+  }
+
+  const { data: accountData, error: accountError } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", from_account_id)
+    .single()
+
+  if (accountError) {
+    console.error("Error fetching account name:", accountError)
+    throw new Error(`Failed to fetch account details: ${accountError.message}`)
+  }
+
+  const finalDescription =
+    description ||
+    `Debt payment to ${debtData.lender_name} from ${accountData.name}`
 
   const { error } = await supabase.rpc("handle_debt_payment_transaction", {
     p_debt_id: debt_id,
@@ -374,6 +510,7 @@ async function handleDebtPayment(
     p_interest_payment: interest_payment,
     p_transaction_date: transaction_date,
     p_from_account_id: from_account_id,
+    p_description: finalDescription,
   })
 
   if (error) {
@@ -395,10 +532,24 @@ async function handleSplit(
     "split-quantity": quantity,
   } = data
 
+  const { data: assetData, error: assetError } = await supabase
+    .from("assets")
+    .select("ticker")
+    .eq("id", asset_id)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
+
+  const finalDescription = `Stock split for ${assetData.ticker}`
+
   const { error } = await supabase.rpc("handle_split_transaction", {
     p_asset_id: asset_id,
     p_quantity: quantity,
     p_transaction_date: transaction_date,
+    p_description: finalDescription,
   })
 
   if (error) {
@@ -414,9 +565,24 @@ async function handleSell(
   userId: string,
   data: z.infer<typeof sellSchema>
 ) {
-  const { transaction_date, account, asset, quantity, price, fees, description } = data
+  const { transaction_date, account, asset, quantity, price, fees, description } =
+    data
 
   const total_proceeds = quantity * price
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("assets")
+    .select("ticker")
+    .eq("id", asset)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
+
+  const finalDescription =
+    description || `Sell ${quantity} ${assetData.ticker} at ${price}`
 
   const { error } = await supabase.rpc("handle_sell_transaction", {
     p_user_id: userId,
@@ -426,7 +592,7 @@ async function handleSell(
     p_fees: fees,
     p_transaction_date: transaction_date,
     p_cash_account_id: account,
-    p_description: description || "Asset sale",
+    p_description: finalDescription,
   })
 
   if (error) {

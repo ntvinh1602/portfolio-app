@@ -124,6 +124,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             ...baseBody,
             account: formState.account,
             amount: parseFloat(formState.amount || "0"),
+            asset: formState.asset,
           }
           break
         case "dividend":
@@ -218,7 +219,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
 
   return (
     <Dialog>
-      <form onSubmit={handleSubmit}>
+      <form id="transaction-form" onSubmit={handleSubmit}>
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -312,6 +313,30 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                           {account.name}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="asset">Asset</Label>
+                  <Select
+                    name="asset"
+                    onValueChange={handleSelectChange("asset")}
+                    value={formState.asset}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select asset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assets
+                        .filter(asset =>
+                          asset.asset_class === "cash" ||
+                          asset.asset_class === "epf",
+                        )
+                        .map(asset => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -584,7 +609,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             <DialogClose asChild>
               <Button variant="outline" id="close-dialog">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" form="transaction-form" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
