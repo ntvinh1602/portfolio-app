@@ -146,6 +146,9 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             quantity: parseFloat(formState.quantity || "0"),
             price: parseFloat(formState.price || "0"),
             fees: parseFloat(formState.fees || "0"),
+            ...(transactionType === "sell" && {
+              taxes: parseFloat(formState.taxes || "0"),
+            }),
           }
           break
         case "borrow":
@@ -474,6 +477,19 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     onChange={handleInputChange}
                   />
                 </div>
+                {transactionType === "sell" && (
+                  <div className="grid gap-3 col-span-2">
+                    <Label htmlFor="taxes">Taxes</Label>
+                    <Input
+                      id="taxes"
+                      name="taxes"
+                      type="number"
+                      placeholder="0.00"
+                      value={formState.taxes || ""}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                )}
               </>
             )}
 

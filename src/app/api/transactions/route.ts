@@ -41,6 +41,7 @@ const sellSchema = z.object({
   quantity: z.number().positive(),
   price: z.number().nonnegative(),
   fees: z.number().nonnegative().optional().default(0),
+  taxes: z.number().nonnegative().optional().default(0),
   description: z.string().optional(),
 })
 
@@ -597,6 +598,7 @@ async function handleSell(
     quantity,
     price,
     fees,
+    taxes,
     description,
   } = data
 
@@ -622,6 +624,7 @@ async function handleSell(
     p_quantity_to_sell: quantity,
     p_total_proceeds: total_proceeds,
     p_fees: fees,
+    p_taxes: taxes,
     p_transaction_date: transaction_date,
     p_cash_account_id: account,
     p_cash_asset_id: cash_asset_id,
