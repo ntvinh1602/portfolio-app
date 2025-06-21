@@ -133,6 +133,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             account: formState.account,
             amount: parseFloat(formState.amount || "0"),
             "dividend-asset": formState["dividend-asset"],
+            asset: formState.asset, // This is the cash asset
           }
           break
         case "buy":
@@ -141,6 +142,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             ...baseBody,
             account: formState.account,
             asset: formState.asset,
+            cash_asset_id: formState.cash_asset_id,
             quantity: parseFloat(formState.quantity || "0"),
             price: parseFloat(formState.price || "0"),
             fees: parseFloat(formState.fees || "0"),
@@ -153,6 +155,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             principal: parseFloat(formState.principal || "0"),
             "interest-rate": parseFloat(formState["interest-rate"] || "0"),
             "deposit-account": formState["deposit-account"],
+            asset: formState.asset,
           }
           break
         case "debt_payment":
@@ -166,6 +169,7 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             "interest-payment": parseFloat(
               formState["interest-payment"] || "0",
             ),
+            asset: formState.asset,
           }
           break
         case "split":
@@ -401,6 +405,27 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                   </Select>
                 </div>
                 <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="cash_asset_id">Cash Asset</Label>
+                  <Select
+                    name="cash_asset_id"
+                    onValueChange={handleSelectChange("cash_asset_id")}
+                    value={formState.cash_asset_id}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select cash asset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assets
+                        .filter(asset => asset.asset_class === "cash")
+                        .map(asset => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-3 col-span-2">
                   <Label htmlFor="asset">Asset</Label>
                   <Combobox
                     items={assets
@@ -504,6 +529,27 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="grid gap-3 col-span-2">
+                  <Label htmlFor="asset">Cash Asset</Label>
+                  <Select
+                    name="asset"
+                    onValueChange={handleSelectChange("asset")}
+                    value={formState.asset}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select cash asset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assets
+                        .filter(asset => asset.asset_class === "cash")
+                        .map(asset => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
@@ -544,6 +590,27 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                           {account.name}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="asset">Cash Asset</Label>
+                  <Select
+                    name="asset"
+                    onValueChange={handleSelectChange("asset")}
+                    value={formState.asset}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select cash asset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assets
+                        .filter(asset => asset.asset_class === "cash")
+                        .map(asset => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

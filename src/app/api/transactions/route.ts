@@ -25,6 +25,7 @@ const buySchema = z.object({
   transaction_type: z.literal("buy"),
   account: z.string().uuid(),
   asset: z.string().uuid(),
+  cash_asset_id: z.string().uuid(),
   quantity: z.number().positive(),
   price: z.number().nonnegative(),
   fees: z.number().nonnegative().optional().default(0),
@@ -36,6 +37,7 @@ const sellSchema = z.object({
   transaction_type: z.literal("sell"),
   account: z.string().uuid(),
   asset: z.string().uuid(),
+  cash_asset_id: z.string().uuid(),
   quantity: z.number().positive(),
   price: z.number().nonnegative(),
   fees: z.number().nonnegative().optional().default(0),
@@ -48,6 +50,7 @@ const incomeSchema = z.object({
   account: z.string().uuid(),
   amount: z.number().positive(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const expenseSchema = z.object({
@@ -56,6 +59,7 @@ const expenseSchema = z.object({
   account: z.string().uuid(),
   amount: z.number().positive(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const dividendSchema = z.object({
@@ -65,6 +69,7 @@ const dividendSchema = z.object({
   amount: z.number().positive(),
   "dividend-asset": z.string().uuid(),
   description: z.string().optional(),
+  asset: z.string().uuid(), // This is the cash asset
 })
 
 const borrowSchema = z.object({
@@ -75,6 +80,7 @@ const borrowSchema = z.object({
   "interest-rate": z.number().nonnegative(),
   "deposit-account": z.string().uuid(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const debtPaymentSchema = z.object({
@@ -85,6 +91,7 @@ const debtPaymentSchema = z.object({
   "principal-payment": z.number().positive(),
   "interest-payment": z.number().nonnegative(),
   description: z.string().optional(),
+  asset: z.string().uuid(),
 })
 
 const splitSchema = z.object({
@@ -264,8 +271,16 @@ async function handleBuy(
   userId: string,
   data: z.infer<typeof buySchema>
 ) {
-  const { transaction_date, account, asset, quantity, price, fees, description } =
-    data
+  const {
+    transaction_date,
+    account,
+    asset,
+    cash_asset_id,
+    quantity,
+    price,
+    fees,
+    description,
+  } = data
 
   const { data: assetData, error: assetError } = await supabase
     .from("assets")
@@ -286,6 +301,7 @@ async function handleBuy(
     p_transaction_date: transaction_date,
     p_account_id: account,
     p_asset_id: asset,
+    p_cash_asset_id: cash_asset_id,
     p_quantity: quantity,
     p_price: price,
     p_fees: fees,
@@ -305,7 +321,7 @@ async function handleIncome(
   userId: string,
   data: z.infer<typeof incomeSchema>
 ) {
-  const { transaction_date, account, amount, description } = data
+  const { transaction_date, account, amount, description, asset } = data
 
   const { data: accountData, error: accountError } = await supabase
     .from("accounts")
@@ -320,13 +336,13 @@ async function handleIncome(
 
   const finalDescription = description || `Income to ${accountData.name}`
 
-  const { error } = await supabase.rpc("handle_income_expense_transaction", {
+  const { error } = await supabase.rpc("handle_income_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
     p_amount: amount,
     p_description: finalDescription,
-    p_transaction_type: "income",
+    p_asset_id: asset,
   })
 
   if (error) {
@@ -342,7 +358,7 @@ async function handleExpense(
   userId: string,
   data: z.infer<typeof expenseSchema>
 ) {
-  const { transaction_date, account, amount, description } = data
+  const { transaction_date, account, amount, description, asset } = data
 
   const { data: accountData, error: accountError } = await supabase
     .from("accounts")
@@ -357,13 +373,13 @@ async function handleExpense(
 
   const finalDescription = description || `Expense from ${accountData.name}`
 
-  const { error } = await supabase.rpc("handle_income_expense_transaction", {
+  const { error } = await supabase.rpc("handle_expense_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
     p_amount: amount,
     p_description: finalDescription,
-    p_transaction_type: "expense",
+    p_asset_id: asset,
   })
 
   if (error) {
@@ -383,14 +399,15 @@ async function handleDividend(
     transaction_date,
     account: account_id,
     amount,
-    "dividend-asset": asset_id,
+    "dividend-asset": dividend_asset_id,
     description,
+    asset: cash_asset_id,
   } = data
 
   const { data: assetData, error: assetError } = await supabase
     .from("assets")
     .select("ticker")
-    .eq("id", asset_id)
+    .eq("id", dividend_asset_id)
     .single()
 
   if (assetError) {
@@ -414,11 +431,12 @@ async function handleDividend(
 
   const { error } = await supabase.rpc("handle_dividend_transaction", {
     p_user_id: userId,
+    p_transaction_date: transaction_date,
     p_account_id: account_id,
     p_amount: amount,
-    p_transaction_date: transaction_date,
-    p_asset_id: asset_id,
     p_description: finalDescription,
+    p_dividend_asset_id: dividend_asset_id,
+    p_cash_asset_id: cash_asset_id,
   })
 
   if (error) {
@@ -441,6 +459,7 @@ async function handleBorrow(
     "interest-rate": interest_rate,
     "deposit-account": deposit_account_id,
     description,
+    asset: cash_asset_id,
   } = data
 
   const finalDescription =
@@ -453,6 +472,7 @@ async function handleBorrow(
     p_interest_rate: interest_rate,
     p_transaction_date: transaction_date,
     p_deposit_account_id: deposit_account_id,
+    p_cash_asset_id: cash_asset_id,
     p_description: finalDescription,
   })
 
@@ -476,6 +496,7 @@ async function handleDebtPayment(
     "principal-payment": principal_payment,
     "interest-payment": interest_payment,
     description,
+    asset: cash_asset_id,
   } = data
 
   const { data: debtData, error: debtError } = await supabase
@@ -505,11 +526,13 @@ async function handleDebtPayment(
     `Debt payment to ${debtData.lender_name} from ${accountData.name}`
 
   const { error } = await supabase.rpc("handle_debt_payment_transaction", {
+    p_user_id: userId,
     p_debt_id: debt_id,
     p_principal_payment: principal_payment,
     p_interest_payment: interest_payment,
     p_transaction_date: transaction_date,
     p_from_account_id: from_account_id,
+    p_cash_asset_id: cash_asset_id,
     p_description: finalDescription,
   })
 
@@ -546,6 +569,7 @@ async function handleSplit(
   const finalDescription = `Stock split for ${assetData.ticker}`
 
   const { error } = await supabase.rpc("handle_split_transaction", {
+    p_user_id: userId,
     p_asset_id: asset_id,
     p_quantity: quantity,
     p_transaction_date: transaction_date,
@@ -565,8 +589,16 @@ async function handleSell(
   userId: string,
   data: z.infer<typeof sellSchema>
 ) {
-  const { transaction_date, account, asset, quantity, price, fees, description } =
-    data
+  const {
+    transaction_date,
+    account,
+    asset,
+    cash_asset_id,
+    quantity,
+    price,
+    fees,
+    description,
+  } = data
 
   const total_proceeds = quantity * price
 
@@ -592,6 +624,7 @@ async function handleSell(
     p_fees: fees,
     p_transaction_date: transaction_date,
     p_cash_account_id: account,
+    p_cash_asset_id: cash_asset_id,
     p_description: finalDescription,
   })
 
