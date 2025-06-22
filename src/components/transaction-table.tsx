@@ -332,7 +332,7 @@ export function TransactionTable() {
           </TransactionForm>
         </div>
       </div>
-      <div className="overflow-hidden rounded-lg border mx-2 lg:mx-4">
+      <div className="overflow-hidden rounded-lg border mx-4">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (

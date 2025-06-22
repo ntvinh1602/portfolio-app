@@ -1,12 +1,10 @@
 import { AppSidebar } from "@/components/nav-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-
+import { AssetTable } from "@/components/asset-table"
 
 export default function Page() {
   return (
@@ -21,14 +19,9 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-            </div>
+        <div className="grid grid-cols-2 p-4">
+          <div className="col-span-2 lg:col-span-1">
+            <AssetTable />
           </div>
         </div>
       </SidebarInset>
