@@ -290,6 +290,17 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid col-span-2 gap-3">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                name="description"
+                type="text"
+                placeholder="Enter a description..."
+                value={formState.description || ""}
+                onChange={handleInputChange}
+              />
+            </div>
 
             {/* --- Dynamic Fields Start --- */}
             {[
