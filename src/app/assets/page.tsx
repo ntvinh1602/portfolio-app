@@ -18,7 +18,7 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader title="Assets"/>
         <div className="grid grid-cols-2 p-4">
           <div className="col-span-2 lg:col-span-1">
             <AssetTable />

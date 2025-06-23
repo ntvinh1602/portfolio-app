@@ -4,9 +4,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { parse as parseCsv } from "papaparse";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 const REQUIRED_HEADERS = [
   "date",
@@ -25,6 +45,65 @@ const REQUIRED_HEADERS = [
   "interest_payment",
   "description",
 ];
+
+const column = [
+  {
+    column: "date",
+    description: "Transaction date in YYYY-MM-DD format. Required.",
+  },
+  {
+    column: "type",
+    description: "Transaction type. Required. Possible values: 'buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'dividend', 'debt_payment', 'split', 'borrow",
+  },
+  {
+    column: "asset_ticker",
+    description: "Ticker symbol of the asset involved in the transaction. Required for buy, sell, dividend, split transactions.",
+  },
+  {
+    column: "cash_asset_ticker",
+    description: "Ticker symbol of the cash asset involved in the transaction. Required.",
+  },
+  {
+    column: "quantity",
+    description: "Quantity of the asset involved in the transaction. Required for buy, sell, split transactions.",
+  },
+  {
+    column: "price",
+    description: "Matched price. Required for buy, sell transactions.",
+  },
+  {
+    column: "amount",
+    description: "Amount of cash involved in the transaction. Required for all transactions except split, debt_payment.",
+  },
+  {
+    column: "fees",
+    description: "Fees associated with the transaction. Required for buy, sell.",
+  },
+  {
+    column: "taxes",
+    description: "Taxes associated with the transaction. Required for sell.",
+  },
+  {
+    column: "counterparty",
+    description: "Lender name. Required for borrow transactions.",
+  },
+  {
+    column: "interest_rate",
+    description: "Interest rate for the debt. Required for borrow transactions.",
+  },
+  {
+    column: "principal_payment",
+    description: "Principal amount paid towards the debt. Required for debt_payment transactions.",
+  },
+  {
+    column: "interest_payment",
+    description: "Interest amount paid towards the debt. Required for debt_payment transactions.",
+  },
+  {
+    column: "description",
+    description: "Description of the transaction. Optional but recommended for clarity.",
+  },
+]
 
 export function TransactionImportForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -112,28 +191,15 @@ export function TransactionImportForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium">Instructions</h3>
-        <p className="text-sm text-muted-foreground">
-          Please prepare your CSV file with the following columns. The order
-          must be exact. Not all columns are required for every transaction
-          type, but the header must be present.
-        </p>
-        <code className="block whitespace-pre-wrap rounded-md bg-muted p-4 text-sm">
-          {REQUIRED_HEADERS.join(",")}
-        </code>
-        <a
-          href="/templates/transactions_template.csv"
-          className="text-sm font-medium text-primary hover:underline"
-          download
-        >
-          Download Template CSV
-        </a>
-      </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid w-full max-w-sm items-center gap-1.5">
-          <Label htmlFor="csv-file">CSV File</Label>
+    <Card>
+      <CardHeader>
+        <CardTitle>Import Transaction Data</CardTitle>
+        <CardDescription>
+          Upload your transaction data in .csv format.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="csv-file"
             type="file"
@@ -141,11 +207,62 @@ export function TransactionImportForm() {
             onChange={handleFileChange}
             disabled={isUploading}
           />
-        </div>
-        <Button type="submit" disabled={!file || isUploading}>
-          {isUploading ? "Uploading..." : "Upload and Import"}
-        </Button>
-      </form>
-    </div>
+          <Button type="submit" disabled={!file || isUploading}>
+            {isUploading ? "Uploading..." : "Upload and Import"}
+          </Button>
+        </form>
+      </CardContent>
+      <CardContent>
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger>What is this for?</AccordionTrigger>
+            <AccordionContent>
+              You can import transactions in bulk instead of adding one by one manually.
+              <br /><br />
+              This is useful for initializing database for new users with historical data or correcting any missing data after a long inactivity period.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-2">
+            <AccordionTrigger>Is there any format requirement for the data?</AccordionTrigger>
+            <AccordionContent>
+              <div className="flex flex-col gap-2">
+              Yes, please prepare your .csv file with the following columns. The order must be exact. Not all columns are required for every transaction type, but the header must be present.
+              <code className="block whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm">
+                {REQUIRED_HEADERS.join("\n")}
+              </code>
+              <a
+                href="/templates/transactions_template.csv"
+                className="text-sm font-medium text-primary hover:underline"
+                download
+              >
+                Download Template .csv
+              </a>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3">
+            <AccordionTrigger>What do those column headers mean?</AccordionTrigger>
+            <AccordionContent>
+              <Table>
+                <TableHeader className="bg-accent">
+                  <TableRow>
+                    <TableHead className="px-2">Column</TableHead>
+                    <TableHead className="px-2">Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {column.map((column) => (
+                    <TableRow key={column.column}>
+                      <TableCell className="px-2">{column.column}</TableCell>
+                      <TableCell className="px-2">{column.description}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }

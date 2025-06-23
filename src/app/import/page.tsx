@@ -1,12 +1,10 @@
+import { TransactionImportForm } from "@/components/transaction-import-form";
 import { AppSidebar } from "@/components/nav-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-
 
 export default function Page() {
   return (
@@ -20,18 +18,11 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Performance"/>
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-            </div>
-          </div>
+        <SiteHeader title="Import Data" />
+        <div className="flex flex-col gap-4 p-4">
+          <TransactionImportForm />
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

@@ -2,14 +2,15 @@
 
 import * as React from "react"
 import {
-  IconTransform,
-  IconDashboard,
-  IconDeviceAnalytics,
-  IconReportMoney,
-  IconPigMoney,
-  IconSettings,
-  IconHelp,
-} from "@tabler/icons-react"
+  Import,
+  Gauge,
+  Wrench,
+  HandCoins,
+  Wallet,
+  MonitorCheck,
+  FileQuestion,
+  PiggyBank
+} from "lucide-react"
 import { NavItems } from "@/components/nav-items"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -27,34 +28,39 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: IconDeviceAnalytics,
+      icon: MonitorCheck,
     },
     {
       title: "Assets",
       url: "/assets",
-      icon: IconReportMoney,
+      icon: Wallet,
     },
     {
       title: "Transactions",
       url: "/transactions",
-      icon: IconTransform,
+      icon: HandCoins,
     },
     {
       title: "Performance",
       url: "/performance",
-      icon: IconDashboard,
+      icon: Gauge,
     },
   ],
   navSecondary: [
     {
       title: "Settings",
       url: "/settings",
-      icon: IconSettings,
+      icon: Wrench,
+    },
+    {
+      title: "Import Data",
+      url: "/import",
+      icon: Import,
     },
     {
       title: "Help",
       url: "/help",
-      icon: IconHelp
+      icon: FileQuestion
     }
   ]
 }
@@ -70,8 +76,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
-                  <IconPigMoney />
+                <div className="flex items-center justify-center">
+                  <PiggyBank className="!size-8" strokeWidth={1.5} />
                 </div> 
                 <span className="text-lg font-semibold">
                   Portfolio Tracker
