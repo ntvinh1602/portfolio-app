@@ -19,8 +19,28 @@ import { Separator } from "@/components/ui/separator"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 
+interface SummaryItem {
+  type: string;
+  totalAmount: number;
+}
+
+interface AssetSummaryData {
+  displayCurrency: string;
+  assets: SummaryItem[];
+  totalAssets: number;
+  liabilities: SummaryItem[];
+  totalLiabilities: number;
+  equity: SummaryItem[];
+  totalEquity: number;
+}
+
+interface DisplayItem {
+  type: string;
+  totalAmount: string;
+}
+
 export function AssetTable() {
-  const [assets, setAssets] = useState([
+  const [assets, setAssets] = useState<DisplayItem[]>([
     {
       type: "Cash",
       totalAmount: "0",
@@ -39,7 +59,7 @@ export function AssetTable() {
     },
   ]);
   const [totalAssets, setTotalAssets] = useState("$0.00");
-  const [liabilities, setLiabilities] = useState([
+  const [liabilities, setLiabilities] = useState<DisplayItem[]>([
     {
       type: "Loans Payable",
       totalAmount: "0",
@@ -50,7 +70,7 @@ export function AssetTable() {
     },
   ]);
   const [totalLiabilities, setTotalLiabilities] = useState("$0.00");
-  const [equity, setEquity] = useState([
+  const [equity, setEquity] = useState<DisplayItem[]>([
     {
       type: "Paid-in Capital",
       totalAmount: "0",
@@ -79,25 +99,25 @@ export function AssetTable() {
         totalLiabilities,
         equity,
         totalEquity
-      } = data;
+      } = data as AssetSummaryData;
 
       const formatCurrency = (amount: number) => {
         return `${new Intl.NumberFormat().format(amount)} ${displayCurrency}`;
       };
 
-      setAssets(assets.map((asset: any) => ({
+      setAssets(assets.map((asset) => ({
         ...asset,
         totalAmount: formatCurrency(asset.totalAmount)
       })));
       setTotalAssets(formatCurrency(totalAssets));
 
-      setLiabilities(liabilities.map((liability: any) => ({
+      setLiabilities(liabilities.map((liability) => ({
         ...liability,
         totalAmount: formatCurrency(liability.totalAmount)
       })));
       setTotalLiabilities(formatCurrency(totalLiabilities));
 
-      setEquity(equity.map((item: any) => ({
+      setEquity(equity.map((item) => ({
         ...item,
         totalAmount: formatCurrency(item.totalAmount)
       })));
