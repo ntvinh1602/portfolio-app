@@ -1,0 +1,31 @@
+date,type,account,asset_ticker,cash_asset_ticker,quantity,price,amount,fees,taxes,counterparty,interest_rate,principal_payment,interest_payment,description
+2020-03-09,borrow,TCBS,VND,VND,,,50000000,,,Cậu Khánh 1,10.00,,,Loan from Cậu Khánh 1 at 10% p.a
+2020-03-11,borrow,TCBS,VND,VND,,,50000000,,,Cậu Khánh 2,10.00,,,Loan from Cậu Khánh 2 at 10% p.a
+2020-03-12,borrow,TCBS,VND,VND,,,50000000,,,Cậu Khánh 3,10.00,,,Loan from Cậu Khánh 3 at 10% p.a
+2020-03-16,borrow,TCBS,VND,VND,,,40000000,,,Cậu Khánh 4,10.00,,,Loan from Cậu Khánh 4 at 10% p.a
+2020-12-23,borrow,TCBS,VND,VND,,,100000000,,,Mom,6.00,,,Loan from Mom at 6% p.a
+2021-02-17,borrow,TCBS,VND,VND,,,100000000,,,Hạnh,9.00,,,Loan from Hạnh at 9% p.a
+2021-11-09,deposit,TCBS,VND,VND,,,193322200,,,,,,,Initial equity deposit
+2021-11-10,buy,TCBS,PVI,VND,100,50900,,5090,0,,,,,Buy 100 PVI at 50.90
+2021-11-10,buy,TCBS,FPT,VND,300,96000,,28800,0,,,,,Buy 300 FPT at 96.00
+2021-11-11,buy,TCBS,PVI,VND,100,50300,,5030,0,,,,,Buy 100 PVI at 50.30
+2021-11-11,buy,TCBS,PVI,VND,100,50100,,5010,0,,,,,Buy 100 PVI at 50.10
+2021-11-11,buy,TCBS,FPT,VND,400,96100,,38440,0,,,,,Buy 400 FPT at 96.10
+2021-11-12,buy,TCBS,PVI,VND,100,49500,,4950,0,,,,,Buy 100 PVI at 49.50
+2021-11-12,buy,TCBS,TCB,VND,100,51600,,5160,0,,,,,Buy 100 TCB at 51.60
+2021-11-12,buy,TCBS,TCB,VND,500,51600,,25800,0,,,,,Buy 500 TCB at 51.60
+2021-11-12,buy,TCBS,TCB,VND,500,52000,,26000,0,,,,,Buy 500 TCB at 52.00
+2021-11-12,buy,TCBS,TCB,VND,1000,52400,,52400,0,,,,,Buy 1000 TCB at 52.40
+2021-11-15,buy,TCBS,FPT,VND,700,97800,,68460,0,,,,,Buy 700 FPT at 97.80
+2021-11-15,buy,TCBS,TCB,VND,500,52400,,26200,0,,,,,Buy 500 TCB at 52.40
+2021-11-15,buy,TCBS,TCB,VND,700,52200,,36540,0,,,,,Buy 700 TCB at 52.20
+2021-11-16,sell,TCBS,PVI,VND,300,48900,,14670,14670,,,,,Sell 300 PVI at 48.90
+2021-11-17,income,TCBS,VND,VND,,,372000,,,,,,,Convert reward points to cash
+2021-11-17,sell,TCBS,PVI,VND,100,50800,,5080,5080,,,,,Sell 100 PVI at 50.80
+2021-11-17,buy,TCBS,FPT,VND,1100,98300,,108130,0,,,,,Buy 1100 FPT at 98.30
+2021-11-19,withdraw,TCBS,VND,VND,,,1000000,,,,,,,Withdrawal from TCBS
+2021-11-22,buy,TCBS,VRE,VND,500,30200,,15100,0,,,,,Buy 500 VRE at 30.20
+2021-11-22,buy,TCBS,VRE,VND,500,30100,,15050,0,,,,,Buy 500 VRE at 30.10
+2021-11-24,buy,TCBS,VRE,VND,400,30100,,3250,0,,,,,Buy 400 VRE at 30.10
+2021-11-25,buy,TCBS,VRE,VND,500,31100,,15550,0,,,,,Buy 500 VRE at 31.10
+2021-11-25,sell,TCBS,FPT,VND,400,100000,,40000,40000,,,,,Sell 400 FPT at 100.00

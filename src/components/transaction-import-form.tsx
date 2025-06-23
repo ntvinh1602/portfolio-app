@@ -7,14 +7,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { parse as parseCsv } from "papaparse";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Card,
   CardContent,
   CardDescription,
@@ -46,65 +38,6 @@ const REQUIRED_HEADERS = [
   "description",
 ];
 
-const column = [
-  {
-    column: "date",
-    description: "Transaction date in YYYY-MM-DD format. Required.",
-  },
-  {
-    column: "type",
-    description: "Transaction type. Required. Possible values: 'buy', 'sell', 'deposit', 'withdraw', 'expense', 'income', 'dividend', 'debt_payment', 'split', 'borrow",
-  },
-  {
-    column: "asset_ticker",
-    description: "Ticker symbol of the asset involved in the transaction. Required for buy, sell, dividend, split transactions.",
-  },
-  {
-    column: "cash_asset_ticker",
-    description: "Ticker symbol of the cash asset involved in the transaction. Required.",
-  },
-  {
-    column: "quantity",
-    description: "Quantity of the asset involved in the transaction. Required for buy, sell, split transactions.",
-  },
-  {
-    column: "price",
-    description: "Matched price. Required for buy, sell transactions.",
-  },
-  {
-    column: "amount",
-    description: "Amount of cash involved in the transaction. Required for all transactions except split, debt_payment.",
-  },
-  {
-    column: "fees",
-    description: "Fees associated with the transaction. Required for buy, sell.",
-  },
-  {
-    column: "taxes",
-    description: "Taxes associated with the transaction. Required for sell.",
-  },
-  {
-    column: "counterparty",
-    description: "Lender name. Required for borrow transactions.",
-  },
-  {
-    column: "interest_rate",
-    description: "Interest rate for the debt. Required for borrow transactions.",
-  },
-  {
-    column: "principal_payment",
-    description: "Principal amount paid towards the debt. Required for debt_payment transactions.",
-  },
-  {
-    column: "interest_payment",
-    description: "Interest amount paid towards the debt. Required for debt_payment transactions.",
-  },
-  {
-    column: "description",
-    description: "Description of the transaction. Optional but recommended for clarity.",
-  },
-]
-
 export function TransactionImportForm() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -133,10 +66,10 @@ export function TransactionImportForm() {
         return;
       }
 
-      parseCsv(csvText, {
+      parseCsv<Record<string, string>>(csvText, {
         header: true,
         skipEmptyLines: true,
-        complete: (results: any) => {
+        complete: (results) => {
           (async () => {
             const headers = results.meta.fields;
             const missingHeaders = REQUIRED_HEADERS.filter(
@@ -176,7 +109,7 @@ export function TransactionImportForm() {
             }
           })();
         },
-        error: (error: any) => {
+        error: (error: Error) => {
           toast.error("Failed to parse CSV file.");
           console.error("CSV parsing error:", error);
           setIsUploading(false);
@@ -238,27 +171,6 @@ export function TransactionImportForm() {
                 Download Template .csv
               </a>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="item-3">
-            <AccordionTrigger>What do those column headers mean?</AccordionTrigger>
-            <AccordionContent>
-              <Table>
-                <TableHeader className="bg-accent">
-                  <TableRow>
-                    <TableHead className="px-2">Column</TableHead>
-                    <TableHead className="px-2">Description</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {column.map((column) => (
-                    <TableRow key={column.column}>
-                      <TableCell className="px-2">{column.column}</TableCell>
-                      <TableCell className="px-2">{column.description}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

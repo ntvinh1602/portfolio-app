@@ -118,6 +118,16 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
       switch (transactionType) {
         case "deposit":
         case "withdraw":
+          body = {
+            ...baseBody,
+            account: formState.account,
+            amount: parseFloat(formState.amount || "0"),
+            quantity: formState.quantity
+              ? parseFloat(formState.quantity)
+              : undefined,
+            asset: formState.asset,
+          }
+          break
         case "income":
         case "expense":
           body = {
@@ -132,6 +142,9 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
             ...baseBody,
             account: formState.account,
             amount: parseFloat(formState.amount || "0"),
+            quantity: formState.quantity
+              ? parseFloat(formState.quantity)
+              : undefined,
             "dividend-asset": formState["dividend-asset"],
             asset: formState.asset, // This is the cash asset
           }
@@ -369,6 +382,21 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
                     onChange={handleInputChange}
                   />
                 </div>
+                {["deposit", "withdraw", "dividend"].includes(
+                  transactionType,
+                ) && (
+                  <div className="grid gap-3">
+                    <Label htmlFor="quantity">Quantity (optional)</Label>
+                    <Input
+                      id="quantity"
+                      name="quantity"
+                      type="number"
+                      placeholder="0.00"
+                      value={formState.quantity || ""}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                )}
                 {transactionType === "dividend" && (
                   <div className="grid gap-3 col-span-2">
                     <Label htmlFor="dividend-asset">Asset</Label>

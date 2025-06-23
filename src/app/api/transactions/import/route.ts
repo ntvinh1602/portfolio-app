@@ -28,10 +28,16 @@ export async function POST(req: NextRequest) {
   const headers = lines[0].split(',').map(header => header.trim());
   const transactions = lines.slice(1).map(line => {
     const values = line.split(',').map(value => value.trim());
+    const numericHeaders = ["quantity", "price", "amount", "fees", "taxes", "interest_rate", "principal_payment", "interest_payment"];
     return headers.reduce((obj, header, index) => {
-      obj[header] = values[index];
+      const value = values[index];
+      if (numericHeaders.includes(header) && value === '') {
+        obj[header] = null;
+      } else {
+        obj[header] = value;
+      }
       return obj;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, string | null>);
   });
 
   const { error } = await supabase.rpc('handle_bulk_transaction_import', {
