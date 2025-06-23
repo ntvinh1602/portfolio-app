@@ -63,108 +63,47 @@ export function AssetTable() {
   const [totalEquity, setTotalEquity] = useState("$0.00");
 
   const fetchAssets = useCallback(async () => {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('display_currency')
-      .single()
-
-    if (profileError) {
-      console.error('Error fetching profile:', profileError)
-      return
-    }
-
-    const displayCurrency = profileData?.display_currency || 'USD';
-
-    const { data, error } = await supabase
-      .from('transaction_legs')
-      .select('amount, assets!inner(asset_class, ticker)')
+    const { data, error } = await supabase.rpc('get_asset_summary');
 
     if (error) {
-      console.error('Error fetching assets:', error)
-      return
+      console.error('Error fetching asset summary:', error);
+      return;
     }
 
-    const assetTotalsByClass = data.reduce((acc, leg) => {
-      const asset = Array.isArray(leg.assets) ? leg.assets[0] : leg.assets;
-      if (asset) {
-        const assetClass = asset.asset_class;
-        if (!acc[assetClass]) {
-          acc[assetClass] = 0;
-        }
-        acc[assetClass] += leg.amount;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    if (data) {
+      const {
+        displayCurrency,
+        assets,
+        totalAssets,
+        liabilities,
+        totalLiabilities,
+        equity,
+        totalEquity
+      } = data;
 
-    const assetTotalsByTicker = data.reduce((acc, leg) => {
-      const asset = Array.isArray(leg.assets) ? leg.assets[0] : leg.assets;
-      if (asset) {
-        const ticker = asset.ticker;
-        if (!acc[ticker]) {
-          acc[ticker] = 0;
-        }
-        acc[ticker] += leg.amount;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+      const formatCurrency = (amount: number) => {
+        return `${new Intl.NumberFormat().format(amount)} ${displayCurrency}`;
+      };
 
-    const typeToClassMap: { [key: string]: string } = {
-      "Cash": "cash",
-      "Stocks": "stock",
-      "EPF": "epf",
-      "Crypto": "crypto",
-    };
-
-    const typeToTickerMap: { [key: string]: string } = {
-      "Loans Payable": "LOANS_PAYABLE",
-      "Paid-in Capital": "CAPITAL",
-      "Retained Earnings": "EARNINGS"
-    };
-
-    let assetTotal = 0;
-    const newAssets = assets.map(asset => {
-      const assetClass = typeToClassMap[asset.type];
-      const totalAmount = assetTotalsByClass[assetClass] || 0;
-      assetTotal += totalAmount;
-      return {
+      setAssets(assets.map((asset: any) => ({
         ...asset,
-        totalAmount: `${new Intl.NumberFormat().format(totalAmount)} ${displayCurrency}`
-      }
-    });
-    setAssets(newAssets);
-    setTotalAssets(`${new Intl.NumberFormat().format(assetTotal)} ${displayCurrency}`);
+        totalAmount: formatCurrency(asset.totalAmount)
+      })));
+      setTotalAssets(formatCurrency(totalAssets));
 
-    const cashTotal = assetTotalsByClass['cash'] || 0;
-    const loansPayable = (assetTotalsByTicker['LOANS_PAYABLE'] || 0) * -1;
-    const marginsPayable = cashTotal < 0 ? Math.abs(cashTotal) : 0;
-    const liabilityTotal = loansPayable + marginsPayable;
+      setLiabilities(liabilities.map((liability: any) => ({
+        ...liability,
+        totalAmount: formatCurrency(liability.totalAmount)
+      })));
+      setTotalLiabilities(formatCurrency(totalLiabilities));
 
-    const newLiabilities = liabilities.map(liability => {
-      if (liability.type === "Loans Payable") {
-        return { ...liability, totalAmount: `${new Intl.NumberFormat().format(loansPayable)} ${displayCurrency}` };
-      }
-      if (liability.type === "Margins Payable") {
-        return { ...liability, totalAmount: `${new Intl.NumberFormat().format(marginsPayable)} ${displayCurrency}` };
-      }
-      return liability;
-    });
-
-    setLiabilities(newLiabilities);
-    setTotalLiabilities(`${new Intl.NumberFormat().format(liabilityTotal)} ${displayCurrency}`);
-
-    let equityTotal = 0;
-    const newEquity = equity.map(item => {
-      const ticker = typeToTickerMap[item.type];
-      const totalAmount = (assetTotalsByTicker[ticker] || 0) * -1;
-      equityTotal += totalAmount;
-      return {
+      setEquity(equity.map((item: any) => ({
         ...item,
-        totalAmount: `${new Intl.NumberFormat().format(totalAmount)} ${displayCurrency}`
-      }
-    });
-    setEquity(newEquity);
-    setTotalEquity(`${new Intl.NumberFormat().format(equityTotal)} ${displayCurrency}`);
-  }, [assets, liabilities, equity]);
+        totalAmount: formatCurrency(item.totalAmount)
+      })));
+      setTotalEquity(formatCurrency(totalEquity));
+    }
+  }, []);
 
   useEffect(() => {
     fetchAssets();
