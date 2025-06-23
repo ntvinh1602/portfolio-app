@@ -16,9 +16,11 @@ import {
   IconChevronRight,
   IconDotsVertical,
   IconPlus,
+  IconUpload,
 } from "@tabler/icons-react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
+import Link from "next/link"
 import { TransactionForm } from "@/components/transaction-form"
 import DateRangePicker from "@/components/date-range-picker"
 import {
@@ -324,6 +326,12 @@ export function TransactionTable() {
         </Tabs>
         <div className="flex items-center gap-2">
           <DateRangePicker selected={date} onSelect={setDate} />
+          <Link href="/transactions/import">
+            <Button variant="outline" size="sm">
+              <IconUpload className="size-4" />
+              <span className="hidden sm:inline">Import</span>
+            </Button>
+          </Link>
           <TransactionForm>
             <Button variant="default" size="sm">
               <IconPlus className="size-4" />
