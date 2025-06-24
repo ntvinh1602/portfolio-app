@@ -18,8 +18,6 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 
-export const description = "A donut chart with an active sector"
-
 interface SummaryItem {
   type: string;
   totalAmount: number;

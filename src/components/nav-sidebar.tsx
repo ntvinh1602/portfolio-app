@@ -9,7 +9,8 @@ import {
   Wallet,
   MonitorCheck,
   FileQuestion,
-  PiggyBank
+  PiggyBank,
+  CircleDollarSign
 } from "lucide-react"
 import { NavItems } from "@/components/nav-items"
 import { NavUser } from "@/components/nav-user"
@@ -34,6 +35,11 @@ const data = {
       title: "Assets",
       url: "/assets",
       icon: Wallet,
+    },
+    {
+      title: "Portfolio",
+      url: "/portfolio",
+      icon: CircleDollarSign,
     },
     {
       title: "Transactions",
