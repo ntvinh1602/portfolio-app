@@ -159,17 +159,10 @@ export function TransactionImportForm() {
             <AccordionTrigger>Is there any format requirement for the data?</AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-col gap-2">
-              Yes, please prepare your .csv file with the following columns. The order must be exact. Not all columns are required for every transaction type, but the header must be present.
-              <code className="block whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm">
-                {REQUIRED_HEADERS.join("\n")}
-              </code>
-              <a
-                href="/templates/transactions_template.csv"
-                className="text-sm font-medium text-primary hover:underline"
-                download
-              >
-                Download Template .csv
-              </a>
+              Yes, please prepare your .csv file with the following column headers. The order must be exact. Not all columns are required for every transaction type, but the header must be present.
+                <code className="block whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm">
+                  {REQUIRED_HEADERS.join("\n")}
+                </code>
               </div>
             </AccordionContent>
           </AccordionItem>
