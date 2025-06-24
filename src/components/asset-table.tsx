@@ -16,123 +16,43 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Separator } from "@/components/ui/separator"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState, useCallback } from "react"
-
-interface SummaryItem {
-  type: string;
-  totalAmount: number;
-}
-
-interface AssetSummaryData {
-  displayCurrency: string;
-  assets: SummaryItem[];
-  totalAssets: number;
-  liabilities: SummaryItem[];
-  totalLiabilities: number;
-  equity: SummaryItem[];
-  totalEquity: number;
-}
+import { AssetSummaryData } from "@/app/assets/page";
 
 interface DisplayItem {
   type: string;
   totalAmount: string;
 }
 
-export function AssetTable() {
-  const [assets, setAssets] = useState<DisplayItem[]>([
-    {
-      type: "Cash",
-      totalAmount: "0",
-    },
-    {
-      type: "Stocks",
-      totalAmount: "0",
-    },
-    {
-      type: "EPF",
-      totalAmount: "0",
-    },
-    {
-      type: "Crypto",
-      totalAmount: "0",
-    },
-  ]);
-  const [totalAssets, setTotalAssets] = useState("$0.00");
-  const [liabilities, setLiabilities] = useState<DisplayItem[]>([
-    {
-      type: "Loans Payable",
-      totalAmount: "0",
-    },
-    {
-      type: "Margins Payable",
-      totalAmount: "0",
-    },
-  ]);
-  const [totalLiabilities, setTotalLiabilities] = useState("$0.00");
-  const [equity, setEquity] = useState<DisplayItem[]>([
-    {
-      type: "Paid-in Capital",
-      totalAmount: "0",
-    },
-    {
-      type: "Retained Earnings",
-      totalAmount: "0",
-    },
-  ]);
-  const [totalEquity, setTotalEquity] = useState("$0.00");
+export function AssetTable({ data }: { data: AssetSummaryData | null }) {
+  const formatCurrency = (amount: number, currency: string) => {
+    return `${new Intl.NumberFormat().format(amount)} ${currency}`;
+  };
 
-  const fetchAssets = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_asset_summary');
+  const assets: DisplayItem[] = data?.assets.map(asset => ({
+    ...asset,
+    totalAmount: formatCurrency(asset.totalAmount, data.displayCurrency)
+  })) || [];
 
-    if (error) {
-      console.error('Error fetching asset summary:', error);
-      return;
-    }
+  const totalAssets = data ? formatCurrency(data.totalAssets, data.displayCurrency) : "$0.00";
 
-    if (data) {
-      const {
-        displayCurrency,
-        assets,
-        totalAssets,
-        liabilities,
-        totalLiabilities,
-        equity,
-        totalEquity
-      } = data as AssetSummaryData;
+  const liabilities: DisplayItem[] = data?.liabilities.map(liability => ({
+    ...liability,
+    totalAmount: formatCurrency(liability.totalAmount, data.displayCurrency)
+  })) || [];
 
-      const formatCurrency = (amount: number) => {
-        return `${new Intl.NumberFormat().format(amount)} ${displayCurrency}`;
-      };
+  const totalLiabilities = data ? formatCurrency(data.totalLiabilities, data.displayCurrency) : "$0.00";
 
-      setAssets(assets.map((asset) => ({
-        ...asset,
-        totalAmount: formatCurrency(asset.totalAmount)
-      })));
-      setTotalAssets(formatCurrency(totalAssets));
+  const equity: DisplayItem[] = data?.equity.map(item => ({
+    ...item,
+    totalAmount: formatCurrency(item.totalAmount, data.displayCurrency)
+  })) || [];
 
-      setLiabilities(liabilities.map((liability) => ({
-        ...liability,
-        totalAmount: formatCurrency(liability.totalAmount)
-      })));
-      setTotalLiabilities(formatCurrency(totalLiabilities));
-
-      setEquity(equity.map((item) => ({
-        ...item,
-        totalAmount: formatCurrency(item.totalAmount)
-      })));
-      setTotalEquity(formatCurrency(totalEquity));
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets])
+  const totalEquity = data ? formatCurrency(data.totalEquity, data.displayCurrency) : "$0.00";
 
   return (
-    <Card className="flex flex-col shadow-none">
+    <Card className="flex flex-col">
       <h1 className="text-xl font-bold px-6">
-        Assets Summary
+        Balance Sheet
       </h1>
       <div className="flex flex-col gap-4 w-full">
         <CardHeader>
