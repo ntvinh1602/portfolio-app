@@ -4,7 +4,13 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { TableDemo } from "@/components/portfolio-table"
+import { DataTableDemo } from "@/components/portfolio-table"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default function Page() {
   return (
@@ -18,12 +24,24 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Assets"/>
-        <div className="grid grid-cols-2 p-4 gap-4">
+        <SiteHeader title="Portfolio"/>
+        <div className="grid grid-cols-2 xl:grid-cols-3 p-2 xl:p-4 gap-2 xl:gap-4">
           <div className="col-span-2 lg:col-span-1">
           </div>
-          <div className="col-span-2 lg:col-span-1">
-            <TableDemo />
+          <div className="col-span-2">
+    <Card className="flex flex-col">
+      <h1 className="text-lg font-semibold px-6">
+        Portfolio
+      </h1>
+      <div className="flex flex-col gap-4 w-full">
+        <CardHeader>
+          <CardTitle>Stocks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataTableDemo />
+        </CardContent>
+      </div>
+      </Card>
           </div>
         </div>
       </SidebarInset>

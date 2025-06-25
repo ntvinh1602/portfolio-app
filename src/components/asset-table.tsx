@@ -51,7 +51,7 @@ export function AssetTable({ data }: { data: AssetSummaryData | null }) {
 
   return (
     <Card className="flex flex-col">
-      <h1 className="text-xl font-bold px-6">
+      <h1 className="text-lg font-semibold px-6">
         Balance Sheet
       </h1>
       <div className="flex flex-col gap-4 w-full">

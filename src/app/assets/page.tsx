@@ -7,9 +7,15 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { AssetTable } from "@/components/asset-table"
-import { ChartPieDonutActive } from "@/components/allocation-piechart"
+import { Piechart } from "@/components/piechart"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 interface SummaryItem {
   type: string;
@@ -58,11 +64,20 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader title="Assets"/>
-        <div className="grid grid-cols-2 p-4 gap-4">
+        <div className="grid grid-cols-2 p-2 gap-2 xl:grid-cols-3 xl:p-4 xl:gap-4">
           <div className="col-span-2 lg:col-span-1">
-            <ChartPieDonutActive data={summaryData?.assets} />
+            <Card className="flex flex-col gap-0">
+              <CardHeader className="items-center pb-0">
+                <CardTitle className="text-lg font-semibold">
+                  Allocation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                <Piechart data={summaryData?.assets} />
+              </CardContent>
+            </Card>
           </div>
-          <div className="col-span-2 lg:col-span-1">
+          <div className="col-span-2">            
             <AssetTable data={summaryData} />
           </div>
         </div>
