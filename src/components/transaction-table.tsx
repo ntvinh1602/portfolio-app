@@ -97,7 +97,7 @@ export function TransactionTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 15,
   })
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [data, setData] = React.useState<TransactionLegRow[]>([])
@@ -228,6 +228,10 @@ export function TransactionTable() {
         )
         .eq("transaction_legs.assets.asset_class", assetType)
 
+      if (assetType === "cash") {
+        query = query.not("type", "in", "(buy,sell,split)")
+      }
+
       if (date?.from) {
         query = query.gte("transaction_date", toYYYYMMDD(date.from))
       }
@@ -259,13 +263,17 @@ export function TransactionTable() {
   }, [date, assetType])
 
   const visibleColumns = React.useMemo(() => {
-    if (assetType === "cash" || assetType === "epf") {
+    if (assetType === "cash") {
       return columns.filter(
         (c) => c.id !== "assets.ticker" && c.id !== "quantity"
       )
     }
     if (assetType === "stock") {
       return columns.filter((c) => c.id !== "transaction.description")
+    }
+    if (assetType === "epf") {
+      return columns.filter(
+        (c) => c.id !== "assets.ticker")
     }
     return columns
   }, [assetType, columns])
@@ -286,7 +294,7 @@ export function TransactionTable() {
   })
 
   return (
-    <div className="@container/main flex flex-1 flex-col">
+    <div className="@container/main flex flex-1 flex-col w-full max-w-5xl mx-auto">
       <div className="flex items-center justify-between py-4 px-4">
         <Tabs
           defaultValue="stock"
@@ -407,7 +415,7 @@ export function TransactionTable() {
                 />
               </SelectTrigger>
               <SelectContent side="top">
-                {[10, 20, 40].map((pageSize) => (
+                {[15, 25, 40].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>

@@ -64,8 +64,8 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader title="Assets"/>
-        <div className="grid grid-cols-2 p-2 gap-2 xl:grid-cols-3 xl:p-4 xl:gap-4">
-          <div className="col-span-2 lg:col-span-1">
+        <div className="w-full max-w-5xl grid grid-cols-2 p-2 gap-2 xl:grid-cols-3 xl:p-4 xl:gap-4 xl:mx-auto">
+          <div className="col-span-2 xl:col-span-1">
             <Card className="flex flex-col gap-0">
               <CardHeader className="items-center pb-0">
                 <CardTitle className="text-lg font-semibold">

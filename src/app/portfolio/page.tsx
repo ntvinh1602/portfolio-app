@@ -26,7 +26,7 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader title="Portfolio"/>
-        <div className="grid grid-cols-2 xl:grid-cols-3 p-2 xl:p-4 gap-2 xl:gap-4">
+        <div className="w-full max-w-5xl grid grid-cols-2 p-2 gap-2 xl:grid-cols-3 xl:p-4 xl:gap-4 xl:mx-auto">
           <div className="col-span-2 lg:col-span-1">
           </div>
           <div className="col-span-2">
