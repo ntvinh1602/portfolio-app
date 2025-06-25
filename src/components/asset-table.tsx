@@ -111,7 +111,7 @@ export function AssetTable({ data }: { data: AssetSummaryData | null }) {
             <Table>
               <TableHeader className="bg-accent">
                 <TableRow>
-                  <TableHead className="text-left px-4">Owner&apos;s Equity</TableHead>
+                  <TableHead className="text-left px-4">Equity</TableHead>
                   <TableHead className="text-right px-4">{totalEquity}</TableHead>
                 </TableRow>
               </TableHeader>

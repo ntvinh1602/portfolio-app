@@ -31,7 +31,6 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
@@ -281,7 +280,6 @@ export function TransactionTable() {
     getRowId: (row) => row.id.toString(),
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    getFilteredRowModel: getFilteredRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -391,8 +389,6 @@ export function TransactionTable() {
       </div>
       <div className="flex items-center justify-between px-4 py-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
           <div className="hidden items-center gap-2 lg:flex">
