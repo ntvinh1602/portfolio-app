@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 export default function Page() {
   return (
@@ -29,19 +30,28 @@ export default function Page() {
           <div className="col-span-2 lg:col-span-1">
           </div>
           <div className="col-span-2">
-    <Card className="flex flex-col">
-      <h1 className="text-lg font-semibold px-6">
-        Portfolio
-      </h1>
-      <div className="flex flex-col gap-4 w-full">
-        <CardHeader>
-          <CardTitle>Stocks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTableDemo />
-        </CardContent>
-      </div>
-      </Card>
+            <Card className="flex flex-col">
+              <h1 className="text-lg font-semibold px-6">
+                Portfolio
+              </h1>
+              <div className="flex flex-col gap-4 w-full">
+                <CardHeader>
+                  <CardTitle>Stocks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTableDemo />
+                </CardContent>
+                <div className="flex items-center justify-between px-6">
+                  <Separator className="w-full" />
+                </div>
+                <CardHeader>
+                  <CardTitle>Crypto</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTableDemo />
+                </CardContent>
+              </div>
+            </Card>
           </div>
         </div>
       </SidebarInset>
