@@ -4,7 +4,6 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { DataTableDemo } from "@/components/portfolio-table"
 import {
   Card,
   CardContent,
@@ -12,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import HoldingTable from "@/components/holding-table"
 
 export default function Page() {
   return (
@@ -39,7 +39,7 @@ export default function Page() {
                   <CardTitle>Stocks</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DataTableDemo />
+                  <HoldingTable />
                 </CardContent>
                 <div className="flex items-center justify-between px-6">
                   <Separator className="w-full" />
@@ -48,7 +48,7 @@ export default function Page() {
                   <CardTitle>Crypto</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DataTableDemo />
+                  <HoldingTable />
                 </CardContent>
               </div>
             </Card>
