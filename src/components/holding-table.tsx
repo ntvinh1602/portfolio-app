@@ -95,61 +95,28 @@ const data: Holding[] = [
   },
 ]
 
-const subColumns: ColumnDef<SubItem>[] = [
-  {
-    accessorKey: "costBasis",
-    header: "Cost Basis",
-    cell: ({ getValue }) => `$${(getValue() as number).toFixed(2)}`,
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    cell: ({ getValue }) => `$${(getValue() as number).toFixed(2)}`,
-  },
-  {
-    accessorKey: "netPL",
-    header: "Net P/L",
-    cell: ({ getValue }) => `$${(getValue() as number).toFixed(2)}`,
-  },
-]
-
 const RenderSubComponent = ({ row }: { row: Row<Holding> }) => {
-  const subTable = useReactTable({
-    data: row.original.subRows ?? [],
-    columns: subColumns,
-    getCoreRowModel: getCoreRowModel(),
-  })
+  const subItems = row.original.subRows ?? []
+
+  if (!subItems.length) {
+    return null
+  }
 
   return (
-    <Table>
-      <TableHeader>
-        {subTable.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {subTable.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="p-2">
+      {subItems.map((item, index) => (
+        <div key={index} className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="font-medium text-muted-foreground">Cost Basis</div>
+          <div className="text-right">${item.costBasis.toFixed(2)}</div>
+
+          <div className="font-medium text-muted-foreground">Amount</div>
+          <div className="text-right">${item.amount.toFixed(2)}</div>
+
+          <div className="font-medium text-muted-foreground">Net P/L</div>
+          <div className="text-right">${item.netPL.toFixed(2)}</div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -208,103 +175,43 @@ export default function HoldingTable() {
   })
 
   return (
-    <Card className="flex flex-col">
-      <h1 className="text-lg font-semibold px-6">
-        Current Holdings
-      </h1>
-      <div className="flex flex-col gap-4 w-full">
-        <CardHeader>
-          <CardTitle>Stocks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-accent">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
+    <Table>
+      <TableHeader className="bg-accent">
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id}>
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <React.Fragment key={row.id}>
+            <TableRow>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
               ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <React.Fragment key={row.id}>
-                  <TableRow>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  {row.getIsExpanded() && (
-                    <TableRow>
-                      <TableCell colSpan={row.getVisibleCells().length}>
-                        <RenderSubComponent row={row} />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </div>
-      <div className="flex items-center justify-between px-6">
-        <Separator className="w-full" />
-      </div>
-      <div className="flex flex-col gap-4">
-        <CardHeader>
-          <CardTitle>Cryptocurrencies</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-accent">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <React.Fragment key={row.id}>
-                  <TableRow>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  {row.getIsExpanded() && (
-                    <TableRow>
-                      <TableCell colSpan={row.getVisibleCells().length}>
-                        <RenderSubComponent row={row} />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-     </div>
-    </Card>
+            </TableRow>
+            {row.getIsExpanded() && (
+              <TableRow>
+                <TableCell colSpan={row.getVisibleCells().length}>
+                  <RenderSubComponent row={row} />
+                </TableCell>
+              </TableRow>
+            )}
+          </React.Fragment>
+        ))}
+      </TableBody>
+    </Table>
   )
 }
