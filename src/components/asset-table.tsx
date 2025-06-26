@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { ChartPie } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -50,7 +51,7 @@ export function AssetTable({ data }: { data: AssetSummaryData | null }) {
   const totalEquity = data ? formatCurrency(data.totalEquity, data.displayCurrency) : "$0.00";
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col py-4">
       <h1 className="text-lg font-semibold px-6">
         Balance Sheet
       </h1>

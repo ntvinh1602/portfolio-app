@@ -173,13 +173,20 @@ export default function HoldingTable() {
     },
     {
       id: "expander",
-      cell: ({ row }) => (
+      cell: ({ row, table }) => (
         <div className="text-right">
           <Button
             className="size-8 p-0"
             variant="ghost"
             size="icon"
-            onClick={() => row.toggleExpanded()}
+            onClick={() => {
+              if (row.getIsExpanded()) {
+                row.toggleExpanded(false)
+              } else {
+                table.resetExpanded()
+                row.toggleExpanded(true)
+              }
+            }}
           >
             {row.getIsExpanded() ? (
               <ChevronUpIcon className="size-4" />
