@@ -74,7 +74,9 @@ type TransactionWithRelations = Transaction & {
 }
 
 export type TransactionLegRow = TransactionLeg & {
-  transaction: Transaction
+  transaction: Transaction & {
+    transaction_details: TransactionDetail | null
+  }
   accounts: Account | null
   assets: Asset | null
 }
@@ -157,9 +159,50 @@ export function TransactionTable() {
         },
         cell: ({ row }) => {
           const quantity = row.original.quantity
+          if (assetType === "stock") {
+            return (
+              <div className="text-right">
+                {new Intl.NumberFormat("en-US", {
+                  maximumFractionDigits: 0,
+                }).format(quantity)}
+              </div>
+            )
+          }
+
+          const currency = row.original.currency_code || "USD"
+          // Get currency-specific formatting options
+          const formatter = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+          })
+          const { minimumFractionDigits, maximumFractionDigits } =
+            formatter.resolvedOptions()
+
           return (
             <div className="text-right">
-              {new Intl.NumberFormat("en-US", {}).format(quantity)}
+              {new Intl.NumberFormat("en-US", {
+                minimumFractionDigits,
+                maximumFractionDigits,
+              }).format(quantity)}{" "}
+              {currency}
+            </div>
+          )
+        },
+      },
+      {
+        id: "price",
+        accessorFn: (row) => row.transaction.transaction_details?.price,
+        header: () => <div className="text-right">Price</div>,
+        cell: ({ cell }) => {
+          const price = cell.getValue() as number | null
+          if (price === null || typeof price === "undefined") {
+            return <div className="text-right">-</div>
+          }
+          return (
+            <div className="text-right">
+              {new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: 2
+              }).format(price/1000)}
             </div>
           )
         },
@@ -170,7 +213,7 @@ export function TransactionTable() {
         header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
           const amount = row.original.amount
-          const currency = row.original.currency_code || "USD"
+          const currency = "VND"
 
           // Get currency-specific formatting options
           const formatter = new Intl.NumberFormat("en-US", {
@@ -215,7 +258,7 @@ export function TransactionTable() {
         ),
       },
     ],
-    [isMobile]
+    [isMobile, assetType]
   )
 
   React.useEffect(() => {
@@ -247,14 +290,16 @@ export function TransactionTable() {
       if (error) {
         toast.error("Failed to fetch transactions: " + error.message)
       } else {
-        const legRows = (transactions || []).flatMap((transaction) => {
-          const { transaction_legs, ...restOfTransaction } = transaction
-          return transaction_legs.map((leg) => ({
-            ...leg,
-            transaction: restOfTransaction,
-          }))
-        })
-        setData(legRows as TransactionLegRow[])
+        const legRows: TransactionLegRow[] = (transactions || []).flatMap(
+          (transaction) => {
+            const { transaction_legs, ...restOfTransaction } = transaction
+            return transaction_legs.map((leg) => ({
+              ...leg,
+              transaction: restOfTransaction,
+            }))
+          }
+        )
+        setData(legRows)
       }
       setLoading(false)
     }
@@ -265,7 +310,10 @@ export function TransactionTable() {
   const visibleColumns = React.useMemo(() => {
     if (assetType === "cash") {
       return columns.filter(
-        (c) => c.id !== "assets.ticker" && c.id !== "quantity"
+        (c) =>
+          c.id !== "assets.ticker" &&
+          c.id !== "quantity" &&
+          c.id !== "price"
       )
     }
     if (assetType === "stock") {
@@ -273,9 +321,10 @@ export function TransactionTable() {
     }
     if (assetType === "epf") {
       return columns.filter(
-        (c) => c.id !== "assets.ticker")
+        (c) => c.id !== "assets.ticker" && c.id !== "price"
+      )
     }
-    return columns
+    return columns.filter((c) => c.id !== "price")
   }, [assetType, columns])
 
   const table = useReactTable({
