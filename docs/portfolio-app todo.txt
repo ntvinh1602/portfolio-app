@@ -1,0 +1,3 @@
+- Fix debt select overflow in debt payment add transaction form
+- Add thousand separator to numeric input in add transaction form
+- Fix allocation piechart including items with zero value
