@@ -11,8 +11,8 @@ import {
   ShoppingCart,
   DollarSign
 } from "lucide-react"
-import { NavItems } from "@/components/nav-items"
-import { NavUser } from "@/components/nav-user"
+import { NavItems } from "@/components/sidebar/items"
+import { NavUser } from "@/components/sidebar/user"
 import {
   Sidebar,
   SidebarContent,

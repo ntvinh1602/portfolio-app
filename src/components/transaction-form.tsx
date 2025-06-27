@@ -35,7 +35,6 @@ type TransactionType = Enums<"transaction_type">
 export function TransactionForm({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [accounts, setAccounts] = React.useState<Tables<"accounts">[]>([])
   const [assets, setAssets] = React.useState<Tables<"assets">[]>([])

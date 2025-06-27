@@ -36,26 +36,7 @@ export default function TabFilter({
       onValueChange={onValueChange}
       value={value}
     >
-      <Select
-        defaultValue={defaultValue}
-        onValueChange={onValueChange}
-        value={value}
-      >
-        <SelectTrigger
-          className="flex w-fit @lg:hidden"
-          id="view-selector"
-        >
-          <SelectValue placeholder="Select a view" />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <TabsList className="w-full **:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @lg:flex">
+      <TabsList className="w-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1">
         {options.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}

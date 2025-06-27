@@ -318,14 +318,8 @@ export function TransactionTable() {
   ]
 
   return (
-    <div className="@container flex flex-1 flex-col w-full max-w-5xl mx-auto">
-      <div className="flex items-center justify-between py-4 px-4 gap-2">
-        <TabFilter
-          options={tabOptions}
-          onValueChange={setAssetType}
-          value={assetType}
-          defaultValue="stock"
-        />
+    <div className="@container flex flex-1 flex-col w-full gap-2 p-2 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between gap-2">
           <DatePicker
             mode="range"
             selected={date}
@@ -334,11 +328,19 @@ export function TransactionTable() {
           <TransactionForm>
             <Button variant="default">
               <PlusIcon className="size-4" />
-              <span className="hidden @2xl:inline">Add Transaction</span>
+              Transaction
             </Button>
           </TransactionForm>
       </div>
-      <div className="overflow-hidden rounded-lg border mx-4">
+      <div className="flex items-center justify-between">
+        <TabFilter
+          options={tabOptions}
+          onValueChange={setAssetType}
+          value={assetType}
+          defaultValue="stock"
+        />
+      </div>
+      <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -395,7 +397,7 @@ export function TransactionTable() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between px-4 py-4">
+      <div className="flex items-center justify-between px-2">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">

@@ -1,5 +1,5 @@
 import { TransactionImportForm } from "@/components/transaction-import-form";
-import { AppSidebar } from "@/components/nav-sidebar"
+import { AppSidebar } from "@/components/sidebar/sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,

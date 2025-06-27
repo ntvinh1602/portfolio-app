@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/nav-sidebar"
+import { AppSidebar } from "@/components/sidebar/sidebar"
 import { TransactionTable } from "@/components/transaction-table"
 import { SiteHeader } from "@/components/site-header"
 import {

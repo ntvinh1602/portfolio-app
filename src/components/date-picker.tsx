@@ -57,14 +57,13 @@ export default function DatePicker(props: DatePickerProps) {
             id="dates"
             className="w-full justify-between font-normal"
           >
-            <CalendarIcon className="mr-2 size-4" />
+            <CalendarIcon className="size-4" />
             <span className="flex-1 text-left">{buttonText}</span>
-            <ChevronDownIcon className="ml-2 size-4" />
+            <ChevronDownIcon className="size-4" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
           <Calendar
-            initialFocus
             captionLayout="dropdown"
             {...props}
           />
