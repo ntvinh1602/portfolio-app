@@ -1,7 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
+import {
+  format,
+  formatISO
+} from "date-fns"
 import { type DateRange } from "react-day-picker"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -21,11 +24,6 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 import {
   ColumnDef,
   flexRender,
@@ -57,6 +55,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
+import TabFilter from "@/components/tab-filter"
 
 // Define the structure of our data, combining tables from Supabase
 type Transaction = Database["public"]["Tables"]["transactions"]["Row"]
@@ -79,20 +78,6 @@ export type TransactionLegRow = TransactionLeg & {
   }
   accounts: Account | null
   assets: Asset | null
-}
-
-
-/**
- * Converts a Date object to a YYYY-MM-DD string, ignoring timezone.
- * This is to ensure the correct date is used in the Supabase query.
- * @param date The date to convert.
- * @returns A string in YYYY-MM-DD format.
- */
-const toYYYYMMDD = (date: Date) => {
-  const year = date.getFullYear()
-  const month = (date.getMonth() + 1).toString().padStart(2, "0")
-  const day = date.getDate().toString().padStart(2, "0")
-  return `${year}-${month}-${day}`
 }
 
 export function TransactionTable() {
@@ -276,10 +261,16 @@ export function TransactionTable() {
       }
 
       if (date?.from) {
-        query = query.gte("transaction_date", toYYYYMMDD(date.from))
+        query = query.gte(
+          "transaction_date",
+          formatISO(date.from, { representation: "date" })
+        )
       }
       if (date?.to) {
-        query = query.lte("transaction_date", toYYYYMMDD(date.to))
+        query = query.gte(
+          "transaction_date",
+          formatISO(date.to, { representation: "date" })
+        )
       }
 
       const { data: transactions, error } = await query.order(
@@ -342,40 +333,22 @@ export function TransactionTable() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
+  const tabOptions = [
+    { value: "cash", label: "Cash" },
+    { value: "stock", label: "Stock" },
+    { value: "epf", label: "EPF" },
+    { value: "crypto", label: "Crypto" },
+  ]
+
   return (
     <div className="@container/main flex flex-1 flex-col w-full max-w-5xl mx-auto">
       <div className="flex items-center justify-between py-4 px-4">
-        <Tabs
-          defaultValue="stock"
-          className="w-full flex-col justify-start gap-6"
+        <TabFilter
+          options={tabOptions}
           onValueChange={setAssetType}
           value={assetType}
-        >
-          <Select
-            defaultValue="stock"
-            onValueChange={setAssetType}
-            value={assetType}
-          >
-            <SelectTrigger
-              className="flex w-fit @4xl/main:hidden"
-              id="view-selector"
-            >
-              <SelectValue placeholder="Select a view" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="stock">Stock</SelectItem>
-              <SelectItem value="epf">EPF</SelectItem>
-              <SelectItem value="crypto">Crypto</SelectItem>
-            </SelectContent>
-          </Select>
-          <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-            <TabsTrigger value="cash">Cash</TabsTrigger>
-            <TabsTrigger value="stock">Stock</TabsTrigger>
-            <TabsTrigger value="epf">EPF</TabsTrigger>
-            <TabsTrigger value="crypto">Crypto</TabsTrigger>
-          </TabsList>
-        </Tabs>
+          defaultValue="stock"
+        />
         <div className="flex items-center gap-2">
           <DatePicker
             mode="range"
