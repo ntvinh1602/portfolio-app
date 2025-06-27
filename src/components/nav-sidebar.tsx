@@ -9,7 +9,7 @@ import {
   Wallet,
   MonitorCheck,
   FileQuestion,
-  PiggyBank,
+  ChartLine,
   CircleDollarSign
 } from "lucide-react"
 import { NavItems } from "@/components/nav-items"
@@ -74,7 +74,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <div className="flex items-center justify-center">
-                  <PiggyBank className="!size-8" strokeWidth={1.5} />
+                  <ChartLine className="!size-8" strokeWidth={1.5} />
                 </div> 
                 <span className="text-lg font-semibold">
                   Portfolio Tracker

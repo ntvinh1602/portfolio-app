@@ -72,7 +72,7 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
                 y={props.y}
                 textAnchor={props.textAnchor}
                 dominantBaseline={props.dominantBaseline}
-                fill="hsla(var(--foreground))"
+                fill="var(--foreground)"
               >
                 {`${percentage}%`}
               </text>
