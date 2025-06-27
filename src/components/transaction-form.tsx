@@ -3,6 +3,7 @@
 import * as React from "react"
 import { format, formatISO } from "date-fns"
 import { cn } from "@/lib/utils"
+import DatePicker from "@/components/date-picker"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -249,36 +250,11 @@ export function TransactionForm({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-3">
               <Label htmlFor="name-1">Date</Label>
-              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? (
-                      format(date, "dd/MM/yyyy")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    captionLayout="dropdown"
-                    onSelect={selectedDate => {
-                      setDate(selectedDate)
-                      setIsPopoverOpen(false)
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePicker
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+              />
             </div>
             <div className="grid gap-3">
               <Label htmlFor="transaction-type">Type</Label>

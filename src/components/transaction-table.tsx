@@ -6,21 +6,21 @@ import { type DateRange } from "react-day-picker"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { type Database } from "@/lib/database.types"
 import { Label } from "@/components/ui/label"
+import { TransactionForm } from "@/components/transaction-form"
+import DatePicker from "@/components/date-picker"
+import { type Database } from "@/lib/database.types"
 import {
-  IconArrowsDownUp,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconChevronLeft,
-  IconChevronRight,
-  IconDotsVertical,
-  IconPlus,
-} from "@tabler/icons-react"
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronsUpDown,
+  EllipsisVertical,
+  PlusIcon
+} from "lucide-react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
-import { TransactionForm } from "@/components/transaction-form"
-import DateRangePicker from "@/components/date-range-picker"
 import {
   Tabs,
   TabsList,
@@ -120,7 +120,7 @@ export function TransactionTable() {
               }
             >
               <span className="pl-2">Date</span>
-              <IconArrowsDownUp className="h-4 w-4" />
+              <ChevronsUpDown className="h-4 w-4" />
             </Button>
           )
         },
@@ -242,7 +242,7 @@ export function TransactionTable() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="size-8 p-0">
                   <span className="sr-only">Open menu</span>
-                  <IconDotsVertical className="size-4" />
+                  <EllipsisVertical className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -358,7 +358,6 @@ export function TransactionTable() {
           >
             <SelectTrigger
               className="flex w-fit @4xl/main:hidden"
-              size="sm"
               id="view-selector"
             >
               <SelectValue placeholder="Select a view" />
@@ -378,10 +377,14 @@ export function TransactionTable() {
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-2">
-          <DateRangePicker selected={date} onSelect={setDate} />
+          <DatePicker
+            mode="range"
+            selected={date}
+            onSelect={setDate}
+          />
           <TransactionForm>
-            <Button variant="default" size="sm">
-              <IconPlus className="size-4" />
+            <Button variant="default">
+              <PlusIcon className="size-4" />
               <span className="hidden sm:inline">Add Transaction</span>
             </Button>
           </TransactionForm>
@@ -458,7 +461,7 @@ export function TransactionTable() {
                 table.setPageSize(Number(value))
               }}
             >
-              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+              <SelectTrigger className="w-20" id="rows-per-page">
                 <SelectValue
                   placeholder={table.getState().pagination.pageSize}
                 />
@@ -479,42 +482,37 @@ export function TransactionTable() {
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
+              className="hidden p-0 lg:flex"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
               <span className="sr-only">Go to first page</span>
-              <IconChevronsLeft />
+              <ChevronsLeft />
             </Button>
             <Button
               variant="outline"
-              className="size-8"
-              size="icon"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               <span className="sr-only">Go to previous page</span>
-              <IconChevronLeft />
+              <ChevronLeft />
             </Button>
             <Button
               variant="outline"
-              className="size-8"
-              size="icon"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
               <span className="sr-only">Go to next page</span>
-              <IconChevronRight />
+              <ChevronRight />
             </Button>
             <Button
               variant="outline"
-              className="hidden size-8 lg:flex"
-              size="icon"
+              className="hidden lg:flex"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
               <span className="sr-only">Go to last page</span>
-              <IconChevronsRight />
+              <ChevronsRight />
             </Button>
           </div>
         </div>
