@@ -105,7 +105,7 @@ export function TransactionTable() {
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
             >
-              <span className="pl-2">Date</span>
+              <span>Date</span>
               <ChevronsUpDown className="h-4 w-4" />
             </Button>
           )

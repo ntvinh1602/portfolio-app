@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import { Nunito } from "next/font/google"
+import { Roboto_Flex } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
 
-const NunitoSans = Nunito({
-  variable: "--font-nunito-sans",
+const RobotoFlex = Roboto_Flex({
+  variable: "--font-roboto-flex",
   subsets: ["latin"],
 });
 
@@ -39,7 +39,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className={`${NunitoSans.variable} antialiased`}>
+      <body className={`${RobotoFlex.variable} antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
