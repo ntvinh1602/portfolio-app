@@ -48,9 +48,9 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square max-w-sm"
+      className="mx-auto aspect-square max-h-[250px]"
     >
-      <PieChart margin={{ top: -5, bottom: 20 }}>
+      <PieChart margin={{ bottom: 30 }}>
         <ChartTooltip
           cursor={true}
           content={<ChartTooltipContent />}

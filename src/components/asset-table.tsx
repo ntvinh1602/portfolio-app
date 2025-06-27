@@ -1,5 +1,3 @@
-"use client"
-
 import {
   Table,
   TableBody,
@@ -26,10 +24,10 @@ export function AssetTable({
 
   return (
     <Table>
-      <TableHeader className="bg-accent">
+      <TableHeader>
         <TableRow>
-          <TableHead className="text-left px-4">{tableHeader}</TableHead>
-          <TableHead className="text-right px-4">{totalAmount}</TableHead>
+          <TableHead className="bg-accent rounded-l-lg text-left px-4">{tableHeader}</TableHead>
+          <TableHead className="bg-accent rounded-r-lg text-right px-4">{totalAmount}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

@@ -1,14 +1,6 @@
 "use client"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import * as React from "react"
-import { Separator } from "@/components/ui/separator"
 import {
   ColumnDef,
   flexRender,

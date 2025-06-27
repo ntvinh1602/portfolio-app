@@ -85,7 +85,7 @@ export function TransactionTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 15,
+    pageSize: 12,
   })
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [data, setData] = React.useState<TransactionLegRow[]>([])
@@ -318,15 +318,14 @@ export function TransactionTable() {
   ]
 
   return (
-    <div className="@container/main flex flex-1 flex-col w-full max-w-5xl mx-auto">
-      <div className="flex items-center justify-between py-4 px-4">
+    <div className="@container flex flex-1 flex-col w-full max-w-5xl mx-auto">
+      <div className="flex items-center justify-between py-4 px-4 gap-2">
         <TabFilter
           options={tabOptions}
           onValueChange={setAssetType}
           value={assetType}
           defaultValue="stock"
         />
-        <div className="flex items-center gap-2">
           <DatePicker
             mode="range"
             selected={date}
@@ -335,10 +334,9 @@ export function TransactionTable() {
           <TransactionForm>
             <Button variant="default">
               <PlusIcon className="size-4" />
-              <span className="hidden sm:inline">Add Transaction</span>
+              <span className="hidden @2xl:inline">Add Transaction</span>
             </Button>
           </TransactionForm>
-        </div>
       </div>
       <div className="overflow-hidden rounded-lg border mx-4">
         <Table>
@@ -417,7 +415,7 @@ export function TransactionTable() {
                 />
               </SelectTrigger>
               <SelectContent side="top">
-                {[15, 25, 40].map((pageSize) => (
+                {[12, 24, 48].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>
