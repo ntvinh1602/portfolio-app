@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { formatCurrency } from "@/lib/utils"
 import {
   format,
   formatISO
@@ -144,6 +145,7 @@ export function TransactionTable() {
         },
         cell: ({ row }) => {
           const quantity = row.original.quantity
+          const currency = row.original.currency_code
           if (assetType === "stock") {
             return (
               <div className="text-right">
@@ -154,22 +156,9 @@ export function TransactionTable() {
             )
           }
 
-          const currency = row.original.currency_code || "USD"
-          // Get currency-specific formatting options
-          const formatter = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency,
-          })
-          const { minimumFractionDigits, maximumFractionDigits } =
-            formatter.resolvedOptions()
-
           return (
             <div className="text-right">
-              {new Intl.NumberFormat("en-US", {
-                minimumFractionDigits,
-                maximumFractionDigits,
-              }).format(quantity)}{" "}
-              {currency}
+              {formatCurrency(quantity, currency)}
             </div>
           )
         },
@@ -200,21 +189,9 @@ export function TransactionTable() {
           const amount = row.original.amount
           const currency = "VND"
 
-          // Get currency-specific formatting options
-          const formatter = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency,
-          })
-          const { minimumFractionDigits, maximumFractionDigits } =
-            formatter.resolvedOptions()
-
           return (
             <div className="text-right">
-              {new Intl.NumberFormat("en-US", {
-                minimumFractionDigits,
-                maximumFractionDigits,
-              }).format(amount)}{" "}
-              {currency}
+              {formatCurrency(amount, currency)}
             </div>
           )
         },

@@ -42,7 +42,7 @@ export default function TabFilter({
         value={value}
       >
         <SelectTrigger
-          className="flex w-fit @4xl/main:hidden"
+          className="flex w-fit @xl/main:hidden"
           id="view-selector"
         >
           <SelectValue placeholder="Select a view" />
@@ -55,7 +55,7 @@ export default function TabFilter({
           ))}
         </SelectContent>
       </Select>
-      <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
+      <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @xl/main:flex">
         {options.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}

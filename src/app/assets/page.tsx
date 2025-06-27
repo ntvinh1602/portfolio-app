@@ -15,14 +15,17 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { formatCurrency } from "@/lib/utils"
 
 interface SummaryItem {
   type: string;
   totalAmount: number;
 }
 
-export interface AssetSummaryData {
+interface AssetSummaryData {
   displayCurrency: string;
   assets: SummaryItem[];
   totalAssets: number;
@@ -52,6 +55,26 @@ export default function Page() {
     fetchAssets();
   }, [fetchAssets])
 
+  const displayCurrency = summaryData?.displayCurrency || "USD"
+
+  const assetsItems = (summaryData?.assets || []).map((item) => ({
+    ...item,
+    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+  }))
+  const assetsTotalAmount = formatCurrency(summaryData?.totalAssets || 0, displayCurrency)
+
+  const liabilitiesItems = (summaryData?.liabilities || []).map((item) => ({
+    ...item,
+    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+  }))
+  const liabilitiesTotalAmount = formatCurrency(summaryData?.totalLiabilities || 0, displayCurrency)
+
+  const equityItems = (summaryData?.equity || []).map((item) => ({
+    ...item,
+    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+  }))
+  const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0, displayCurrency)
+
   return (
     <SidebarProvider
       style={
@@ -77,9 +100,31 @@ export default function Page() {
               </CardContent>
             </Card>
           </div>
-          <div className="col-span-2">            
-            <AssetTable data={summaryData} />
-          </div>
+          <div className="col-span-2">     
+            <Card className="flex flex-col py-4 gap-4">
+              <h1 className="text-lg font-semibold px-6">
+                Balance Sheet
+              </h1>
+              <CardHeader>
+                <CardTitle>Total Assets</CardTitle>
+                <CardDescription>Assets by investment type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetTable items={assetsItems} totalAmount={assetsTotalAmount} tableHeader="Assets" />
+              </CardContent>
+              <div className="px-6">
+                <Separator />
+              </div>
+              <CardHeader>
+                <CardTitle>Total Liabilities</CardTitle>
+                <CardDescription>Assets by funding origins</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <AssetTable items={liabilitiesItems} totalAmount={liabilitiesTotalAmount} tableHeader="Liabilities" />
+                <AssetTable items={equityItems} totalAmount={equityTotalAmount} tableHeader="Equity" />
+              </CardContent>
+            </Card>
+          </div>          
         </div>
       </SidebarInset>
     </SidebarProvider>
