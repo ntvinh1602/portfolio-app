@@ -5,12 +5,11 @@ import {
   Import,
   Gauge,
   Wrench,
-  HandCoins,
-  Wallet,
   MonitorCheck,
   FileQuestion,
   ChartLine,
-  CircleDollarSign
+  ShoppingCart,
+  DollarSign
 } from "lucide-react"
 import { NavItems } from "@/components/nav-items"
 import { NavUser } from "@/components/nav-user"
@@ -34,17 +33,12 @@ const data = {
     {
       title: "Assets",
       url: "/assets",
-      icon: Wallet,
-    },
-    {
-      title: "Portfolio",
-      url: "/portfolio",
-      icon: CircleDollarSign,
+      icon: DollarSign,
     },
     {
       title: "Transactions",
       url: "/transactions",
-      icon: HandCoins,
+      icon: ShoppingCart,
     },
     {
       title: "Performance",

@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import { Geist } from "next/font/google"
+import { Nunito } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const NunitoSans = Nunito({
+  variable: "--font-nunito-sans",
   subsets: ["latin"],
 });
 
@@ -39,7 +39,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className={`${geistSans.variable} antialiased`}>
+      <body className={`${NunitoSans.variable} antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
