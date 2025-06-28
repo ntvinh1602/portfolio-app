@@ -20,7 +20,7 @@ interface PageInfoProps {
 export function PageInfo({ open, onOpenChange, children, title = "Page Info" }: PageInfoProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="pb-2">{title}</DialogTitle>
           <DialogDescription asChild>
@@ -30,7 +30,7 @@ export function PageInfo({ open, onOpenChange, children, title = "Page Info" }: 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button type="button" variant="secondary">
-              Okay I got it!
+              Okay
             </Button>
           </DialogClose>
         </DialogFooter>

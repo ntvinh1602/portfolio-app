@@ -19,6 +19,7 @@ import {
   TabsContent
 } from "@/components/ui/tabs"
 import { PageInfo } from "@/components/page-info"
+import { Badge } from "@/components/ui/badge"
 
 interface SummaryItem {
   type: string;
@@ -95,17 +96,23 @@ export default function Page() {
         >
           <p className="text-justify">Balance Sheet gives you a complete financial snapshot of your investments. It shows you two important sides of the same coin: <b>Assets</b> and <b>Liabilities</b>.
           <br/><br/>
-          <b>Total Assets: What you own.</b> This tab lists all the valuable things in your portfolio, such as cash and stocks.
+          <b>Total Assets: What you own.</b> This tab lists all the valuable things in your portfolio, such as cash, stocks, crypto, bonds, funds etc.
           <br/><br/>
           <b>Total Liabilities: Where the money came from.</b> This tab shows how your assets were funded.
           <br/><br/>
-          <b>Liabilities</b> is what you owe, this is the portion of your portfolio funded by borrowed money, such as bank loans or margin loans from your broker.
+          <b>Liabilities</b> is what you owe. This is the portion of your portfolio funded by borrowed money, such as bank loans or margin loans from your broker.
           <br/><br/>
-          <b>Equities</b> is what you truly own. It represents your personal stake and include two parts: <b>Paid-in Capital</b> - money contributed from your own pocket and <b>Retained Earnings</b> - profits your investments generated.
+          <b>Equities</b> is what you truly own. It represents your personal stake and include two parts: <b>Paid-in Capital</b>: money contributed from your own pocket and <b>Retained Earnings</b>: profits your investments generated.
           <br/><br/>
           The fundamental rule is that everything must balance out:</p>
           <br/>
-          <p className="text-center"><b>Total Assets = Liabilities + Equity</b></p>
+          <p className="text-center">
+            <Badge variant="secondary">Total Assets</Badge>
+            <b> = </b>
+            <Badge variant="destructive">Liabilities</Badge>
+            <b> + </b>
+            <Badge variant="default">Equities</Badge>
+          </p>
           <br/>
           <p className="text-justify">By looking at both sides, you can see not just what you have, but how you're building it. Your <b>Equity</b> is your true net worth within this portfolio, and watching it grows is the ultimate goal.
           </p>

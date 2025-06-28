@@ -37,8 +37,8 @@ const data = {
       icon: Notebook,
     },
     {
-      title: "Holdings",
-      url: "/holdings",
+      title: "Portfolio",
+      url: "/portfolio",
       icon: ShoppingBag,
     },
     {
