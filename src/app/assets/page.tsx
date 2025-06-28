@@ -100,18 +100,16 @@ export default function Page() {
           type="single"
           collapsible
           defaultValue="balance-sheet"
-          className="flex flex-col gap-4 p-4 w-full max-w-4xl xl:mx-auto"
+          className="flex flex-col gap-2 p-4 w-full max-w-4xl xl:mx-auto"
         >
-          <AccordionItem value="balance-sheet">
-            <AccordionTrigger className="pt-2 text-lg font-semibold">
-              <span className="flex items-center">
-                <BookCheck />
-              </span>
-                Balance Sheet
+          <AccordionItem value="balance-sheet" className="flex flex-col gap-4 border-none">
+            <AccordionTrigger className="border bg-primary text-primary-foreground rounded-full px-4 flex items-center py-4 text-lg">
+              <div><BookCheck /></div>
+              Balance Sheet
             </AccordionTrigger>
             <AccordionContent>
-              <Tabs className="py-2" defaultValue="assets">
-                <TabsList className="w-full">
+              <Tabs className="pt-2" defaultValue="assets">
+                <TabsList className="w-full h-10">
                   <TabsTrigger value="assets">Total Assets</TabsTrigger>
                   <TabsTrigger value="liabilities">Total Liabilities</TabsTrigger>
                 </TabsList>
@@ -141,16 +139,14 @@ export default function Page() {
               </Tabs>
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="portfolio">
-            <AccordionTrigger className="pt-2 text-lg font-semibold">
-              <span className="flex items-center">
-                <ShoppingBag />
-              </span>
-                Portfolio
+          <AccordionItem value="portfolio" className="flex flex-col gap-4 border-none">
+            <AccordionTrigger className="border bg-primary text-primary-foreground rounded-full px-4 flex items-center py-4 text-lg">
+              <div><ShoppingBag /></div>
+              Portfolio
             </AccordionTrigger>
             <AccordionContent>
-              <Tabs className="py-2" defaultValue="assets">
-                <TabsList className="w-full">
+              <Tabs className="pt-2" defaultValue="assets">
+                <TabsList className="w-full h-10">
                   <TabsTrigger value="assets">Total Assets</TabsTrigger>
                   <TabsTrigger value="liabilities">Total Liabilities</TabsTrigger>
                 </TabsList>

@@ -26,8 +26,8 @@ export function AssetTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="bg-accent rounded-l-lg text-left px-4">{tableHeader}</TableHead>
-          <TableHead className="bg-accent rounded-r-lg text-right px-4">{totalAmount}</TableHead>
+          <TableHead className="bg-accent rounded-l-full text-left px-4">{tableHeader}</TableHead>
+          <TableHead className="bg-accent rounded-r-full text-right px-4">{totalAmount}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
