@@ -318,7 +318,7 @@ export function TransactionTable() {
   ]
 
   return (
-    <div className="@container flex flex-1 flex-col w-full gap-2 p-2 max-w-5xl mx-auto">
+    <div className="@container flex flex-1 flex-col w-full gap-2 px-4 max-w-4xl mx-auto">
       <div className="flex items-center justify-between gap-2">
           <DatePicker
             mode="range"
@@ -326,7 +326,7 @@ export function TransactionTable() {
             onSelect={setDate}
           />
           <TransactionForm>
-            <Button variant="default">
+            <Button variant="default" className="rounded-full">
               <PlusIcon className="size-4" />
               Transaction
             </Button>

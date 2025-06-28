@@ -8,8 +8,9 @@ import {
   MonitorCheck,
   FileQuestion,
   ChartLine,
-  ShoppingCart,
-  DollarSign
+  Handshake,
+  Notebook,
+  ShoppingBag
 } from "lucide-react"
 import { NavItems } from "@/components/sidebar/items"
 import { NavUser } from "@/components/sidebar/user"
@@ -31,14 +32,19 @@ const data = {
       icon: MonitorCheck,
     },
     {
-      title: "Assets",
-      url: "/assets",
-      icon: DollarSign,
+      title: "Balance Sheet",
+      url: "/balance-sheet",
+      icon: Notebook,
+    },
+    {
+      title: "Holdings",
+      url: "/holdings",
+      icon: ShoppingBag,
     },
     {
       title: "Transactions",
       url: "/transactions",
-      icon: ShoppingCart,
+      icon: Handshake,
     },
     {
       title: "Performance",
@@ -68,7 +74,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="pb-4">
+      <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -76,12 +82,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <div className="flex items-center justify-center">
-                  <ChartLine className="!size-8" strokeWidth={1.5} />
-                </div> 
-                <span className="text-lg font-semibold">
+                <h1 className="text-xl font-semibold">
                   Portfolio Tracker
-                </span>
+                </h1>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -65,25 +65,24 @@
   --popover: var(--md-sys-color-surface-container-high);
   --popover-foreground: var(--md-sys-color-on-surface);
 
-  --primary: var(--md-sys-color-primary);
-  --primary-foreground: var(--md-sys-color-on-primary);
+  --primary: var(--md-sys-color-primary-container);
+  --primary-foreground: var(--md-sys-color-on-primary-container);
 
   --secondary: var(--md-sys-color-secondary-container);
   --secondary-foreground: var(--md-sys-color-on-secondary-container);
 
-  --muted: var(--md-sys-color-surface-container-low);
+  --muted: var(--md-sys-color-surface-container);
   --muted-foreground: var(--md-sys-color-on-surface-variant);
 
   --accent: var(--md-sys-color-tertiary-container);
   --accent-foreground: var(--md-sys-color-on-tertiary-container);
 
   --destructive: var(--md-sys-color-error);
-  /* Shadcn often uses a -foreground variant, let's add it for completeness */
   --destructive-foreground: var(--md-sys-color-on-error);
 
   --border: var(--md-sys-color-outline-variant);
   --input: var(--md-sys-color-outline);
-  --ring: var(--md-sys-color-primary); /* Focus rings should use the primary color */
+  --ring: var(--md-sys-color-primary-container);
 
   /* Your Custom Variables Mapping */
   --sidebar: var(--md-sys-color-surface-container-low);
@@ -93,12 +92,12 @@
   --sidebar-accent: var(--md-sys-color-secondary-container);
   --sidebar-accent-foreground: var(--md-sys-color-on-secondary-container);
   --sidebar-border: var(--md-sys-color-outline-variant);
-  --sidebar-ring: var(--md-sys-color-primary);
+  --sidebar-ring: var(--md-sys-color-primary-container);
   
   /* Map chart colors to MD3 accent colors for consistency */
-  --chart-1: var(--md-sys-color-primary);
+  --chart-1: var(--md-sys-color-primary-container);
   --chart-2: var(--md-sys-color-secondary);
-  --chart-3: var(--md-sys-color-tertiary);
+  --chart-3: var(--md-sys-color-tertiary-container);
   --chart-4: var(--md-sys-color-error);
   --chart-5: oklch(0.7 0.15 130); /* Or keep a custom green */
 }
@@ -116,8 +115,8 @@
   --popover: var(--md-sys-color-surface-container-high);
   --popover-foreground: var(--md-sys-color-on-surface);
 
-  --primary: var(--md-sys-color-primary);
-  --primary-foreground: var(--md-sys-color-on-primary);
+  --primary: var(--md-sys-color-primary-container);
+  --primary-foreground: var(--md-sys-color-on-primary-container);
 
   --secondary: var(--md-sys-color-secondary-container);
   --secondary-foreground: var(--md-sys-color-on-secondary-container);
@@ -159,5 +158,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-roboto-flex);
+  }
+  h1 {
+    font-family: var(--font-playfair-display);
   }
 }

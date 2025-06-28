@@ -1,11 +1,19 @@
 import type { Metadata } from "next"
-import { Roboto_Flex } from "next/font/google"
+import {
+  Playfair_Display,
+  Roboto_Flex
+} from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
+  subsets: ["latin"],
+});
+
+const PlayfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
   subsets: ["latin"],
 });
 
@@ -39,7 +47,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className={`${RobotoFlex.variable} antialiased`}>
+      <body className={`${RobotoFlex.variable} ${PlayfairDisplay.variable} antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

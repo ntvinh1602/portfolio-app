@@ -1,44 +1,29 @@
-"use client"
-
-import { useTheme } from "next-themes"
 import * as React from "react"
 
-import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import { Info } from "lucide-react"
 
 interface SiteHeaderProps {
   title?: string
+  onInfoClick?: () => void
 }
 
-export function SiteHeader({ title = "Untitled" }: SiteHeaderProps) {
-  const { setTheme, theme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+export function SiteHeader({ title = "Untitled", onInfoClick }: SiteHeaderProps) {
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
-        <h1 className="text-lg font-medium">{title}</h1>
-        <div className="ml-auto flex items-center gap-2">
-          {mounted && (
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={(checked) =>
-                setTheme(checked ? "dark" : "light")
-              }
-            />
-          )}
-          <p className="text-sm">Night Mode</p>
+    <header className="flex items-center py-4 max-w-4xl xl:mx-auto w-full">
+      <div className="flex flex-col w-full gap-1 px-2 lg:gap-2 lg:px-6">
+        <div className="flex w-full justify-between">
+          <SidebarTrigger />
+          <Button
+          variant="ghost"
+          onClick={onInfoClick}
+          >
+            <Info className="size-6 text-foreground"/>
+          </Button>
         </div>
+        <h1 className="text-3xl font-medium px-3 font-besley-serif">{title}</h1>
       </div>
     </header>
   )
