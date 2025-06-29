@@ -11,6 +11,19 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { PageInfo } from "@/components/page-info"
 import { StockCardWrapper } from "@/components/stock-card-wrapper"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { 
+  Bitcoin,
+  ReceiptText,
+  RefreshCw
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface StockHolding {
   ticker: string;
@@ -85,7 +98,7 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Portfolio" onInfoClick={() => setIsInfoOpen(true)} onRefresh={handleRefresh} />
+        <SiteHeader title="Portfolio" onInfoClick={() => setIsInfoOpen(true)} />
         <PageInfo
           open={isInfoOpen}
           onOpenChange={setIsInfoOpen}
@@ -94,34 +107,54 @@ export default function Page() {
           <p className="text-justify">All of your tradable securities will be displayed here under Portfolio. Currently it only includes stocks from Vietnamese listed companies and cryptocurrencies, but can be expanded in the future.
           </p>
         </PageInfo>
-        <div className="flex flex-col gap-2 px-4 max-w-4xl xl:mx-auto w-full">
-          {stockHoldings.map((stock) => (
-            <StockCardWrapper
-              key={stock.ticker}
-              ticker={stock.ticker}
-              name={stock.name}
-              logoUrl={stock.logo_url}
-              quantity={stock.quantity}
-              costBasis={stock.cost_basis}
-              refreshKey={refreshKey}
-              lastUpdatedPrice={stock.last_updated_price}
-            />
-          ))}
-          {lastUpdated && (
-            <span className="text-right text-xs px-6 text-muted-foreground italic">
-              Last updated at {lastUpdated.toLocaleString(
-                'en-SG',
-                { 
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  timeZoneName: 'short'
-                })}
-            </span>
-          )}
-        </div>
+        <Card className="bg-background shadow-none border-none gap-4 px-4 py-2 max-w-4xl xl:mx-auto w-full">
+          <CardHeader className="flex px-0 items-center justify-between">
+            <CardTitle className="flex gap-2 rounded-full w-fit bg-secondary text-secondary-foreground items-center px-6 py-2 text-lg font-semibold">
+              <ReceiptText />Stocks
+            </CardTitle>
+            <CardAction className="flex py-2">
+              <Button
+                variant="ghost"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="size-6"/>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-0">
+            <div className="flex flex-col gap-2">
+              {stockHoldings.map((stock) => (
+                <StockCardWrapper
+                  key={stock.ticker}
+                  ticker={stock.ticker}
+                  name={stock.name}
+                  logoUrl={stock.logo_url}
+                  quantity={stock.quantity}
+                  costBasis={stock.cost_basis}
+                  refreshKey={refreshKey}
+                  lastUpdatedPrice={stock.last_updated_price}
+                />
+              ))}
+              {lastUpdated && (
+                <span className="text-right text-xs px-6 text-muted-foreground italic">
+                  Last updated at {lastUpdated.toLocaleString(
+                    'en-SG',
+                    { 
+                      year: 'numeric',
+                      month: 'numeric',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZoneName: 'short'
+                    })}
+                </span>
+              )}
+            </div>
+          </CardContent>
+          <CardTitle className="flex gap-2 rounded-full py-2 w-fit bg-secondary text-secondary-foreground items-center px-6 text-lg font-semibold">
+            <Bitcoin />Crypto
+          </CardTitle>
+        </Card>
       </SidebarInset>
     </SidebarProvider>
   )
