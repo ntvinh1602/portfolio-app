@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
-import { formatCurrency } from "@/lib/utils"
 import { PageInfo } from "@/components/page-info"
 import { StockCardWrapper } from "@/components/stock-card-wrapper"
 
@@ -19,7 +18,7 @@ interface StockHolding {
   logo_url: string;
   total_amount: number;
   quantity: number;
-  pnl: string;
+  cost_basis: number;
 }
 
 export default function Page() {
@@ -67,8 +66,7 @@ export default function Page() {
               name={stock.name}
               logoUrl={stock.logo_url}
               quantity={stock.quantity}
-              totalAmount={stock.total_amount}
-              pnl={stock.pnl}
+              costBasis={stock.cost_basis}
             />
           ))}
         </div>

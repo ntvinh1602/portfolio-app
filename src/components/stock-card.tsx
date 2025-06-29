@@ -11,6 +11,7 @@ import {
   ChartCandlestick
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface StockCardProps {
   ticker: string;
@@ -19,11 +20,13 @@ interface StockCardProps {
   totalAmount: string;
   quantity: string;
   pnl: string;
-  price: number;
+  price: string;
   priceStatus?: 'loading' | 'error' | 'success';
 }
 
 export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, priceStatus }: StockCardProps) {
+  const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
+
   return (
     <Card className="rounded-full py-2 bg-background shadow-none">
       <CardContent className="flex items-center gap-3 px-3">
@@ -35,21 +38,23 @@ export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, p
           className="rounded-full object-contain"
         />
         <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col gap-1 max-w-[150px]">
-            <CardTitle>{ticker}</CardTitle>
-            <CardDescription className="text-xs truncate">
-              {name}
-            </CardDescription>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1 max-w-[150px]">
+              <CardTitle>{ticker}</CardTitle>
+              <CardDescription className="text-xs truncate">
+                {name}
+              </CardDescription>
+            </div>
             <CardDescription className="flex items-center gap-1 truncate">
               <Badge
                 variant="outline"
-                className="text-md rounded-full bg-sidebar"
+                className="rounded-full bg-sidebar"
               >
                 <ReceiptText />{quantity}
               </Badge>
               <Badge
                 variant="outline"
-                className="text-md rounded-full flex items-center gap-1.5 bg-sidebar"
+                className="rounded-full flex items-center gap-1.5 bg-sidebar"
               >
                 <ChartCandlestick />
                 {priceStatus === 'loading' ? '...' : price}
@@ -65,12 +70,24 @@ export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, p
               </Badge>
             </CardDescription>
           </div>
-          <div className="flex flex-col gap-2 justify-end px-4">
-            <CardTitle className="text-right">
+          <div className="flex flex-col justify-end gap-1 px-4">
+            <CardTitle className="text-right text-sm">
               {totalAmount}
             </CardTitle>
             <CardDescription className="flex items-center justify-end">
-              <ArrowBigUp className="size-5"/>{pnl}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "rounded-full flex items-center gap-1.5",
+                  isNaN(pnlValue)
+                    ? "bg-sidebar"
+                    : pnlValue >= 0
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-red-700 dark:text-red-400"
+                )}
+              >
+                {pnl === "..." ? pnl : <>{pnl}%</>}
+              </Badge>
             </CardDescription>
           </div>
         </div>

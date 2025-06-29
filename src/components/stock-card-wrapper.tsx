@@ -8,12 +8,11 @@ interface StockCardWrapperProps {
   ticker: string;
   name: string;
   logoUrl: string;
-  totalAmount: number;
   quantity: number;
-  pnl: string;
+  costBasis: number;
 }
 
-export function StockCardWrapper({ ticker, name, logoUrl, totalAmount, quantity, pnl }: StockCardWrapperProps) {
+export function StockCardWrapper({ ticker, name, logoUrl, quantity, costBasis }: StockCardWrapperProps) {
   const [price, setPrice] = useState(0)
   const [priceStatus, setPriceStatus] = useState<'loading' | 'error' | 'success'>('loading')
 
@@ -43,9 +42,9 @@ export function StockCardWrapper({ ticker, name, logoUrl, totalAmount, quantity,
       name={name}
       logoUrl={logoUrl}
       quantity={formatCurrency(quantity)}
-      totalAmount={formatCurrency(totalAmount * price)}
-      pnl={pnl}
-      price={price}
+      totalAmount={priceStatus === 'success' ? formatCurrency(quantity * price) : "..."}
+      pnl={priceStatus === 'success' ? formatCurrency((quantity * price / costBasis - 1) * 100, undefined, 1) : "..."}
+      price={formatCurrency(price / 1000, undefined, 2)}
       priceStatus={priceStatus}
     />
   )
