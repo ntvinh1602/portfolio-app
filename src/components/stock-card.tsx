@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/card"
 import Image from 'next/image'
 import {
-  ArrowBigUp,
   ReceiptText,
   ChartCandlestick
 } from "lucide-react"
