@@ -1,7 +1,6 @@
 "use client"
 
-import { Pie, PieChart, Sector } from "recharts"
-import { PieSectorDataItem } from "recharts/types/polar/Pie"
+import { Pie, PieChart } from "recharts"
 import {
   ChartConfig,
   ChartContainer,

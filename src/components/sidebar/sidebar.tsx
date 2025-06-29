@@ -7,7 +7,6 @@ import {
   Wrench,
   MonitorCheck,
   FileQuestion,
-  ChartLine,
   Handshake,
   Notebook,
   ShoppingBag

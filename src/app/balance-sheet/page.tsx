@@ -114,7 +114,7 @@ export default function Page() {
             <Badge variant="default">Equities</Badge>
           </p>
           <br/>
-          <p className="text-justify">By looking at both sides, you can see not just what you have, but how you're building it. Your <b>Equity</b> is your true net worth within this portfolio, and watching it grows is the ultimate goal.
+          <p className="text-justify">By looking at both sides, you can see not just what you have, but how you are building it. Your <b>Equity</b> is your true net worth within this portfolio, and watching it grows is the ultimate goal.
           </p>
         </PageInfo>
         <Tabs className="px-4 max-w-4xl xl:mx-auto w-full" defaultValue="assets">
