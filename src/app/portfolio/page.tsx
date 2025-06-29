@@ -11,13 +11,14 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { formatCurrency } from "@/lib/utils"
 import { PageInfo } from "@/components/page-info"
-import { StockCard } from "@/components/stock-card"
+import { StockCardWrapper } from "@/components/stock-card-wrapper"
 
 interface StockHolding {
   ticker: string;
   name: string;
   logo_url: string;
   total_amount: number;
+  quantity: number;
   pnl: string;
 }
 
@@ -36,7 +37,7 @@ export default function Page() {
     }
 
     fetchStockHoldings();
-  })
+  }, [])
 
   return (
     <SidebarProvider
@@ -58,14 +59,15 @@ export default function Page() {
           <p className="text-justify">All of your tradable securities will be displayed here under Portfolio. Currently it only includes stocks from Vietnamese listed companies and cryptocurrencies, but can be expanded in the future.
           </p>
         </PageInfo>
-        <div className="px-4 max-w-4xl xl:mx-auto w-full">
+        <div className="flex flex-col gap-2 px-4 max-w-4xl xl:mx-auto w-full">
           {stockHoldings.map((stock) => (
-            <StockCard
+            <StockCardWrapper
               key={stock.ticker}
               ticker={stock.ticker}
               name={stock.name}
               logoUrl={stock.logo_url}
-              totalAmount={formatCurrency(stock.total_amount*27400)}
+              quantity={stock.quantity}
+              totalAmount={stock.total_amount}
               pnl={stock.pnl}
             />
           ))}

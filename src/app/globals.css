@@ -85,7 +85,7 @@
   --ring: var(--md-sys-color-primary-container);
 
   /* Your Custom Variables Mapping */
-  --sidebar: var(--md-sys-color-surface-container-low);
+  --sidebar: var(--md-sys-color-surface-container);
   --sidebar-foreground: var(--md-sys-color-on-surface-variant);
   --sidebar-primary: var(--md-sys-color-primary);
   --sidebar-primary-foreground: var(--md-sys-color-on-primary);

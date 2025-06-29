@@ -50,7 +50,7 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
       config={chartConfig}
       className="mx-auto aspect-square max-h-[250px]"
     >
-      <PieChart margin={{ bottom: 30 }}>
+      <PieChart margin={{ top: 20, bottom: 20 }}>
         <ChartTooltip
           cursor={true}
           content={<ChartTooltipContent />}
@@ -80,13 +80,6 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
           }}
           innerRadius={"50%"}
           strokeWidth={5}
-          activeIndex={0}
-          activeShape={({
-            outerRadius = 0,
-            ...props
-          }: PieSectorDataItem) => (
-            <Sector {...props} outerRadius={outerRadius + 10} />
-          )}
         />
       </PieChart>
     </ChartContainer>

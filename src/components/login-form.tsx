@@ -41,9 +41,9 @@ export function LoginForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Login to your account</h1>
+        <h1 className="text-2xl font-bold">Welcome back!</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your email below to login to your account
+          Enter your credentials below to login
         </p>
       </div>
       <form onSubmit={handleLogin}>
@@ -58,6 +58,7 @@ export function LoginForm({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
+              className="rounded-full"
             />
           </div>
           <div className="grid gap-3">
@@ -65,7 +66,7 @@ export function LoginForm({
               <Label htmlFor="password">Password</Label>
               <a
                 href="#"
-                className="ml-auto text-sm underline-offset-4 hover:underline"
+                className="ml-auto text-sm"
               >
                 Forgot your password?
               </a>
@@ -77,27 +78,28 @@ export function LoginForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
+              className="rounded-full"
             />
           </div>
           {error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
           <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
             <span className="bg-background text-muted-foreground relative z-10 px-2">
-              Or continue with
+              Or have a look with
             </span>
           </div>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full rounded-full">
             Demo Account
           </Button>
         </div>
       </form>
       <div className="text-center text-sm">
-        Don&apos;t have an account?{" "}
-        <a href="#" className="underline underline-offset-4">
+        Want to open an account?{" "}
+        <a href="#" className="text-accent-foreground font-bold">
           Contact us.
         </a>
       </div>

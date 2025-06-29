@@ -1,5 +1,7 @@
-- Fix debt select overflow in debt payment add transaction form
-- Add thousand separator to numeric input in add transaction form
-- Fix allocation piechart including items with zero value
-- Continue working on portfolio page
-- Refactor asset tab selection in transaction table
+Bugs
+- Debt select field overflow in debt payment add transaction form
+
+Improvement
+- Thousand separator to numeric input in add transaction form
+- Remove items with zero value in piechart
+- Fix date picker in add transaction form not automatically close after date selected
