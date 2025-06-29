@@ -7,68 +7,36 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { Piechart } from "@/components/piechart"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { formatCurrency } from "@/lib/utils"
 import { PageInfo } from "@/components/page-info"
-import HoldingTable from "@/components/holding-table"
+import { StockCard } from "@/components/stock-card"
 
-interface SummaryItem {
-  type: string;
-  totalAmount: number;
-}
-
-interface AssetSummaryData {
-  displayCurrency: string;
-  assets: SummaryItem[];
-  totalAssets: number;
-  liabilities: SummaryItem[];
-  totalLiabilities: number;
-  equity: SummaryItem[];
-  totalEquity: number;
+interface StockHolding {
+  ticker: string;
+  name: string;
+  logo_url: string;
+  total_amount: number;
+  pnl: string;
 }
 
 export default function Page() {
-  const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
+  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
   const [isInfoOpen, setIsInfoOpen] = useState(false)
 
-  const fetchAssets = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_asset_summary');
-
-    if (error) {
-      console.error('Error fetching asset summary:', error);
-      return;
-    }
-
-    if (data) {
-      setSummaryData(data as AssetSummaryData);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets])
+    async function fetchStockHoldings() {
+      const { data, error } = await supabase.rpc('get_stock_holdings');
+      if (error) {
+        console.error('Error fetching stock holdings:', error);
+      } else {
+        setStockHoldings(data || []);
+      }
+    }
 
-  const displayCurrency = summaryData?.displayCurrency || "USD"
-
-  const assetsItems = (summaryData?.assets || []).map((item) => ({
-    ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
-  }))
-  const assetsTotalAmount = formatCurrency(summaryData?.totalAssets || 0, displayCurrency)
-
-  const liabilitiesItems = (summaryData?.liabilities || []).map((item) => ({
-    ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
-  }))
-  const liabilitiesTotalAmount = formatCurrency(summaryData?.totalLiabilities || 0, displayCurrency)
-
-  const equityItems = (summaryData?.equity || []).map((item) => ({
-    ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
-  }))
-  const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0, displayCurrency)
+    fetchStockHoldings();
+  })
 
   return (
     <SidebarProvider
@@ -91,8 +59,18 @@ export default function Page() {
           </p>
         </PageInfo>
         <div className="px-4 max-w-4xl xl:mx-auto w-full">
-          <Piechart data={summaryData?.assets} />
-          <HoldingTable />
+          {stockHoldings.map((stock) => (
+            <StockCard
+              key={stock.ticker}
+              ticker={stock.ticker}
+              name={stock.name}
+              logoUrl={stock.logo_url}
+              totalAmount={formatCurrency(stock.total_amount*27400)}
+              pnl={stock.pnl}
+            />
+          ))}
+        </div>
+        <div className="space-y-4">
         </div>
       </SidebarInset>
     </SidebarProvider>
