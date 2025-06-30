@@ -107,7 +107,7 @@ export default function Page() {
           <p className="text-justify">All of your tradable securities will be displayed here under Portfolio. Currently it only includes stocks from Vietnamese listed companies and cryptocurrencies, but can be expanded in the future.
           </p>
         </PageInfo>
-        <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 max-w-4xl xl:mx-auto w-full">
+        <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 w-full max-w-4xl xl:mx-auto">
           <CardHeader className="flex px-0 items-center justify-between">
             <CardTitle className="flex gap-2 rounded-full w-fit bg-secondary text-secondary-foreground items-center px-6 py-2 text-lg font-semibold">
               <ReceiptText />Stocks
