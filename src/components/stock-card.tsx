@@ -27,14 +27,14 @@ export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, p
   const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
 
   return (
-    <Card className="rounded-full py-2 bg-background shadow-none">
+    <Card className="border-none rounded-full py-2 bg-card text-card-foreground shadow-none">
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
           alt={name}
           width={56}
           height={56}
-          className="rounded-full object-contain"
+          className="rounded-full object-contain border"
         />
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col gap-2">
@@ -47,13 +47,13 @@ export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, p
             <CardDescription className="flex items-center gap-1 truncate">
               <Badge
                 variant="outline"
-                className="rounded-full bg-sidebar"
+                className="rounded-full bg-sidebar text-sidebar-foreground"
               >
                 <ReceiptText />{quantity}
               </Badge>
               <Badge
                 variant="outline"
-                className="rounded-full flex items-center gap-1.5 bg-sidebar"
+                className="rounded-full flex items-center gap-1.5 bg-sidebar text-sidebar-foreground"
               >
                 <ChartCandlestick />
                 {priceStatus === 'loading' ? '...' : price}

@@ -4,21 +4,15 @@ import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { TransactionCard } from "@/components/transaction-card"
+import { TransactionSkeleton } from "@/components/transaction-skeleton"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
-import DatePicker from "@/components/date-picker"
 import { type DateRange } from "react-day-picker"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-
+import { Card } from "@/components/ui/card"
 import TabFilter from "@/components/tab-filter"
+import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { TransactionForm } from "@/components/transaction-form"
 import { PlusIcon } from "lucide-react"
@@ -52,11 +46,14 @@ export default function Page() {
     { value: "crypto", label: "Crypto" },
   ]
 
-  const fetchTransactions = async (pageNumber: number) => {
+  const fetchTransactions = async (pageNumber: number, reset: boolean = false) => {
     setLoading(true)
     const { data, error } = await supabase.rpc("get_transaction_feed", {
       page_size: PAGE_SIZE,
       page_number: pageNumber,
+      start_date: date?.from?.toISOString(),
+      end_date: date?.to?.toISOString(),
+      asset_class_filter: assetType,
     })
 
     if (error) {
@@ -66,7 +63,7 @@ export default function Page() {
       const fetchedTransactions = (data as TransactionFeed[]) || []
       setTransactions((prev) => {
         const newTransactions =
-          pageNumber === 1
+          pageNumber === 1 || reset
             ? fetchedTransactions
             : [...prev, ...fetchedTransactions]
         // Ensure uniqueness of transactions by ID
@@ -83,13 +80,14 @@ export default function Page() {
   }
 
   React.useEffect(() => {
-    fetchTransactions(1)
-  }, [])
+    setPage(1)
+    fetchTransactions(1, true)
+  }, [date, assetType])
 
   const handleLoadMore = () => {
     const nextPage = page + 1
     setPage(nextPage)
-    fetchTransactions(nextPage)
+    fetchTransactions(nextPage, false)
   }
 
   return (
@@ -127,21 +125,30 @@ export default function Page() {
             />
           </div>
           <div className="flex flex-col gap-2 max-w-4xl xl:mx-auto w-full">
-            {transactions.map((tx) => (
-              <TransactionCard
-                key={tx.transaction_id}
-                ticker={tx.ticker}
-                name={tx.name}
-                logoUrl={tx.logo_url || ""}
-                amount={formatCurrency(tx.amount)}
-                quantity={formatCurrency(tx.quantity, tx.currency_code)}
-                type={tx.type}
-                description={tx.description || ""}
-                currencyCode={tx.currency_code}
-                transactionDate={tx.transaction_date}
-              />
-            ))}
-            {loading && <p>Loading...</p>}
+            {loading && transactions.length === 0 ? (
+              Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <TransactionSkeleton key={index} />
+              ))
+            ) : (
+              transactions.map((tx) => (
+                <TransactionCard
+                  key={tx.transaction_id}
+                  ticker={tx.ticker}
+                  name={tx.name}
+                  logoUrl={tx.logo_url || ""}
+                  amount={formatCurrency(tx.amount)}
+                  quantity={formatCurrency(tx.quantity, tx.currency_code)}
+                  type={tx.type}
+                  description={tx.description || ""}
+                  currencyCode={tx.currency_code}
+                  transactionDate={tx.transaction_date}
+                />
+              ))
+            )}
+            {loading && transactions.length > 0 && <p className="text-center text-muted-foreground">Loading...</p>}
+            {!loading && transactions.length === 0 && (
+              <p className="mx-auto py-10">No transactions found</p>
+            )}
             {!loading && hasMore && (
               <Button
                 onClick={handleLoadMore}

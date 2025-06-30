@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { PageInfo } from "@/components/page-info"
 import { StockCardWrapper } from "@/components/stock-card-wrapper"
+import { StockSkeleton } from "@/components/stock-skeleton"
 import {
   Card,
   CardAction,
@@ -36,7 +37,8 @@ interface StockHolding {
 }
 
 export default function Page() {
-  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
+  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([])
+  const [loading, setLoading] = useState(true)
   const [isInfoOpen, setIsInfoOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -82,6 +84,7 @@ export default function Page() {
       } else {
         setStockHoldings(data || []);
       }
+      setLoading(false)
     }
 
     fetchInitialData();
@@ -108,38 +111,53 @@ export default function Page() {
           </p>
         </PageInfo>
         <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 w-full max-w-4xl xl:mx-auto">
-          <CardHeader className="flex px-0 items-center justify-between">
-            <CardTitle className="flex gap-2 rounded-full w-fit bg-secondary text-secondary-foreground items-center px-6 py-2 text-lg font-semibold">
-              <ReceiptText />Stocks
-            </CardTitle>
+          <CardHeader className="flex px-2 items-center justify-between">
+            <Button
+              variant="default"
+              className="rounded-full font-semibold border-none"
+            >
+              <ReceiptText className="size-4"/>Stocks
+            </Button>
             <CardAction className="flex py-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={handleRefresh}
+                className="rounded-full"
               >
-                <RefreshCw className="size-6"/>
+                <RefreshCw className="size-4"/>
+                Refresh Data
               </Button>
             </CardAction>
           </CardHeader>
           <CardContent className="px-0">
             <div className="flex flex-col gap-2">
-              {stockHoldings.map((stock) => (
-                <StockCardWrapper
-                  key={stock.ticker}
-                  ticker={stock.ticker}
-                  name={stock.name}
-                  logoUrl={stock.logo_url}
-                  quantity={stock.quantity}
-                  costBasis={stock.cost_basis}
-                  refreshKey={refreshKey}
-                  lastUpdatedPrice={stock.last_updated_price}
-                />
-              ))}
-              {lastUpdated && (
+              {loading ? (
+                Array.from({ length: 2 }).map((_, index) => (
+                  <StockSkeleton key={index} />
+                ))
+              ) : stockHoldings.length > 0 ? (
+                stockHoldings.map((stock) => (
+                  <StockCardWrapper
+                    key={stock.ticker}
+                    ticker={stock.ticker}
+                    name={stock.name}
+                    logoUrl={stock.logo_url}
+                    quantity={stock.quantity}
+                    costBasis={stock.cost_basis}
+                    refreshKey={refreshKey}
+                    lastUpdatedPrice={stock.last_updated_price}
+                  />
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-4">
+                  No stock holdings found.
+                </div>
+              )}
+              {lastUpdated && !loading && stockHoldings.length > 0 && (
                 <span className="text-right text-xs px-6 text-muted-foreground italic">
                   Last updated at {lastUpdated.toLocaleString(
                     'en-SG',
-                    { 
+                    {
                       year: 'numeric',
                       month: 'numeric',
                       day: 'numeric',
@@ -153,9 +171,14 @@ export default function Page() {
           </CardContent>
         </Card>
         <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 max-w-4xl xl:mx-auto w-full">
-          <CardTitle className="flex gap-2 rounded-full py-2 w-fit bg-secondary text-secondary-foreground items-center px-6 text-lg font-semibold">
-            <Bitcoin />Crypto
-          </CardTitle>
+          <CardHeader className="flex px-2 items-center justify-between">
+            <Button
+              variant="default"
+              className="rounded-full w-fit font-semibold border-none"
+            >
+              <Bitcoin className="size-4"/>Crypto
+            </Button>
+          </CardHeader>
         </Card>
       </SidebarInset>
     </SidebarProvider>
