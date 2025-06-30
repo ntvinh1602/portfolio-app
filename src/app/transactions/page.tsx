@@ -3,8 +3,8 @@
 import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
 import { SiteHeader } from "@/components/site-header"
-import { TransactionCard } from "@/components/transaction-card"
-import { TransactionSkeleton } from "@/components/transaction-skeleton"
+import { TransactionCard } from "@/components/transaction/tx-card"
+import { TransactionSkeleton } from "@/components/transaction/tx-skeleton"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card"
 import TabFilter from "@/components/tab-filter"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { TransactionForm } from "@/components/transaction-form"
+import { TransactionForm } from "@/components/transaction/add-tx-form"
 import { PlusIcon } from "lucide-react"
 
 type TransactionFeed = {
@@ -46,43 +46,46 @@ export default function Page() {
     { value: "crypto", label: "Crypto" },
   ]
 
-  const fetchTransactions = async (pageNumber: number, reset: boolean = false) => {
-    setLoading(true)
-    const { data, error } = await supabase.rpc("get_transaction_feed", {
-      page_size: PAGE_SIZE,
-      page_number: pageNumber,
-      start_date: date?.from?.toISOString(),
-      end_date: date?.to?.toISOString(),
-      asset_class_filter: assetType,
-    })
-
-    if (error) {
-      toast.error("Failed to fetch transaction feed: " + error.message)
-      setTransactions([])
-    } else {
-      const fetchedTransactions = (data as TransactionFeed[]) || []
-      setTransactions((prev) => {
-        const newTransactions =
-          pageNumber === 1 || reset
-            ? fetchedTransactions
-            : [...prev, ...fetchedTransactions]
-        // Ensure uniqueness of transactions by ID
-        const uniqueTransactions = Array.from(
-          new Map(
-            newTransactions.map((item) => [item.transaction_id, item]),
-          ).values(),
-        )
-        return uniqueTransactions
+  const fetchTransactions = React.useCallback(
+    async (pageNumber: number, reset: boolean = false) => {
+      setLoading(true)
+      const { data, error } = await supabase.rpc("get_transaction_feed", {
+        page_size: PAGE_SIZE,
+        page_number: pageNumber,
+        start_date: date?.from?.toISOString(),
+        end_date: date?.to?.toISOString(),
+        asset_class_filter: assetType,
       })
-      setHasMore(fetchedTransactions.length === PAGE_SIZE)
-    }
-    setLoading(false)
-  }
+
+      if (error) {
+        toast.error("Failed to fetch transaction feed: " + error.message)
+        setTransactions([])
+      } else {
+        const fetchedTransactions = (data as TransactionFeed[]) || []
+        setTransactions((prev) => {
+          const newTransactions =
+            pageNumber === 1 || reset
+              ? fetchedTransactions
+              : [...prev, ...fetchedTransactions]
+          // Ensure uniqueness of transactions by ID
+          const uniqueTransactions = Array.from(
+            new Map(
+              newTransactions.map((item) => [item.transaction_id, item]),
+            ).values(),
+          )
+          return uniqueTransactions
+        })
+        setHasMore(fetchedTransactions.length === PAGE_SIZE)
+      }
+      setLoading(false)
+    },
+    [assetType, date],
+  )
 
   React.useEffect(() => {
     setPage(1)
     fetchTransactions(1, true)
-  }, [date, assetType])
+  }, [fetchTransactions])
 
   const handleLoadMore = () => {
     const nextPage = page + 1
@@ -102,7 +105,7 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader title="Transactions" />
-        <Card className="bg-background shadow-none border-none gap-4 px-6 py-2 w-full max-w-4xl xl:mx-auto">
+        <Card className="bg-background shadow-none border-none gap-4 mb-20 px-6 py-2 w-full max-w-4xl xl:mx-auto">
           <div className="flex items-center justify-between">
             <DatePicker
               mode="range"
@@ -153,7 +156,7 @@ export default function Page() {
               <Button
                 onClick={handleLoadMore}
                 variant="outline"
-                className="w-fit mx-auto rounded-full bg-muted text-muted-foreground border-none mb-40"
+                className="w-fit mx-auto rounded-full bg-muted text-muted-foreground border-none"
               >
                 Load more...
               </Button>

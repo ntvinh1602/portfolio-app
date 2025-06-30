@@ -10,14 +10,13 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { PageInfo } from "@/components/page-info"
-import { StockCardWrapper } from "@/components/stock-card-wrapper"
-import { StockSkeleton } from "@/components/stock-skeleton"
+import { StockCardWrapper } from "@/components/portfolio/stock-card-wrapper"
+import { StockSkeleton } from "@/components/portfolio/stock-skeleton"
 import {
   Card,
   CardAction,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { 
   Bitcoin,

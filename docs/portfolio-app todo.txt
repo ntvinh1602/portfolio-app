@@ -5,3 +5,4 @@ Improvement
 - Thousand separator to numeric input in add transaction form
 - Remove items with zero value in piechart
 - Fix date picker in add transaction form not automatically close after date selected
+- Refactor transaction form file

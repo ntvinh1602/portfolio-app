@@ -43,6 +43,8 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
           id: string
+          last_updated_price: number | null
+          logo_url: string | null
           name: string
           ticker: string
           user_id: string
@@ -51,6 +53,8 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
           id?: string
+          last_updated_price?: number | null
+          logo_url?: string | null
           name: string
           ticker: string
           user_id: string
@@ -59,6 +63,8 @@ export type Database = {
           asset_class?: Database["public"]["Enums"]["asset_class"]
           currency_code?: string
           id?: string
+          last_updated_price?: number | null
+          logo_url?: string | null
           name?: string
           ticker?: string
           user_id?: string
@@ -223,16 +229,19 @@ export type Database = {
           display_currency: string
           display_name: string | null
           id: string
+          last_stock_fetching: string | null
         }
         Insert: {
           display_currency: string
           display_name?: string | null
           id: string
+          last_stock_fetching?: string | null
         }
         Update: {
           display_currency?: string
           display_name?: string | null
           id?: string
+          last_stock_fetching?: string | null
         }
         Relationships: [
           {

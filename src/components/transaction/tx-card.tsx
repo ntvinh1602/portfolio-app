@@ -39,7 +39,7 @@ export function TransactionCard( { ticker, name, logoUrl, amount, quantity, type
             <span className="text-xs font-medium">{ticker}</span>
           </div>
         )}
-        <div className="flex flex-col w-full min-w-0 gap-1">
+        <div className="flex flex-col w-full min-w-0 gap-1 pl-2">
           <div className="flex flex-1 justify-between min-w-0">
             <span className="text-sm truncate min-w-0">{description}</span>
             <span className="text-sm font-medium flex-shrink-0 pl-2 whitespace-nowrap">{amount}</span>
