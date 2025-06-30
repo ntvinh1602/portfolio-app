@@ -31,7 +31,7 @@ export function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, p
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
-          alt="Company Logo"
+          alt={name}
           width={56}
           height={56}
           className="rounded-full object-contain"
