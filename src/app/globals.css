@@ -47,10 +47,6 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ========================================================================= */
-/*  THE CORE MAPPING: Redefine shadcn variables using MD3 variables.         */
-/* ========================================================================= */
-
 /* --- Light Theme Mapping --- */
 :root {
   --radius: 0.75rem; /* MD3 uses slightly rounder corners, feel free to adjust */

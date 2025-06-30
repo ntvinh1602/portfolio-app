@@ -29,7 +29,7 @@ export default function TabFilter({
       onValueChange={onValueChange}
       value={value}
     >
-      <TabsList className="w-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1">
+      <TabsList className="w-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full">
         {options.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}
