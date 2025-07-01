@@ -2,24 +2,19 @@
 
 import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { PageHeader } from "@/components/page-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { AssetTable } from "@/components/asset-table"
-import { Piechart } from "@/components/piechart"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 import { formatCurrency } from "@/lib/utils"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent
-} from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
 import { PageInfo } from "@/components/page-info"
 import { Badge } from "@/components/ui/badge"
+import { PageContainer } from "@/components/page-container"
 
 interface SummaryItem {
   type: string;
@@ -57,25 +52,23 @@ export default function Page() {
     fetchAssets();
   }, [fetchAssets])
 
-  const displayCurrency = summaryData?.displayCurrency || "USD"
-
   const assetsItems = (summaryData?.assets || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+    totalAmount: formatCurrency(item.totalAmount),
   }))
-  const assetsTotalAmount = formatCurrency(summaryData?.totalAssets || 0, displayCurrency)
+  const assetsTotalAmount = formatCurrency(summaryData?.totalAssets || 0)
 
   const liabilitiesItems = (summaryData?.liabilities || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+    totalAmount: formatCurrency(item.totalAmount),
   }))
-  const liabilitiesTotalAmount = formatCurrency(summaryData?.totalLiabilities || 0, displayCurrency)
+  const liabilitiesTotalAmount = formatCurrency(summaryData?.totalLiabilities || 0)
 
   const equityItems = (summaryData?.equity || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount, displayCurrency),
+    totalAmount: formatCurrency(item.totalAmount),
   }))
-  const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0, displayCurrency)
+  const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0)
 
   return (
     <SidebarProvider
@@ -88,7 +81,7 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Balance Sheet" onInfoClick={() => setIsInfoOpen(true)} />
+        <PageHeader title="Balance Sheet" onInfoClick={() => setIsInfoOpen(true)} />
         <PageInfo
           open={isInfoOpen}
           onOpenChange={setIsInfoOpen}
@@ -117,35 +110,25 @@ export default function Page() {
           <p className="text-justify">By looking at both sides, you can see not just what you have, but how you are building it. Your <b>Equity</b> is your true net worth within this portfolio, and watching it grows is the ultimate goal.
           </p>
         </PageInfo>
-        <Tabs className="px-4 max-w-4xl xl:mx-auto w-full" defaultValue="assets">
-          <TabsList className="w-full h-10">
-            <TabsTrigger value="assets">Total Assets</TabsTrigger>
-            <TabsTrigger value="liabilities">Total Liabilities</TabsTrigger>
-          </TabsList>
-          <TabsContent value="assets">
-            <Piechart data={summaryData?.assets} />
+        <PageContainer>
+          <AssetTable
+            items={assetsItems}
+            totalAmount={assetsTotalAmount}
+            tableHeader="Assets"
+          />
+          <div className="flex flex-col gap-4">
             <AssetTable
-              items={assetsItems}
-              totalAmount={assetsTotalAmount}
-              tableHeader="Assets"
+              items={liabilitiesItems}
+              totalAmount={liabilitiesTotalAmount}
+              tableHeader="Liabilities"
             />
-          </TabsContent>
-          <TabsContent value="liabilities">
-            <Piechart data={summaryData?.assets} />
-            <div className="flex flex-col gap-4">
-              <AssetTable
-                items={liabilitiesItems}
-                totalAmount={liabilitiesTotalAmount}
-                tableHeader="Liabilities"
-              />
-              <AssetTable
-                items={equityItems}
-                totalAmount={equityTotalAmount}
-                tableHeader="Equity"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            <AssetTable
+              items={equityItems}
+              totalAmount={equityTotalAmount}
+              tableHeader="Equity"
+            />
+          </div>
+        </PageContainer>
       </SidebarInset>
     </SidebarProvider>
   )

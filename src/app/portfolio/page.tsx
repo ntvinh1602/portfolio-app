@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { PageHeader } from "@/components/page-header"
 import {
   SidebarInset,
   SidebarProvider,
@@ -24,6 +24,7 @@ import {
   RefreshCw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PageContainer } from "@/components/page-container"
 
 interface StockHolding {
   ticker: string;
@@ -100,7 +101,7 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Portfolio" onInfoClick={() => setIsInfoOpen(true)} />
+        <PageHeader title="Portfolio" onInfoClick={() => setIsInfoOpen(true)} />
         <PageInfo
           open={isInfoOpen}
           onOpenChange={setIsInfoOpen}
@@ -109,26 +110,24 @@ export default function Page() {
           <p className="text-justify">All of your tradable securities will be displayed here under Portfolio. Currently it only includes stocks from Vietnamese listed companies and cryptocurrencies, but can be expanded in the future.
           </p>
         </PageInfo>
-        <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 w-full max-w-4xl xl:mx-auto">
+        <PageContainer>
           <CardHeader className="flex px-2 items-center justify-between">
             <Button
               variant="default"
-              className="rounded-full font-semibold text-md border-none"
+              className="font-semibold text-md"
             >
-              <ReceiptText className="size-5"/>Stocks
+              <ReceiptText />Stocks
             </Button>
             <CardAction className="flex py-2">
               <Button
                 variant="outline"
                 onClick={handleRefresh}
-                className="rounded-full"
               >
-                <RefreshCw />
-                Refresh Data
+                <RefreshCw />Refresh Data
               </Button>
             </CardAction>
           </CardHeader>
-          <CardContent className="px-0">
+          <CardContent className="px-0 pb-4">
             <div className="flex flex-col gap-2">
               {loading ? (
                 Array.from({ length: 2 }).map((_, index) => (
@@ -168,17 +167,15 @@ export default function Page() {
               )}
             </div>
           </CardContent>
-        </Card>
-        <Card className="bg-background shadow-none border-none gap-2 px-4 py-2 max-w-4xl xl:mx-auto w-full">
           <CardHeader className="flex px-2 items-center justify-between">
             <Button
               variant="default"
-              className="rounded-full font-semibold text-md border-none"
+              className="font-semibold text-md"
             >
-              <Bitcoin className="size-5"/>Crypto
+              <Bitcoin />Crypto
             </Button>
           </CardHeader>
-        </Card>
+        </PageContainer>
       </SidebarInset>
     </SidebarProvider>
   )

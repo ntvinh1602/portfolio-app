@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { PageHeader } from "@/components/page-header"
 import { TransactionCard } from "@/components/transaction/tx-card"
 import { TransactionSkeleton } from "@/components/transaction/tx-skeleton"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -10,12 +10,12 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
 import { type DateRange } from "react-day-picker"
-import { Card } from "@/components/ui/card"
 import TabFilter from "@/components/tab-filter"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { TransactionForm } from "@/components/transaction/add-tx-form"
 import { PlusIcon } from "lucide-react"
+import { PageContainer } from "@/components/page-container"
 
 type TransactionFeed = {
   transaction_id: string
@@ -28,6 +28,7 @@ type TransactionFeed = {
   quantity: number
   amount: number
   currency_code: string
+  net_sold?: number
 }
 
 const PAGE_SIZE = 6
@@ -104,8 +105,8 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Transactions" />
-        <Card className="bg-background shadow-none border-none gap-4 mb-20 px-6 py-2 w-full max-w-4xl xl:mx-auto">
+        <PageHeader title="Transactions" />
+        <PageContainer>
           <div className="flex items-center justify-between">
             <DatePicker
               mode="range"
@@ -113,21 +114,18 @@ export default function Page() {
               onSelect={setDate}
             />
             <TransactionForm>
-              <Button variant="default" className="rounded-full">
-                <PlusIcon className="size-4" />
-                Transaction
+              <Button variant="default">
+                <PlusIcon />Transaction
               </Button>
             </TransactionForm>
           </div>
-          <div className="flex items-center justify-between">
-            <TabFilter
-              options={tabOptions}
-              onValueChange={setAssetType}
-              value={assetType}
-              defaultValue="stock"
-            />
-          </div>
-          <div className="flex flex-col gap-2 max-w-4xl xl:mx-auto w-full">
+          <TabFilter
+            options={tabOptions}
+            onValueChange={setAssetType}
+            value={assetType}
+            defaultValue="stock"
+          />
+          <div className="flex flex-col pt-2 gap-2">
             {loading && transactions.length === 0 ? (
               Array.from({ length: PAGE_SIZE }).map((_, index) => (
                 <TransactionSkeleton key={index} />
@@ -139,7 +137,9 @@ export default function Page() {
                   ticker={tx.ticker}
                   name={tx.name}
                   logoUrl={tx.logo_url || ""}
-                  amount={formatCurrency(tx.amount)}
+                  amount={formatCurrency(
+                    tx.type === "sell" && tx.net_sold ? tx.net_sold : tx.amount,
+                  )}
                   quantity={formatCurrency(tx.quantity, tx.currency_code)}
                   type={tx.type}
                   description={tx.description || ""}
@@ -156,13 +156,13 @@ export default function Page() {
               <Button
                 onClick={handleLoadMore}
                 variant="outline"
-                className="w-fit mx-auto rounded-full bg-muted text-muted-foreground border-none"
+                className="mx-auto mb-20"
               >
                 Load more...
               </Button>
             )}
           </div>
-        </Card>
+        </PageContainer>
       </SidebarInset>
     </SidebarProvider>
   )

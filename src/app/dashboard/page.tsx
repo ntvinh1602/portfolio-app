@@ -1,7 +1,7 @@
 import * as React from "react"
 import { AppSidebar } from "@/components/sidebar/sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { PageHeader } from "@/components/page-header"
 
 export default function Page() {
 
@@ -16,7 +16,7 @@ export default function Page() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title="Dashboard" />
+        <PageHeader title="Dashboard" />
       </SidebarInset>
     </SidebarProvider>
   )
