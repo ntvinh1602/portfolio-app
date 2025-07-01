@@ -113,9 +113,9 @@ export default function Page() {
           <CardHeader className="flex px-2 items-center justify-between">
             <Button
               variant="default"
-              className="rounded-full font-semibold border-none"
+              className="rounded-full font-semibold text-md border-none"
             >
-              <ReceiptText className="size-4"/>Stocks
+              <ReceiptText className="size-5"/>Stocks
             </Button>
             <CardAction className="flex py-2">
               <Button
@@ -123,7 +123,7 @@ export default function Page() {
                 onClick={handleRefresh}
                 className="rounded-full"
               >
-                <RefreshCw className="size-4"/>
+                <RefreshCw />
                 Refresh Data
               </Button>
             </CardAction>
@@ -173,9 +173,9 @@ export default function Page() {
           <CardHeader className="flex px-2 items-center justify-between">
             <Button
               variant="default"
-              className="rounded-full w-fit font-semibold border-none"
+              className="rounded-full font-semibold text-md border-none"
             >
-              <Bitcoin className="size-4"/>Crypto
+              <Bitcoin className="size-5"/>Crypto
             </Button>
           </CardHeader>
         </Card>
