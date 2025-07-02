@@ -20,7 +20,7 @@ interface PageInfoProps {
 export function PageInfo({ open, onOpenChange, children, title = "Page Info" }: PageInfoProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} className="rounded-4xl">
         <DialogHeader>
           <DialogTitle className="pb-2">{title}</DialogTitle>
           <DialogDescription asChild>

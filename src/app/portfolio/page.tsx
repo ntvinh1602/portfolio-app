@@ -13,7 +13,6 @@ import { PageInfo } from "@/components/page-info"
 import { StockCardWrapper } from "@/components/portfolio/stock-card-wrapper"
 import { StockSkeleton } from "@/components/portfolio/stock-skeleton"
 import {
-  Card,
   CardAction,
   CardContent,
   CardHeader,

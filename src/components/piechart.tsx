@@ -1,6 +1,7 @@
 "use client"
 
-import { Pie, PieChart } from "recharts"
+import { Pie, PieChart, Cell } from "recharts"
+import { cn } from "@/lib/utils"
 import {
   ChartConfig,
   ChartContainer,
@@ -10,59 +11,38 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 
-interface SummaryItem {
-  type: string;
-  totalAmount: number;
+interface PiechartProps {
+  data: any[] | undefined;
+  chartConfig: ChartConfig;
+  dataKey: string;
+  nameKey: string;
+  className?: string;
 }
 
-const chartConfig = {
-  allocation: {
-    label: "Allocation",
-  },
-  cash: {
-    label: "Cash",
-    color: "var(--chart-1)",
-  },
-  stocks: {
-    label: "Stocks",
-    color: "var(--chart-2)",
-  },
-  epf: {
-    label: "EPF",
-    color: "var(--chart-3)",
-  },
-  crypto: {
-    label: "Crypto",
-    color: "var(--chart-4)",
-  },
-} satisfies ChartConfig
-
-export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
-  const chartData = data?.map(item => ({
-    asset: item.type.toLowerCase(),
-    allocation: item.totalAmount,
-    fill: `var(--color-${item.type.toLowerCase()})`
-  }));
-
+export function Piechart({ data, chartConfig, dataKey, nameKey, className }: PiechartProps) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square max-h-[250px]"
+      className={cn("mx-auto aspect-square max-h-[250px]", className)}
     >
       <PieChart margin={{ top: 20, bottom: 20 }}>
         <ChartTooltip
           cursor={true}
           content={<ChartTooltipContent />}
         />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend
+          content={<ChartLegendContent nameKey={nameKey} />}
+          className="text-md"
+        />
         <Pie
-          data={chartData}
-          dataKey="allocation"
-          nameKey="asset"
+          data={data}
+          dataKey={dataKey}
+          nameKey={nameKey}
           labelLine={false}
           label={({ payload, ...props }) => {
-            const totalAllocation = chartData?.reduce((acc, curr) => acc + curr.allocation, 0) || 0;
-            const percentage = totalAllocation > 0 ? ((payload.allocation / totalAllocation) * 100).toFixed(0) : 0;
+            const total = data?.reduce((acc, curr) => acc + (curr[dataKey] || 0), 0) || 0;
+            const value = payload[dataKey] || 0;
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
             return (
               <text
                 cx={props.cx}
@@ -71,7 +51,7 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
                 y={props.y}
                 textAnchor={props.textAnchor}
                 dominantBaseline={props.dominantBaseline}
-                fill="var(--foreground)"
+                fill="hsl(var(--foreground))"
               >
                 {`${percentage}%`}
               </text>
@@ -79,9 +59,12 @@ export function Piechart({ data }: { data: SummaryItem[] | undefined }) {
           }}
           innerRadius={"50%"}
           strokeWidth={5}
-        />
+        >
+          {data?.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.fill} />
+          ))}
+        </Pie>
       </PieChart>
     </ChartContainer>
   )
 }
-

@@ -7,14 +7,32 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { AssetTable } from "@/components/asset-table"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 import { formatCurrency } from "@/lib/utils"
-import { Separator } from "@/components/ui/separator"
 import { PageInfo } from "@/components/page-info"
 import { Badge } from "@/components/ui/badge"
 import { PageContainer } from "@/components/page-container"
+import {
+  CardContent,
+  CardHeader,
+  CardAction
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { 
+  Coins,
+  CreditCard,
+  ChartPie,
+} from "lucide-react"
+import { SummaryCard } from "@/components/summary-card"
+import { SummarySkeleton } from "@/components/summary-skeleton"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Piechart } from "@/components/piechart"
+import { ChartConfig } from "@/components/ui/chart"
 
 interface SummaryItem {
   type: string;
@@ -22,7 +40,6 @@ interface SummaryItem {
 }
 
 interface AssetSummaryData {
-  displayCurrency: string;
   assets: SummaryItem[];
   totalAssets: number;
   liabilities: SummaryItem[];
@@ -70,6 +87,34 @@ export default function Page() {
   }))
   const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0)
 
+  const chartConfig = {
+    allocation: {
+      label: "Allocation",
+    },
+    cash: {
+      label: "Cash",
+      color: "var(--chart-1)",
+    },
+    stocks: {
+      label: "Stocks",
+      color: "var(--chart-2)",
+    },
+    epf: {
+      label: "EPF",
+      color: "var(--chart-3)",
+    },
+    crypto: {
+      label: "Crypto",
+      color: "var(--chart-4)",
+    },
+  } satisfies ChartConfig
+
+  const chartData = summaryData?.assets?.filter(item => item.totalAmount > 0).map(item => ({
+    asset: item.type.toLowerCase(),
+    allocation: item.totalAmount,
+    fill: `var(--color-${item.type.toLowerCase()})`
+  }));
+
   return (
     <SidebarProvider
       style={
@@ -110,24 +155,90 @@ export default function Page() {
           <p className="text-justify">By looking at both sides, you can see not just what you have, but how you are building it. Your <b>Equity</b> is your true net worth within this portfolio, and watching it grows is the ultimate goal.
           </p>
         </PageInfo>
+
         <PageContainer>
-          <AssetTable
-            items={assetsItems}
-            totalAmount={assetsTotalAmount}
-            tableHeader="Assets"
-          />
-          <div className="flex flex-col gap-4">
-            <AssetTable
-              items={liabilitiesItems}
-              totalAmount={liabilitiesTotalAmount}
-              tableHeader="Liabilities"
-            />
-            <AssetTable
-              items={equityItems}
-              totalAmount={equityTotalAmount}
-              tableHeader="Equity"
-            />
-          </div>
+          <CardHeader className="flex px-2 items-center justify-between">
+            <Button
+              variant="default"
+              className="font-semibold"
+            >
+              <Coins />Total Assets
+            </Button>
+            <CardAction>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">
+                    <ChartPie />Chart
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm">
+                  <Piechart 
+                    data={chartData}
+                    chartConfig={chartConfig}
+                    dataKey="allocation"
+                    nameKey="asset"
+                  />
+                </PopoverContent>
+              </Popover>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-2">
+            {!summaryData ? (
+              <>
+                <SummarySkeleton header={true} />
+                <SummarySkeleton />
+                <SummarySkeleton />
+              </>
+            ) : (
+              <>
+                <SummaryCard
+                  header={true}
+                  label="Assets"
+                  value={assetsTotalAmount}
+                />
+                {assetsItems.map(item => (
+                  <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+                ))}
+              </>
+            )}
+          </CardContent>
+          <CardHeader className="flex px-2 items-center justify-between">
+            <Button
+              variant="default"
+              className="font-semibold"
+            >
+              <CreditCard />Total Liabilities
+            </Button>
+          </CardHeader>
+          <CardContent className="px-2">
+            {!summaryData ? (
+              <>
+                <SummarySkeleton header={true} />
+                <SummarySkeleton />
+                <SummarySkeleton header={true} />
+                <SummarySkeleton />
+              </>
+            ) : (
+              <>
+                <SummaryCard
+                  header={true}
+                  label="Liabilities"
+                  value={liabilitiesTotalAmount}
+                />
+                {liabilitiesItems.map(item => (
+                  <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+                ))}
+                <SummaryCard
+                  header={true}
+                  label="Equities"
+                  value={equityTotalAmount}
+                />
+                {equityItems.map(item => (
+                  <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+                ))}
+              </>
+            )}
+          </CardContent>
         </PageContainer>
       </SidebarInset>
     </SidebarProvider>

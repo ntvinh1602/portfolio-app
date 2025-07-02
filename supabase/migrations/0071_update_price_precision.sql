@@ -265,7 +265,7 @@ $$;
 ALTER FUNCTION "public"."get_stock_holdings"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date" DEFAULT NULL::"date", "end_date" "date" DEFAULT NULL::"date", "asset_class_filter" "text" DEFAULT NULL::"text") RETURNS TABLE("transaction_id" "uuid", "transaction_date" "date", "type" "text", "description" "text", "ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "amount" numeric, "currency_code" "text")
+CREATE OR REPLACE FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date" DEFAULT NULL::"date", "end_date" "date" DEFAULT NULL::"date", "asset_class_filter" "text" DEFAULT NULL::"text") RETURNS TABLE("transaction_id" "uuid", "transaction_date" "date", "type" "text", "description" "text", "ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "amount" numeric, "currency_code" "text", "net_sold" numeric)
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -288,7 +288,15 @@ BEGIN
         END,
         tl.quantity,
         tl.amount,
-        tl.currency_code::text
+        tl.currency_code::text,
+        CASE
+            WHEN t.type = 'sell' THEN (
+                SELECT td.price * ABS(tl.quantity) - td.fees - td.taxes
+                FROM public.transaction_details td
+                WHERE td.transaction_id = t.id
+            )
+            ELSE NULL
+        END AS net_sold
     FROM
         public.transactions t
     JOIN
@@ -406,7 +414,7 @@ BEGIN
         END IF;
         CASE v_transaction_type
             WHEN 'buy' THEN
-                PERFORM "public"."handle_buy_transaction"(p_user_id, (v_transaction_record->>'date')::date, v_account_id, v_asset_id, v_cash_asset_id, (v_transaction_record->>'quantity')::numeric(16,2), (v_transaction_record->>'price')::numeric(10,2), (v_transaction_record->>'fees')::numeric(16,2), v_transaction_record->>'description');
+                PERFORM "public"."handle_buy_transaction"(p_user_id, (v_transaction_record->>'date')::date, v_account_id, v_asset_id, v_cash_asset_id, (v_transaction_record->>'quantity')::numeric(16,2), (v_transaction_record->>'price')::numeric(16,2), (v_transaction_record->>'fees')::numeric(16,2), v_transaction_record->>'description');
             WHEN 'sell' THEN
                 PERFORM "public"."handle_sell_transaction"(p_user_id, v_asset_id, (v_transaction_record->>'quantity')::numeric(16,2), (v_transaction_record->>'quantity')::numeric * (v_transaction_record->>'price')::numeric, (v_transaction_record->>'fees')::numeric(16,2), (v_transaction_record->>'taxes')::numeric(16,2), (v_transaction_record->>'date')::date, v_account_id, v_cash_asset_id, v_transaction_record->>'description');
             WHEN 'deposit' THEN
@@ -883,7 +891,7 @@ CREATE TABLE IF NOT EXISTS "public"."assets" (
     "name" "text" NOT NULL,
     "currency_code" character varying(10) NOT NULL,
     "logo_url" "text",
-    "last_updated_price" numeric(10,2)
+    "last_updated_price" numeric(16,2)
 );
 
 
@@ -932,7 +940,7 @@ CREATE TABLE IF NOT EXISTS "public"."exchange_rates" (
     "date" "date" NOT NULL,
     "from_currency_code" character varying(10) NOT NULL,
     "to_currency_code" character varying(10) NOT NULL,
-    "rate" numeric(10,2) NOT NULL
+    "rate" numeric(16,2) NOT NULL
 );
 
 
@@ -1033,7 +1041,7 @@ COMMENT ON COLUMN "public"."tax_lots"."remaining_quantity" IS 'The quantity of t
 
 CREATE TABLE IF NOT EXISTS "public"."transaction_details" (
     "transaction_id" "uuid" NOT NULL,
-    "price" numeric(10,2) NOT NULL,
+    "price" numeric(16,2) NOT NULL,
     "fees" numeric(16,2) DEFAULT 0 NOT NULL,
     "taxes" numeric(16,2) DEFAULT 0 NOT NULL
 );
