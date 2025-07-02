@@ -11,8 +11,13 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 
+type PieChartData = {
+  fill: string;
+  [key: string]: unknown;
+}
+
 interface PiechartProps {
-  data: any[] | undefined;
+  data: PieChartData[] | undefined;
   chartConfig: ChartConfig;
   dataKey: string;
   nameKey: string;
@@ -40,8 +45,8 @@ export function Piechart({ data, chartConfig, dataKey, nameKey, className }: Pie
           nameKey={nameKey}
           labelLine={false}
           label={({ payload, ...props }) => {
-            const total = data?.reduce((acc, curr) => acc + (curr[dataKey] || 0), 0) || 0;
-            const value = payload[dataKey] || 0;
+            const total = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
+            const value = Number(payload[dataKey]) || 0;
             const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
             return (
               <text
