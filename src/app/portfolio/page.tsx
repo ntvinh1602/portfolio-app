@@ -35,7 +35,6 @@ interface StockHolding {
 export default function Page() {
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([])
   const [loading, setLoading] = useState(true)
-  const [isInfoOpen, setIsInfoOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 

@@ -48,7 +48,6 @@ interface AssetSummaryData {
 
 export default function Page() {
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
-  const [isInfoOpen, setIsInfoOpen] = useState(false)
 
   const fetchAssets = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_asset_summary');
