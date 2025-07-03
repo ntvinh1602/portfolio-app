@@ -4,10 +4,12 @@ import * as React from "react"
 import {
   PageMain,
   PageHeader,
-  PageContent
+  PageContent,
 } from "@/components/page-layout"
-import { TransactionCard } from "@/components/transaction/tx-card"
-import { TransactionSkeleton } from "@/components/transaction/tx-skeleton"
+import {
+  TransactionCard,
+  TransactionSkeleton
+} from "@/components/transaction/transaction-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
@@ -15,19 +17,24 @@ import { type DateRange } from "react-day-picker"
 import TabFilter from "@/components/tab-filter"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { TransactionForm } from "@/components/transaction/add-tx-form"
+import { TransactionForm } from "@/components/transaction/add-transaction"
 import { TransactionImportForm } from "@/components/transaction/import-form"
 import {
-  EllipsisVertical,
+  SquarePen,
   PlusIcon,
-  FileUp
+  Upload,
 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DropdownMenuSub } from "@radix-ui/react-dropdown-menu"
+import { Enums } from "@/lib/database.types"
 
 type TransactionFeed = {
   transaction_id: string
@@ -52,6 +59,9 @@ export default function Page() {
   const [page, setPage] = React.useState(1)
   const [hasMore, setHasMore] = React.useState(true)
   const [assetType, setAssetType] = React.useState("stock")
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [selectedTransactionType, setSelectedTransactionType] =
+    React.useState<Enums<"transaction_type">>("deposit")
   const tabOptions = [
     { value: "cash", label: "Cash" },
     { value: "stock", label: "Stock" },
@@ -75,7 +85,7 @@ export default function Page() {
         setTransactions([])
       } else {
         const fetchedTransactions = (data as TransactionFeed[]) || []
-        setTransactions((prev) => {
+        setTransactions(prev => {
           const newTransactions =
             pageNumber === 1 || reset
               ? fetchedTransactions
@@ -83,7 +93,7 @@ export default function Page() {
           // Ensure uniqueness of transactions by ID
           const uniqueTransactions = Array.from(
             new Map(
-              newTransactions.map((item) => [item.transaction_id, item]),
+              newTransactions.map(item => [item.transaction_id, item]),
             ).values(),
           )
           return uniqueTransactions
@@ -106,42 +116,103 @@ export default function Page() {
     fetchTransactions(nextPage, false)
   }
 
+  const handleMenuItemClick = (type: Enums<"transaction_type">) => {
+    setSelectedTransactionType(type)
+    setIsDialogOpen(true)
+  }
+
   return (
     <PageMain>
       <PageHeader title="Transactions" />
       <PageContent>
         <div className="flex items-center justify-between">
-          <DatePicker
-            mode="range"
-            selected={date}
-            onSelect={setDate}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <PlusIcon />
+                Add
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="rounded-2xl bg-card/25 backdrop-blur-sm"
+            >
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <SquarePen />
+                  Manual Input
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("buy")}
+                    >
+                      Buy
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("sell")}
+                    >
+                      Sell
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("deposit")}
+                    >
+                      Deposit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("withdraw")}
+                    >
+                      Withdraw
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("income")}
+                    >
+                      Income
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("expense")}
+                    >
+                      Expense
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("borrow")}
+                    >
+                      Borrow
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("debt_payment")}
+                    >
+                      Debt Payment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("dividend")}
+                    >
+                      Dividend
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleMenuItemClick("split")}
+                    >
+                      Split
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                <TransactionImportForm>
+                  <div className="flex items-center gap-2">
+                    <Upload />
+                    Batch Upload
+                  </div>
+                </TransactionImportForm>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <TransactionForm
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            transactionType={selectedTransactionType}
           />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Action<EllipsisVertical />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="rounded-2xl bg-card/25 backdrop-blur-sm"
-          >
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <TransactionForm>
-                <div className="flex items-center gap-2">
-                  <PlusIcon />Add Transaction
-                </div>
-              </TransactionForm>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <TransactionImportForm>
-                <div className="flex items-center gap-2">
-                  <FileUp />Upload Data
-                </div>
-              </TransactionImportForm>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DatePicker mode="range" selected={date} onSelect={setDate} />
         </div>
         <TabFilter
           options={tabOptions}
@@ -155,7 +226,7 @@ export default function Page() {
               <TransactionSkeleton key={index} />
             ))
           ) : (
-            transactions.map((tx) => (
+            transactions.map(tx => (
               <TransactionCard
                 key={tx.transaction_id}
                 ticker={tx.ticker}
@@ -172,7 +243,9 @@ export default function Page() {
               />
             ))
           )}
-          {loading && transactions.length > 0 && <p className="text-center text-muted-foreground">Loading...</p>}
+          {loading && transactions.length > 0 && (
+            <p className="text-center text-muted-foreground">Loading...</p>
+          )}
           {!loading && transactions.length === 0 && (
             <p className="mx-auto py-10">No transactions found</p>
           )}

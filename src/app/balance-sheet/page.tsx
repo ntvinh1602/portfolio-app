@@ -20,8 +20,10 @@ import {
   CreditCard,
   ChartPie,
 } from "lucide-react"
-import { SummaryCard } from "@/components/summary-card"
-import { SummarySkeleton } from "@/components/summary-skeleton"
+import {
+  SummaryCard,
+  SummarySkeleton
+} from "@/components/summary-layout"
 import {
   Popover,
   PopoverContent,
@@ -115,7 +117,7 @@ return (
   <PageMain>
     <PageHeader title="Balance Sheet" />
     <PageContent>
-      <CardHeader className="flex px-2 items-center justify-between">
+      <CardHeader className="flex px-0 items-center justify-between">
         <Button
           variant="default"
           className="font-semibold"
@@ -143,7 +145,7 @@ return (
           </Popover>
         </CardAction>
       </CardHeader>
-      <CardContent className="px-2">
+      <CardContent className="px-0">
         {!summaryData ? (
           <>
             <SummarySkeleton header={true} />
@@ -163,7 +165,7 @@ return (
           </>
         )}
       </CardContent>
-      <CardHeader className="flex px-2 items-center justify-between">
+      <CardHeader className="flex px-0 items-center justify-between">
         <Button
           variant="default"
           className="font-semibold"
@@ -171,7 +173,7 @@ return (
           <CreditCard />Total Liabilities
         </Button>
       </CardHeader>
-      <CardContent className="px-2">
+      <CardContent className="px-0">
         {!summaryData ? (
           <>
             <SummarySkeleton header={true} />

@@ -43,17 +43,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${RobotoFlex.variable} ${PlayfairDisplay.variable}`} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className={`${RobotoFlex.variable} ${PlayfairDisplay.variable} antialiased bg-sidebar`}>
+      <body className="antialiased bg-muted">
         <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           {children}
         </ThemeProvider>
         <Toaster />

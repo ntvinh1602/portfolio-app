@@ -86,7 +86,7 @@ const TabsList = React.forwardRef<
         {...props}
       />
       <div
-        className="absolute rounded-full border border-transparent bg-primary shadow-sm dark:border-input dark:bg-input/30 transition-all duration-300 ease-in-out"
+        className="absolute rounded-full border border-transparent bg-primary shadow-sm dark:bg-input/30 transition-all duration-300 ease-in-out"
         style={indicatorStyle}
       />
     </div>

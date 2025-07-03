@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { StockCard } from "./stock-card"
+import { StockCard } from "./stock-layout"
 import { formatCurrency } from "@/lib/utils"
 
 interface StockCardWrapperProps {

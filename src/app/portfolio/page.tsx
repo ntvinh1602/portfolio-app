@@ -9,7 +9,7 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { StockCardWrapper } from "@/components/portfolio/stock-card-wrapper"
-import { StockSkeleton } from "@/components/portfolio/stock-skeleton"
+import { StockSkeleton } from "@/components/portfolio/stock-layout"
 import {
   CardAction,
   CardContent,
@@ -90,7 +90,7 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Portfolio" />
       <PageContent>
-        <CardHeader className="flex px-2 items-center justify-between">
+        <CardHeader className="flex px-0 items-center justify-between">
           <Button
             variant="default"
             className="font-semibold text-md"
@@ -146,7 +146,7 @@ export default function Page() {
             )}
           </div>
         </CardContent>
-        <CardHeader className="flex px-2 items-center justify-between">
+        <CardHeader className="flex px-0 items-center justify-between">
           <Button
             variant="default"
             className="font-semibold text-md"
