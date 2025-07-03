@@ -118,13 +118,13 @@ export default function Page() {
           />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default">
+            <Button variant="outline">
               Action<EllipsisVertical />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm"
+            className="rounded-2xl bg-card/25 backdrop-blur-sm"
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <TransactionForm>

@@ -62,7 +62,7 @@ export default function DatePicker(props: DatePickerProps) {
             <ChevronDownIcon className="size-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+        <PopoverContent className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0" align="start">
           <Calendar
             captionLayout="dropdown"
             {...props}

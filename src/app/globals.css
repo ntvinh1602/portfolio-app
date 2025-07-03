@@ -156,7 +156,7 @@
     @apply h-full;
   }
   * {
-    @apply border-border;
+    @apply border-border/50;
   }
   body {
     @apply bg-background text-foreground;

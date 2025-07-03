@@ -16,6 +16,7 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
 import {
+  TvMinimal,
   Gauge,
   Wrench,
   FileQuestion,
@@ -33,6 +34,23 @@ export function HeaderNav() {
   })
   
   const router = useRouter()
+
+  const menuItems = [
+    { icon: TvMinimal, label: "Dashboard", path: "/dashboard" },
+    { icon: Notebook, label: "Balance Sheet", path: "/balance-sheet" },
+    { icon: ShoppingBag, label: "Portfolio", path: "/portfolio" },
+    { icon: Handshake, label: "Transaction", path: "/transactions" },
+    { icon: Gauge, label: "Performance", path: "/performance" },
+  ]
+
+  const secondaryMenuItems = [
+    { icon: Wrench, label: "Settings", path: "/settings" },
+    { icon: FileQuestion, label: "Help", path: "/" },
+  ]
+
+  const handleNavigation = (path: string) => {
+    router.push(path)
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -66,10 +84,7 @@ export function HeaderNav() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="h-12 w-12 rounded-full grayscale">
-          <AvatarImage
-            src={user.avatar}
-            alt={user.name}
-          />
+          <AvatarImage src={user.avatar} alt={user.name} />
           <AvatarFallback className="rounded-lg">
             Hi!
           </AvatarFallback>
@@ -81,7 +96,7 @@ export function HeaderNav() {
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-lg">
+            <Avatar className="h-8 w-8 rounded-full">
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="rounded-lg">Hi!</AvatarFallback>
             </Avatar>
@@ -93,28 +108,29 @@ export function HeaderNav() {
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-border/50"/>
-        <DropdownMenuItem>
-          <Notebook />Balance Sheet
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <ShoppingBag />Portfolio
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Handshake />Transaction
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Gauge />Performance
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-border/50"/>
-        <DropdownMenuItem>
-          <Wrench />Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <FileQuestion />Help
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-border/50"/>
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuSeparator />
+        {menuItems.map((item) => (
+          <DropdownMenuItem
+            key={item.label}
+            onClick={() => handleNavigation(item.path)}
+          >
+            <item.icon />{item.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {secondaryMenuItems.map((item) => (
+          <DropdownMenuItem
+            key={item.label}
+            onClick={() => handleNavigation(item.path)}
+          >
+            <item.icon />{item.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          data-variant="destructive"
+          onClick={handleSignOut}
+        >
           <LogOut />Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
