@@ -47,7 +47,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className={`${RobotoFlex.variable} ${PlayfairDisplay.variable} antialiased`}>
+      <body className={`${RobotoFlex.variable} ${PlayfairDisplay.variable} antialiased bg-sidebar`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
