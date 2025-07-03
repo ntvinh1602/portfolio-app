@@ -58,11 +58,6 @@ const data = {
       icon: Wrench,
     },
     {
-      title: "Import Data",
-      url: "/import",
-      icon: Import,
-    },
-    {
       title: "Help",
       url: "/help",
       icon: FileQuestion

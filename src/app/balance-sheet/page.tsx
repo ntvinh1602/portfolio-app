@@ -171,7 +171,10 @@ export default function Page() {
                     <ChartPie />Chart
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm">
+                <PopoverContent
+                  align="end"
+                  className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm"
+                >
                   <Piechart 
                     data={chartData}
                     chartConfig={chartConfig}

@@ -1,24 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { parse as parseCsv } from "papaparse";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
 const REQUIRED_HEADERS = [
   "date",
@@ -38,16 +42,59 @@ const REQUIRED_HEADERS = [
   "description",
 ];
 
-export function TransactionImportForm() {
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const router = useRouter();
+export function TransactionImportForm({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(false)
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>{children}</DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Import Transaction Data</DrawerTitle>
+            <DrawerDescription>
+              Upload your transaction data in .csv format.
+            </DrawerDescription>
+          </DrawerHeader>
+          <ImportForm className="px-6 pb-40"/>
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogTitle>Import Transaction Data</DialogTitle>
+        <DialogDescription>
+          Upload your transaction data in .csv format.
+        </DialogDescription>
+        <ImportForm />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface ImportFormProps {
+  className?: string;
+}
+
+function ImportForm( { className }: ImportFormProps ) {
+  const [file, setFile] = React.useState<File | null>(null)
+  const [isUploading, setIsUploading] = React.useState(false)
+  const router = useRouter()
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setFile(event.target.files[0]);
+      setFile(event.target.files[0])
     }
-  };
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -124,50 +171,18 @@ export function TransactionImportForm() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import Transaction Data</CardTitle>
-        <CardDescription>
-          Upload your transaction data in .csv format.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            id="csv-file"
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            disabled={isUploading}
-          />
-          <Button type="submit" disabled={!file || isUploading}>
-            {isUploading ? "Uploading..." : "Upload and Import"}
-          </Button>
-        </form>
-      </CardContent>
-      <CardContent>
-        <Accordion type="single" collapsible>
-          <AccordionItem value="item-1">
-            <AccordionTrigger>What is this for?</AccordionTrigger>
-            <AccordionContent>
-              You can import transactions in bulk instead of adding one by one manually.
-              <br /><br />
-              This is useful for initializing database for new users with historical data or correcting any missing data after a long inactivity period.
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="item-2">
-            <AccordionTrigger>Is there any format requirement for the data?</AccordionTrigger>
-            <AccordionContent>
-              <div className="flex flex-col gap-2">
-              Yes, please prepare your .csv file with the following column headers. The order must be exact. Not all columns are required for every transaction type, but the header must be present.
-                <code className="block whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm">
-                  {REQUIRED_HEADERS.join("\n")}
-                </code>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
-    </Card>
+    <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
+      <Input
+        id="csv-file"
+        type="file"
+        accept=".csv"
+        onChange={handleFileChange}
+        disabled={isUploading}
+        className="rounded-full h-10"
+      />
+      <Button type="submit" disabled={!file || isUploading}>
+        {isUploading ? "Uploading..." : "Upload and Import"}
+      </Button>
+    </form>
   );
 }

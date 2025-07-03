@@ -14,8 +14,19 @@ import TabFilter from "@/components/tab-filter"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { TransactionForm } from "@/components/transaction/add-tx-form"
-import { PlusIcon } from "lucide-react"
+import { TransactionImportForm } from "@/components/transaction/import-form"
+import {
+  EllipsisVertical,
+  PlusIcon,
+  FileUp
+} from "lucide-react"
 import { PageContainer } from "@/components/page-container"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type TransactionFeed = {
   transaction_id: string
@@ -113,11 +124,32 @@ export default function Page() {
               selected={date}
               onSelect={setDate}
             />
-            <TransactionForm>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button variant="default">
-                <PlusIcon />Transaction
+                Action<EllipsisVertical />
               </Button>
-            </TransactionForm>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm"
+            >
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <TransactionForm>
+                  <div className="flex items-center gap-2">
+                    <PlusIcon />Add Transaction
+                  </div>
+                </TransactionForm>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <TransactionImportForm>
+                  <div className="flex items-center gap-2">
+                    <FileUp />Upload Data
+                  </div>
+                </TransactionImportForm>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           </div>
           <TabFilter
             options={tabOptions}
