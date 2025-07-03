@@ -1,15 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/sidebar/sidebar"
-import { PageHeader } from "@/components/page-header"
 import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+  PageMain,
+  PageHeader,
+  PageContent
+} from "@/components/page-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
-import { PageInfo } from "@/components/page-info"
 import { StockCardWrapper } from "@/components/portfolio/stock-card-wrapper"
 import { StockSkeleton } from "@/components/portfolio/stock-skeleton"
 import {
@@ -23,7 +21,6 @@ import {
   RefreshCw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { PageContainer } from "@/components/page-container"
 
 interface StockHolding {
   ticker: string;
@@ -90,92 +87,74 @@ export default function Page() {
   }, [])
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <PageHeader title="Portfolio" onInfoClick={() => setIsInfoOpen(true)} />
-        <PageInfo
-          open={isInfoOpen}
-          onOpenChange={setIsInfoOpen}
-          title="What is in your Portfolio?"
-        >
-          <p className="text-justify">All of your tradable securities will be displayed here under Portfolio. Currently it only includes stocks from Vietnamese listed companies and cryptocurrencies, but can be expanded in the future.
-          </p>
-        </PageInfo>
-        <PageContainer>
-          <CardHeader className="flex px-2 items-center justify-between">
+    <PageMain>
+      <PageHeader title="Portfolio" />
+      <PageContent>
+        <CardHeader className="flex px-2 items-center justify-between">
+          <Button
+            variant="default"
+            className="font-semibold text-md"
+          >
+            <ReceiptText />Stocks
+          </Button>
+          <CardAction className="flex py-2">
             <Button
-              variant="default"
-              className="font-semibold text-md"
+              variant="outline"
+              onClick={handleRefresh}
             >
-              <ReceiptText />Stocks
+              <RefreshCw />Refresh Data
             </Button>
-            <CardAction className="flex py-2">
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-              >
-                <RefreshCw />Refresh Data
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="px-0 pb-4">
-            <div className="flex flex-col gap-2">
-              {loading ? (
-                Array.from({ length: 2 }).map((_, index) => (
-                  <StockSkeleton key={index} />
-                ))
-              ) : stockHoldings.length > 0 ? (
-                stockHoldings.map((stock) => (
-                  <StockCardWrapper
-                    key={stock.ticker}
-                    ticker={stock.ticker}
-                    name={stock.name}
-                    logoUrl={stock.logo_url}
-                    quantity={stock.quantity}
-                    costBasis={stock.cost_basis}
-                    refreshKey={refreshKey}
-                    lastUpdatedPrice={stock.last_updated_price}
-                  />
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground py-4">
-                  No stock holdings found.
-                </div>
-              )}
-              {lastUpdated && !loading && stockHoldings.length > 0 && (
-                <span className="text-right text-xs px-6 text-muted-foreground italic">
-                  Last updated at {lastUpdated.toLocaleString(
-                    'en-SG',
-                    {
-                      year: 'numeric',
-                      month: 'numeric',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZoneName: 'short'
-                    })}
-                </span>
-              )}
-            </div>
-          </CardContent>
-          <CardHeader className="flex px-2 items-center justify-between">
-            <Button
-              variant="default"
-              className="font-semibold text-md"
-            >
-              <Bitcoin />Crypto
-            </Button>
-          </CardHeader>
-        </PageContainer>
-      </SidebarInset>
-    </SidebarProvider>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="px-0 pb-4">
+          <div className="flex flex-col gap-2">
+            {loading ? (
+              Array.from({ length: 2 }).map((_, index) => (
+                <StockSkeleton key={index} />
+              ))
+            ) : stockHoldings.length > 0 ? (
+              stockHoldings.map((stock) => (
+                <StockCardWrapper
+                  key={stock.ticker}
+                  ticker={stock.ticker}
+                  name={stock.name}
+                  logoUrl={stock.logo_url}
+                  quantity={stock.quantity}
+                  costBasis={stock.cost_basis}
+                  refreshKey={refreshKey}
+                  lastUpdatedPrice={stock.last_updated_price}
+                />
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-4">
+                No stock holdings found.
+              </div>
+            )}
+            {lastUpdated && !loading && stockHoldings.length > 0 && (
+              <span className="text-right text-xs px-6 text-muted-foreground italic">
+                Last updated at {lastUpdated.toLocaleString(
+                  'en-SG',
+                  {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                  })}
+              </span>
+            )}
+          </div>
+        </CardContent>
+        <CardHeader className="flex px-2 items-center justify-between">
+          <Button
+            variant="default"
+            className="font-semibold text-md"
+          >
+            <Bitcoin />Crypto
+          </Button>
+        </CardHeader>
+      </PageContent>
+    </PageMain>
   )
 }

@@ -1,11 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/sidebar/sidebar"
-import { PageHeader } from "@/components/page-header"
+import {
+  PageMain,
+  PageHeader,
+  PageContent
+} from "@/components/page-layout"
 import { TransactionCard } from "@/components/transaction/tx-card"
 import { TransactionSkeleton } from "@/components/transaction/tx-skeleton"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
@@ -20,7 +22,6 @@ import {
   PlusIcon,
   FileUp
 } from "lucide-react"
-import { PageContainer } from "@/components/page-container"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,96 +107,86 @@ export default function Page() {
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <PageHeader title="Transactions" />
-        <PageContainer>
-          <div className="flex items-center justify-between">
-            <DatePicker
-              mode="range"
-              selected={date}
-              onSelect={setDate}
-            />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="default">
-                Action<EllipsisVertical />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm"
-            >
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <TransactionForm>
-                  <div className="flex items-center gap-2">
-                    <PlusIcon />Add Transaction
-                  </div>
-                </TransactionForm>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <TransactionImportForm>
-                  <div className="flex items-center gap-2">
-                    <FileUp />Upload Data
-                  </div>
-                </TransactionImportForm>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          </div>
-          <TabFilter
-            options={tabOptions}
-            onValueChange={setAssetType}
-            value={assetType}
-            defaultValue="stock"
+    <PageMain>
+      <PageHeader title="Transactions" />
+      <PageContent>
+        <div className="flex items-center justify-between">
+          <DatePicker
+            mode="range"
+            selected={date}
+            onSelect={setDate}
           />
-          <div className="flex flex-col pt-2 gap-2">
-            {loading && transactions.length === 0 ? (
-              Array.from({ length: PAGE_SIZE }).map((_, index) => (
-                <TransactionSkeleton key={index} />
-              ))
-            ) : (
-              transactions.map((tx) => (
-                <TransactionCard
-                  key={tx.transaction_id}
-                  ticker={tx.ticker}
-                  name={tx.name}
-                  logoUrl={tx.logo_url || ""}
-                  amount={formatCurrency(
-                    tx.type === "sell" && tx.net_sold ? tx.net_sold : tx.amount,
-                  )}
-                  quantity={formatCurrency(tx.quantity, tx.currency_code)}
-                  type={tx.type}
-                  description={tx.description || ""}
-                  currencyCode={tx.currency_code}
-                  transactionDate={tx.transaction_date}
-                />
-              ))
-            )}
-            {loading && transactions.length > 0 && <p className="text-center text-muted-foreground">Loading...</p>}
-            {!loading && transactions.length === 0 && (
-              <p className="mx-auto py-10">No transactions found</p>
-            )}
-            {!loading && hasMore && (
-              <Button
-                onClick={handleLoadMore}
-                variant="outline"
-                className="mx-auto mb-20"
-              >
-                Load more...
-              </Button>
-            )}
-          </div>
-        </PageContainer>
-      </SidebarInset>
-    </SidebarProvider>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default">
+              Action<EllipsisVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm"
+          >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <TransactionForm>
+                <div className="flex items-center gap-2">
+                  <PlusIcon />Add Transaction
+                </div>
+              </TransactionForm>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <TransactionImportForm>
+                <div className="flex items-center gap-2">
+                  <FileUp />Upload Data
+                </div>
+              </TransactionImportForm>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        </div>
+        <TabFilter
+          options={tabOptions}
+          onValueChange={setAssetType}
+          value={assetType}
+          defaultValue="stock"
+        />
+        <div className="flex flex-col pt-2 gap-2">
+          {loading && transactions.length === 0 ? (
+            Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <TransactionSkeleton key={index} />
+            ))
+          ) : (
+            transactions.map((tx) => (
+              <TransactionCard
+                key={tx.transaction_id}
+                ticker={tx.ticker}
+                name={tx.name}
+                logoUrl={tx.logo_url || ""}
+                amount={formatCurrency(
+                  tx.type === "sell" && tx.net_sold ? tx.net_sold : tx.amount,
+                )}
+                quantity={formatCurrency(tx.quantity, tx.currency_code)}
+                type={tx.type}
+                description={tx.description || ""}
+                currencyCode={tx.currency_code}
+                transactionDate={tx.transaction_date}
+              />
+            ))
+          )}
+          {loading && transactions.length > 0 && <p className="text-center text-muted-foreground">Loading...</p>}
+          {!loading && transactions.length === 0 && (
+            <p className="mx-auto py-10">No transactions found</p>
+          )}
+          {!loading && hasMore && (
+            <Button
+              onClick={handleLoadMore}
+              variant="outline"
+              className="mx-auto mb-20"
+            >
+              Load more...
+            </Button>
+          )}
+        </div>
+      </PageContent>
+    </PageMain>
   )
 }

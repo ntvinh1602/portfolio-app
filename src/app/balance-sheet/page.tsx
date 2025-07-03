@@ -1,9 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { PageMain } from "@/components/page-main"
-import { PageHeader } from "@/components/page-header"
-import { PageContainer } from "@/components/page-container"
+import {
+  PageMain,
+  PageHeader,
+  PageContent
+} from "@/components/page-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 import { formatCurrency } from "@/lib/utils"
@@ -112,7 +114,7 @@ export default function Page() {
 return (
   <PageMain>
     <PageHeader title="Balance Sheet" />
-    <PageContainer>
+    <PageContent>
       <CardHeader className="flex px-2 items-center justify-between">
         <Button
           variant="default"
@@ -198,7 +200,7 @@ return (
           </>
         )}
       </CardContent>
-    </PageContainer>
+    </PageContent>
   </PageMain>
   )
 }
