@@ -8,7 +8,7 @@ import {
 } from "@/components/page-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
-import { formatCurrency } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
 import {
   CardContent,
   CardHeader,
@@ -68,21 +68,21 @@ export default function Page() {
 
   const assetsItems = (summaryData?.assets || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount),
+    totalAmount: formatNum(item.totalAmount),
   }))
-  const assetsTotalAmount = formatCurrency(summaryData?.totalAssets || 0)
+  const assetsTotalAmount = formatNum(summaryData?.totalAssets || 0)
 
   const liabilitiesItems = (summaryData?.liabilities || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount),
+    totalAmount: formatNum(item.totalAmount),
   }))
-  const liabilitiesTotalAmount = formatCurrency(summaryData?.totalLiabilities || 0)
+  const liabilitiesTotalAmount = formatNum(summaryData?.totalLiabilities || 0)
 
   const equityItems = (summaryData?.equity || []).map((item) => ({
     ...item,
-    totalAmount: formatCurrency(item.totalAmount),
+    totalAmount: formatNum(item.totalAmount),
   }))
-  const equityTotalAmount = formatCurrency(summaryData?.totalEquity || 0)
+  const equityTotalAmount = formatNum(summaryData?.totalEquity || 0)
 
   const chartConfig = {
     allocation: {

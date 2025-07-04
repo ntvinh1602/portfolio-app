@@ -1,4 +1,3 @@
-import { IconPigMoney } from "@tabler/icons-react"
 import { LoginForm } from "@/components/login-form"
 
 export default function LoginPage() {
@@ -7,9 +6,6 @@ export default function LoginPage() {
       <div className="flex flex-col gap-4 p-6">
         <div className="flex justify-center gap-2">
           <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <IconPigMoney className="size-4" />
-            </div>
             Portfolio Tracker
           </a>
         </div>

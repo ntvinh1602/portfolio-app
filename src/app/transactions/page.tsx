@@ -12,28 +12,12 @@ import {
 } from "@/components/transaction/transaction-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
-import { formatCurrency } from "@/lib/utils"
 import { type DateRange } from "react-day-picker"
-import TabFilter from "@/components/tab-filter"
+import TabSwitcher from "@/components/tab-switcher"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { TransactionForm } from "@/components/transaction/add-transaction"
-import { TransactionImportForm } from "@/components/transaction/import-form"
-import {
-  SquarePen,
-  PlusIcon,
-  Upload,
-} from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
-  DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu"
-import { DropdownMenuSub } from "@radix-ui/react-dropdown-menu"
+import { TransactionForm } from "@/components/transaction/add-transaction-form"
+import { AddTransactionMenu } from "@/components/transaction/add-transaction-menu"
 import { Enums } from "@/lib/database.types"
 
 type TransactionFeed = {
@@ -126,87 +110,7 @@ export default function Page() {
       <PageHeader title="Transactions" />
       <PageContent>
         <div className="flex items-center justify-between">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <PlusIcon />
-                Add
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="rounded-2xl bg-card/25 backdrop-blur-sm"
-            >
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <SquarePen />
-                  Manual Input
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("buy")}
-                    >
-                      Buy
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("sell")}
-                    >
-                      Sell
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("deposit")}
-                    >
-                      Deposit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("withdraw")}
-                    >
-                      Withdraw
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("income")}
-                    >
-                      Income
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("expense")}
-                    >
-                      Expense
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("borrow")}
-                    >
-                      Borrow
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("debt_payment")}
-                    >
-                      Debt Payment
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("dividend")}
-                    >
-                      Dividend
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleMenuItemClick("split")}
-                    >
-                      Split
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                <TransactionImportForm>
-                  <div className="flex items-center gap-2">
-                    <Upload />
-                    Batch Upload
-                  </div>
-                </TransactionImportForm>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <AddTransactionMenu onMenuItemClick={handleMenuItemClick} />
           <TransactionForm
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
@@ -214,7 +118,7 @@ export default function Page() {
           />
           <DatePicker mode="range" selected={date} onSelect={setDate} />
         </div>
-        <TabFilter
+        <TabSwitcher
           options={tabOptions}
           onValueChange={setAssetType}
           value={assetType}
@@ -232,14 +136,12 @@ export default function Page() {
                 ticker={tx.ticker}
                 name={tx.name}
                 logoUrl={tx.logo_url || ""}
-                amount={formatCurrency(
-                  tx.type === "sell" && tx.net_sold ? tx.net_sold : tx.amount,
-                )}
-                quantity={formatCurrency(tx.quantity, tx.currency_code)}
+                amount={tx.amount}
+                quantity={tx.quantity}
                 type={tx.type}
                 description={tx.description || ""}
                 currencyCode={tx.currency_code}
-                transactionDate={tx.transaction_date}
+                date={tx.transaction_date}
               />
             ))
           )}

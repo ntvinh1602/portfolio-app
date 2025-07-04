@@ -18,8 +18,16 @@ import {
 import { 
   Bitcoin,
   ReceiptText,
-  RefreshCw
+  RefreshCw,
+  ChartPie
 } from "lucide-react"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Piechart } from "@/components/piechart"
+import { ChartConfig } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 
 interface StockHolding {
@@ -77,13 +85,43 @@ export default function Page() {
       if (error) {
         console.error('Error fetching stock holdings:', error);
       } else {
-        setStockHoldings(data || []);
+        const holdingsWithTotalAmount = data.map((holding: any) => ({
+          ...holding,
+          total_amount: holding.quantity * holding.last_updated_price,
+        }));
+        setStockHoldings(holdingsWithTotalAmount || []);
       }
       setLoading(false)
     }
 
     fetchInitialData();
   }, [])
+
+  const chartConfig: ChartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      allocation: {
+        label: "Allocation",
+      },
+    };
+    const activeHoldings = stockHoldings.filter(item => item.total_amount > 0);
+    activeHoldings.forEach((item, index) => {
+      config[item.ticker] = {
+        label: item.ticker,
+        color: `var(--chart-${(index % 5) + 1})`,
+      };
+    });
+    return config;
+  }, [stockHoldings]);
+
+  const chartData = React.useMemo(() => {
+    return stockHoldings
+      ?.filter(item => item.total_amount > 0)
+      .map(item => ({
+        asset: item.ticker,
+        allocation: item.total_amount,
+        fill: `var(--color-${item.ticker})`,
+      }));
+  }, [stockHoldings]);
 
   return (
     <PageMain>
@@ -96,12 +134,30 @@ export default function Page() {
           >
             <ReceiptText />Stocks
           </Button>
-          <CardAction className="flex py-2">
+          <CardAction className="flex py-2 gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  <ChartPie />Chart
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="center"
+                className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm"
+              >
+                <Piechart 
+                  data={chartData}
+                  chartConfig={chartConfig}
+                  dataKey="allocation"
+                  nameKey="asset"
+                />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               onClick={handleRefresh}
             >
-              <RefreshCw />Refresh Data
+              <RefreshCw />Refresh
             </Button>
           </CardAction>
         </CardHeader>

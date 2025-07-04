@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils"
 import {
   ChartConfig,
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
@@ -28,13 +26,9 @@ export function Piechart({ data, chartConfig, dataKey, nameKey, className }: Pie
   return (
     <ChartContainer
       config={chartConfig}
-      className={cn("mx-auto aspect-square max-h-[250px]", className)}
+      className={cn("mx-auto aspect-square", className)}
     >
-      <PieChart margin={{ top: 20, bottom: 20 }}>
-        <ChartTooltip
-          cursor={true}
-          content={<ChartTooltipContent />}
-        />
+      <PieChart margin={{ top: 10, bottom: 10 }}>
         <ChartLegend
           content={<ChartLegendContent nameKey={nameKey} />}
           className="text-md"

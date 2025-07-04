@@ -7,24 +7,36 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Image from 'next/image'
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
+import { formatNum } from "@/lib/utils"
 
 interface TransactionCardProps {
+  date: string;
+  type: string;
+  description: string;
   ticker: string;
   name: string;
   logoUrl: string;
-  amount: string;
-  quantity: string;
-  type: string;
-  description: string;
+  quantity: number;
+  amount: number;
   currencyCode: string;
-  transactionDate: string;
+  netSold?: number
 }
 
-function TransactionCard( { ticker, name, logoUrl, amount, quantity, type, description, currencyCode, transactionDate }: TransactionCardProps) {
+function TransactionCard( { date, type, description, ticker, name, logoUrl, quantity, amount, currencyCode, netSold }: TransactionCardProps) {
+
+  const primaryValue =
+    type === "sell" && netSold !== undefined
+      ? formatNum(netSold)
+      : type === "split"
+        ? `${formatNum(quantity)} units`
+        : formatNum(amount);
+
+  const secondaryValue = currencyCode !== 'VND' && formatNum(quantity, currencyCode)
+
   return (
     <Card className="gap-1 py-0 border-none bg-background shadow-none">
       <CardTitle className="text-sm font-normal">
-        {format(new Date(transactionDate), "dd MMM yyyy")}
+        {format(new Date(date), "dd MMM yyyy")}
       </CardTitle>
       <CardContent className="flex items-center border-t py-2 px-0 gap-2">
         {logoUrl ? (
@@ -43,19 +55,21 @@ function TransactionCard( { ticker, name, logoUrl, amount, quantity, type, descr
         <div className="flex flex-col w-full min-w-0 gap-1 pl-2">
           <div className="flex flex-1 justify-between min-w-0">
             <span className="text-sm truncate min-w-0">{description}</span>
-            <span className="text-sm font-medium flex-shrink-0 pl-2 whitespace-nowrap">{amount}</span>
+            <span className="text-sm font-medium flex-shrink-0 pl-2 whitespace-nowrap">
+              {primaryValue}
+            </span>
           </div>
           <div className="flex flex-1 justify-between min-w-0 items-end">
             <div className="flex gap-1">
-              <Badge variant="outline" className="rounded-full capitalize">
+              <Badge variant="outline" className="capitalize">
                 {type}
               </Badge>
-              <Badge variant="outline" className="rounded-full">
+              <Badge variant="outline">
                 {ticker}
               </Badge>
             </div>
             <span className="text-xs flex-shrink-0 pl-2 whitespace-nowrap">
-              {currencyCode !== 'VND' && `${quantity}`}
+              {secondaryValue}
             </span>
           </div>
         </div>

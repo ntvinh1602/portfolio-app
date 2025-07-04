@@ -4,24 +4,24 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
-type TabOption = {
+type SwitchOption = {
   value: string
   label: string
 }
 
-type TabFilterProps = {
-  options: TabOption[]
+type TabSwitcherProps = {
+  options: SwitchOption[]
   onValueChange: (value: string) => void
   value: string
   defaultValue?: string
 }
 
-export default function TabFilter({
+export default function TabSwitcher({
   options,
   onValueChange,
   value,
   defaultValue,
-}: TabFilterProps) {
+}: TabSwitcherProps) {
   return (
     <Tabs
       defaultValue={defaultValue}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { StockCard } from "./stock-layout"
-import { formatCurrency } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
 
 interface StockCardWrapperProps {
   ticker: string;
@@ -60,10 +60,10 @@ export function StockCardWrapper({ ticker, name, logoUrl, quantity, costBasis, r
       ticker={ticker}
       name={name}
       logoUrl={logoUrl}
-      quantity={formatCurrency(quantity)}
-      totalAmount={priceStatus === 'success' ? formatCurrency(quantity * price) : "..."}
-      pnl={priceStatus === 'success' ? formatCurrency((quantity * price / costBasis - 1) * 100, undefined, 1) : "..."}
-      price={formatCurrency(price / 1000, undefined, 2)}
+      quantity={formatNum(quantity)}
+      totalAmount={priceStatus === 'success' ? formatNum(quantity * price) : "..."}
+      pnl={priceStatus === 'success' ? formatNum((quantity * price / costBasis - 1) * 100, undefined, 1) : "..."}
+      price={formatNum(price / 1000, undefined, 2)}
       priceStatus={priceStatus}
     />
   )
