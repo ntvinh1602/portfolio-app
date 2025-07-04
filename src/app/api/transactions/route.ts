@@ -288,10 +288,23 @@ async function handleBuy(
     description,
   } = data
 
-  const { data: assetData, error: assetError } = await supabase
+  const { data: assetSecurity, error: assetSecurityError } = await supabase
     .from("assets")
-    .select("ticker")
+    .select("security_id")
     .eq("id", asset)
+    .single()
+
+  if (assetSecurityError) {
+    console.error("Error fetching asset security id:", assetSecurityError)
+    throw new Error(
+      `Failed to fetch asset security details: ${assetSecurityError.message}`,
+    )
+  }
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("securities")
+    .select("ticker")
+    .eq("id", assetSecurity.security_id)
     .single()
 
   if (assetError) {
@@ -351,10 +364,24 @@ async function handleIncome(
   if (!finalDescription) {
     if (transaction_type === "dividend") {
       const dividendData = data as z.infer<typeof dividendSchema>
+      const { data: assetSecurity, error: assetSecurityError } =
+        await supabase
+          .from("assets")
+          .select("security_id")
+          .eq("id", dividendData["dividend-asset"])
+          .single()
+
+      if (assetSecurityError) {
+        console.error("Error fetching asset security id:", assetSecurityError)
+        throw new Error(
+          `Failed to fetch asset security details: ${assetSecurityError.message}`,
+        )
+      }
+
       const { data: assetData, error: assetError } = await supabase
-        .from("assets")
+        .from("securities")
         .select("ticker")
-        .eq("id", dividendData["dividend-asset"])
+        .eq("id", assetSecurity.security_id)
         .single()
 
       if (assetError) {
@@ -539,10 +566,23 @@ async function handleSplit(
     "split-quantity": quantity,
   } = data
 
-  const { data: assetData, error: assetError } = await supabase
+  const { data: assetSecurity, error: assetSecurityError } = await supabase
     .from("assets")
-    .select("ticker")
+    .select("security_id")
     .eq("id", asset_id)
+    .single()
+
+  if (assetSecurityError) {
+    console.error("Error fetching asset security id:", assetSecurityError)
+    throw new Error(
+      `Failed to fetch asset security details: ${assetSecurityError.message}`,
+    )
+  }
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("securities")
+    .select("ticker")
+    .eq("id", assetSecurity.security_id)
     .single()
 
   if (assetError) {
@@ -587,10 +627,23 @@ async function handleSell(
 
   const total_proceeds = quantity * price
 
-  const { data: assetData, error: assetError } = await supabase
+  const { data: assetSecurity, error: assetSecurityError } = await supabase
     .from("assets")
-    .select("ticker")
+    .select("security_id")
     .eq("id", asset)
+    .single()
+
+  if (assetSecurityError) {
+    console.error("Error fetching asset security id:", assetSecurityError)
+    throw new Error(
+      `Failed to fetch asset security details: ${assetSecurityError.message}`,
+    )
+  }
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("securities")
+    .select("ticker")
+    .eq("id", assetSecurity.security_id)
     .single()
 
   if (assetError) {

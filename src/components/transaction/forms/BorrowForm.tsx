@@ -93,10 +93,12 @@ export function BorrowForm({
           </SelectTrigger>
           <SelectContent>
             {assets
-              .filter(asset => asset.asset_class === "cash")
+              .filter(
+                asset => asset.securities && asset.securities.asset_class === "cash",
+              )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
-                  {asset.name}
+                  {asset.securities?.name}
                 </SelectItem>
               ))}
           </SelectContent>

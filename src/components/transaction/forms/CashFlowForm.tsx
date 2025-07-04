@@ -71,11 +71,13 @@ export function CashFlowForm({
             {assets
               .filter(
                 asset =>
-                  asset.asset_class === "cash" || asset.asset_class === "epf",
+                  asset.securities &&
+                  (asset.securities.asset_class === "cash" ||
+                    asset.securities.asset_class === "epf"),
               )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
-                  {asset.name}
+                  {asset.securities?.name}
                 </SelectItem>
               ))}
           </SelectContent>

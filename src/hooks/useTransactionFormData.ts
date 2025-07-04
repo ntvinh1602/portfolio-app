@@ -4,9 +4,13 @@ import * as React from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { Tables } from "@/lib/database.types"
 
+export type AssetWithSecurity = Tables<"assets"> & {
+  securities: Tables<"securities">
+}
+
 export function useTransactionFormData() {
   const [accounts, setAccounts] = React.useState<Tables<"accounts">[]>([])
-  const [assets, setAssets] = React.useState<Tables<"assets">[]>([])
+  const [assets, setAssets] = React.useState<AssetWithSecurity[]>([])
   const [debts, setDebts] = React.useState<Tables<"debts">[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -23,10 +27,10 @@ export function useTransactionFormData() {
 
         const { data: assetsData, error: assetsError } = await supabase
           .from("assets")
-          .select("*")
-          .not("asset_class", "in", "(equity,liability)")
+          .select("*, securities(*)")
+          .not("securities.asset_class", "in", "(equity,liability)")
         if (assetsError) throw assetsError
-        setAssets(assetsData || [])
+        setAssets((assetsData as AssetWithSecurity[]) || [])
 
         const { data: debtsData, error: debtsError } = await supabase
           .from("debts")

@@ -29,7 +29,7 @@ const REQUIRED_HEADERS = [
   "type",
   "account",
   "asset_ticker",
-  "cash_asset_ticker",
+  "cash_asset_ticker", // asset to debit or credit. EPF dividend should be EPF
   "quantity",
   "price",
   "amount",

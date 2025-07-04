@@ -40,42 +40,27 @@ export type Database = {
       }
       assets: {
         Row: {
-          asset_class: Database["public"]["Enums"]["asset_class"]
-          currency_code: string
           id: string
-          last_updated_price: number | null
-          logo_url: string | null
-          name: string
-          ticker: string
+          security_id: string | null
           user_id: string
         }
         Insert: {
-          asset_class: Database["public"]["Enums"]["asset_class"]
-          currency_code: string
           id?: string
-          last_updated_price?: number | null
-          logo_url?: string | null
-          name: string
-          ticker: string
+          security_id?: string | null
           user_id: string
         }
         Update: {
-          asset_class?: Database["public"]["Enums"]["asset_class"]
-          currency_code?: string
           id?: string
-          last_updated_price?: number | null
-          logo_url?: string | null
-          name?: string
-          ticker?: string
+          security_id?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "assets_currency_code_fkey"
-            columns: ["currency_code"]
+            foreignKeyName: "assets_security_id_fkey"
+            columns: ["security_id"]
             isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
+            referencedRelation: "securities"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "assets_user_id_fkey"
@@ -252,6 +237,36 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      securities: {
+        Row: {
+          asset_class: Database["public"]["Enums"]["asset_class"]
+          currency_code: string | null
+          id: string
+          last_updated_price: number | null
+          logo_url: string | null
+          name: string
+          ticker: string
+        }
+        Insert: {
+          asset_class: Database["public"]["Enums"]["asset_class"]
+          currency_code?: string | null
+          id?: string
+          last_updated_price?: number | null
+          logo_url?: string | null
+          name: string
+          ticker: string
+        }
+        Update: {
+          asset_class?: Database["public"]["Enums"]["asset_class"]
+          currency_code?: string | null
+          id?: string
+          last_updated_price?: number | null
+          logo_url?: string | null
+          name?: string
+          ticker?: string
+        }
+        Relationships: []
       }
       tax_lots: {
         Row: {
@@ -446,7 +461,164 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_asset_balance: {
+        Args: { p_asset_id: string; p_user_id: string }
+        Returns: number
+      }
+      get_asset_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_stock_holdings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          ticker: string
+          name: string
+          logo_url: string
+          quantity: number
+          cost_basis: number
+          last_updated_price: number
+        }[]
+      }
+      get_transaction_feed: {
+        Args: {
+          page_size: number
+          page_number: number
+          start_date?: string
+          end_date?: string
+          asset_class_filter?: string
+        }
+        Returns: {
+          transaction_id: string
+          transaction_date: string
+          type: string
+          description: string
+          ticker: string
+          name: string
+          logo_url: string
+          quantity: number
+          amount: number
+          currency_code: string
+          net_sold: number
+        }[]
+      }
+      handle_borrow_transaction: {
+        Args: {
+          p_user_id: string
+          p_lender_name: string
+          p_principal_amount: number
+          p_interest_rate: number
+          p_transaction_date: string
+          p_deposit_account_id: string
+          p_cash_asset_id: string
+          p_description: string
+        }
+        Returns: undefined
+      }
+      handle_bulk_transaction_import: {
+        Args: { p_user_id: string; p_transactions_data: Json }
+        Returns: undefined
+      }
+      handle_buy_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_account_id: string
+          p_asset_id: string
+          p_cash_asset_id: string
+          p_quantity: number
+          p_price: number
+          p_fees: number
+          p_description: string
+        }
+        Returns: string
+      }
+      handle_debt_payment_transaction: {
+        Args: {
+          p_user_id: string
+          p_debt_id: string
+          p_principal_payment: number
+          p_interest_payment: number
+          p_transaction_date: string
+          p_from_account_id: string
+          p_cash_asset_id: string
+          p_description: string
+        }
+        Returns: undefined
+      }
+      handle_deposit_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_account_id: string
+          p_amount: number
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+        }
+        Returns: Json
+      }
+      handle_expense_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_account_id: string
+          p_amount: number
+          p_description: string
+          p_asset_id: string
+        }
+        Returns: undefined
+      }
+      handle_income_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_account_id: string
+          p_amount: number
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+          p_transaction_type: string
+        }
+        Returns: undefined
+      }
+      handle_sell_transaction: {
+        Args: {
+          p_user_id: string
+          p_asset_id: string
+          p_quantity_to_sell: number
+          p_total_proceeds: number
+          p_fees: number
+          p_taxes: number
+          p_transaction_date: string
+          p_cash_account_id: string
+          p_cash_asset_id: string
+          p_description: string
+        }
+        Returns: string
+      }
+      handle_split_transaction: {
+        Args: {
+          p_user_id: string
+          p_asset_id: string
+          p_quantity: number
+          p_transaction_date: string
+          p_description: string
+        }
+        Returns: undefined
+      }
+      handle_withdraw_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_account_id: string
+          p_amount: number
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       account_type:

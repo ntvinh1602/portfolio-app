@@ -68,10 +68,12 @@ export function TradeForm({
           </SelectTrigger>
           <SelectContent>
             {assets
-              .filter(asset => asset.asset_class === "cash")
+              .filter(
+                asset => asset.securities && asset.securities.asset_class === "cash",
+              )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
-                  {asset.name}
+                  {asset.securities?.name}
                 </SelectItem>
               ))}
           </SelectContent>
@@ -81,10 +83,12 @@ export function TradeForm({
         <Label htmlFor="asset">Asset</Label>
         <Combobox
           items={assets
-            .filter(asset => asset.asset_class === "stock")
+            .filter(
+              asset => asset.securities && asset.securities.asset_class === "stock",
+            )
             .map(asset => ({
               value: asset.id,
-              label: `${asset.ticker} - ${asset.name}`,
+              label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
             }))}
           value={formState.asset}
           onChange={handlePickerChange("asset")}

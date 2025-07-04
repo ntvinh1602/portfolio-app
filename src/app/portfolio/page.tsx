@@ -30,14 +30,17 @@ import { Piechart } from "@/components/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 
-interface StockHolding {
+interface StockHoldingBase {
   ticker: string;
   name: string;
   logo_url: string;
-  total_amount: number;
   quantity: number;
   cost_basis: number;
   last_updated_price: number;
+}
+
+interface StockHolding extends StockHoldingBase {
+  total_amount: number;
 }
 
 export default function Page() {
@@ -84,12 +87,12 @@ export default function Page() {
       const { data, error } = await supabase.rpc('get_stock_holdings');
       if (error) {
         console.error('Error fetching stock holdings:', error);
-      } else {
-        const holdingsWithTotalAmount = data.map((holding: any) => ({
+      } else if (data) {
+        const holdingsWithTotalAmount: StockHolding[] = (data as StockHoldingBase[]).map((holding: StockHoldingBase) => ({
           ...holding,
           total_amount: holding.quantity * holding.last_updated_price,
         }));
-        setStockHoldings(holdingsWithTotalAmount || []);
+        setStockHoldings(holdingsWithTotalAmount);
       }
       setLoading(false)
     }

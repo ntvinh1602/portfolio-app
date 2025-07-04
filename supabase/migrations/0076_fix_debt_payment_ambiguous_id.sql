@@ -151,85 +151,131 @@ ALTER FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uu
 CREATE OR REPLACE FUNCTION "public"."get_asset_summary"() RETURNS json
     LANGUAGE "plpgsql"
     AS $$
-declare
+DECLARE
   result json;
-  display_currency text;
+  
+  -- Cost basis totals
   asset_totals_by_class jsonb;
   asset_totals_by_ticker jsonb;
-  cash_total numeric;
+  
+  -- Market value totals
+  asset_market_totals_by_class jsonb;
+  total_assets_market_value numeric;
+  
+  -- Liability values
   loans_payable numeric;
   margins_payable numeric;
+  accrued_interest numeric;
   liability_total numeric;
+  
+  -- Equity values
   capital_total numeric;
   earnings_total numeric;
+  unrealized_pl numeric;
   equity_total numeric;
-  assets_total numeric;
-begin
-  -- Get display currency from the authenticated user's profile
-  select p.display_currency into display_currency from profiles p where p.id = auth.uid();
-  if display_currency is null then
-    display_currency := 'USD';
-  end if;
-  -- Calculate totals by asset class, filtered by the user's assets
-  select jsonb_object_agg(asset_class, total)
-  into asset_totals_by_class
-  from (
-    select a.asset_class, sum(tl.amount) as total
-    from transaction_legs tl
-    join assets a on tl.asset_id = a.id
-    where a.user_id = auth.uid() -- Ensure we only get assets for the current user
-    group by a.asset_class
+  
+  -- Asset values
+  assets_total_cost numeric;
+BEGIN
+  -- Calculate cost basis totals by asset class (excluding equity/liability)
+  SELECT COALESCE(jsonb_object_agg(class_totals.asset_class, class_totals.total), '{}'::jsonb)
+  INTO asset_totals_by_class
+  FROM (
+    SELECT s.asset_class, sum(tl.amount) as total
+    FROM transaction_legs tl
+    JOIN assets a ON tl.asset_id = a.id
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.user_id = auth.uid()
+      AND s.asset_class NOT IN ('equity', 'liability')
+    GROUP BY s.asset_class
   ) as class_totals;
-  -- Calculate totals by ticker, filtered by the user's assets
-  select jsonb_object_agg(ticker, total)
-  into asset_totals_by_ticker
-  from (
-    select a.ticker, sum(tl.amount) as total
-    from transaction_legs tl
-    join assets a on tl.asset_id = a.id
-    where a.user_id = auth.uid() -- Ensure we only get assets for the current user
-    group by a.ticker
+
+  -- Calculate market value totals by asset class
+  SELECT COALESCE(jsonb_object_agg(market_totals.asset_class, market_totals.market_value), '{}'::jsonb)
+  INTO asset_market_totals_by_class
+  FROM (
+      SELECT
+        s.asset_class,
+        SUM(COALESCE(qty.total_quantity, 0) * COALESCE(s.last_updated_price, 0)) AS market_value
+      FROM
+        assets a
+      JOIN securities s ON a.security_id = s.id
+      LEFT JOIN
+        (SELECT asset_id, SUM(quantity) AS total_quantity
+         FROM transaction_legs
+         JOIN transactions t ON transaction_legs.transaction_id = t.id
+         WHERE t.user_id = auth.uid()
+         GROUP BY asset_id) AS qty ON a.id = qty.asset_id
+      WHERE a.user_id = auth.uid() AND s.asset_class NOT IN ('equity', 'liability')
+      GROUP BY s.asset_class
+  ) as market_totals;
+
+  -- Calculate totals by ticker for equity/liability accounts
+  SELECT COALESCE(jsonb_object_agg(ticker_totals.ticker, ticker_totals.total), '{}'::jsonb)
+  INTO asset_totals_by_ticker
+  FROM (
+    SELECT s.ticker, sum(tl.amount) as total
+    FROM transaction_legs tl
+    JOIN assets a ON tl.asset_id = a.id
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.user_id = auth.uid()
+    GROUP BY s.ticker
   ) as ticker_totals;
-  -- Set defaults to 0 if null
-  asset_totals_by_class := coalesce(asset_totals_by_class, '{}'::jsonb);
-  asset_totals_by_ticker := coalesce(asset_totals_by_ticker, '{}'::jsonb);
-  -- Calculate asset values
-  assets_total := (coalesce((asset_totals_by_class->>'cash')::numeric, 0)) +
-                  (coalesce((asset_totals_by_class->>'stock')::numeric, 0)) +
-                  (coalesce((asset_totals_by_class->>'epf')::numeric, 0)) +
-                  (coalesce((asset_totals_by_class->>'crypto')::numeric, 0));
+
+  -- Calculate total asset cost basis
+  assets_total_cost := (coalesce((asset_totals_by_class->>'cash')::numeric, 0)) +
+                     (coalesce((asset_totals_by_class->>'stock')::numeric, 0)) +
+                     (coalesce((asset_totals_by_class->>'epf')::numeric, 0)) +
+                     (coalesce((asset_totals_by_class->>'crypto')::numeric, 0));
+
+  -- Calculate total asset market value
+  total_assets_market_value := (coalesce((asset_market_totals_by_class->>'cash')::numeric, 0)) +
+                               (coalesce((asset_market_totals_by_class->>'stock')::numeric, 0)) +
+                               (coalesce((asset_market_totals_by_class->>'epf')::numeric, 0)) +
+                               (coalesce((asset_market_totals_by_class->>'crypto')::numeric, 0));
+
+  -- Calculate accrued interest using daily compounding
+  SELECT COALESCE(SUM(d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)), 0)
+  INTO accrued_interest
+  FROM debts d
+  WHERE d.user_id = auth.uid() AND d.status = 'active';
+
   -- Calculate liability values
-  cash_total := coalesce((asset_totals_by_class->>'cash')::numeric, 0);
   loans_payable := (coalesce((asset_totals_by_ticker->>'LOANS_PAYABLE')::numeric, 0)) * -1;
-  margins_payable := case when cash_total < 0 then abs(cash_total) else 0 end;
-  liability_total := loans_payable + margins_payable;
+  margins_payable := CASE WHEN (coalesce((asset_market_totals_by_class->>'cash')::numeric, 0)) < 0 THEN abs((coalesce((asset_market_totals_by_class->>'cash')::numeric, 0))) ELSE 0 END;
+  liability_total := loans_payable + margins_payable + accrued_interest;
+
   -- Calculate equity values
   capital_total := (coalesce((asset_totals_by_ticker->>'CAPITAL')::numeric, 0)) * -1;
   earnings_total := (coalesce((asset_totals_by_ticker->>'EARNINGS')::numeric, 0)) * -1;
-  equity_total := capital_total + earnings_total;
+  unrealized_pl := total_assets_market_value - assets_total_cost - accrued_interest;
+  equity_total := capital_total + earnings_total + unrealized_pl;
+
   -- Build the result JSON
-  select json_build_object(
-    'displayCurrency', display_currency,
+  SELECT json_build_object(
     'assets', json_build_array(
-      json_build_object('type', 'Cash', 'totalAmount', coalesce((asset_totals_by_class->>'cash')::numeric, 0)),
-      json_build_object('type', 'Stocks', 'totalAmount', coalesce((asset_totals_by_class->>'stock')::numeric, 0)),
-      json_build_object('type', 'EPF', 'totalAmount', coalesce((asset_totals_by_class->>'epf')::numeric, 0)),
-      json_build_object('type', 'Crypto', 'totalAmount', coalesce((asset_totals_by_class->>'crypto')::numeric, 0))
+      json_build_object('type', 'Cash', 'totalAmount', coalesce((asset_market_totals_by_class->>'cash')::numeric, 0)),
+      json_build_object('type', 'Stocks', 'totalAmount', coalesce((asset_market_totals_by_class->>'stock')::numeric, 0)),
+      json_build_object('type', 'EPF', 'totalAmount', coalesce((asset_market_totals_by_class->>'epf')::numeric, 0)),
+      json_build_object('type', 'Crypto', 'totalAmount', coalesce((asset_market_totals_by_class->>'crypto')::numeric, 0))
     ),
-    'totalAssets', assets_total,
+    'totalAssets', total_assets_market_value,
     'liabilities', json_build_array(
       json_build_object('type', 'Loans Payable', 'totalAmount', loans_payable),
-      json_build_object('type', 'Margins Payable', 'totalAmount', margins_payable)
+      json_build_object('type', 'Margins Payable', 'totalAmount', margins_payable),
+      json_build_object('type', 'Accrued Interest', 'totalAmount', accrued_interest)
     ),
     'totalLiabilities', liability_total,
     'equity', json_build_array(
       json_build_object('type', 'Paid-in Capital', 'totalAmount', capital_total),
-      json_build_object('type', 'Retained Earnings', 'totalAmount', earnings_total)
+      json_build_object('type', 'Retained Earnings', 'totalAmount', earnings_total),
+      json_build_object('type', 'Unrealized P/L', 'totalAmount', unrealized_pl)
     ),
     'totalEquity', equity_total
-  ) into result;
-  return result;
-end;
+  ) INTO result;
+
+  RETURN result;
+END;
 $$;
 
 
@@ -242,20 +288,22 @@ CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"() RETURNS TABLE("ticker
 BEGIN
     RETURN QUERY
     SELECT
-        a.ticker,
-        a.name,
-        'https://s3-symbol-logo.tradingview.com/' || a.logo_url || '--big.svg' AS logo_url,
+        s.ticker,
+        s.name,
+        'https://s3-symbol-logo.tradingview.com/' || s.logo_url || '--big.svg' AS logo_url,
         SUM(tl.quantity) AS quantity,
         SUM(tl.amount) AS cost_basis,
-        a.last_updated_price
+        s.last_updated_price
     FROM
         public.assets a
     JOIN
+        public.securities s ON a.security_id = s.id
+    JOIN
         public.transaction_legs tl ON a.id = tl.asset_id
     WHERE
-        a.asset_class = 'stock' AND a.user_id = auth.uid()
+        s.asset_class = 'stock' AND a.user_id = auth.uid()
     GROUP BY
-        a.id, a.ticker, a.name, a.logo_url, a.last_updated_price
+        a.id, s.ticker, s.name, s.logo_url, s.last_updated_price
     HAVING
         SUM(tl.quantity) > 0;
 END;
@@ -280,10 +328,10 @@ BEGIN
         t.transaction_date,
         t.type::text,
         t.description,
-        a.ticker,
-        a.name,
+        s.ticker,
+        s.name,
         CASE
-            WHEN a.logo_url IS NOT NULL THEN 'https://s3-symbol-logo.tradingview.com/' || a.logo_url || '--big.svg'
+            WHEN s.logo_url IS NOT NULL THEN 'https://s3-symbol-logo.tradingview.com/' || s.logo_url || '--big.svg'
             ELSE NULL
         END,
         tl.quantity,
@@ -303,13 +351,15 @@ BEGIN
         public.transaction_legs tl ON t.id = tl.transaction_id
     JOIN
         public.assets a ON tl.asset_id = a.id
+    JOIN
+        public.securities s ON a.security_id = s.id
     WHERE
         t.user_id = auth.uid() AND
-        a.asset_class NOT IN ('equity', 'liability') AND
-        NOT (a.asset_class = 'cash' AND (t.type = 'buy' OR t.type = 'sell')) AND
+        s.asset_class NOT IN ('equity', 'liability') AND
+        NOT (s.asset_class = 'cash' AND (t.type = 'buy' OR t.type = 'sell')) AND
         (start_date IS NULL OR t.transaction_date >= start_date) AND
         (end_date IS NULL OR t.transaction_date <= end_date) AND
-        (asset_class_filter IS NULL OR a.asset_class::text = asset_class_filter)
+        (asset_class_filter IS NULL OR s.asset_class::text = asset_class_filter)
     ORDER BY
         t.transaction_date DESC
     LIMIT page_size
@@ -331,20 +381,32 @@ DECLARE
     v_debt_id uuid;
     v_loans_payable_account_id uuid;
     v_liability_currency_code text;
+    v_loans_payable_security_id uuid;
 BEGIN
-    -- 1. Get or create the 'Loans Payable' asset
-    SELECT id, currency_code INTO v_loans_payable_asset_id, v_liability_currency_code
-    FROM assets
-    WHERE user_id = p_user_id AND name = 'Loans Payable' AND asset_class = 'liability'
+    -- 1. Get or create the 'Loans Payable' security and the user's corresponding asset
+    SELECT id, currency_code INTO v_loans_payable_security_id, v_liability_currency_code
+    FROM securities
+    WHERE ticker = 'LOANS_PAYABLE'
     LIMIT 1;
-    IF v_loans_payable_asset_id IS NULL THEN
-        -- Assuming a default currency for the liability if it needs to be created.
-        -- This could be parameterized if needed.
+
+    IF v_loans_payable_security_id IS NULL THEN
+        -- This should ideally be pre-seeded, but we can create it as a fallback.
         SELECT display_currency INTO v_liability_currency_code FROM profiles WHERE id = p_user_id;
-        INSERT INTO assets (user_id, name, ticker, asset_class, currency_code)
-        VALUES (p_user_id, 'Loans Payable', 'LOANS_PAYABLE', 'liability', v_liability_currency_code)
+        INSERT INTO securities (asset_class, ticker, name, currency_code)
+        VALUES ('liability', 'LOANS_PAYABLE', 'Loans Payable', v_liability_currency_code)
+        RETURNING id INTO v_loans_payable_security_id;
+    END IF;
+
+    SELECT id INTO v_loans_payable_asset_id
+    FROM assets
+    WHERE user_id = p_user_id AND security_id = v_loans_payable_security_id;
+
+    IF v_loans_payable_asset_id IS NULL THEN
+        INSERT INTO assets (user_id, security_id)
+        VALUES (p_user_id, v_loans_payable_security_id)
         RETURNING id INTO v_loans_payable_asset_id;
     END IF;
+
     -- 2. Get the conceptual 'Liability' account
     SELECT id INTO v_loans_payable_account_id
     FROM accounts
@@ -353,21 +415,26 @@ BEGIN
     IF v_loans_payable_account_id IS NULL THEN
         RAISE EXCEPTION 'Liability conceptual account not found for user %', p_user_id;
     END IF;
+
     -- 3. Get the currency of the cash asset that will receive the funds
-    SELECT currency_code INTO v_cash_asset_currency_code
-    FROM assets
-    WHERE id = p_cash_asset_id AND user_id = p_user_id;
+    SELECT s.currency_code INTO v_cash_asset_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.id = p_cash_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN
         RAISE EXCEPTION 'Specified cash asset not found for account %', p_deposit_account_id;
     END IF;
+
     -- 4. Create the debt record
     INSERT INTO debts (user_id, lender_name, principal_amount, currency_code, interest_rate, start_date, status)
     VALUES (p_user_id, p_lender_name, p_principal_amount, v_cash_asset_currency_code, p_interest_rate, p_transaction_date, 'active')
     RETURNING id INTO v_debt_id;
+
     -- 5. Create the transaction
     INSERT INTO transactions (user_id, transaction_date, type, description, related_debt_id)
     VALUES (p_user_id, p_transaction_date, 'borrow', p_description, v_debt_id)
     RETURNING id INTO v_transaction_id;
+
     -- 6. Create the transaction legs
     -- Debit the deposit account (increase cash)
     INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
@@ -386,7 +453,19 @@ CREATE OR REPLACE FUNCTION "public"."handle_bulk_transaction_import"("p_user_id"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    v_transaction_record jsonb; v_transaction_type text; v_asset_id uuid; v_cash_asset_id uuid; v_dividend_asset_id uuid; v_account_id uuid; v_debt_id uuid; v_asset_ticker text; v_cash_asset_ticker text; v_dividend_asset_ticker text; v_account_name text; v_lender_name text;
+    v_transaction_record jsonb;
+    v_transaction_type text;
+    v_asset_id uuid;
+    v_cash_asset_id uuid;
+    v_dividend_asset_id uuid;
+    v_account_id uuid;
+    v_debt_id uuid;
+    v_asset_ticker text;
+    v_cash_asset_ticker text;
+    v_dividend_asset_ticker text;
+    v_account_name text;
+    v_lender_name text;
+    v_security_id uuid;
 BEGIN
     IF NOT jsonb_typeof(p_transactions_data) = 'array' THEN RAISE EXCEPTION 'Input must be a JSON array of transactions.'; END IF;
     FOR v_transaction_record IN SELECT * FROM jsonb_array_elements(p_transactions_data)
@@ -396,22 +475,33 @@ BEGIN
         v_cash_asset_ticker := v_transaction_record->>'cash_asset_ticker';
         v_dividend_asset_ticker := v_transaction_record->>'dividend_asset_ticker';
         v_account_name := v_transaction_record->>'account';
+
         IF v_asset_ticker IS NOT NULL THEN
-            SELECT id INTO v_asset_id FROM public.assets WHERE ticker = v_asset_ticker AND user_id = p_user_id;
-            IF v_asset_id IS NULL THEN RAISE EXCEPTION 'Asset with ticker % not found.', v_asset_ticker; END IF;
+            SELECT id INTO v_security_id FROM public.securities WHERE ticker = v_asset_ticker;
+            IF v_security_id IS NULL THEN RAISE EXCEPTION 'Security with ticker % not found.', v_asset_ticker; END IF;
+            SELECT id INTO v_asset_id FROM public.assets WHERE security_id = v_security_id AND user_id = p_user_id;
+            IF v_asset_id IS NULL THEN RAISE EXCEPTION 'Asset for ticker % not found for user.', v_asset_ticker; END IF;
         END IF;
+
         IF v_cash_asset_ticker IS NOT NULL THEN
-            SELECT id INTO v_cash_asset_id FROM public.assets WHERE ticker = v_cash_asset_ticker AND user_id = p_user_id;
-            IF v_cash_asset_id IS NULL THEN RAISE EXCEPTION 'Cash asset with ticker % not found.', v_cash_asset_ticker; END IF;
+            SELECT id INTO v_security_id FROM public.securities WHERE ticker = v_cash_asset_ticker;
+            IF v_security_id IS NULL THEN RAISE EXCEPTION 'Security with ticker % not found.', v_cash_asset_ticker; END IF;
+            SELECT id INTO v_cash_asset_id FROM public.assets WHERE security_id = v_security_id AND user_id = p_user_id;
+            IF v_cash_asset_id IS NULL THEN RAISE EXCEPTION 'Asset for ticker % not found for user.', v_cash_asset_ticker; END IF;
         END IF;
+
         IF v_dividend_asset_ticker IS NOT NULL THEN
-            SELECT id INTO v_dividend_asset_id FROM public.assets WHERE ticker = v_dividend_asset_ticker AND user_id = p_user_id;
-            IF v_dividend_asset_id IS NULL THEN RAISE EXCEPTION 'Dividend-paying asset with ticker % not found.', v_dividend_asset_ticker; END IF;
+            SELECT id INTO v_security_id FROM public.securities WHERE ticker = v_dividend_asset_ticker;
+            IF v_security_id IS NULL THEN RAISE EXCEPTION 'Security with ticker % not found.', v_dividend_asset_ticker; END IF;
+            SELECT id INTO v_dividend_asset_id FROM public.assets WHERE security_id = v_security_id AND user_id = p_user_id;
+            IF v_dividend_asset_id IS NULL THEN RAISE EXCEPTION 'Dividend-paying asset for ticker % not found for user.', v_dividend_asset_ticker; END IF;
         END IF;
+
         IF v_account_name IS NOT NULL THEN
             SELECT id INTO v_account_id FROM public.accounts WHERE name = v_account_name AND user_id = p_user_id;
             IF v_account_id IS NULL THEN RAISE EXCEPTION 'Account with name % not found.', v_account_name; END IF;
         END IF;
+
         CASE v_transaction_type
             WHEN 'buy' THEN
                 PERFORM "public"."handle_buy_transaction"(p_user_id, (v_transaction_record->>'date')::date, v_account_id, v_asset_id, v_cash_asset_id, (v_transaction_record->>'quantity')::numeric(16,2), (v_transaction_record->>'price')::numeric(16,2), (v_transaction_record->>'fees')::numeric(16,2), v_transaction_record->>'description');
@@ -451,12 +541,24 @@ CREATE OR REPLACE FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid",
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    v_transaction_id uuid; v_cost_basis numeric(16,2); v_cash_asset_currency_code text; v_purchased_asset_currency_code text;
+    v_transaction_id uuid;
+    v_cost_basis numeric(16,2);
+    v_cash_asset_currency_code text;
+    v_purchased_asset_currency_code text;
 BEGIN
     v_cost_basis := (p_quantity * p_price) + p_fees;
-    SELECT currency_code INTO v_cash_asset_currency_code FROM assets WHERE id = p_cash_asset_id AND user_id = p_user_id;
+
+    SELECT s.currency_code INTO v_cash_asset_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.id = p_cash_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN RAISE EXCEPTION 'Could not find cash asset with ID %', p_cash_asset_id; END IF;
-    SELECT currency_code INTO v_purchased_asset_currency_code FROM assets WHERE id = p_asset_id;
+
+    SELECT s.currency_code INTO v_purchased_asset_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.id = p_asset_id;
+
     INSERT INTO transactions (user_id, transaction_date, type, description) VALUES (p_user_id, p_transaction_date, 'buy', p_description) RETURNING id INTO v_transaction_id;
     INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code) VALUES
         (v_transaction_id, p_account_id, p_cash_asset_id, v_cost_basis * -1, v_cost_basis * -1, v_cash_asset_currency_code),
@@ -488,29 +590,45 @@ DECLARE
     v_draw_from_earnings NUMERIC(16,2);
     v_draw_from_capital NUMERIC(16,2);
     v_capital_balance NUMERIC(16,2);
+    v_loans_payable_security_id uuid;
+    v_earnings_security_id uuid;
+    v_capital_security_id uuid;
 BEGIN
-    -- 1. Look up asset IDs
-    SELECT id, currency_code INTO v_loans_payable_asset_id, v_liability_currency_code
-    FROM public.assets WHERE name = 'Loans Payable' AND user_id = p_user_id;
-    SELECT id, currency_code INTO v_earnings_asset FROM public.assets WHERE ticker = 'EARNINGS' AND user_id = p_user_id;
-    SELECT id, currency_code INTO v_capital_asset FROM public.assets WHERE ticker = 'CAPITAL' AND user_id = p_user_id;
+    -- 1. Look up security IDs
+    SELECT id INTO v_loans_payable_security_id FROM public.securities WHERE ticker = 'LOANS_PAYABLE';
+    SELECT id INTO v_earnings_security_id FROM public.securities WHERE ticker = 'EARNINGS';
+    SELECT id INTO v_capital_security_id FROM public.securities WHERE ticker = 'CAPITAL';
+
+    -- 2. Look up user-specific asset IDs
+    SELECT id INTO v_loans_payable_asset_id FROM public.assets WHERE security_id = v_loans_payable_security_id AND user_id = p_user_id;
+    SELECT a.id, s.currency_code INTO v_earnings_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_earnings_security_id AND a.user_id = p_user_id;
+    SELECT a.id, s.currency_code INTO v_capital_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_capital_security_id AND a.user_id = p_user_id;
+
     IF v_loans_payable_asset_id IS NULL OR v_earnings_asset.id IS NULL OR v_capital_asset.id IS NULL THEN
         RAISE EXCEPTION 'Core equity/liability assets not found for user %', p_user_id;
     END IF;
-    -- 2. Get the currency of the cash asset being used for payment
-    SELECT currency_code INTO v_cash_asset_currency_code
-    FROM public.assets WHERE id = p_cash_asset_id AND user_id = p_user_id;
+
+    -- 3. Get the currency of the cash asset being used for payment
+    SELECT s.currency_code INTO v_cash_asset_currency_code
+    FROM public.assets a
+    JOIN public.securities s ON a.security_id = s.id
+    WHERE a.id = p_cash_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN
         RAISE EXCEPTION 'Could not find specified cash asset with ID %', p_cash_asset_id;
     END IF;
-    -- 3. Get the conceptual 'Equity' account
+    
+    SELECT s.currency_code INTO v_liability_currency_code FROM public.securities s WHERE s.id = v_loans_payable_security_id;
+
+    -- 4. Get the conceptual 'Equity' account
     SELECT id INTO v_equity_account_id FROM public.accounts WHERE type = 'conceptual' AND name = 'Equity' AND user_id = p_user_id;
     IF v_equity_account_id IS NULL THEN
         RAISE EXCEPTION 'Could not find ''Equity'' conceptual account.';
     END IF;
-    -- 4. Calculate the total payment amount
+
+    -- 5. Calculate the total payment amount
     v_total_payment := p_principal_payment + p_interest_payment;
-    -- 5. Determine amounts to draw from each equity component for the interest payment
+
+    -- 6. Determine amounts to draw from each equity component for the interest payment
     v_earnings_balance := get_asset_balance(v_earnings_asset.id, p_user_id);
     IF v_earnings_balance < 0 THEN
         v_draw_from_earnings := LEAST(p_interest_payment, ABS(v_earnings_balance));
@@ -524,11 +642,13 @@ BEGIN
             RAISE EXCEPTION 'Interest payment exceeds available capital.';
         END IF;
     END IF;
-    -- 6. Create a new transactions record
+
+    -- 7. Create a new transactions record
     INSERT INTO transactions (user_id, transaction_date, type, description, related_debt_id)
     VALUES (p_user_id, p_transaction_date, 'debt_payment', p_description, p_debt_id)
     RETURNING id INTO v_transaction_id;
-    -- 7. Create the transaction legs
+
+    -- 8. Create the transaction legs
     -- Credit: Decrease cash from the paying account
     INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
     VALUES (v_transaction_id, p_from_account_id, p_cash_asset_id, v_total_payment * -1, v_total_payment * -1, v_cash_asset_currency_code);
@@ -545,7 +665,8 @@ BEGIN
         INSERT INTO public.transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
         VALUES (v_transaction_id, v_equity_account_id, v_capital_asset.id, v_draw_from_capital, v_draw_from_capital, v_capital_asset.currency_code);
     END IF;
-    -- 8. Check if the debt is now paid off by checking the balance of the liability legs
+
+    -- 9. Check if the debt is now paid off by checking the balance of the liability legs
     SELECT COALESCE(SUM(tl.quantity), 0) INTO v_liability_balance
     FROM transaction_legs tl
     JOIN transactions t ON t.id = tl.transaction_id
@@ -565,15 +686,28 @@ CREATE OR REPLACE FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uu
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    v_capital_asset_id UUID; v_asset_currency_code VARCHAR(10); v_equity_account_id UUID; v_transaction_id UUID; v_response JSONB; v_leg_quantity numeric(16,2);
+    v_capital_asset_id UUID;
+    v_asset_currency_code VARCHAR(10);
+    v_equity_account_id UUID;
+    v_transaction_id UUID;
+    v_response JSONB;
+    v_leg_quantity numeric(16,2);
+    v_capital_security_id UUID;
 BEGIN
     v_leg_quantity := COALESCE(p_quantity, p_amount);
-    SELECT id INTO v_capital_asset_id FROM public.assets WHERE ticker = 'CAPITAL' AND user_id = p_user_id;
-    IF v_capital_asset_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Paid-in Capital'' asset.'); END IF;
-    SELECT currency_code INTO v_asset_currency_code FROM public.assets WHERE id = p_asset_id AND user_id = p_user_id;
+
+    SELECT id INTO v_capital_security_id FROM public.securities WHERE ticker = 'CAPITAL';
+    IF v_capital_security_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Paid-in Capital'' security.'); END IF;
+
+    SELECT id INTO v_capital_asset_id FROM public.assets WHERE security_id = v_capital_security_id AND user_id = p_user_id;
+    IF v_capital_asset_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Paid-in Capital'' asset for user.'); END IF;
+
+    SELECT s.currency_code INTO v_asset_currency_code FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.id = p_asset_id AND a.user_id = p_user_id;
     IF v_asset_currency_code IS NULL THEN RETURN jsonb_build_object('error', 'Could not find the specified asset.'); END IF;
+
     SELECT id INTO v_equity_account_id FROM public.accounts WHERE type = 'conceptual' AND name = 'Equity' AND user_id = p_user_id;
     IF v_equity_account_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Equity'' conceptual account.'); END IF;
+
     INSERT INTO public.transactions (user_id, transaction_date, type, description) VALUES (p_user_id, p_transaction_date, 'deposit', p_description) RETURNING id INTO v_transaction_id;
     INSERT INTO public.transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code) VALUES
         (v_transaction_id, p_account_id, p_asset_id, v_leg_quantity, p_amount, v_asset_currency_code),
@@ -601,26 +735,37 @@ DECLARE
     v_draw_from_earnings NUMERIC(16,2);
     v_draw_from_capital NUMERIC(16,2);
     v_capital_balance NUMERIC(16,2);
+    v_earnings_security_id UUID;
+    v_capital_security_id UUID;
 BEGIN
-    -- 1. Fetch required equity asset records
-    SELECT id, currency_code INTO v_earnings_asset FROM public.assets WHERE ticker = 'EARNINGS' AND user_id = p_user_id;
-    SELECT id, currency_code INTO v_capital_asset FROM public.assets WHERE ticker = 'CAPITAL' AND user_id = p_user_id;
+    -- 1. Fetch required equity security IDs
+    SELECT id INTO v_earnings_security_id FROM public.securities WHERE ticker = 'EARNINGS';
+    SELECT id INTO v_capital_security_id FROM public.securities WHERE ticker = 'CAPITAL';
+
+    -- 2. Fetch required user-specific equity asset records
+    SELECT a.id, s.currency_code INTO v_earnings_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_earnings_security_id AND a.user_id = p_user_id;
+    SELECT a.id, s.currency_code INTO v_capital_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_capital_security_id AND a.user_id = p_user_id;
+
     IF v_earnings_asset.id IS NULL OR v_capital_asset.id IS NULL THEN
         RAISE EXCEPTION 'Could not find ''Retained Earnings'' or ''Paid-in Capital'' assets.';
     END IF;
-    -- 2. Get the currency of the cash asset being spent
-    SELECT currency_code INTO v_cash_asset_currency_code
-    FROM public.assets
-    WHERE id = p_asset_id AND user_id = p_user_id;
+
+    -- 3. Get the currency of the cash asset being spent
+    SELECT s.currency_code INTO v_cash_asset_currency_code
+    FROM public.assets a
+    JOIN public.securities s ON a.security_id = s.id
+    WHERE a.id = p_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN
         RAISE EXCEPTION 'Could not find the specified cash asset.';
     END IF;
-    -- 3. Get the conceptual 'Equity' account
+
+    -- 4. Get the conceptual 'Equity' account
     SELECT id INTO v_equity_account_id FROM public.accounts WHERE type = 'conceptual' AND name = 'Equity' AND user_id = p_user_id;
     IF v_equity_account_id IS NULL THEN
         RAISE EXCEPTION 'Could not find ''Equity'' conceptual account.';
     END IF;
-    -- 4. Determine amounts to draw from each equity component
+
+    -- 5. Determine amounts to draw from each equity component
     v_earnings_balance := get_asset_balance(v_earnings_asset.id, p_user_id);
     IF v_earnings_balance < 0 THEN
         v_draw_from_earnings := LEAST(p_amount, ABS(v_earnings_balance));
@@ -634,11 +779,13 @@ BEGIN
             RAISE EXCEPTION 'Expense amount exceeds available capital.';
         END IF;
     END IF;
-    -- 5. Create the transaction
+
+    -- 6. Create the transaction
     INSERT INTO public.transactions (user_id, transaction_date, type, description)
     VALUES (p_user_id, p_transaction_date, 'expense', p_description)
     RETURNING id INTO v_transaction_id;
-    -- 6. Create transaction legs
+
+    -- 7. Create transaction legs
     -- Credit: Decrease cash from the source account
     INSERT INTO public.transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
     VALUES (v_transaction_id, p_account_id, p_asset_id, p_amount * -1, p_amount * -1, v_cash_asset_currency_code);
@@ -667,26 +814,41 @@ DECLARE
     v_transaction_id uuid;
     v_asset_currency_code text;
     v_retained_earnings_currency_code text;
+    v_retained_earnings_security_id uuid;
 BEGIN
-    -- Get the 'Retained Earnings' asset for the user
-    SELECT id, currency_code INTO v_retained_earnings_asset_id, v_retained_earnings_currency_code
-    FROM assets
-    WHERE user_id = p_user_id AND ticker = 'EARNINGS'
+    -- Get the 'Retained Earnings' security for the user
+    SELECT id INTO v_retained_earnings_security_id
+    FROM securities
+    WHERE ticker = 'EARNINGS'
+    LIMIT 1;
+    IF v_retained_earnings_security_id IS NULL THEN
+        RAISE EXCEPTION 'Retained Earnings security not found';
+    END IF;
+
+    -- Get the user's 'Retained Earnings' asset
+    SELECT a.id, s.currency_code INTO v_retained_earnings_asset_id, v_retained_earnings_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.user_id = p_user_id AND a.security_id = v_retained_earnings_security_id
     LIMIT 1;
     IF v_retained_earnings_asset_id IS NULL THEN
         RAISE EXCEPTION 'Retained Earnings asset not found for user %', p_user_id;
     END IF;
+
     -- Get the currency of the specified asset
-    SELECT currency_code INTO v_asset_currency_code
-    FROM public.assets
-    WHERE id = p_asset_id AND user_id = p_user_id;
+    SELECT s.currency_code INTO v_asset_currency_code
+    FROM public.assets a
+    JOIN public.securities s ON a.security_id = s.id
+    WHERE a.id = p_asset_id AND a.user_id = p_user_id;
     IF v_asset_currency_code IS NULL THEN
         RAISE EXCEPTION 'Could not find the specified asset with ID %', p_asset_id;
     END IF;
+
     -- Create the transaction
     INSERT INTO transactions (user_id, transaction_date, type, description)
     VALUES (p_user_id, p_transaction_date, p_transaction_type::transaction_type, p_description)
     RETURNING id INTO v_transaction_id;
+
     -- Create transaction legs: Debit cash, Credit Retained Earnings
     INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
     VALUES
@@ -697,46 +859,6 @@ $$;
 
 
 ALTER FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_related_asset_id" "uuid", "p_transaction_type" "text") RETURNS "void"
-    LANGUAGE "plpgsql"
-    AS $$
-DECLARE
-    v_retained_earnings_asset_id uuid;
-    v_transaction_id uuid;
-    v_asset_currency_code text;
-    v_retained_earnings_currency_code text;
-BEGIN
-    -- Get the 'Retained Earnings' asset for the user
-    SELECT id, currency_code INTO v_retained_earnings_asset_id, v_retained_earnings_currency_code
-    FROM assets
-    WHERE user_id = p_user_id AND ticker = 'EARNINGS'
-    LIMIT 1;
-    IF v_retained_earnings_asset_id IS NULL THEN
-        RAISE EXCEPTION 'Retained Earnings asset not found for user %', p_user_id;
-    END IF;
-    -- Get the currency of the specified asset
-    SELECT currency_code INTO v_asset_currency_code
-    FROM public.assets
-    WHERE id = p_asset_id AND user_id = p_user_id;
-    IF v_asset_currency_code IS NULL THEN
-        RAISE EXCEPTION 'Could not find the specified asset with ID %', p_asset_id;
-    END IF;
-    -- Create the transaction
-    INSERT INTO transactions (user_id, transaction_date, type, description, related_asset_id)
-    VALUES (p_user_id, p_transaction_date, p_transaction_type::transaction_type, p_description, p_related_asset_id)
-    RETURNING id INTO v_transaction_id;
-    -- Create transaction legs: Debit cash, Credit Retained Earnings
-    INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
-    VALUES
-        (v_transaction_id, p_account_id, p_asset_id, COALESCE(p_quantity, p_amount), p_amount, v_asset_currency_code),
-        (v_transaction_id, (SELECT id FROM accounts WHERE name = 'Equity' AND user_id = p_user_id AND type = 'conceptual' LIMIT 1), v_retained_earnings_asset_id, p_amount * -1, p_amount * -1, v_retained_earnings_currency_code);
-END;
-$$;
-
-
-ALTER FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_related_asset_id" "uuid", "p_transaction_type" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_total_proceeds" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") RETURNS "uuid"
@@ -758,14 +880,31 @@ DECLARE
     v_consumed_lot record;
     v_additional_tax numeric(16,2) := 0;
     v_total_taxes numeric(16,2) := 0;
+    v_retained_earnings_security_id uuid;
 BEGIN
     DROP TABLE IF EXISTS temp_consumed_lots;
     CREATE TEMP TABLE temp_consumed_lots (lot_id uuid, quantity_consumed numeric(16,2)) ON COMMIT DROP;
-    SELECT id, currency_code INTO v_retained_earnings_asset_id, v_retained_earnings_currency_code FROM assets WHERE user_id = p_user_id AND name = 'Retained Earnings' AND asset_class = 'equity' LIMIT 1;
+
+    SELECT id INTO v_retained_earnings_security_id FROM securities WHERE ticker = 'EARNINGS' LIMIT 1;
+    IF v_retained_earnings_security_id IS NULL THEN RAISE EXCEPTION 'Retained Earnings security not found'; END IF;
+
+    SELECT a.id, s.currency_code INTO v_retained_earnings_asset_id, v_retained_earnings_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.user_id = p_user_id AND a.security_id = v_retained_earnings_security_id LIMIT 1;
     IF v_retained_earnings_asset_id IS NULL THEN RAISE EXCEPTION 'Retained Earnings asset not found for user %', p_user_id; END IF;
-    SELECT currency_code INTO v_cash_asset_currency_code FROM assets WHERE id = p_cash_asset_id AND user_id = p_user_id;
+
+    SELECT s.currency_code INTO v_cash_asset_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.id = p_cash_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN RAISE EXCEPTION 'Could not find cash asset with ID %', p_cash_asset_id; END IF;
-    SELECT currency_code INTO v_sold_asset_currency_code FROM assets WHERE id = p_asset_id;
+
+    SELECT s.currency_code INTO v_sold_asset_currency_code
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.id = p_asset_id;
+
     FOR v_lot IN SELECT * FROM tax_lots WHERE user_id = p_user_id AND asset_id = p_asset_id AND remaining_quantity > 0 ORDER BY creation_date ASC LOOP
         IF v_remaining_quantity_to_sell <= 0 THEN EXIT; END IF;
         v_quantity_from_lot := LEAST(v_remaining_quantity_to_sell, v_lot.remaining_quantity);
@@ -799,14 +938,30 @@ CREATE OR REPLACE FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    v_transaction_id UUID; v_capital_asset_id UUID; v_equity_account_id UUID; v_asset_account_id UUID; v_asset_currency_code TEXT;
+    v_transaction_id UUID;
+    v_capital_asset_id UUID;
+    v_equity_account_id UUID;
+    v_asset_account_id UUID;
+    v_asset_currency_code TEXT;
+    v_capital_security_id UUID;
 BEGIN
     SELECT id INTO v_equity_account_id FROM accounts WHERE user_id = p_user_id AND type = 'conceptual' AND name = 'Equity' LIMIT 1;
     IF v_equity_account_id IS NULL THEN RAISE EXCEPTION 'Conceptual Equity account not found for user %', p_user_id; END IF;
-    SELECT id INTO v_capital_asset_id FROM assets WHERE user_id = p_user_id AND ticker = 'CAPITAL' LIMIT 1;
+
+    SELECT id INTO v_capital_security_id FROM securities WHERE ticker = 'CAPITAL' LIMIT 1;
+    IF v_capital_security_id IS NULL THEN RAISE EXCEPTION '''Paid-in Capital'' security not found'; END IF;
+
+    SELECT id INTO v_capital_asset_id FROM assets WHERE user_id = p_user_id AND security_id = v_capital_security_id LIMIT 1;
     IF v_capital_asset_id IS NULL THEN RAISE EXCEPTION '''Paid-in Capital'' asset not found for user %', p_user_id; END IF;
-    SELECT account_id, a.currency_code INTO v_asset_account_id, v_asset_currency_code FROM transaction_legs tl JOIN assets a ON a.id = tl.asset_id WHERE tl.asset_id = p_asset_id LIMIT 1;
+
+    SELECT tl.account_id, s.currency_code INTO v_asset_account_id, v_asset_currency_code
+    FROM transaction_legs tl
+    JOIN assets a ON a.id = tl.asset_id
+    JOIN securities s ON a.security_id = s.id
+    WHERE tl.asset_id = p_asset_id
+    LIMIT 1;
     IF v_asset_account_id IS NULL THEN RAISE EXCEPTION 'Could not determine an account for asset %', p_asset_id; END IF;
+
     INSERT INTO transactions (user_id, transaction_date, type, description) VALUES (p_user_id, p_transaction_date, 'split', p_description) RETURNING id INTO v_transaction_id;
     INSERT INTO transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code) VALUES
         (v_transaction_id, v_asset_account_id, p_asset_id, p_quantity, 0, v_asset_currency_code),
@@ -823,16 +978,36 @@ CREATE OR REPLACE FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "u
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    v_earnings_asset RECORD; v_capital_asset RECORD; v_cash_asset_currency_code VARCHAR(10); v_equity_account_id UUID; v_transaction_id UUID; v_earnings_balance NUMERIC(16,2); v_draw_from_earnings NUMERIC(16,2); v_draw_from_capital NUMERIC(16,2); v_capital_balance NUMERIC(16,2); v_response JSONB; v_leg_quantity numeric(16,2);
+    v_earnings_asset RECORD;
+    v_capital_asset RECORD;
+    v_cash_asset_currency_code VARCHAR(10);
+    v_equity_account_id UUID;
+    v_transaction_id UUID;
+    v_earnings_balance NUMERIC(16,2);
+    v_draw_from_earnings NUMERIC(16,2);
+    v_draw_from_capital NUMERIC(16,2);
+    v_capital_balance NUMERIC(16,2);
+    v_response JSONB;
+    v_leg_quantity numeric(16,2);
+    v_earnings_security_id UUID;
+    v_capital_security_id UUID;
 BEGIN
     v_leg_quantity := COALESCE(p_quantity, p_amount);
-    SELECT id, currency_code INTO v_earnings_asset FROM public.assets WHERE ticker = 'EARNINGS' AND user_id = p_user_id;
-    SELECT id, currency_code INTO v_capital_asset FROM public.assets WHERE ticker = 'CAPITAL' AND user_id = p_user_id;
-    IF v_earnings_asset.id IS NULL OR v_capital_asset.id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Retained Earnings'' or ''Paid-in Capital'' assets.'); END IF;
-    SELECT currency_code INTO v_cash_asset_currency_code FROM public.assets WHERE id = p_asset_id AND user_id = p_user_id;
+
+    SELECT id INTO v_earnings_security_id FROM public.securities WHERE ticker = 'EARNINGS';
+    SELECT id INTO v_capital_security_id FROM public.securities WHERE ticker = 'CAPITAL';
+    IF v_earnings_security_id IS NULL OR v_capital_security_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Retained Earnings'' or ''Paid-in Capital'' securities.'); END IF;
+
+    SELECT a.id, s.currency_code INTO v_earnings_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_earnings_security_id AND a.user_id = p_user_id;
+    SELECT a.id, s.currency_code INTO v_capital_asset FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.security_id = v_capital_security_id AND a.user_id = p_user_id;
+    IF v_earnings_asset.id IS NULL OR v_capital_asset.id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Retained Earnings'' or ''Paid-in Capital'' assets for user.'); END IF;
+
+    SELECT s.currency_code INTO v_cash_asset_currency_code FROM public.assets a JOIN public.securities s ON a.security_id = s.id WHERE a.id = p_asset_id AND a.user_id = p_user_id;
     IF v_cash_asset_currency_code IS NULL THEN RETURN jsonb_build_object('error', 'Could not find the specified cash asset.'); END IF;
+
     SELECT id INTO v_equity_account_id FROM public.accounts WHERE type = 'conceptual' AND name = 'Equity' AND user_id = p_user_id;
     IF v_equity_account_id IS NULL THEN RETURN jsonb_build_object('error', 'Could not find ''Equity'' conceptual account.'); END IF;
+
     v_earnings_balance := get_asset_balance(v_earnings_asset.id, p_user_id);
     IF v_earnings_balance < 0 THEN
         v_draw_from_earnings := LEAST(p_amount, ABS(v_earnings_balance));
@@ -844,6 +1019,7 @@ BEGIN
         v_capital_balance := get_asset_balance(v_capital_asset.id, p_user_id);
         IF v_draw_from_capital > ABS(v_capital_balance) THEN RETURN jsonb_build_object('error', 'Withdrawal amount exceeds available capital.'); END IF;
     END IF;
+
     INSERT INTO public.transactions (user_id, transaction_date, type, description) VALUES (p_user_id, p_transaction_date, 'withdraw', COALESCE(p_description, 'Owner draw')) RETURNING id INTO v_transaction_id;
     INSERT INTO public.transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code) VALUES (v_transaction_id, p_account_id, p_asset_id, v_leg_quantity * -1, p_amount * -1, v_cash_asset_currency_code);
     IF v_draw_from_earnings > 0 THEN
@@ -886,12 +1062,7 @@ COMMENT ON TABLE "public"."accounts" IS 'Represents the different places where a
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
-    "asset_class" "public"."asset_class" NOT NULL,
-    "ticker" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "currency_code" character varying(10) NOT NULL,
-    "logo_url" "text",
-    "last_updated_price" numeric(16,2)
+    "security_id" "uuid"
 );
 
 
@@ -1008,6 +1179,20 @@ COMMENT ON COLUMN "public"."profiles"."display_name" IS 'The user''s preferred d
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."securities" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_class" "public"."asset_class" NOT NULL,
+    "ticker" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "currency_code" character varying(10),
+    "logo_url" "text",
+    "last_updated_price" numeric(16,2)
+);
+
+
+ALTER TABLE "public"."securities" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1104,7 +1289,7 @@ ALTER TABLE ONLY "public"."assets"
 
 
 ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_user_id_ticker_key" UNIQUE ("user_id", "ticker");
+    ADD CONSTRAINT "assets_user_id_security_id_key" UNIQUE ("user_id", "security_id");
 
 
 
@@ -1138,6 +1323,16 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_ticker_key" UNIQUE ("ticker");
+
+
+
 ALTER TABLE ONLY "public"."tax_lots"
     ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
 
@@ -1164,7 +1359,7 @@ ALTER TABLE ONLY "public"."accounts"
 
 
 ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+    ADD CONSTRAINT "assets_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
 
 
 
@@ -1271,6 +1466,10 @@ CREATE POLICY "Authenticated users can read exchange_rates" ON "public"."exchang
 
 
 
+CREATE POLICY "Authenticated users can read securities" ON "public"."securities" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
+
+
+
 CREATE POLICY "Users can manage details for their own transactions" ON "public"."transaction_details" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
    FROM "public"."transactions"
   WHERE ("transactions"."id" = "transaction_details"."transaction_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
@@ -1338,6 +1537,9 @@ ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."securities" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
@@ -1589,12 +1791,6 @@ GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_related_asset_id" "uuid", "p_transaction_type" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_related_asset_id" "uuid", "p_transaction_type" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_amount" numeric, "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_related_asset_id" "uuid", "p_transaction_type" "text") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_total_proceeds" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_total_proceeds" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_total_proceeds" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
@@ -1673,6 +1869,12 @@ GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
 GRANT ALL ON TABLE "public"."profiles" TO "anon";
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."securities" TO "anon";
+GRANT ALL ON TABLE "public"."securities" TO "authenticated";
+GRANT ALL ON TABLE "public"."securities" TO "service_role";
 
 
 
