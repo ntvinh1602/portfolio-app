@@ -8,8 +8,8 @@ import {
 } from "@/components/page-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
-import { StockCardWrapper } from "@/components/portfolio/stock-card-wrapper"
-import { StockSkeleton } from "@/components/portfolio/stock-layout"
+import { StockCardWrapper } from "@/components/stock/stock-card-wrapper"
+import { StockSkeleton } from "@/components/stock/stock-layout"
 import {
   CardAction,
   CardContent,
