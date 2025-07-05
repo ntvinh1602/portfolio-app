@@ -62,6 +62,170 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
     'borrow'
 );
 ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS numeric
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+    v_twr numeric := 1.0;
+    v_hpr numeric;
+    r record;
+    v_bmv numeric;
+    v_emv numeric;
+    v_cf numeric;
+    v_prev_emv numeric;
+begin
+    -- Get the beginning market value from the day before the start date
+    select net_equity_value::numeric into v_prev_emv
+    from daily_performance_snapshots
+    where user_id = p_user_id and date = p_start_date - interval '1 day'
+    order by date desc
+    limit 1;
+    -- If no data for the day before, use the first day's value before any cash flow
+    if v_prev_emv is null then
+        select (net_equity_value::numeric - net_cash_flow::numeric) into v_prev_emv
+        from daily_performance_snapshots
+        where user_id = p_user_id and date = p_start_date
+        order by date
+        limit 1;
+    end if;
+    
+    v_bmv := v_prev_emv;
+    for r in
+        select
+            date,
+            net_equity_value::numeric as net_equity_value,
+            net_cash_flow::numeric as net_cash_flow
+        from daily_performance_snapshots
+        where user_id = p_user_id
+          and date between p_start_date and p_end_date
+        order by date
+    loop
+        -- If there is a cash flow, we calculate the HPR for the sub-period ending today
+        if r.net_cash_flow != 0 then
+            -- EMV for the sub-period is the equity value *before* the cash flow
+            v_emv := r.net_equity_value - r.net_cash_flow;
+            
+            if v_bmv != 0 then
+                v_hpr := (v_emv - v_bmv) / v_bmv;
+                v_twr := v_twr * (1 + v_hpr);
+            end if;
+            
+            -- The new BMV for the next sub-period is the equity value *after* the cash flow
+            v_bmv := r.net_equity_value;
+        end if;
+    end loop;
+    -- Final period calculation from the last cash flow to the end date
+    select net_equity_value::numeric into v_emv
+    from daily_performance_snapshots
+    where user_id = p_user_id and date = p_end_date
+    order by date desc
+    limit 1;
+    if v_bmv != 0 and v_emv is not null then
+        v_hpr := (v_emv - v_bmv) / v_bmv;
+        v_twr := v_twr * (1 + v_hpr);
+    end if;
+    return (v_twr - 1);
+end;
+$$;
+ALTER FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+    loop_date date;
+    v_total_assets_value numeric;
+    v_total_liabilities_value numeric;
+    v_net_cash_flow numeric;
+    v_net_equity_value numeric;
+begin
+    for loop_date in select generate_series(p_start_date, p_end_date, '1 day'::interval)::date loop
+        -- Skip weekends
+        IF EXTRACT(ISODOW FROM loop_date) IN (6, 7) THEN
+            CONTINUE;
+        END IF;
+        -- Calculate total assets value for the day
+        WITH user_assets AS (
+            SELECT
+                a.security_id,
+                s.type,
+                s.currency_code,
+                SUM(tl.quantity) as total_quantity
+            FROM transaction_legs tl
+            JOIN transactions t ON tl.transaction_id = t.id
+            JOIN assets a ON tl.asset_id = a.id
+            JOIN securities s ON a.security_id = s.id
+            WHERE a.user_id = p_user_id
+              AND t.transaction_date <= loop_date
+            GROUP BY a.security_id, s.type, s.currency_code
+        )
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN ua.type = 'stock' THEN ua.total_quantity * sdp.price
+                ELSE ua.total_quantity * COALESCE(er.rate, 1)
+            END
+        ), 0)
+        INTO v_total_assets_value
+        FROM user_assets ua
+        LEFT JOIN LATERAL (
+            SELECT price FROM security_daily_prices
+            WHERE security_id = ua.security_id AND date <= loop_date
+            ORDER BY date DESC LIMIT 1
+        ) sdp ON ua.type = 'stock'
+        LEFT JOIN LATERAL (
+            SELECT rate FROM exchange_rates
+            WHERE currency_code = ua.currency_code AND date <= loop_date
+            ORDER BY date DESC LIMIT 1
+        ) er ON ua.type != 'stock';
+        -- Calculate total liabilities value for the day, including accrued compound interest.
+        select coalesce(sum(
+            (
+                select abs(coalesce(sum(tl.amount), 0))
+                from transaction_legs tl
+                join transactions t on tl.transaction_id = t.id
+                join assets a on tl.asset_id = a.id
+                join securities s on a.security_id = s.id
+                where t.related_debt_id = d.id
+                  and t.user_id = p_user_id
+                  and t.transaction_date <= loop_date
+                  and s.ticker = 'LOANS_PAYABLE'
+            )
+            +
+            (
+                d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (loop_date - d.start_date)) - 1)
+            )
+        ), 0)
+        into v_total_liabilities_value
+        from debts d
+        where d.user_id = p_user_id
+          and d.status = 'active'
+          and d.start_date <= loop_date;
+        -- Calculate net cash flow for the day
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN t.type = 'deposit' THEN tl.amount
+                WHEN t.type = 'withdrawal' THEN -tl.amount
+                ELSE 0
+            END
+        ), 0)
+        INTO v_net_cash_flow
+        FROM transactions t
+        JOIN transaction_legs tl ON t.id = tl.transaction_id
+        WHERE t.user_id = p_user_id
+          AND t.transaction_date = loop_date
+          AND t.type IN ('deposit', 'withdrawal');
+        v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
+        -- Insert or update the snapshot for the day
+        insert into daily_performance_snapshots (user_id, date, total_assets_value, total_liabilities_value, net_equity_value, net_cash_flow)
+        values (p_user_id, loop_date, v_total_assets_value::bigint, v_total_liabilities_value::bigint, v_net_equity_value::bigint, v_net_cash_flow::bigint)
+        on conflict (user_id, date) do update
+        set total_assets_value = excluded.total_assets_value,
+            total_liabilities_value = excluded.total_liabilities_value,
+            net_equity_value = excluded.net_equity_value,
+            net_cash_flow = excluded.net_cash_flow;
+    end loop;
+end;
+$$;
+ALTER FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql"
     AS $$
@@ -875,6 +1039,16 @@ CREATE TABLE IF NOT EXISTS "public"."currencies" (
 );
 ALTER TABLE "public"."currencies" OWNER TO "postgres";
 COMMENT ON TABLE "public"."currencies" IS 'Stores all supported currencies, both fiat and crypto.';
+CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "date" "date" NOT NULL,
+    "total_assets_value" bigint NOT NULL,
+    "total_liabilities_value" bigint NOT NULL,
+    "net_equity_value" bigint NOT NULL,
+    "net_cash_flow" bigint NOT NULL
+);
+ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."debts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -888,22 +1062,11 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
 ALTER TABLE "public"."debts" OWNER TO "postgres";
 COMMENT ON TABLE "public"."debts" IS 'Tracks money borrowed to invest, keeping it separate from assets.';
 CREATE TABLE IF NOT EXISTS "public"."exchange_rates" (
-    "id" bigint NOT NULL,
+    "currency_code" character varying(10) NOT NULL,
     "date" "date" NOT NULL,
-    "from_currency_code" character varying(10) NOT NULL,
-    "to_currency_code" character varying(10) NOT NULL,
-    "rate" numeric(16,2) NOT NULL
+    "rate" numeric NOT NULL
 );
 ALTER TABLE "public"."exchange_rates" OWNER TO "postgres";
-COMMENT ON TABLE "public"."exchange_rates" IS 'Stores historical exchange rates for currency conversions.';
-CREATE SEQUENCE IF NOT EXISTS "public"."exchange_rates_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-ALTER SEQUENCE "public"."exchange_rates_id_seq" OWNER TO "postgres";
-ALTER SEQUENCE "public"."exchange_rates_id_seq" OWNED BY "public"."exchange_rates"."id";
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
     "sell_transaction_leg_id" "uuid" NOT NULL,
     "tax_lot_id" "uuid" NOT NULL,
@@ -933,6 +1096,12 @@ CREATE TABLE IF NOT EXISTS "public"."securities" (
     "last_updated_price" numeric(16,2)
 );
 ALTER TABLE "public"."securities" OWNER TO "postgres";
+CREATE TABLE IF NOT EXISTS "public"."security_daily_prices" (
+    "security_id" "uuid" NOT NULL,
+    "date" "date" NOT NULL,
+    "price" numeric NOT NULL
+);
+ALTER TABLE "public"."security_daily_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -980,7 +1149,6 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
 );
 ALTER TABLE "public"."transactions" OWNER TO "postgres";
 COMMENT ON TABLE "public"."transactions" IS 'Represents a single financial event, like a trade or a deposit.';
-ALTER TABLE ONLY "public"."exchange_rates" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."exchange_rates_id_seq"'::"regclass");
 ALTER TABLE ONLY "public"."accounts"
     ADD CONSTRAINT "accounts_pkey" PRIMARY KEY ("id");
 ALTER TABLE ONLY "public"."assets"
@@ -989,12 +1157,14 @@ ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_user_id_security_id_key" UNIQUE ("user_id", "security_id");
 ALTER TABLE ONLY "public"."currencies"
     ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_user_id_date_key" UNIQUE ("user_id", "date");
 ALTER TABLE ONLY "public"."debts"
     ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
 ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_date_from_currency_code_to_currency_code_key" UNIQUE ("date", "from_currency_code", "to_currency_code");
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("currency_code", "date");
 ALTER TABLE ONLY "public"."lot_consumptions"
     ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
 ALTER TABLE ONLY "public"."profiles"
@@ -1003,6 +1173,8 @@ ALTER TABLE ONLY "public"."securities"
     ADD CONSTRAINT "securities_pkey" PRIMARY KEY ("id");
 ALTER TABLE ONLY "public"."securities"
     ADD CONSTRAINT "securities_ticker_key" UNIQUE ("ticker");
+ALTER TABLE ONLY "public"."security_daily_prices"
+    ADD CONSTRAINT "security_daily_prices_pkey" PRIMARY KEY ("security_id", "date");
 ALTER TABLE ONLY "public"."tax_lots"
     ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
 ALTER TABLE ONLY "public"."transaction_details"
@@ -1017,14 +1189,14 @@ ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."debts"
     ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
 ALTER TABLE ONLY "public"."debts"
     ADD CONSTRAINT "debts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_from_currency_code_fkey" FOREIGN KEY ("from_currency_code") REFERENCES "public"."currencies"("code");
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_to_currency_code_fkey" FOREIGN KEY ("to_currency_code") REFERENCES "public"."currencies"("code");
+    ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."lot_consumptions"
     ADD CONSTRAINT "lot_consumptions_sell_transaction_leg_id_fkey" FOREIGN KEY ("sell_transaction_leg_id") REFERENCES "public"."transaction_legs"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."lot_consumptions"
@@ -1033,6 +1205,10 @@ ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_display_currency_fkey" FOREIGN KEY ("display_currency") REFERENCES "public"."currencies"("code");
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+ALTER TABLE ONLY "public"."security_daily_prices"
+    ADD CONSTRAINT "security_daily_prices_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."tax_lots"
     ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
 ALTER TABLE ONLY "public"."tax_lots"
@@ -1053,9 +1229,12 @@ ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_related_debt_id_fkey" FOREIGN KEY ("related_debt_id") REFERENCES "public"."debts"("id") ON DELETE SET NULL;
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+CREATE POLICY "Allow authenticated users to read exchange rates" ON "public"."exchange_rates" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "Allow service_role to perform all actions" ON "public"."exchange_rates" TO "service_role" USING (true) WITH CHECK (true);
 CREATE POLICY "Authenticated users can read currencies" ON "public"."currencies" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
-CREATE POLICY "Authenticated users can read exchange_rates" ON "public"."exchange_rates" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
 CREATE POLICY "Authenticated users can read securities" ON "public"."securities" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
+CREATE POLICY "Authenticated users can read security prices" ON "public"."security_daily_prices" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
+CREATE POLICY "Service role can manage security prices" ON "public"."security_daily_prices" USING (("auth"."role"() = 'service_role'::"text"));
 CREATE POLICY "Users can manage details for their own transactions" ON "public"."transaction_details" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
    FROM "public"."transactions"
   WHERE ("transactions"."id" = "transaction_details"."transaction_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
@@ -1069,6 +1248,7 @@ CREATE POLICY "Users can manage their own lot consumptions" ON "public"."lot_con
   WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "tax_lots"."user_id"
    FROM "public"."tax_lots"
   WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id"))));
+CREATE POLICY "Users can manage their own performance snapshots" ON "public"."daily_performance_snapshots" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 CREATE POLICY "Users can manage their own profile" ON "public"."profiles" USING ((( SELECT "auth"."uid"() AS "uid") = "id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "id"));
 CREATE POLICY "Users can manage their own tax lots" ON "public"."tax_lots" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 CREATE POLICY "Users can manage their own transaction_legs" ON "public"."transaction_legs" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
@@ -1080,11 +1260,13 @@ CREATE POLICY "Users can manage their own transactions" ON "public"."transaction
 ALTER TABLE "public"."accounts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."exchange_rates" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."securities" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."security_daily_prices" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."transaction_details" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."transaction_legs" ENABLE ROW LEVEL SECURITY;
@@ -1094,6 +1276,12 @@ GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "service_role";
@@ -1145,15 +1333,15 @@ GRANT ALL ON TABLE "public"."assets" TO "service_role";
 GRANT ALL ON TABLE "public"."currencies" TO "anon";
 GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
 GRANT ALL ON TABLE "public"."currencies" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 GRANT ALL ON TABLE "public"."debts" TO "anon";
 GRANT ALL ON TABLE "public"."debts" TO "authenticated";
 GRANT ALL ON TABLE "public"."debts" TO "service_role";
 GRANT ALL ON TABLE "public"."exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."exchange_rates" TO "service_role";
-GRANT ALL ON SEQUENCE "public"."exchange_rates_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."exchange_rates_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."exchange_rates_id_seq" TO "service_role";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
@@ -1163,6 +1351,9 @@ GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 GRANT ALL ON TABLE "public"."securities" TO "anon";
 GRANT ALL ON TABLE "public"."securities" TO "authenticated";
 GRANT ALL ON TABLE "public"."securities" TO "service_role";
+GRANT ALL ON TABLE "public"."security_daily_prices" TO "anon";
+GRANT ALL ON TABLE "public"."security_daily_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."security_daily_prices" TO "service_role";
 GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
 GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
 GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
