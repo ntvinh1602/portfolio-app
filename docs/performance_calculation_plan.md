@@ -12,25 +12,28 @@ The core of this plan is to **pre-calculate and store daily portfolio values and
 
 To calculate historical portfolio values, we first need historical prices for each asset. The current schema only stores the `last_updated_price`. We'll add a table for daily prices. Then, we'll add the main table for our daily snapshots.
 
-#### **1. New Table: `asset_daily_prices`**
+#### **1. New Table: `security_daily_prices`**
 
-This table will store the closing price for each asset for each day. This is the foundational data needed for any historical valuation.
+This table will store the closing price for each security for each day. This is the foundational data needed for any historical valuation. With the new schema, prices are tied to the central `securities` table, not the user-specific `assets` table.
 
-*   **Purpose:** To look up the market price of any asset on any given day.
+*   **Purpose:** To look up the market price of any security on any given day.
 *   **SQL Definition:**
     ```sql
-    CREATE TABLE "public"."asset_daily_prices" (
-        "asset_id" "uuid" NOT NULL,
+    CREATE TABLE "public"."security_daily_prices" (
+        "security_id" "uuid" NOT NULL,
         "date" "date" NOT NULL,
         "price" numeric NOT NULL,
-        CONSTRAINT "asset_daily_prices_pkey" PRIMARY KEY ("asset_id", "date"),
-        CONSTRAINT "asset_daily_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE
+        CONSTRAINT "security_daily_prices_pkey" PRIMARY KEY ("security_id", "date"),
+        CONSTRAINT "security_daily_prices_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE
     );
 
-    ALTER TABLE "public"."asset_daily_prices" ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY "Users can manage their own asset prices" ON "public"."asset_daily_prices"
-        USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "user_id" FROM "public"."assets" WHERE ("id" = "asset_daily_prices"."asset_id"))))
-        WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "user_id" FROM "public"."assets" WHERE ("id" = "asset_daily_prices"."asset_id"))));
+    ALTER TABLE "public"."security_daily_prices" ENABLE ROW LEVEL SECURITY;
+    -- Prices are public for all authenticated users to read.
+    -- Only service roles can write prices.
+    CREATE POLICY "Authenticated users can read security prices" ON "public"."security_daily_prices"
+        FOR SELECT USING (auth.role() = 'authenticated');
+    CREATE POLICY "Service role can manage security prices" ON "public"."security_daily_prices"
+        FOR ALL USING (auth.role() = 'service_role');
     ```
 
 #### **2. New Table: `daily_performance_snapshots`**
@@ -63,21 +66,33 @@ This is the central table for our performance calculations. It will store the ca
 
 ```mermaid
 erDiagram
+    profiles {
+        uuid id PK
+        text display_name
+    }
+
+    securities {
+        uuid id PK
+        text ticker
+        text name
+        numeric last_updated_price
+    }
+
     assets {
         uuid id PK
-        uuid user_id
-        text ticker
+        uuid user_id FK
+        uuid security_id FK
     }
 
     transactions {
         uuid id PK
-        uuid user_id
+        uuid user_id FK
         date transaction_date
         transaction_type type
     }
 
-    asset_daily_prices {
-        uuid asset_id PK, FK
+    security_daily_prices {
+        uuid security_id PK, FK
         date date PK
         numeric price
     }
@@ -92,8 +107,10 @@ erDiagram
         numeric net_cash_flow
     }
 
-    assets ||--o{ asset_daily_prices : "has daily prices"
-    profiles ||--o{ daily_performance_snapshots : "has snapshots"
+    profiles ||--o{ assets : "owns"
+    securities ||--o{ assets : "is_owned_as"
+    securities ||--o{ security_daily_prices : "has_daily_prices"
+    profiles ||--o{ daily_performance_snapshots : "has_snapshots"
     transactions ||--|{ daily_performance_snapshots : "influences"
 ```
 
@@ -108,12 +125,12 @@ This PostgreSQL function will backfill historical data by generating snapshots f
 **Logic:**
 1.  Loop through every day from `p_start_date` to `p_end_date`.
 2.  For each day, calculate:
-    *   **Total Assets Value:** Sum the market value of each asset. Market value is `(quantity held at end of day) * (price from asset_daily_prices)`.
+    *   **Total Assets Value:** Sum the market value of each security held by the user. The market value for one holding is `(quantity held at end of day) * (price from security_daily_prices)`. The quantity held is determined by summing the `quantity` field from the `transaction_legs` table for the user's specific asset up to that day.
     *   **Total Liabilities Value:** Calculate the outstanding balance of all debts, including accrued interest up to that day.
     *   **Net Cash Flow:** Sum amounts from `deposit` and `withdraw` transactions for that day.
 3.  `INSERT` or `UPDATE` the row for that day in the `daily_performance_snapshots` table.
 
-**Historical Data Requirement:** For this function to work, the `asset_daily_prices` table must be populated with the historical daily prices for every asset the user has ever owned.
+**Historical Data Requirement:** For this function to work, the `security_daily_prices` table must be populated with the historical daily prices for every security the user has ever owned.
 
 #### **2. Function: `calculate_twr(p_user_id, p_start_date, p_end_date)`**
 
@@ -132,9 +149,9 @@ This function will read from the `daily_performance_snapshots` table to perform 
 
 ### **Implementation Roadmap**
 
-1.  **DB Migration:** Create a new migration file to add the `asset_daily_prices` and `daily_performance_snapshots` tables.
+1.  **DB Migration:** Create a new migration file to add the `security_daily_prices` and `daily_performance_snapshots` tables.
 2.  **Backend Logic:** Implement the `generate_performance_snapshots` and `calculate_twr` PostgreSQL functions.
-3.  **Data Import:** Source historical daily prices and write a script to populate the `asset_daily_prices` table.
+3.  **Data Import:** Source historical daily prices and write a script to populate the `security_daily_prices` table.
 4.  **Backfilling:** Run the `generate_performance_snapshots` function for all users to build the initial data.
 5.  **API Endpoint:** Create a new API route (e.g., `/api/performance`) that calls the `calculate_twr` function.
 6.  **Frontend Display:** In `src/app/performance/page.tsx`, fetch and display the TWR percentages.
