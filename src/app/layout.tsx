@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import {
-  Playfair_Display,
-  Roboto_Flex
+  Roboto_Flex,
+  Roboto_Condensed
 } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
@@ -12,8 +12,8 @@ const RobotoFlex = Roboto_Flex({
   subsets: ["latin"],
 });
 
-const PlayfairDisplay = Playfair_Display({
-  variable: "--font-playfair-display",
+const RobotoCondensed = Roboto_Condensed({
+  variable: "--font-roboto-condensed",
   subsets: ["latin"],
 });
 
@@ -43,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${RobotoFlex.variable} ${PlayfairDisplay.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>

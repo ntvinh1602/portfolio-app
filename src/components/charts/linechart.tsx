@@ -10,6 +10,7 @@ interface LinechartProps {
   className?: string;
   xAxisDataKey: string;
   lineDataKey: string;
+  grid: boolean;
   xAxisTickFormatter?: (value: any) => string;
   yAxisTickFormatter?: (value: any) => string;
 }
@@ -20,6 +21,7 @@ export function Linechart({
   className,
   xAxisDataKey,
   lineDataKey,
+  grid,
   xAxisTickFormatter,
   yAxisTickFormatter
 }: LinechartProps) {
@@ -29,7 +31,7 @@ export function Linechart({
       className={cn(className)}
     >
       <LineChart data={data}>
-        <CartesianGrid vertical={false} />
+        <CartesianGrid horizontal={grid} vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
           tickLine={false}

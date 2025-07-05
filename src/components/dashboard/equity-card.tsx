@@ -1,6 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { Linechart } from "@/components/charts/linechart"
-"use"
 
 import { formatNum } from "@/lib/utils"
 import { subDays, format } from "date-fns"
@@ -101,6 +100,7 @@ export function EquityCard() {
           className="h-[150px] w-full"
           xAxisDataKey="date"
           lineDataKey="net_equity_value"
+          grid={false}
           xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
           yAxisTickFormatter={(value) => `${formatNum(value / 1000000)} m`}
         />

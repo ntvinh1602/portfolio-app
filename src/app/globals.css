@@ -143,6 +143,6 @@
     font-family: var(--font-roboto-flex);
   }
   h1 {
-    font-family: var(--font-playfair-display);
+    font-family: var(--font-roboto-condensed);
   }
 }
