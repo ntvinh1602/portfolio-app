@@ -140,6 +140,7 @@ declare
     v_emv numeric;
     v_cf numeric;
     v_prev_emv numeric;
+    v_last_bmv numeric; -- Track the BMV for the final period
 begin
     -- Get the beginning market value from the day before the start date
     select net_equity_value::numeric into v_prev_emv
@@ -157,7 +158,9 @@ begin
         limit 1;
     end if;
     
+    -- Initialize BMV for the first period
     v_bmv := v_prev_emv;
+    v_last_bmv := v_bmv; -- Track for final period calculation
 
     for r in
         select
@@ -169,11 +172,12 @@ begin
           and date between p_start_date and p_end_date
         order by date
     loop
-        -- If there is a cash flow, we calculate the HPR for the sub-period ending today
+        -- If there is a cash flow, calculate the HPR for the sub-period ending today
         if r.net_cash_flow != 0 then
             -- EMV for the sub-period is the equity value *before* the cash flow
             v_emv := r.net_equity_value - r.net_cash_flow;
             
+            -- Calculate HPR for this sub-period
             if v_bmv != 0 then
                 v_hpr := (v_emv - v_bmv) / v_bmv;
                 v_twr := v_twr * (1 + v_hpr);
@@ -181,21 +185,28 @@ begin
             
             -- The new BMV for the next sub-period is the equity value *after* the cash flow
             v_bmv := r.net_equity_value;
+            v_last_bmv := v_bmv; -- Update tracking variable
+        else
+            -- No cash flow on this day, just update the last BMV for final calculation
+            v_last_bmv := v_bmv;
         end if;
     end loop;
 
-    -- Final period calculation from the last cash flow to the end date
+    -- Final period calculation: from the last cash flow date to the end date
+    -- Use the final day's equity value as the ending market value
     select net_equity_value::numeric into v_emv
     from daily_performance_snapshots
     where user_id = p_user_id and date = p_end_date
     order by date desc
     limit 1;
 
-    if v_bmv != 0 and v_emv is not null then
-        v_hpr := (v_emv - v_bmv) / v_bmv;
+    -- Calculate the final period return
+    if v_last_bmv != 0 and v_emv is not null then
+        v_hpr := (v_emv - v_last_bmv) / v_last_bmv;
         v_twr := v_twr * (1 + v_hpr);
     end if;
 
+    -- Return the time-weighted return as a percentage (subtract 1 to get the return rate)
     return (v_twr - 1);
 end;
 $$;
@@ -1236,10 +1247,6 @@ CREATE TABLE IF NOT EXISTS "public"."accounts" (
 ALTER TABLE "public"."accounts" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."accounts" IS 'Represents the different places where assets are held (e.g., brokerage, bank).';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1250,10 +1257,6 @@ CREATE TABLE IF NOT EXISTS "public"."assets" (
 ALTER TABLE "public"."assets" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."assets" IS 'A master list of all investable assets (e.g., HPG stock, Bitcoin).';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" character varying(10) NOT NULL,
     "name" "text" NOT NULL,
@@ -1262,10 +1265,6 @@ CREATE TABLE IF NOT EXISTS "public"."currencies" (
 
 
 ALTER TABLE "public"."currencies" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."currencies" IS 'Stores all supported currencies, both fiat and crypto.';
-
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
@@ -1297,10 +1296,6 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
 ALTER TABLE "public"."debts" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."debts" IS 'Tracks money borrowed to invest, keeping it separate from assets.';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."exchange_rates" (
     "currency_code" character varying(10) NOT NULL,
     "date" "date" NOT NULL,
@@ -1322,10 +1317,6 @@ CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
 ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."lot_consumptions" IS 'Creates an immutable link between a sale and the specific tax lots it consumed.';
-
-
-
 COMMENT ON COLUMN "public"."lot_consumptions"."tax_lot_id" IS 'The tax lot that was consumed from.';
 
 
@@ -1343,10 +1334,6 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 
 
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."profiles" IS 'Stores user-specific settings and is linked one-to-one with auth.users.';
-
 
 
 COMMENT ON COLUMN "public"."profiles"."display_name" IS 'The user''s preferred display name in the application.';
@@ -1396,10 +1383,6 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
 ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."tax_lots" IS 'Stores individual acquisition lots for assets to enable FIFO cost basis tracking.';
-
-
-
 COMMENT ON COLUMN "public"."tax_lots"."origin" IS 'The type of transaction that created the lot (e.g., ''buy'', ''split''). Reuses the transaction_type enum.';
 
 
@@ -1419,10 +1402,6 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_details" (
 ALTER TABLE "public"."transaction_details" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."transaction_details" IS 'Stores specific data for buy/sell trades, like price, fees, and taxes.';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "transaction_id" "uuid" NOT NULL,
@@ -1437,10 +1416,6 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
 ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."transaction_legs" IS 'The individual asset movements that compose a transaction.';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1452,10 +1427,6 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
 
 
 ALTER TABLE "public"."transactions" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."transactions" IS 'Represents a single financial event, like a trade or a deposit.';
-
 
 
 ALTER TABLE ONLY "public"."accounts"
