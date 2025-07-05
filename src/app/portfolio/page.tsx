@@ -26,7 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Piechart } from "@/components/piechart"
+import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 

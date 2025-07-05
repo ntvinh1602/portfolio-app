@@ -9,10 +9,7 @@ import {
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { subDays, format } from "date-fns"
-import {
-  ChartContainer
-} from "@/components/ui/chart"
-import { CartesianGrid, XAxis, YAxis, Line, LineChart } from "recharts"
+import { Linechart } from "@/components/charts/linechart"
 import { formatNum } from "@/lib/utils"
 
 type EquityData = {
@@ -113,39 +110,20 @@ export default function Page() {
           {chartData.length > 0 && (
             <div className="p-4 bg-card rounded-lg">
               <h3 className="text-lg font-semibold mb-4">Equity</h3>
-              <ChartContainer
-                config={{
+              <Linechart
+                data={chartData}
+                chartConfig={{
                   net_equity_value: {
                     label: "Equity",
                     color: "var(--chart-2)",
                   },
                 }}
                 className="h-[250px] w-full"
-              >
-                <LineChart data={chartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => format(new Date(value), "MMM yy")}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => `${formatNum(value/1000000)} m`}
-                  />
-                  <Line
-                    dataKey="net_equity_value"
-                    type="natural"
-                    stroke="var(--color-net_equity_value)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ChartContainer>
+                xAxisDataKey="date"
+                lineDataKey="net_equity_value"
+                xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
+                yAxisTickFormatter={(value) => `${formatNum(value / 1000000)} m`}
+              />
             </div>
           )}
         </div>
