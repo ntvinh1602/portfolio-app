@@ -1,8 +1,7 @@
 Bugs
 - Debt select field overflow in debt payment add transaction form
+- Date picker in transaction form not automatically closed after selection
 
 Improvement
 - Thousand separator to numeric input in add transaction form
-- Remove items with zero value in piechart
-- Fix date picker in add transaction form not automatically close after date selected
-- Refactor transaction form file
+- Auto populate default input value in add transaction form
