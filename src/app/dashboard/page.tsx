@@ -6,13 +6,15 @@ import {
   PageHeader,
   PageContent
 } from "@/components/page-layout"
-import { EquityCard } from "@/components/dashboard/equity-card"
-import { AssetCard } from "@/components/dashboard/asset-card"
 import {
   Carousel,
   CarouselContent,
   CarouselItem
 } from "@/components/ui/carousel"
+
+import { EquityCard } from "@/components/dashboard/equity-card"
+import { AssetCard } from "@/components/dashboard/asset-card"
+import { PnLCard } from "@/components/dashboard/pnl-card"
 
 export default function Page() {
 
@@ -26,7 +28,7 @@ export default function Page() {
               <EquityCard />
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2">
-              <EquityCard />
+              <PnLCard />
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2 pr-6">
               <EquityCard />

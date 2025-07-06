@@ -3,7 +3,7 @@ import { Linechart } from "@/components/charts/linechart"
 
 import { formatNum } from "@/lib/utils"
 import { subDays, format } from "date-fns"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 
 import {
@@ -23,11 +23,11 @@ type EquityData = {
 export function EquityCard() {
   const [chartData, setChartData] = useState<EquityData[]>([])
   const [latestEquity, setLatestEquity] = useState<number | null>(null)
-  const startDate = subDays(new Date(), 90)
-  const endDate = new Date()
   const [twr, setTwr] = useState<number | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const startDate = subDays(new Date(), 90)
+    const endDate = new Date()
     setTwr(null)
     setChartData([])
     setLatestEquity(null)
@@ -63,16 +63,16 @@ export function EquityCard() {
       setLatestEquity(equityData[equityData.length - 1].net_equity_value)
     }
     setChartData(equityData)
-  }
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   return (
     <Card className="bg-muted/50 shadow-none gap-4">
       <CardHeader className="px-4">
-        <CardDescription>Total Equity</CardDescription>
+        <CardDescription>Total equity</CardDescription>
         <CardTitle className="text-2xl font-semibold">
           {latestEquity ? formatNum(latestEquity) : "Loading..."}
         </CardTitle>
@@ -100,9 +100,9 @@ export function EquityCard() {
           className="h-[150px] w-full"
           xAxisDataKey="date"
           lineDataKey="net_equity_value"
-          grid={false}
+          grid={true}
           xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
-          yAxisTickFormatter={(value) => `${formatNum(value / 1000000)} m`}
+          yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)}m`}
         />
       </CardFooter>
     </Card>

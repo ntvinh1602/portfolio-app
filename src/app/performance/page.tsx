@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   PageMain,
   PageHeader,
@@ -27,7 +27,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!startDate || !endDate) {
       setError("Please select both a start and end date.")
       return
@@ -67,16 +67,20 @@ export default function Page() {
       }
       const equityData = await equityResponse.json()
       setChartData(equityData)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError("An unknown error occurred")
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [startDate, endDate])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   return (
     <PageMain>
@@ -121,8 +125,9 @@ export default function Page() {
                 className="h-[250px] w-full"
                 xAxisDataKey="date"
                 lineDataKey="net_equity_value"
+                grid={true}
                 xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
-                yAxisTickFormatter={(value) => `${formatNum(value / 1000000)} m`}
+                yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)} m`}
               />
             </div>
           )}

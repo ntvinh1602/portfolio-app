@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -34,16 +33,13 @@ export function AssetCard() {
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
   const fetchAssets = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_asset_summary');
-
-    if (error) {
-      console.error('Error fetching asset summary:', error);
+    const response = await fetch('/api/performance/asset-summary');
+    if (!response.ok) {
+      console.error('Error fetching asset summary:', response.statusText);
       return;
     }
-
-    if (data) {
-      setSummaryData(data as AssetSummaryData);
-    }
+    const data = await response.json();
+    setSummaryData(data as AssetSummaryData);
   }, []);
 
   useEffect(() => {
@@ -113,7 +109,7 @@ export function AssetCard() {
   return (
     <Card className="py-2 border-none shadow-none bg-background gap-0">
       <CardHeader className="px-8">
-        <CardDescription>Total Assets</CardDescription>
+        <CardDescription>Total assets</CardDescription>
         <CardTitle className="text-2xl font-semibold">
             {assetsTotalAmount ? assetsTotalAmount : "Loading..."}
         </CardTitle>

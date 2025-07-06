@@ -5,14 +5,14 @@ import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
 interface LinechartProps {
-  data: any[];
+  data: Record<string, string | number>[];
   chartConfig: ChartConfig;
   className?: string;
   xAxisDataKey: string;
   lineDataKey: string;
   grid: boolean;
-  xAxisTickFormatter?: (value: any) => string;
-  yAxisTickFormatter?: (value: any) => string;
+  xAxisTickFormatter?: (value: string | number) => string;
+  yAxisTickFormatter?: (value: string | number) => string;
 }
 
 export function Linechart({

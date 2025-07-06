@@ -89,6 +89,44 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_performance_snapshots: {
+        Row: {
+          date: string
+          id: string
+          net_cash_flow: number
+          net_equity_value: number
+          total_assets_value: number
+          total_liabilities_value: number
+          user_id: string
+        }
+        Insert: {
+          date: string
+          id?: string
+          net_cash_flow: number
+          net_equity_value: number
+          total_assets_value: number
+          total_liabilities_value: number
+          user_id: string
+        }
+        Update: {
+          date?: string
+          id?: string
+          net_cash_flow?: number
+          net_equity_value?: number
+          total_assets_value?: number
+          total_liabilities_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_performance_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debts: {
         Row: {
           currency_code: string
@@ -139,37 +177,24 @@ export type Database = {
       }
       exchange_rates: {
         Row: {
+          currency_code: string
           date: string
-          from_currency_code: string
-          id: number
           rate: number
-          to_currency_code: string
         }
         Insert: {
+          currency_code: string
           date: string
-          from_currency_code: string
-          id?: number
           rate: number
-          to_currency_code: string
         }
         Update: {
+          currency_code?: string
           date?: string
-          from_currency_code?: string
-          id?: number
           rate?: number
-          to_currency_code?: string
         }
         Relationships: [
           {
-            foreignKeyName: "exchange_rates_from_currency_code_fkey"
-            columns: ["from_currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "exchange_rates_to_currency_code_fkey"
-            columns: ["to_currency_code"]
+            foreignKeyName: "exchange_rates_currency_code_fkey"
+            columns: ["currency_code"]
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
@@ -266,7 +291,41 @@ export type Database = {
           name?: string
           ticker?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "securities_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      security_daily_prices: {
+        Row: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Insert: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Update: {
+          date?: string
+          price?: number
+          security_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_daily_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "securities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tax_lots: {
         Row: {
@@ -461,6 +520,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_twr: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: number
+      }
+      generate_performance_snapshots: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: undefined
+      }
       get_asset_balance: {
         Args: { p_asset_id: string; p_user_id: string }
         Returns: number
@@ -468,6 +535,25 @@ export type Database = {
       get_asset_summary: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_equity_chart_data: {
+        Args: {
+          p_user_id: string
+          p_start_date: string
+          p_end_date: string
+          p_threshold: number
+        }
+        Returns: {
+          date: string
+          net_equity_value: number
+        }[]
+      }
+      get_monthly_pnl: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: {
+          month: string
+          pnl: number
+        }[]
       }
       get_stock_holdings: {
         Args: Record<PropertyKey, never>

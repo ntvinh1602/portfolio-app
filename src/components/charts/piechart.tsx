@@ -29,7 +29,7 @@ interface PiechartProps {
 
 export function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText }: PiechartProps) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
-  const renderLabel = ({ payload, ...props }: any) => {
+  const renderLabel = ({ payload, ...props }: { payload: PieChartData; cx: number; cy: number; x: number; y: number; textAnchor: string; dominantBaseline: string; }) => {
     const value = Number(payload[dataKey]) || 0;
     const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : 0;
     return (

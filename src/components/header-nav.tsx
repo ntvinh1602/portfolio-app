@@ -6,6 +6,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
+import avatar from 'animal-avatar-generator'
 import { supabase } from "@/lib/supabase/supabaseClient"
 import {
   DropdownMenu,
@@ -32,7 +33,8 @@ export function HeaderNav() {
     email: "",
     avatar: "",
   })
-  
+  const [avatarSvg, setAvatarSvg] = React.useState("")
+
   const router = useRouter()
 
   const menuItems = [
@@ -80,11 +82,20 @@ export function HeaderNav() {
 
     fetchUser()
   }, [])
+
+  React.useEffect(() => {
+    if (user.email) {
+      const svgString = avatar(user.email, { size: 128 })
+      const dataUri = `data:image/svg+xml;base64,${btoa(svgString)}`
+      setAvatarSvg(dataUri)
+    }
+  }, [user.email])
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-12 w-12 rounded-full grayscale">
-          <AvatarImage src={user.avatar} alt={user.name} />
+        <Avatar className="h-12 w-12 border-2 border-primary dark:grayscale">
+          <AvatarImage src={avatarSvg} alt={user.name} />
           <AvatarFallback className="rounded-lg">
             Hi!
           </AvatarFallback>
@@ -96,8 +107,8 @@ export function HeaderNav() {
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-full">
-              <AvatarImage src={user.avatar} alt={user.name} />
+            <Avatar className="h-8 w-8 dark:grayscale">
+              <AvatarImage src={avatarSvg} alt={user.name} />
               <AvatarFallback className="rounded-lg">Hi!</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">

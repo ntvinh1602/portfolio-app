@@ -6,7 +6,6 @@ import {
   PageHeader,
   PageContent
 } from "@/components/page-layout"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
 import {
@@ -50,16 +49,13 @@ export default function Page() {
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
   const fetchAssets = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_asset_summary');
-
-    if (error) {
-      console.error('Error fetching asset summary:', error);
+    const response = await fetch('/api/performance/asset-summary');
+    if (!response.ok) {
+      console.error('Error fetching asset summary:', response.statusText);
       return;
     }
-
-    if (data) {
-      setSummaryData(data as AssetSummaryData);
-    }
+    const data = await response.json();
+    setSummaryData(data as AssetSummaryData);
   }, []);
 
   useEffect(() => {
