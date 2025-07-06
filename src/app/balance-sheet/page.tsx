@@ -139,6 +139,7 @@ return (
                 chartConfig={chartConfig}
                 dataKey="allocation"
                 nameKey="asset"
+                legend="bottom"
               />
             </PopoverContent>
           </Popover>

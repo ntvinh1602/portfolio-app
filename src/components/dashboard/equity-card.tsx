@@ -70,25 +70,25 @@ export function EquityCard() {
   }, [])
 
   return (
-    <Card className="bg-background shadow-none gap-4">
-      <CardHeader>
+    <Card className="bg-muted/50 shadow-none gap-4">
+      <CardHeader className="px-4">
         <CardDescription>Total Equity</CardDescription>
         <CardTitle className="text-2xl font-semibold">
-          {latestEquity ? formatNum(latestEquity) : "..."}
+          {latestEquity ? formatNum(latestEquity) : "Loading..."}
         </CardTitle>
-        <CardAction className="flex flex-col gap-1">
+        <CardAction className="flex flex-col gap-1 items-end">
           <Badge variant="outline">
             {twr !== null && twr < 0 ? (
-              <TrendingDown className="size-4" />
+              <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
             ) : (
-              <TrendingUp className="size-4" />
+              <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
             )}
             {twr !== null && `${(twr * 100).toFixed(2)}% `}
           </Badge>
-          <CardDescription>Last 90 days</CardDescription>
+          <CardDescription className="text-xs">Last 90 days</CardDescription>
         </CardAction>
       </CardHeader>
-      <CardFooter>
+      <CardFooter className="px-4">
         <Linechart
           data={chartData}
           chartConfig={{
