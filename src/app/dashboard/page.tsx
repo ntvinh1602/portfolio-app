@@ -15,6 +15,7 @@ import {
 import { EquityCard } from "@/components/dashboard/equity-card"
 import { AssetCard } from "@/components/dashboard/asset-card"
 import { PnLCard } from "@/components/dashboard/pnl-card"
+import { BenchmarkCard } from "@/components/dashboard/benchmark-card"
 
 export default function Page() {
 
@@ -31,7 +32,7 @@ export default function Page() {
               <PnLCard />
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2 pr-6">
-              <EquityCard />
+              <BenchmarkCard />
             </CarouselItem>
           </CarouselContent>
         </Carousel>

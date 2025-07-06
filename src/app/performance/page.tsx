@@ -124,7 +124,7 @@ export default function Page() {
                 }}
                 className="h-[250px] w-full"
                 xAxisDataKey="date"
-                lineDataKey="net_equity_value"
+                lineDataKeys={["net_equity_value"]}
                 grid={true}
                 xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
                 yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)} m`}

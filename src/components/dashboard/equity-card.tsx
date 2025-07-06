@@ -73,7 +73,7 @@ export function EquityCard() {
     <Card className="bg-muted/50 shadow-none gap-4">
       <CardHeader className="px-4">
         <CardDescription>Total equity</CardDescription>
-        <CardTitle className="text-2xl font-semibold">
+        <CardTitle className="text-2xl">
           {latestEquity ? formatNum(latestEquity) : "Loading..."}
         </CardTitle>
         <CardAction className="flex flex-col gap-1 items-end">
@@ -99,7 +99,7 @@ export function EquityCard() {
           }}
           className="h-[150px] w-full"
           xAxisDataKey="date"
-          lineDataKey="net_equity_value"
+          lineDataKeys={["net_equity_value"]}
           grid={true}
           xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
           yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)}m`}

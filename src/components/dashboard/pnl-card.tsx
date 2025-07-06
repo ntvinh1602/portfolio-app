@@ -65,7 +65,7 @@ export function PnLCard() {
     <Card className="bg-muted/50 shadow-none gap-4">
       <CardHeader className="px-4">
         <CardDescription>This month P/L</CardDescription>
-        <CardTitle className="text-2xl font-semibold">
+        <CardTitle className="text-2xl">
           {mtdPnl !== null ? formatNum(mtdPnl) : "Loading..."}
         </CardTitle>
         <CardAction className="flex flex-col gap-1 items-end">
