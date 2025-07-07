@@ -7,7 +7,7 @@
 // Usage:
 // 1. Make sure you have a .env.local file in the root of the project with:
 //    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-//    SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+//    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 // 2. Run the script using tsx:
 //    npx tsx scripts/backfill_performance_snapshots.ts
 
@@ -19,7 +19,7 @@ import path from 'path';
 config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error('Supabase URL and service key are required. Make sure to create a .env.local file.');
