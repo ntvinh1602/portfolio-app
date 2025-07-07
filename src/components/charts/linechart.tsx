@@ -56,6 +56,7 @@ export function Linechart({
             key={key}
             dataKey={key}
             type="natural"
+            connectNulls={true}
             stroke={`var(--color-${key})`}
             strokeWidth={2}
             dot={false}

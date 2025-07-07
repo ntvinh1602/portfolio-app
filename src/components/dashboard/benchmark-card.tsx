@@ -62,7 +62,7 @@ export function BenchmarkCard() {
   return (
     <Card className="bg-muted/50 shadow-none gap-2 h-full">
       <CardHeader className="px-4">
-        <CardDescription>Last 90 days vs. VN-Index</CardDescription>
+        <CardDescription>90-day Benchmark</CardDescription>
         <CardTitle className="text-2xl"></CardTitle>
       </CardHeader>
       <CardFooter className="px-4">
