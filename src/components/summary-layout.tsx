@@ -32,7 +32,7 @@ function SummaryCard({
       className={cn(
         "flex w-full justify-between",
         !header && "font-normal",
-        header && "text-foreground mt-2",
+        header && "bg-secondary/50 font-semibold text-secondary-foreground mt-2",
       )}
     >
       {

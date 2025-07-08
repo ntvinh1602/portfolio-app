@@ -9,16 +9,15 @@ import {
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
 import {
+  Card,
   CardContent,
   CardHeader,
-  CardAction
+  CardAction,
+  CardTitle,
+  CardDescription
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  Coins,
-  CreditCard,
-  ChartPie,
-} from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { FileChartPie } from "lucide-react"
 import {
   SummaryCard,
   SummarySkeleton
@@ -112,94 +111,93 @@ return (
   <PageMain>
     <PageHeader title="Assets" />
     <PageContent>
-      <CardHeader className="flex px-0 items-center justify-between">
-        <Button
-          variant="default"
-          className="font-semibold"
-        >
-          <Coins />Total Assets
-        </Button>
-        <CardAction>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <ChartPie />Chart
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              className="rounded-4xl bg-card/25 backdrop-blur-sm"
-            >
-              <Piechart 
-                data={chartData}
-                chartConfig={chartConfig}
-                dataKey="allocation"
-                nameKey="asset"
-                legend="bottom"
+      <Card className="bg-muted/50 shadow-none gap-4">
+        <CardHeader>
+          <CardTitle>Total Assets</CardTitle>
+          <CardDescription>
+            What you own
+          </CardDescription>
+          <CardAction>
+            <Popover> 
+              <PopoverTrigger>
+                <FileChartPie />
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="rounded-4xl bg-card/25 backdrop-blur-sm"
+              >
+                <Piechart 
+                  data={chartData}
+                  chartConfig={chartConfig}
+                  dataKey="allocation"
+                  nameKey="asset"
+                  legend="bottom"
+                />
+              </PopoverContent>
+            </Popover>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="px-0">
+          {!summaryData ? (
+            <>
+              <SummarySkeleton header={true} />
+              <SummarySkeleton />
+              <SummarySkeleton />
+            </>
+          ) : (
+            <>
+              <SummaryCard
+                header={true}
+                label="Assets"
+                value={assetsTotalAmount}
+                link="/assets/holdings"
               />
-            </PopoverContent>
-          </Popover>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="px-0">
-        {!summaryData ? (
-          <>
-            <SummarySkeleton header={true} />
-            <SummarySkeleton />
-            <SummarySkeleton />
-          </>
-        ) : (
-          <>
-            <SummaryCard
-              header={true}
-              label="Assets"
-              value={assetsTotalAmount}
-              link="/assets/holdings"
-            />
-            {assetsItems.map(item => (
-              <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
-            ))}
-          </>
-        )}
-      </CardContent>
-      <CardHeader className="flex px-0 items-center justify-between">
-        <Button
-          variant="default"
-          className="font-semibold"
-        >
-          <CreditCard />Total Liabilities
-        </Button>
-      </CardHeader>
-      <CardContent className="px-0">
-        {!summaryData ? (
-          <>
-            <SummarySkeleton header={true} />
-            <SummarySkeleton />
-            <SummarySkeleton header={true} />
-            <SummarySkeleton />
-          </>
-        ) : (
-          <>
-            <SummaryCard
-              header={true}
-              label="Liabilities"
-              value={liabilitiesTotalAmount}
-              link="/assets/debts"
-            />
-            {liabilitiesItems.map(item => (
-              <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
-            ))}
-            <SummaryCard
-              header={true}
-              label="Equities"
-              value={equityTotalAmount}
-            />
-            {equityItems.map(item => (
-              <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
-            ))}
-          </>
-        )}
-      </CardContent>
+              {assetsItems.map(item => (
+                <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+              ))}
+            </>
+          )}
+        </CardContent>
+        <div className="px-6 pb-2">
+          <Separator />
+        </div>
+        <CardHeader>
+          <CardTitle>Total Liabilities</CardTitle>
+          <CardDescription>
+            How you funded your assets
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          {!summaryData ? (
+            <>
+              <SummarySkeleton header={true} />
+              <SummarySkeleton />
+              <SummarySkeleton header={true} />
+              <SummarySkeleton />
+            </>
+          ) : (
+            <>
+              <SummaryCard
+                header={true}
+                label="Liabilities"
+                value={liabilitiesTotalAmount}
+                link="/assets/debts"
+              />
+              {liabilitiesItems.map(item => (
+                <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+              ))}
+              <SummaryCard
+                header={true}
+                label="Equities"
+                value={equityTotalAmount}
+              />
+              {equityItems.map(item => (
+                <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
+              ))}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </PageContent>
   </PageMain>
   )

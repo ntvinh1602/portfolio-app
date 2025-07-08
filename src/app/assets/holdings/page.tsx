@@ -7,19 +7,21 @@ import {
   PageContent
 } from "@/components/page-layout"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { StockCardWrapper } from "@/components/stock/stock-card-wrapper"
 import { StockSkeleton } from "@/components/stock/stock-layout"
 import {
+  Card,
   CardAction,
   CardContent,
+  CardDescription,
   CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
-import { 
-  Bitcoin,
-  ReceiptText,
+import { Separator } from "@/components/ui/separator"
+import {
   RefreshCw,
-  ChartPie
+  FileChartPie
 } from "lucide-react"
 import {
   Popover,
@@ -28,7 +30,6 @@ import {
 } from "@/components/ui/popover"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { Button } from "@/components/ui/button"
 
 interface StockHoldingBase {
   ticker: string;
@@ -36,7 +37,7 @@ interface StockHoldingBase {
   logo_url: string;
   quantity: number;
   cost_basis: number;
-  last_updated_price: number;
+  latest_price: number;
 }
 
 interface StockHolding extends StockHoldingBase {
@@ -46,26 +47,36 @@ interface StockHolding extends StockHoldingBase {
 export default function Page() {
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([])
   const [loading, setLoading] = useState(true)
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [pendingRefreshes, setPendingRefreshes] = useState(0);
 
-  const handleRefresh = async () => {
-    setRefreshKey(prevKey => prevKey + 1)
-    const newTimestamp = new Date()
-    setLastUpdated(newTimestamp)
+  const handleRefresh = () => {
+    setPendingRefreshes(stockHoldings.length);
+    setRefreshKey(prevKey => prevKey + 1);
+  };
 
-    const { data: { user } } = await supabase.auth.getUser()
+  const updateLastFetchedTimestamp = useCallback(async (timestamp: Date) => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { error } = await supabase
+      await supabase
         .from('profiles')
-        .update({ last_stock_fetching: newTimestamp.toISOString() })
-        .eq('id', user.id)
-
-      if (error) {
-        console.error('Error updating last_stock_fetching:', error)
-      }
+        .update({ last_stock_fetching: timestamp.toISOString() })
+        .eq('id', user.id);
     }
-  }
+  }, []);
+
+  const handleRefreshComplete = useCallback(() => {
+    setPendingRefreshes(prev => {
+      const newCount = prev - 1;
+      if (newCount === 0) {
+        const newTimestamp = new Date();
+        setLastUpdated(newTimestamp);
+        updateLastFetchedTimestamp(newTimestamp);
+      }
+      return newCount;
+    });
+  }, [updateLastFetchedTimestamp]);
 
   useEffect(() => {
     async function fetchInitialData() {
@@ -90,7 +101,7 @@ export default function Page() {
       } else if (data) {
         const holdingsWithTotalAmount: StockHolding[] = (data as StockHoldingBase[]).map((holding: StockHoldingBase) => ({
           ...holding,
-          total_amount: holding.quantity * holding.last_updated_price,
+          total_amount: holding.quantity * holding.latest_price,
         }));
         setStockHoldings(holdingsWithTotalAmount);
       }
@@ -129,89 +140,91 @@ export default function Page() {
   return (
     <PageMain>
       <PageHeader title="Holdings" />
-      <PageContent>
-        <CardHeader className="flex px-0 items-center justify-between">
-          <Button
-            variant="default"
-            className="font-semibold text-md"
-          >
-            <ReceiptText />Stocks
-          </Button>
-          <CardAction className="flex py-2 gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline">
-                  <ChartPie />Chart
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="center"
-                className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm"
-              >
-                <Piechart 
-                  data={chartData}
-                  chartConfig={chartConfig}
-                  dataKey="allocation"
-                  nameKey="asset"
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-            >
-              <RefreshCw />Refresh
-            </Button>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="px-0 pb-4">
-          <div className="flex flex-col gap-2">
-            {loading ? (
-              Array.from({ length: 2 }).map((_, index) => (
-                <StockSkeleton key={index} />
-              ))
-            ) : stockHoldings.length > 0 ? (
-              stockHoldings.map((stock) => (
-                <StockCardWrapper
-                  key={stock.ticker}
-                  ticker={stock.ticker}
-                  name={stock.name}
-                  logoUrl={stock.logo_url}
-                  quantity={stock.quantity}
-                  costBasis={stock.cost_basis}
-                  refreshKey={refreshKey}
-                  lastUpdatedPrice={stock.last_updated_price}
-                />
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-4">
-                No stock holdings found.
-              </div>
-            )}
-            {lastUpdated && !loading && stockHoldings.length > 0 && (
-              <span className="text-right text-xs px-6 text-muted-foreground italic">
-                Last updated at {lastUpdated.toLocaleString(
-                  'en-SG',
-                  {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZoneName: 'short'
-                  })}
-              </span>
-            )}
+      <PageContent> 
+        <Card className="bg-background border-none shadow-none gap-4">
+          <CardHeader className="px-4">
+            <CardTitle>Stocks</CardTitle>
+            <CardDescription>
+              Built on fundamentals
+            </CardDescription>
+            <CardAction className="flex gap-6">
+              <Popover>
+                <PopoverTrigger>
+                  <FileChartPie />
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm"
+                >
+                  <Piechart 
+                    data={chartData}
+                    chartConfig={chartConfig}
+                    dataKey="allocation"
+                    nameKey="asset"
+                    legend="bottom"
+                  />
+                </PopoverContent>
+              </Popover>
+              {
+                pendingRefreshes > 0
+                  ? 'Refreshing...' 
+                  : <RefreshCw onClick={handleRefresh} />
+              }
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-0 pb-2">
+            <div className="flex flex-col gap-1">
+              {loading ? (
+                Array.from({ length: 2 }).map((_, index) => (
+                  <StockSkeleton key={index} />
+                ))
+              ) : stockHoldings.length > 0 ? (
+                stockHoldings.map((stock) => (
+                  <StockCardWrapper
+                    key={stock.ticker}
+                    ticker={stock.ticker}
+                    name={stock.name}
+                    logoUrl={stock.logo_url}
+                    quantity={stock.quantity}
+                    costBasis={stock.cost_basis}
+                    refreshKey={refreshKey}
+                    lastUpdatedPrice={stock.latest_price}
+                    onRefreshComplete={handleRefreshComplete}
+                  />
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-4">
+                  No stock holdings found.
+                </div>
+              )}
+              {lastUpdated && !loading && stockHoldings.length > 0 && (
+                <span className="text-right text-xs px-6 pt-1 text-muted-foreground italic">
+                  Last updated at {lastUpdated.toLocaleString(
+                    'en-SG',
+                    {
+                      year: 'numeric',
+                      month: 'numeric',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZoneName: 'short'
+                    })}
+                </span>
+              )}
+            </div>
+          </CardContent>
+          <div className="px-4 pb-2">
+            <Separator />
           </div>
-        </CardContent>
-        <CardHeader className="flex px-0 items-center justify-between">
-          <Button
-            variant="default"
-            className="font-semibold text-md"
-          >
-            <Bitcoin />Crypto
-          </Button>
+          <CardHeader className="px-4">
+            <CardTitle>Crypto</CardTitle>
+            <CardDescription>
+              To the moon!
+            </CardDescription>
         </CardHeader>
+        </Card>
+
+
       </PageContent>
     </PageMain>
   )

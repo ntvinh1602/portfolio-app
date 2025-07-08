@@ -7,10 +7,11 @@ import {
 import Image from 'next/image'
 import {
   ReceiptText,
-  ChartCandlestick
+  ChartCandlestick,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface StockCardProps {
@@ -28,7 +29,7 @@ function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, p
   const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
 
   return (
-    <Card className="border-none rounded-full py-2 bg-card text-card-foreground shadow-none">
+    <Card className="shadow-none border-x-0 border-t-0 rounded-full py-3 bg-background text-card-foreground">
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
@@ -70,22 +71,17 @@ function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, p
               </Badge>
             </CardDescription>
           </div>
-          <div className="flex flex-col justify-end gap-1 px-4">
+          <div className="flex flex-col justify-end gap-1 px-1  ">
             <CardTitle className="text-right text-sm">
               {totalAmount}
             </CardTitle>
             <CardDescription className="flex items-center justify-end">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "rounded-full flex items-center gap-1.5",
-                  isNaN(pnlValue)
-                    ? "bg-muted"
-                    : pnlValue >= 0
-                      ? "text-green-700 dark:text-green-400"
-                      : "text-red-700 dark:text-red-400"
+              <Badge variant="outline">
+                {pnlValue !== null && pnlValue < 0 ? (
+                  <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
+                ) : (
+                  <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
                 )}
-              >
                 {pnl === "..." ? pnl : <>{pnl}%</>}
               </Badge>
             </CardDescription>
