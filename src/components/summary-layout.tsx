@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface SummaryCardProps {
   header?: boolean
   label: string
   value: string
+  link?: string
 }
 
 interface SummarySkeletonProps {
@@ -16,17 +19,33 @@ function SummaryCard({
   header = false,
   label,
   value,
+  link
 }: SummaryCardProps) {
+  const router = useRouter()
+  const handleNavigation = () => {
+    if (link) router.push(link)
+  }
+
   return (
     <Button
-      variant={header ? "secondary" : "ghost"}
+      variant={header ? "outline" : "ghost"}
       className={cn(
         "flex w-full justify-between",
         !header && "font-normal",
         header && "text-foreground mt-2",
       )}
     >
-      <span>{label}</span>
+      {
+        link
+          ? <div
+              className="flex items-center gap-1"
+              onClick={handleNavigation}
+            >
+              <span>{label}</span>
+              <ChevronRight className="size-4" />
+            </div>
+          : <span>{label}</span>
+      }
       <span>{value}</span>
     </Button>
   )

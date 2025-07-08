@@ -18,12 +18,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   TvMinimal,
+  PiggyBank,
   Gauge,
   Wrench,
   FileQuestion,
   Handshake,
-  Notebook,
-  ShoppingBag,
   LogOut
 } from "lucide-react"
    
@@ -39,8 +38,15 @@ export function HeaderNav() {
 
   const menuItems = [
     { icon: TvMinimal, label: "Dashboard", path: "/dashboard" },
-    { icon: Notebook, label: "Balance Sheet", path: "/balance-sheet" },
-    { icon: ShoppingBag, label: "Portfolio", path: "/portfolio" },
+    {
+      icon: PiggyBank,
+      label: "Assets",
+      path: "/assets",
+      subMenu: [
+        { label: "Holdings", path: "/assets/holdings" },
+        { label: "Debts", path: "/assets/debts" },
+      ],
+    },
     { icon: Handshake, label: "Transaction", path: "/transactions" },
     { icon: Gauge, label: "Performance", path: "/performance" },
   ]
@@ -121,12 +127,23 @@ export function HeaderNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {menuItems.map((item) => (
-          <DropdownMenuItem
-            key={item.label}
-            onClick={() => handleNavigation(item.path)}
-          >
-            <item.icon />{item.label}
-          </DropdownMenuItem>
+          <React.Fragment key={item.label}>
+            <DropdownMenuItem
+              onClick={() => handleNavigation(item.path)}
+            >
+              <item.icon />{item.label}
+            </DropdownMenuItem>
+            {item.subMenu &&
+              item.subMenu.map((subItem) => (
+                <DropdownMenuItem
+                  key={subItem.label}
+                  onClick={() => handleNavigation(subItem.path)}
+                  className="ml-4 pl-4 border-l-2 rounded-none"
+                >
+                  {subItem.label}
+                </DropdownMenuItem>
+              ))}
+          </React.Fragment>
         ))}
         <DropdownMenuSeparator />
         {secondaryMenuItems.map((item) => (

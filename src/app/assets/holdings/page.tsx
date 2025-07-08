@@ -128,7 +128,7 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title="Portfolio" />
+      <PageHeader title="Holdings" />
       <PageContent>
         <CardHeader className="flex px-0 items-center justify-between">
           <Button

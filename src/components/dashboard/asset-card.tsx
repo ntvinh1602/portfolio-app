@@ -14,6 +14,8 @@ import { ChartConfig } from "@/components/ui/chart"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface SummaryItem {
   type: string;
@@ -30,6 +32,10 @@ interface AssetSummaryData {
 }
 
 export function AssetCard() {
+  const router = useRouter()
+  const handleNavigation = () => {
+    router.push("/assets")
+  }
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
   const fetchAssets = useCallback(async () => {
@@ -109,7 +115,12 @@ export function AssetCard() {
   return (
     <Card className="py-2 border-none shadow-none bg-background gap-0">
       <CardHeader className="px-8">
-        <CardDescription>Total assets</CardDescription>
+        <CardDescription
+          className="flex items-center gap-1"
+          onClick={handleNavigation}
+        >
+          Total assets<ChevronRight className="size-4"/>
+        </CardDescription>
         <CardTitle className="text-2xl font-semibold">
             {assetsTotalAmount ? assetsTotalAmount : "Loading..."}
         </CardTitle>

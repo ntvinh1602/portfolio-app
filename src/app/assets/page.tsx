@@ -110,7 +110,7 @@ export default function Page() {
 
 return (
   <PageMain>
-    <PageHeader title="Balance Sheet" />
+    <PageHeader title="Assets" />
     <PageContent>
       <CardHeader className="flex px-0 items-center justify-between">
         <Button
@@ -154,6 +154,7 @@ return (
               header={true}
               label="Assets"
               value={assetsTotalAmount}
+              link="/assets/holdings"
             />
             {assetsItems.map(item => (
               <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
@@ -183,6 +184,7 @@ return (
               header={true}
               label="Liabilities"
               value={liabilitiesTotalAmount}
+              link="/assets/debts"
             />
             {liabilitiesItems.map(item => (
               <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
