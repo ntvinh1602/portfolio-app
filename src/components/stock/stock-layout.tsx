@@ -132,26 +132,23 @@ function StockCardLite({ ticker, name, logoUrl, totalAmount, pnl, price }: Stock
           className="rounded-full object-contain border h-12"
         />
         <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-1 max-w-[150px]">
-              <CardTitle>{ticker}</CardTitle>
-              <CardDescription className="text-xs truncate">
-                {name}
-              </CardDescription>
-            </div>
+          <div className="flex flex-col gap-1 max-w-[150px]">
+            <CardTitle>{ticker}</CardTitle>
+            <CardDescription className="text-xs truncate">
+              {name}
+            </CardDescription>
           </div>
           <div className="flex flex-col justify-end px-1">
             <CardTitle className="text-right text-sm">
               {totalAmount}
             </CardTitle>
             <CardDescription className="flex text-xs gap-1 items-center justify-end">
-
-                {pnlValue !== null && pnlValue < 0 ? (
-                  <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
-                ) : (
-                  <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
-                )}
-                {pnl === "..." ? pnl : <>{pnl}%</>}
+              {pnlValue !== null && pnlValue < 0 ? (
+                <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
+              ) : (
+                <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
+              )}
+              {pnl === "..." ? pnl : <>{pnl}%</>}
             </CardDescription>
           </div>
         </div>

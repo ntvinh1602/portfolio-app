@@ -53,7 +53,7 @@ export function HoldingsCard() {
 
   return (
     <div className="px-6">
-      <Card className="bg-muted/50 shadow-none gap-0">
+      <Card className="bg-muted/50 shadow-none gap-0 pb-0">
         <CardHeader className="px-4">
         <CardDescription
           className="flex items-center gap-1"

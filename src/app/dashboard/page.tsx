@@ -16,7 +16,7 @@ import { EquityCard } from "@/components/dashboard/equity-card"
 import { AssetCard } from "@/components/dashboard/asset-card"
 import { PnLCard } from "@/components/dashboard/pnl-card"
 import { BenchmarkCard } from "@/components/dashboard/benchmark-card"
-import { HoldingsCard } from "@/components/dashboard/stock-card"
+import { HoldingsCard } from "@/components/dashboard/stock-holdings"
 
 export default function Page() {
   return (

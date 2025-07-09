@@ -141,7 +141,7 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Holdings" />
       <PageContent> 
-        <Card className="bg-muted/50 shadow-none gap-4">
+        <Card className="bg-muted/50 shadow-none gap-4 pb-0">
           <CardHeader>
             <CardTitle>Stocks</CardTitle>
             <CardDescription>
@@ -198,7 +198,7 @@ export default function Page() {
                 </div>
               )}
               {lastUpdated && !loading && stockHoldings.length > 0 && (
-                <span className="text-right text-xs px-6 pt-1 text-muted-foreground">
+                <span className="text-right text-xs px-4 italic py-2 text-muted-foreground">
                   Last updated at {lastUpdated.toLocaleString(
                     'en-SG',
                     {
@@ -213,9 +213,8 @@ export default function Page() {
               )}
             </div>
           </CardContent>
-          <div className="px-6 pb-2">
-            <Separator />
-          </div>
+        </Card>
+        <Card>
           <CardHeader>
             <CardTitle>Crypto</CardTitle>
             <CardDescription>
@@ -223,8 +222,6 @@ export default function Page() {
             </CardDescription>
         </CardHeader>
         </Card>
-
-
       </PageContent>
     </PageMain>
   )
