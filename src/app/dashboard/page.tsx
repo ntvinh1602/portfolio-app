@@ -16,7 +16,7 @@ import { EquityCard } from "@/components/dashboard/equity-card"
 import { AssetCard } from "@/components/dashboard/asset-card"
 import { PnLCard } from "@/components/dashboard/pnl-card"
 import { BenchmarkCard } from "@/components/dashboard/benchmark-card"
-import { HoldingsCard } from "@/components/dashboard/stock-holdings"
+import { StockCardCompact } from "@/components/stock/stock-card-compact"
 
 export default function Page() {
   return (
@@ -37,7 +37,7 @@ export default function Page() {
           </CarouselContent>
         </Carousel>
         <AssetCard />
-        <HoldingsCard />
+        <StockCardCompact />
       </PageContent>
     </PageMain>
   )

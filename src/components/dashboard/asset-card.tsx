@@ -116,7 +116,7 @@ export function AssetCard() {
     <Card className="pt-2 pb-1 border-none shadow-none bg-background gap-0">
       <CardHeader className="px-8">
         <CardDescription
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
         >
           Total assets<ChevronRight className="size-4"/>
