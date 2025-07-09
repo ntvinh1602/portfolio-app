@@ -84,7 +84,9 @@ export function TradeForm({
         <Combobox
           items={assets
             .filter(
-              asset => asset.securities && asset.securities.asset_class === "stock",
+              asset =>
+                asset.securities &&
+                ["stock", "crypto"].includes(asset.securities.asset_class),
             )
             .map(asset => ({
               value: asset.id,
