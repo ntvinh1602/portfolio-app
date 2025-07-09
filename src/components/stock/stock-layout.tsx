@@ -29,7 +29,7 @@ function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, p
   const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
 
   return (
-    <Card className="shadow-none border-x-0 border-t-0 rounded-full py-3 bg-background text-card-foreground">
+    <Card className="shadow-none border-t-0 rounded-full py-3 bg-muted/50 text-card-foreground">
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
@@ -49,13 +49,13 @@ function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, p
             <CardDescription className="flex items-center gap-1 truncate">
               <Badge
                 variant="outline"
-                className="rounded-full bg-muted text-muted-foreground"
+                className="rounded-full bg-secondary/50 text-muted-foreground"
               >
                 <ReceiptText />{quantity}
               </Badge>
               <Badge
                 variant="outline"
-                className="rounded-full flex items-center gap-1.5 bg-muted text-muted-foreground"
+                className="rounded-full flex items-center gap-1.5 bg-secondary/50 text-muted-foreground"
               >
                 <ChartCandlestick />
                 {priceStatus === 'loading' ? '...' : price}
@@ -76,7 +76,7 @@ function StockCard({ ticker, name, logoUrl, totalAmount, quantity, pnl, price, p
               {totalAmount}
             </CardTitle>
             <CardDescription className="flex items-center justify-end">
-              <Badge variant="outline">
+              <Badge variant="outline" className="bg-secondary/50 text-muted-foreground">
                 {pnlValue !== null && pnlValue < 0 ? (
                   <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
                 ) : (
@@ -118,7 +118,50 @@ function StockSkeleton() {
   )
 }
 
+function StockCardLite({ ticker, name, logoUrl, totalAmount, pnl, price }: StockCardProps) {
+  const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
+
+  return (
+    <Card className="shadow-none border-none rounded-full py-2 bg-muted/50 text-card-foreground">
+      <CardContent className="flex items-center gap-3 px-4">
+        <Image
+          src={logoUrl}
+          alt={name}
+          width={48}
+          height={48}
+          className="rounded-full object-contain border h-12"
+        />
+        <div className="flex justify-between w-full items-center">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1 max-w-[150px]">
+              <CardTitle>{ticker}</CardTitle>
+              <CardDescription className="text-xs truncate">
+                {name}
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex flex-col justify-end px-1">
+            <CardTitle className="text-right text-sm">
+              {totalAmount}
+            </CardTitle>
+            <CardDescription className="flex text-xs gap-1 items-center justify-end">
+
+                {pnlValue !== null && pnlValue < 0 ? (
+                  <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
+                ) : (
+                  <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
+                )}
+                {pnl === "..." ? pnl : <>{pnl}%</>}
+            </CardDescription>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export {
   StockCard,
-  StockSkeleton
+  StockSkeleton,
+  StockCardLite
 }
