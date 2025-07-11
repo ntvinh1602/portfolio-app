@@ -48,7 +48,10 @@ export function Linechart({
           axisLine={false}
           tickMargin={8}
           tickFormatter={yAxisTickFormatter}
-          domain={["dataMin - 10", "dataMax + 10"]}
+          domain={[
+            (dataMin: any) => Number(dataMin) * 0.99,
+            (dataMax: any) => Number(dataMax) * 1.01,
+          ]}
           allowDataOverflow={true}
         />
         {lineDataKeys.map((key) => (
