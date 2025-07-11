@@ -15,8 +15,7 @@ const withdrawSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("withdraw"),
   account: z.string().uuid(),
-  amount: z.number().positive(),
-  quantity: z.number().positive().optional(),
+  quantity: z.number().positive(),
   description: z.string().optional(),
   asset: z.string().uuid(),
 })
@@ -50,7 +49,7 @@ const incomeSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("income"),
   account: z.string().uuid(),
-  amount: z.number().positive(),
+  quantity: z.number().positive(),
   description: z.string().optional(),
   asset: z.string().uuid(),
 })
@@ -68,8 +67,7 @@ const dividendSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("dividend"),
   account: z.string().uuid(),
-  amount: z.number().positive(),
-  quantity: z.number().positive().optional(),
+  quantity: z.number().positive(),
   "dividend-asset": z.string().uuid(),
   description: z.string().optional(),
   asset: z.string().uuid(), // This is the cash asset
@@ -228,8 +226,7 @@ async function handleWithdraw(
   userId: string,
   data: z.infer<typeof withdrawSchema>
 ) {
-  const { transaction_date, account, amount, quantity, description, asset } =
-    data
+  const { transaction_date, account, quantity, description, asset } = data
 
   const { data: accountData, error: accountError } = await supabase
     .from("accounts")
@@ -250,7 +247,6 @@ async function handleWithdraw(
       p_user_id: userId,
       p_transaction_date: transaction_date,
       p_account_id: account,
-      p_amount: amount,
       p_quantity: quantity,
       p_description: finalDescription,
       p_asset_id: asset,
@@ -340,7 +336,6 @@ async function handleIncome(
   const {
     transaction_date,
     account,
-    amount,
     description,
     asset,
     transaction_type,
@@ -391,13 +386,12 @@ async function handleIncome(
     }
   }
 
-  const quantity = "quantity" in data ? data.quantity : null
+  const quantity = "quantity" in data ? data.quantity : 0
 
   const { error } = await supabase.rpc("handle_income_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
-    p_amount: amount,
     p_quantity: quantity,
     p_description: finalDescription,
     p_asset_id: asset,

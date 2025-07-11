@@ -699,7 +699,6 @@ export type Database = {
           p_user_id: string
           p_transaction_date: string
           p_account_id: string
-          p_amount: number
           p_quantity: number
           p_description: string
           p_asset_id: string
@@ -737,7 +736,6 @@ export type Database = {
           p_user_id: string
           p_transaction_date: string
           p_account_id: string
-          p_amount: number
           p_quantity: number
           p_description: string
           p_asset_id: string

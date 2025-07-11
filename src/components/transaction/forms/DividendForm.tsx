@@ -80,18 +80,7 @@ export function DividendForm({
         </Select>
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          name="amount"
-          type="number"
-          placeholder="0.00"
-          value={formState.amount || ""}
-          onChange={handleInputChange}
-        />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="quantity">Quantity (optional)</Label>
+        <Label htmlFor="quantity">Quantity</Label>
         <Input
           id="quantity"
           name="quantity"
