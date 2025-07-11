@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       accounts: {
@@ -89,9 +94,54 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_exchange_rates: {
+        Row: {
+          currency_code: string
+          date: string
+          rate: number
+        }
+        Insert: {
+          currency_code: string
+          date: string
+          rate: number
+        }
+        Update: {
+          currency_code?: string
+          date?: string
+          rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rates_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      daily_market_indices: {
+        Row: {
+          close: number | null
+          date: string
+          symbol: string
+        }
+        Insert: {
+          close?: number | null
+          date: string
+          symbol: string
+        }
+        Update: {
+          close?: number | null
+          date?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
       daily_performance_snapshots: {
         Row: {
           date: string
+          equity_index: number | null
           id: string
           net_cash_flow: number
           net_equity_value: number
@@ -101,6 +151,7 @@ export type Database = {
         }
         Insert: {
           date: string
+          equity_index?: number | null
           id?: string
           net_cash_flow: number
           net_equity_value: number
@@ -110,6 +161,7 @@ export type Database = {
         }
         Update: {
           date?: string
+          equity_index?: number | null
           id?: string
           net_cash_flow?: number
           net_equity_value?: number
@@ -123,6 +175,32 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_stock_prices: {
+        Row: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Insert: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Update: {
+          date?: string
+          price?: number
+          security_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_daily_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "securities"
             referencedColumns: ["id"]
           },
         ]
@@ -172,32 +250,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      exchange_rates: {
-        Row: {
-          currency_code: string
-          date: string
-          rate: number
-        }
-        Insert: {
-          currency_code: string
-          date: string
-          rate: number
-        }
-        Update: {
-          currency_code?: string
-          date?: string
-          rate?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exchange_rates_currency_code_fkey"
-            columns: ["currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
           },
         ]
       }
@@ -268,7 +320,6 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string | null
           id: string
-          last_updated_price: number | null
           logo_url: string | null
           name: string
           ticker: string
@@ -277,7 +328,6 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code?: string | null
           id?: string
-          last_updated_price?: number | null
           logo_url?: string | null
           name: string
           ticker: string
@@ -286,7 +336,6 @@ export type Database = {
           asset_class?: Database["public"]["Enums"]["asset_class"]
           currency_code?: string | null
           id?: string
-          last_updated_price?: number | null
           logo_url?: string | null
           name?: string
           ticker?: string
@@ -298,32 +347,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
-          },
-        ]
-      }
-      security_daily_prices: {
-        Row: {
-          date: string
-          price: number
-          security_id: string
-        }
-        Insert: {
-          date: string
-          price: number
-          security_id: string
-        }
-        Update: {
-          date?: string
-          price?: number
-          security_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "security_daily_prices_security_id_fkey"
-            columns: ["security_id"]
-            isOneToOne: false
-            referencedRelation: "securities"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -548,11 +571,27 @@ export type Database = {
           net_equity_value: number
         }[]
       }
+      get_latest_exchange_rate: {
+        Args: { p_currency_code: string }
+        Returns: number
+      }
+      get_latest_stock_price: {
+        Args: { p_security_id: string }
+        Returns: number
+      }
       get_monthly_pnl: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: {
           month: string
           pnl: number
+        }[]
+      }
+      get_performance_benchmark_data: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: {
+          date: string
+          portfolio_value: number
+          vni_value: number
         }[]
       }
       get_stock_holdings: {
@@ -563,7 +602,7 @@ export type Database = {
           logo_url: string
           quantity: number
           cost_basis: number
-          last_updated_price: number
+          latest_price: number
         }[]
       }
       get_transaction_feed: {
@@ -705,6 +744,10 @@ export type Database = {
         }
         Returns: Json
       }
+      upsert_daily_stock_price: {
+        Args: { p_ticker: string; p_price: number }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type:
@@ -736,21 +779,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -768,14 +815,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -791,14 +840,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -814,14 +865,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -829,14 +882,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

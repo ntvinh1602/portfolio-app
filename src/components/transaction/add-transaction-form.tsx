@@ -90,6 +90,13 @@ export function TransactionForm({
 
       switch (transactionType) {
         case "deposit":
+          body = {
+            ...baseBody,
+            account: formState.account,
+            quantity: parseFloat(formState.quantity || "0"),
+            asset: formState.asset,
+          }
+          break
         case "withdraw":
           body = {
             ...baseBody,

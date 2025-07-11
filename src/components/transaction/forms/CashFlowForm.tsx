@@ -83,20 +83,26 @@ export function CashFlowForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-3">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          name="amount"
-          type="number"
-          placeholder="0.00"
-          value={formState.amount || ""}
-          onChange={handleInputChange}
-        />
-      </div>
+      {transactionType !== "deposit" && (
+        <div className="grid gap-3">
+          <Label htmlFor="amount">Amount</Label>
+          <Input
+            id="amount"
+            name="amount"
+            type="number"
+            placeholder="0.00"
+            value={formState.amount || ""}
+            onChange={handleInputChange}
+          />
+        </div>
+      )}
       {["deposit", "withdraw"].includes(transactionType) && (
         <div className="grid gap-3">
-          <Label htmlFor="quantity">Quantity (optional)</Label>
+          <Label htmlFor="quantity">
+            {transactionType === "deposit"
+              ? "Quantity"
+              : "Quantity (optional)"}
+          </Label>
           <Input
             id="quantity"
             name="quantity"
