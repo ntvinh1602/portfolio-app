@@ -616,8 +616,6 @@ async function handleSell(
     description,
   } = data
 
-  const total_proceeds = quantity * price
-
   const { data: assetSecurity, error: assetSecurityError } = await supabase
     .from("assets")
     .select("security_id")
@@ -649,7 +647,7 @@ async function handleSell(
     p_user_id: userId,
     p_asset_id: asset,
     p_quantity_to_sell: quantity,
-    p_total_proceeds: total_proceeds,
+    p_price: price,
     p_fees: fees,
     p_taxes: taxes,
     p_transaction_date: transaction_date,

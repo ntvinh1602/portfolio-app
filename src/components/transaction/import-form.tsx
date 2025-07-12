@@ -29,16 +29,15 @@ const REQUIRED_HEADERS = [
   "type",
   "account",
   "asset_ticker",
-  "cash_asset_ticker", // asset to debit or credit. EPF dividend should be EPF
+  "cash_asset_ticker",
   "quantity",
   "price",
-  "amount",
   "fees",
   "taxes",
   "counterparty",
   "interest_rate",
-  "principal_payment",
-  "interest_payment",
+  "principal",
+  "interest",
   "description",
 ];
 
