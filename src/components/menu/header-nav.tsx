@@ -48,7 +48,13 @@ export function HeaderNav() {
       ],
     },
     { icon: Handshake, label: "Transaction", path: "/transactions" },
-    { icon: Gauge, label: "Performance", path: "/performance" },
+    { icon: Gauge,
+      label: "Performance",
+      path: "/performance",
+      subMenu: [
+        { label: "Monthly PnL", path: "/performance/monthly-pnl" },
+      ],
+    },
   ]
 
   const secondaryMenuItems = [

@@ -12,10 +12,10 @@ import {
   CarouselItem
 } from "@/components/ui/carousel"
 
-import { EquityCard } from "@/components/cards/equity-card"
-import { AssetCard } from "@/components/cards/asset-card"
-import { PnLCard } from "@/components/cards/pnl-card"
-import { BenchmarkCard } from "@/components/cards/benchmark-card"
+import { EquityCard } from "@/components/cards/equity"
+import { AssetCard } from "@/components/cards/assets"
+import { PnLCard } from "@/components/cards/monthly-pnl"
+import { BenchmarkCard } from "@/components/cards/benchmark"
 import { StockCardCompact } from "@/components/cards/stock-compact"
 
 export default function Page() {
