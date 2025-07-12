@@ -117,7 +117,7 @@ export function TransactionForm({
           body = {
             ...baseBody,
             account: formState.account,
-            amount: parseFloat(formState.amount || "0"),
+            quantity: parseFloat(formState.quantity || "0"),
             asset: formState.asset,
           }
           break

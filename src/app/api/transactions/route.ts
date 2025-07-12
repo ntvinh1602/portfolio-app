@@ -58,7 +58,7 @@ const expenseSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("expense"),
   account: z.string().uuid(),
-  amount: z.number().positive(),
+  quantity: z.number().positive(),
   description: z.string().optional(),
   asset: z.string().uuid(),
 })
@@ -416,7 +416,7 @@ async function handleExpense(
   userId: string,
   data: z.infer<typeof expenseSchema>
 ) {
-  const { transaction_date, account, amount, description, asset } = data
+  const { transaction_date, account, quantity, description, asset } = data
 
   const { data: accountData, error: accountError } = await supabase
     .from("accounts")
@@ -435,7 +435,7 @@ async function handleExpense(
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_account_id: account,
-    p_amount: amount,
+    p_quantity: quantity,
     p_description: finalDescription,
     p_asset_id: asset,
   })

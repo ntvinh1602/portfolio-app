@@ -83,20 +83,7 @@ export function CashFlowForm({
           </SelectContent>
         </Select>
       </div>
-      {transactionType === "expense" && (
-        <div className="grid gap-3">
-          <Label htmlFor="amount">Amount</Label>
-          <Input
-            id="amount"
-            name="amount"
-            type="number"
-            placeholder="0.00"
-            value={formState.amount || ""}
-            onChange={handleInputChange}
-          />
-        </div>
-      )}
-      {["deposit", "withdraw", "income"].includes(transactionType) && (
+      {["deposit", "withdraw", "income", "expense"].includes(transactionType) && (
         <div className="grid gap-3">
           <Label htmlFor="quantity">Quantity</Label>
           <Input
