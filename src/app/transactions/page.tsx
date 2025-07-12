@@ -9,7 +9,7 @@ import {
 import {
   TransactionCard,
   TransactionSkeleton
-} from "@/components/transaction/transaction-layout"
+} from "@/components/primitives/transaction-item"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { type DateRange } from "react-day-picker"

@@ -1,7 +1,7 @@
 import {
   StockItem,
   StockSkeleton
-} from "@/components/stock/stock-layout"
+} from "@/components/primitives/stock-item"
 import { formatNum } from "@/lib/utils"
 import {
   Card,

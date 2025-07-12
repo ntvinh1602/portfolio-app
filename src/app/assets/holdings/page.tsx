@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { StockCardFull } from "@/components/stock/stock-card-full"
+import { StockCardFull } from "@/components/cards/stock-full"
 
 export default function Page() {
   return (
