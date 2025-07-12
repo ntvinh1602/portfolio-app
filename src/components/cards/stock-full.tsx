@@ -24,7 +24,7 @@ import { useStockHoldings } from "@/hooks/useStockHoldings"
 import {
   StockItemWrapper,
   StockSkeleton
-} from "@/components/primitives/stock-item"
+} from "@/components/list-item/stock"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
 

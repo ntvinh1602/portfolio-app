@@ -25,12 +25,12 @@ import {
 import { Enums, Constants } from "@/lib/database.types"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { CashFlowForm } from "./forms/CashFlowForm"
-import { TradeForm } from "./forms/TradeForm"
-import { DividendForm } from "./forms/DividendForm"
-import { BorrowForm } from "./forms/BorrowForm"
-import { DebtPaymentForm } from "./forms/DebtPaymentForm"
-import { SplitForm } from "./forms/SplitForm"
+import { CashFlowForm } from "./cashflow"
+import { TradeForm } from "./buy-sell"
+import { DividendForm } from "./dividend"
+import { BorrowForm } from "./borrow"
+import { DebtPaymentForm } from "./debt-payment"
+import { SplitForm } from "./split"
 
 type TransactionType = Enums<"transaction_type">
 

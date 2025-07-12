@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { HeaderNav } from "@/components/header-nav"
+import { HeaderNav } from "@/components/menu/header-nav"
 
 function PageContent({ className, ...props }: React.ComponentProps<"div">) {
   return (

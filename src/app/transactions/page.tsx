@@ -9,15 +9,15 @@ import {
 import {
   TransactionCard,
   TransactionSkeleton
-} from "@/components/primitives/transaction-item"
+} from "@/components/list-item/transaction"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { type DateRange } from "react-day-picker"
 import TabSwitcher from "@/components/tab-switcher"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { TransactionForm } from "@/components/transaction/add-transaction-form"
-import { AddTransactionMenu } from "@/components/transaction/add-transaction-menu"
+import { TransactionForm } from "@/components/forms/transaction/add-transaction"
+import { AddTransactionMenu } from "@/components/menu/add-transaction"
 import { Enums } from "@/lib/database.types"
 
 type TransactionFeed = {

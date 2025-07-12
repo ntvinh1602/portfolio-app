@@ -13,7 +13,7 @@ import {
 import { DropdownMenuSub } from "@radix-ui/react-dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { SquarePen, PlusIcon, Upload } from "lucide-react"
-import { TransactionImportForm } from "@/components/transaction/import-form"
+import { TransactionImportForm } from "@/components/forms/import-data"
 import { Enums } from "@/lib/database.types"
 
 type AddTransactionMenuProps = {

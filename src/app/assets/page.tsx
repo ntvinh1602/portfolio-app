@@ -21,7 +21,7 @@ import { FileChartPie } from "lucide-react"
 import {
   SummaryCard,
   SummarySkeleton
-} from "@/components/primitives/label-value-item"
+} from "@/components/list-item/single-label"
 import {
   Popover,
   PopoverContent,
