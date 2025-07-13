@@ -155,9 +155,9 @@ export default function Page() {
           }
           icon={false}
         />
-        <div className="flex items-center">
+        <div className="flex items-center gap-6">
           <h2 className="text-sm text-muted-foreground px-3 text-nowrap">
-            Equity Return
+            Equity
           </h2>
           <TabSwitcher
             options={tabOptions}

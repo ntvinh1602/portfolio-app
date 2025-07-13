@@ -30,7 +30,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function backfillPerformanceSnapshots() {
   // --- DATE RANGE ---
   // Change these dates to control the backfill period.
-  const startDate = '2021-11-09';
+  const startDate = '2021-11-10';
   const endDate = new Date().toISOString().split('T')[0]; // Today's date
 
   console.log(`Starting backfill from ${startDate} to ${endDate}...`);
