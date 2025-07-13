@@ -36,7 +36,9 @@ export function TwoMetric({
   }: TwoMetricProps) {
   const router = useRouter()
   const handleNavigation = () => {
-    title_url && router.push(title_url)
+    if (title_url) {
+      router.push(title_url)
+    }
   }
 
   return (

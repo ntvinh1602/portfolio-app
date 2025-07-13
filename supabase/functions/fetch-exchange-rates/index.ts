@@ -1,3 +1,4 @@
+// @ts-ignore: Deno environment is unable to resolve types from the remote module.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Initialize the Supabase client with the service_role key

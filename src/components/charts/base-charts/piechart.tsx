@@ -8,7 +8,7 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import { formatNum } from "@/lib/utils"
+import { compactNum } from "@/lib/utils"
 
 type PieChartData = {
   fill: string;
@@ -98,11 +98,7 @@ export function Piechart({ data, chartConfig, dataKey, nameKey, className, inner
                         y={viewBox.cy}
                         className="fill-foreground text-xl font-bold"
                       >
-                        {
-                          totalValue > 1000000000
-                            ? `${(totalValue / 1000000000).toFixed(2)} b`
-                            : `${formatNum(totalValue / 1000000)} m`
-                        }
+                        {compactNum(totalValue)}
                       </tspan>
                       <tspan
                         x={viewBox.cx}

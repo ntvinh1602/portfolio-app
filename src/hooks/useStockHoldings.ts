@@ -17,7 +17,7 @@ interface StockHolding extends StockHoldingBase {
 export function useStockHoldings() {
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     async function fetchStockHoldings() {
@@ -37,7 +37,11 @@ export function useStockHoldings() {
           setStockHoldings(holdingsWithTotalAmount);
         }
       } catch (error) {
-        setError(error);
+        if (error instanceof Error) {
+          setError(error);
+        } else {
+          setError(new Error(String(error)));
+        }
         console.error('Error fetching stock holdings:', error);
       } finally {
         setLoading(false);

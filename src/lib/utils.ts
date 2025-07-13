@@ -29,6 +29,16 @@ export function formatNum(amount: number, fractionDigits = 0, currency?: string)
   return formatter.format(amount)
 }
 
+// Compact number format (10K, 10M etc.)
+export function compactNum(amount: number) {
+  const formatted = new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      compactDisplay: "short",
+    }).format(amount)
+
+  return formatted
+}
+
 // Calculate compounded annual growth rate
 export function calculateCAGR(beginningValue: number, endingValue: number, years: number): number {
   if (beginningValue <= 0 || endingValue <= 0 || years <= 0) {

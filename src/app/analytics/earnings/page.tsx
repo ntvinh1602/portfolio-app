@@ -23,6 +23,16 @@ type MonthlyData = {
   twr: number
 }
 
+type PnlData = {
+  month: string
+  pnl: number
+}
+
+type TwrData = {
+  month: string
+  twr: number
+}
+
 export default function Page() {
   const [dateRange, setDateRange] = React.useState("12m")
   const [data, setData] = React.useState<MonthlyData[]>([])
@@ -73,9 +83,9 @@ export default function Page() {
         const twrData = await twrResponse.json()
 
         if (pnlResponse.ok && twrResponse.ok) {
-          const combinedData = pnlData.map((pnlItem: any) => {
+          const combinedData = pnlData.map((pnlItem: PnlData) => {
             const twrItem = twrData.find(
-              (t: any) => t.month === pnlItem.month
+              (t: TwrData) => t.month === pnlItem.month
             )
             return {
               ...pnlItem,

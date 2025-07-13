@@ -49,8 +49,8 @@ export function Linechart({
           tickMargin={8}
           tickFormatter={yAxisTickFormatter}
           domain={[
-            (dataMin: any) => Number(dataMin) * 0.99,
-            (dataMax: any) => Number(dataMax) * 1.01,
+            (dataMin: number) => Number(dataMin) * 0.99,
+            (dataMax: number) => Number(dataMax) * 1.01,
           ]}
           allowDataOverflow={true}
         />
