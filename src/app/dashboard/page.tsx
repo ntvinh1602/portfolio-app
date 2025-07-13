@@ -24,7 +24,7 @@ export default function Page() {
       <PageHeader title="Dashboard" />
       <PageContent className="px-0">
         <Carousel opts={{ align: "center" }} className="w-full">
-          <CarouselContent className="-ml-2">
+          <CarouselContent className="-ml-2 h-[300px]">
             <CarouselItem className="basis-10/12 pl-8">
               <EquityCard />
             </CarouselItem>

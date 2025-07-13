@@ -1,137 +1,200 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import * as React from "react"
+import { startOfMonth, startOfYear, format as formatDate } from "date-fns"
 import {
   PageMain,
   PageHeader,
   PageContent,
 } from "@/components/page-layout"
-import DatePicker from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
-import { subDays, format } from "date-fns"
-import { Linechart } from "@/components/charts/linechart"
+import TabSwitcher from "@/components/tab-switcher"
+import { TwoMetric } from "@/components/cards/two-metric"
+import { calculateCAGR, calculateSharpeRatio } from "@/lib/calculation"
+import { BenchmarkChart } from "@/components/charts/benchmark-chart"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
 
-type EquityData = {
-  date: string
-  net_equity_value: number
-}
-
 export default function Page() {
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    subDays(new Date(), 90)
+  const [dateRange, setDateRange] = React.useState("all")
+  const [cagr, setCagr] = React.useState<number | null>(null)
+  const [sharpeRatio, setSharpeRatio] = React.useState<number | null>(null)
+  const [totalPnl, setTotalPnl] = React.useState<number | null>(null)
+  const [totalReturn, setTotalReturn] = React.useState<number | null>(null)
+  const [chartStartDate, setChartStartDate] = React.useState<Date | null>(null)
+  const [xAxisDateFormat, setXAxisDateFormat] = React.useState("MMM dd")
+  const [firstSnapshotDate, setFirstSnapshotDate] = React.useState<Date | null>(
+    null
   )
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date())
-  const [twr, setTwr] = useState<number | null>(null)
-  const [chartData, setChartData] = useState<EquityData[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const endDate = React.useMemo(() => new Date(), [])
 
-  const fetchData = useCallback(async () => {
-    if (!startDate || !endDate) {
-      setError("Please select both a start and end date.")
-      return
+  // Fetch first snapshot date once
+  React.useEffect(() => {
+    const fetchFirstSnapshot = async () => {
+      try {
+        const res = await fetch("/api/reporting/first-snapshot-date")
+        const data = await res.json()
+        setFirstSnapshotDate(new Date(data.date))
+      } catch (error) {
+        console.error("Failed to fetch first snapshot date:", error)
+      }
+    }
+    fetchFirstSnapshot()
+  }, [])
+
+  // Fetch lifetime metrics when first snapshot date is available
+  React.useEffect(() => {
+    if (!firstSnapshotDate) return
+
+    const fetchData = async () => {
+      try {
+        const startDate = formatDate(firstSnapshotDate, "yyyy-MM-dd")
+        const endDateStr = formatDate(endDate, "yyyy-MM-dd")
+
+        const [performanceRes, twrRes] = await Promise.all([
+          fetch(
+            `/api/reporting/twr?start_date=${startDate}&end_date=${endDateStr}`
+          ),
+          fetch(
+            `/api/reporting/monthly-twr?start_date=${startDate}&end_date=${endDateStr}`
+          ),
+        ])
+
+        // Calculate CAGR
+        const performance = await performanceRes.json()
+        const years =
+          (endDate.getTime() - firstSnapshotDate.getTime()) /
+          (1000 * 60 * 60 * 24 * 365.25)
+        const cagrValue = calculateCAGR(1, 1 + performance.twr, years)
+        setCagr(cagrValue)
+
+        // Calculate Sharpe Ratio
+        const twrData = await twrRes.json()
+        const monthlyReturns = twrData.map(
+          (item: { twr: number }) => item.twr
+        )
+        const sharpeRatioValue = calculateSharpeRatio(monthlyReturns, 0.055)
+        setSharpeRatio(sharpeRatioValue)
+      } catch (error) {
+        console.error("Failed to fetch performance data:", error)
+      }
     }
 
-    setLoading(true)
-    setError(null)
-    setTwr(null)
-    setChartData([])
-
-    try {
-      // Fetch TWR
-      const twrParams = new URLSearchParams({
-        start_date: format(startDate, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
-      })
-      const twrResponse = await fetch(`/api/performance?${twrParams.toString()}`)
-      if (!twrResponse.ok) {
-        const errorData = await twrResponse.json()
-        throw new Error(errorData.error || "Failed to fetch TWR data.")
-      }
-      const twrData = await twrResponse.json()
-      setTwr(twrData.twr)
-
-      // Fetch Equity Chart Data
-      const equityParams = new URLSearchParams({
-        start_date: format(startDate, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
-        threshold: "200",
-      })
-      const equityResponse = await fetch(
-        `/api/performance/equity?${equityParams.toString()}`
-      )
-      if (!equityResponse.ok) {
-        const errorData = await equityResponse.json()
-        throw new Error(errorData.error || "Failed to fetch equity data.")
-      }
-      const equityData = await equityResponse.json()
-      setChartData(equityData)
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError("An unknown error occurred")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [startDate, endDate])
-
-  useEffect(() => {
     fetchData()
-  }, [fetchData])
+  }, [firstSnapshotDate, endDate])
+
+  // Update chart start date based on tab selection
+  React.useEffect(() => {
+    if (!firstSnapshotDate) return
+
+    let start = firstSnapshotDate
+    let format = "MMM dd"
+    if (dateRange === "mtd") {
+      start = startOfMonth(endDate)
+    } else if (dateRange === "ytd") {
+      start = startOfYear(endDate)
+      format = "MMM yyyy"
+    } else if (dateRange === "all") {
+      format = "MMM yyyy"
+    }
+    setChartStartDate(start)
+    setXAxisDateFormat(format)
+  }, [dateRange, firstSnapshotDate, endDate])
+
+  // Fetch P/L and TWR based on date range
+  React.useEffect(() => {
+    if (!chartStartDate) return
+
+    const fetchData = async () => {
+      try {
+        const startDate = formatDate(chartStartDate, "yyyy-MM-dd")
+        const endDateStr = formatDate(endDate, "yyyy-MM-dd")
+
+        const [pnlRes, twrRes] = await Promise.all([
+          fetch(
+            `/api/reporting/pnl?start_date=${startDate}&end_date=${endDateStr}`
+          ),
+          fetch(
+            `/api/reporting/twr?start_date=${startDate}&end_date=${endDateStr}`
+          ),
+        ])
+
+        const pnlData = await pnlRes.json()
+        setTotalPnl(pnlData.pnl)
+
+        const twrData = await twrRes.json()
+        setTotalReturn(twrData.twr)
+      } catch (error) {
+        console.error("Failed to fetch P/L or TWR data:", error)
+      }
+    }
+
+    fetchData()
+  }, [chartStartDate, endDate])
+
+  const tabOptions = [
+    { value: "mtd", label: "This Month" },
+    { value: "ytd", label: "This Year" },
+    { value: "all", label: "All Time" },
+  ]
 
   return (
     <PageMain>
       <PageHeader title="Performance" />
       <PageContent>
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4 max-w-md">
-            <DatePicker
-              mode="single"
-              selected={startDate}
-              onSelect={setStartDate}
-            />
-            <DatePicker
-              mode="single"
-              selected={endDate}
-              onSelect={setEndDate}
-            />
-          </div>
-          <Button onClick={fetchData} disabled={loading} className="max-w-md">
-            {loading ? "Calculating..." : "Calculate"}
-          </Button>
-          {error && <p className="text-red-500">{error}</p>}
-          {twr !== null && (
-            <div className="p-4 bg-card rounded-lg max-w-md">
-              <h3 className="text-lg font-semibold">
-                Equity Return
-              </h3>
-              <p className="text-2xl font-bold">{(twr * 100).toFixed(2)}%</p>
-            </div>
-          )}
-          {chartData.length > 0 && (
-            <div className="p-4 bg-card rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Equity</h3>
-              <Linechart
-                data={chartData}
-                chartConfig={{
-                  net_equity_value: {
-                    label: "Equity",
-                    color: "var(--chart-2)",
-                  },
-                }}
-                className="h-[250px] w-full"
-                xAxisDataKey="date"
-                lineDataKeys={["net_equity_value"]}
-                grid={true}
-                xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
-                yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)} m`}
-              />
-            </div>
-          )}
+        <TwoMetric
+          title="Lifetime Metrics"
+          label1="CAGR"
+          value1={cagr !== null ? `${cagr.toFixed(2)}%` : "Loading..."}
+          label2="Sharpe Ratio"
+          value2={
+            sharpeRatio !== null ? sharpeRatio.toFixed(2) : "Loading..."
+          }
+          icon={false}
+        />
+        <div className="flex items-center">
+          <h2 className="text-sm text-muted-foreground px-3 text-nowrap">
+            Equity Return
+          </h2>
+          <TabSwitcher
+            options={tabOptions}
+            onValueChange={setDateRange}
+            value={dateRange}
+            defaultValue="all"
+          />
         </div>
+        <TwoMetric
+          title={false}
+          label1="Total P/L"
+          value1={
+            totalPnl !== null
+              ? `${formatNum(totalPnl)}`
+              : "Loading..."
+          }
+          label2="Total Return"
+          value2={
+            totalReturn !== null ? `${formatNum(100*totalReturn, 2)}%` : "Loading..."
+          }
+        />
+        <Card className="px-6 bg-muted/50 shadow-none">
+          <CardHeader className="px-0">
+            <CardDescription>
+              Benchmark Performance
+            </CardDescription>
+          </CardHeader>
+          {chartStartDate && (
+            <BenchmarkChart
+              startDate={chartStartDate}
+              endDate={endDate}
+              height="h-[250px]"
+              xAxisDateFormat={xAxisDateFormat}
+            />
+          )}
+        </Card>
+
       </PageContent>
     </PageMain>
   )

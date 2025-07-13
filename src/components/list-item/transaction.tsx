@@ -31,7 +31,7 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
         ? `${formatNum(quantity)} units`
         : formatNum(amount);
 
-  const secondaryValue = currencyCode !== 'VND' && formatNum(quantity, currencyCode)
+  const secondaryValue = currencyCode !== 'VND' && formatNum(quantity, 0, currencyCode)
 
   return (
     <Card className="gap-1 py-0 border-none bg-background shadow-none">

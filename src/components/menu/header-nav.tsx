@@ -52,7 +52,7 @@ export function HeaderNav() {
       label: "Performance",
       path: "/performance",
       subMenu: [
-        { label: "Monthly PnL", path: "/performance/monthly-pnl" },
+        { label: "Monthly P/L", path: "/performance/monthly" },
       ],
     },
   ]

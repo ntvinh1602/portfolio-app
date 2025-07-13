@@ -5,13 +5,17 @@ import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
+import { format } from "date-fns"
 
 export default function Page() {
   const [debts, setDebts] = useState<Tables<"debts">[] | null>(null)
 
   useEffect(() => {
     const fetchDebts = async () => {
-      const { data } = await supabase.from("debts").select("*").eq("status", "active")
+      const { data } = await supabase
+        .from("debts")
+        .select("*")
+        .eq("status", "active")
       setDebts(data)
     }
 
@@ -46,17 +50,17 @@ export default function Page() {
         {debts === null
           ? null
           : debts.length === 0
-          ? <p>No outstanding debt found.</p>
-          : debts.map((debt) => (
+            ? <p>No outstanding debt found.</p>
+            : debts.map((debt) => (
               <DebtItem
                 key={debt.id}
                 name={debt.lender_name}
                 amount={debt.principal_amount}
                 interestRate={debt.interest_rate}
-                startDate={new Date(debt.start_date).toLocaleDateString()}
+                startDate={format(debt.start_date, "dd MMMM yyyy")}
                 accruedInterest={calculateAccruedInterest(debt)}
               />
-            ))}
+        ))}
       </PageContent>
     </PageMain>
   )

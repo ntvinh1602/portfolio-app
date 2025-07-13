@@ -46,7 +46,7 @@ export function StockCardCompact() {
                   name={stock.name}
                   logoUrl={stock.logo_url}
                   totalAmount={formatNum(stock.total_amount)}
-                  pnl={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, undefined, 1)}
+                  pnl={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
                   variant="compact"
                 />
               ))

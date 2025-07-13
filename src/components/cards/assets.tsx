@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Piechart } from "@/components/charts/piechart"
+import { Piechart } from "@/components/charts/base-charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
@@ -39,7 +39,7 @@ export function AssetCard() {
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
   const fetchAssets = useCallback(async () => {
-    const response = await fetch('/api/performance/asset-summary');
+    const response = await fetch('/api/reporting/asset-summary');
     if (!response.ok) {
       console.error('Error fetching asset summary:', response.statusText);
       return;

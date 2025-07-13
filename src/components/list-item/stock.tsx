@@ -36,8 +36,8 @@ function StockItemWrapper({ ticker, name, logoUrl, quantity, costBasis, refreshK
       logoUrl={logoUrl}
       quantity={formatNum(quantity)}
       totalAmount={priceStatus === 'success' ? formatNum(quantity * price) : "..."}
-      pnl={priceStatus === 'success' ? formatNum((quantity * price / costBasis - 1) * 100, undefined, 1) : "..."}
-      price={formatNum(price / 1000, undefined, 2)}
+      pnl={priceStatus === 'success' ? formatNum((quantity * price / costBasis - 1) * 100, 1) : "..."}
+      price={formatNum(price / 1000, 2)}
       priceStatus={priceStatus}
       variant="full"
     />

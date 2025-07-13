@@ -1,4 +1,4 @@
-import { BarChart } from "../charts/barchart"
+import { BarChart } from "../charts/base-charts/barchart"
 import {
   Card,
   CardAction,
@@ -9,7 +9,7 @@ import {
 } from "../ui/card"
 import { ChartConfig } from "../ui/chart"
 import { Badge } from "@/components/ui/badge"
-import { subMonths, format, startOfMonth, endOfMonth } from "date-fns"
+import { subMonths, format, startOfMonth } from "date-fns"
 import { useState, useEffect } from "react"
 import { formatNum } from "@/lib/utils"
 
@@ -31,7 +31,7 @@ export function PnLCard() {
 
   const fetchData = async () => {
     const today = new Date()
-    const endDate = endOfMonth(today)
+    const endDate = new Date()
     const startDate = startOfMonth(subMonths(today, 11))
 
     const params = new URLSearchParams({
@@ -39,7 +39,7 @@ export function PnLCard() {
       end_date: format(endDate, "yyyy-MM-dd"),
     })
 
-    const response = await fetch(`/api/performance/pnl?${params.toString()}`)
+    const response = await fetch(`/api/reporting/monthly-pnl?${params.toString()}`)
     if (!response.ok) {
       console.error("Failed to fetch PnL data")
       return
@@ -62,7 +62,7 @@ export function PnLCard() {
   }, [])
 
   return (
-    <Card className="bg-muted/50 shadow-none gap-4">
+    <Card className="bg-muted/50 shadow-none gap-4 h-full">
       <CardHeader className="px-4">
         <CardDescription>This month P/L</CardDescription>
         <CardTitle className="text-2xl">
@@ -81,7 +81,7 @@ export function PnLCard() {
           config={chartConfig}
           dataKey="pnl"
           categoryKey="month"
-          className="h-[150px] w-full"
+          className="h-full w-full"
           yAxisTickFormatter={(value) => {
             const numericValue =
               typeof value === "string" ? parseFloat(value) : value
