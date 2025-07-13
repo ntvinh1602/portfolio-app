@@ -13,7 +13,7 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Expenses"/>
       <PageContent>
-        <Card className="bg-muted/50 shadow-none mb-6">
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Monthly Expenses</CardTitle>
             <CardDescription>

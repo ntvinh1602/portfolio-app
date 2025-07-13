@@ -113,7 +113,7 @@ export function AssetCard() {
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="pt-2 pb-1 border-none shadow-none bg-background gap-0">
+    <Card className="bg-muted/0 pt-2 pb-1 border-none gap-0">
       <CardHeader className="px-8">
         <CardDescription
           className="flex items-center gap-1 w-fit"

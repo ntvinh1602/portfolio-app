@@ -179,7 +179,7 @@ export default function Page() {
           }
           icon={false}
         />
-        <Card className="bg-muted/50 shadow-none gap-6">
+        <Card className="gap-6">
           <CardHeader>
             <CardTitle>Benchmark</CardTitle>
             <CardDescription>

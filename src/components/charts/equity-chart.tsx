@@ -51,7 +51,7 @@ export function EquityChart({
       chartConfig={{
         net_equity_value: {
           label: "Equity",
-          color: "var(--chart-2)",
+          color: "var(--chart-1)",
         },
       }}
       className={`${height} w-full`}

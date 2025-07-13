@@ -15,7 +15,7 @@ export function BenchmarkCard() {
   const endDate = new Date()
 
   return (
-    <Card className="bg-muted/50 shadow-none gap-2 h-full">
+    <Card className="gap-2 h-full">
       <CardHeader className="px-4">
         <CardDescription>90-day Benchmark</CardDescription>
         <CardTitle className="text-2xl"></CardTitle>

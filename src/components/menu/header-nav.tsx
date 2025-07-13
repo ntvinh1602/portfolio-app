@@ -107,7 +107,7 @@ export function HeaderNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-12 w-12 border-2 border-primary dark:grayscale">
+        <Avatar className="h-12 w-12 border-2 border-primary">
           <AvatarImage src={avatarSvg} alt={user.name} />
           <AvatarFallback className="rounded-lg">
             Hi!
@@ -120,7 +120,7 @@ export function HeaderNav() {
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 dark:grayscale">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={avatarSvg} alt={user.name} />
               <AvatarFallback className="rounded-lg">Hi!</AvatarFallback>
             </Avatar>

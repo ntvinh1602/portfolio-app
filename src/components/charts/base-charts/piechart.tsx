@@ -40,7 +40,7 @@ export function Piechart({ data, chartConfig, dataKey, nameKey, className, inner
         y={props.y}
         textAnchor={props.textAnchor}
         dominantBaseline={props.dominantBaseline}
-        fill="hsl(var(--foreground))"
+        fill="var(--foreground)"
       >
         {`${percentage}%`}
       </text>

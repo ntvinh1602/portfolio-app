@@ -71,7 +71,7 @@ function StockItem({
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`shadow-none rounded-full bg-muted/50 text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
+    <Card className={`rounded-full text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
       <CardContent className={`flex items-center gap-3 ${isCompact ? 'px-4' : 'px-3'}`}>
         <Image
           src={logoUrl}
@@ -141,7 +141,7 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`shadow-none rounded-full bg-muted/50 text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
+    <Card className={`rounded-full text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
       <CardContent className={`flex items-center gap-3 ${isCompact ? 'px-4' : 'px-3'}`}>
         <Skeleton className={`rounded-full ${isCompact ? 'h-12 w-12' : 'h-14 w-14'}`} />
         <div className="flex justify-between w-full items-center">

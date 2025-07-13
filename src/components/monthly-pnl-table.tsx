@@ -98,7 +98,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead
-                      className="text-secondary-foreground"
+                      className="text-accent-foreground"
                       key={header.id}
                     >
                       {header.isPlaceholder
@@ -119,7 +119,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="h-10 bg-muted/50"
+                  className="h-10 bg-card/50"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

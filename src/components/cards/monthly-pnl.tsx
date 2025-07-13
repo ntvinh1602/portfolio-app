@@ -62,7 +62,7 @@ export function PnLCard() {
   }, [])
 
   return (
-    <Card className="bg-muted/50 shadow-none gap-4 h-full">
+    <Card className="gap-4 h-full">
       <CardHeader className="px-4">
         <CardDescription>This month P/L</CardDescription>
         <CardTitle className="text-2xl">

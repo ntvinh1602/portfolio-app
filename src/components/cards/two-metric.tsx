@@ -42,7 +42,7 @@ export function TwoMetric({
   }
 
   return (
-    <Card className={cn("bg-muted/50 shadow-none gap-4", className)}>
+    <Card className={cn("gap-4", className)}>
       {title && (
         <CardHeader>
           {title_url

@@ -1,14 +1,8 @@
-/* Import the MD3 theme variables FIRST */
-@import "../styles/material-theme.css";
-
-/* Then import Tailwind and other plugins */
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* This block does NOT need to change. It correctly aliases your theme variables
-   for use in your own custom CSS if needed. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,84 +41,57 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* --- Light Theme Mapping --- */
 :root {
-  --radius: 0.75rem; /* MD3 uses slightly rounder corners, feel free to adjust */
-
-  /* shadcn/ui variables mapped to MD3 roles */
-  --background: var(--md-sys-color-surface);
-  --foreground: var(--md-sys-color-on-surface);
-
-  --card: var(--md-sys-color-surface-container);
-  --card-foreground: var(--md-sys-color-on-surface);
-
-  --popover: var(--md-sys-color-surface-container-high);
-  --popover-foreground: var(--md-sys-color-on-surface);
-
-  --primary: var(--md-sys-color-primary-container);
-  --primary-foreground: var(--md-sys-color-on-primary-container);
-
-  --secondary: var(--md-sys-color-secondary-container);
-  --secondary-foreground: var(--md-sys-color-on-secondary-container);
-
-  --muted: var(--md-sys-color-surface-container-low);
-  --muted-foreground: var(--md-sys-color-on-surface-variant);
-
-  --accent: var(--md-sys-color-tertiary-container);
-  --accent-foreground: var(--md-sys-color-on-tertiary-container);
-
-  --destructive: var(--md-sys-color-error);
-  --destructive-foreground: var(--md-sys-color-on-error);
-
-  --border: var(--md-sys-color-outline-variant);
-  --input: var(--md-sys-color-outline);
-  --ring: var(--md-sys-color-primary-container);
-  
-  /* Map chart colors to MD3 accent colors for consistency */
-  --chart-1: var(--md-sys-color-primary-container);
-  --chart-2: var(--md-sys-color-secondary);
-  --chart-3: var(--md-sys-color-tertiary-container);
-  --chart-4: var(--md-sys-color-error);
-  --chart-5: oklch(0.7 0.15 130); /* Or keep a custom green */
+  --radius: 0.65rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.645 0.246 16.439);
+  --primary-foreground: oklch(0.969 0.015 12.422);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.645 0.246 16.439);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
 }
 
-/* --- Dark Theme Mapping --- */
-/* This block already exists in your file. You just need to change the values. */
-/* The values are already set in material-theme.css, so we just reference them again. */
 .dark {
-  --background: var(--md-sys-color-surface);
-  --foreground: var(--md-sys-color-on-surface);
-
-  --card: var(--md-sys-color-surface-container);
-  --card-foreground: var(--md-sys-color-on-surface);
-
-  --popover: var(--md-sys-color-surface-container-high);
-  --popover-foreground: var(--md-sys-color-on-surface);
-
-  --primary: var(--md-sys-color-primary-container);
-  --primary-foreground: var(--md-sys-color-on-primary-container);
-
-  --secondary: var(--md-sys-color-secondary-container);
-  --secondary-foreground: var(--md-sys-color-on-secondary-container);
-
-  --muted: var(--md-sys-color-surface-container-low);
-  --muted-foreground: var(--md-sys-color-on-surface-variant);
-
-  --accent: var(--md-sys-color-tertiary-container);
-  --accent-foreground: var(--md-sys-color-on-tertiary-container);
-
-  --destructive: var(--md-sys-color-error);
-  --destructive-foreground: var(--md-sys-color-on-error);
-
-  --border: var(--md-sys-color-outline);
-  --input: var(--md-sys-color-outline);
-  --ring: var(--md-sys-color-primary);
-  
-  --chart-1: var(--md-sys-color-primary);
-  --chart-2: var(--md-sys-color-secondary);
-  --chart-3: var(--md-sys-color-tertiary);
-  --chart-4: var(--md-sys-color-error);
-  --chart-5: oklch(0.8 0.15 130);
+  --background: oklch(17.8% 0.0207 0.6701);
+  --foreground: oklch(94.9% 0.0026 277.7);
+  --card: oklch(31.4% 0.0089 277.7);
+  --card-foreground: oklch(77% 0.0138 277.7);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(38.8% 0.1571 0.6701);
+  --primary-foreground: oklch(94.9% 0.0026 277.7);
+  --secondary: oklch(33.2% 0.1509 0.6701);
+  --secondary-foreground: oklch(77% 0.0138 277.7);
+  --muted: oklch(49.2% 0.0157 277.7);
+  --muted-foreground: oklch(77% 0.0138 277.7);
+  --accent: oklch(54.2% 0.2141 0.6701);
+  --accent-foreground: oklch(90.9% 0.0781 0.6701);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(35% 0.01 277.7);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(54.2% 0.2141 0.6701);
+  --chart-1: oklch(0.685 0.1262 222.72);
+  --chart-2: oklch(0.6805 0.1689 134.42);
+  --chart-3: oklch(0.7565 0.1444 49.68);
+  --chart-4: oklch(0.5885 0.189 27.29);
+  --chart-5: oklch(0.789 0.1498 90.32);
 }
 
 @layer base {
@@ -136,13 +103,22 @@
     @apply h-full;
   }
   * {
-    @apply border-border/50;
+    @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
     font-family: var(--font-roboto-flex);
   }
   h1 {
     font-family: var(--font-roboto-condensed);
+  }
+}
+
+@layer utilities {
+  .bg-gradient-radial-crimson {
+    background-image: radial-gradient(
+      ellipse 80% 70% at 50% 0%,
+      hsl(0 100% 15%) 0%,
+      hsl(0 0% 0%) 100%
+    );
   }
 }

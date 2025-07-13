@@ -20,14 +20,14 @@ export function DebtItem(
   { name, amount, interestRate, startDate, accruedInterest }: DebtItemProps,
 ) {
   return (
-    <Card className="bg-muted/50 shadow-none gap-2">
+    <Card className="gap-2">
       <CardHeader className="px-6">
         <CardDescription>{name}</CardDescription>
         <CardTitle className="text-2xl">
           {amount.toLocaleString()}
         </CardTitle>
         <CardAction className="flex flex-col gap-1 items-end">
-          <Badge variant="outline">
+          <Badge variant="destructive">
             {interestRate.toFixed(1)}%
           </Badge>
           <CardDescription className="text-xs">Interest Rate</CardDescription>

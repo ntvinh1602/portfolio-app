@@ -109,7 +109,7 @@ export function StockCardFull() {
   }, [stockHoldings]);
 
   return (
-    <Card className="bg-muted/50 shadow-none gap-4 pb-0">
+    <Card className="gap-4 pb-0">
       <CardHeader>
         <CardTitle>Stocks</CardTitle>
         <CardDescription>

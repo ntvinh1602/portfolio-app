@@ -34,7 +34,7 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
   const secondaryValue = currencyCode !== 'VND' && formatNum(quantity, 0, currencyCode)
 
   return (
-    <Card className="gap-1 py-0 border-none bg-background shadow-none">
+    <Card className="bg-card/0 gap-1 py-0 border-none">
       <CardTitle className="text-sm font-normal">
         {format(new Date(date), "dd MMM yyyy")}
       </CardTitle>
@@ -54,8 +54,10 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
         )}
         <div className="flex flex-col w-full min-w-0 gap-1 pl-2">
           <div className="flex flex-1 justify-between min-w-0">
-            <span className="text-sm truncate min-w-0">{description}</span>
-            <span className="text-sm font-medium flex-shrink-0 pl-2 whitespace-nowrap">
+            <span className="text-sm truncate min-w-0 text-foreground">
+              {description}
+            </span>
+            <span className="text-sm text-foreground flex-shrink-0 pl-2 whitespace-nowrap">
               {primaryValue}
             </span>
           </div>

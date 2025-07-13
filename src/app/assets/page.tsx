@@ -111,7 +111,7 @@ return (
   <PageMain>
     <PageHeader title="Assets" />
     <PageContent>
-      <Card className="bg-muted/50 shadow-none gap-4">
+      <Card className="gap-4">
         <CardHeader>
           <CardTitle>Total Assets</CardTitle>
           <CardDescription>

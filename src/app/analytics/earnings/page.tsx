@@ -4,7 +4,7 @@ import * as React from "react"
 import {
   PageMain,
   PageHeader,
-  PageContent
+  PageContent,
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
