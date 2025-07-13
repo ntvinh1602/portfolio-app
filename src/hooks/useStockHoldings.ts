@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/supabaseClient';
-import { StockHolding, StockHoldingBase } from '@/lib/types';
+
+interface StockHoldingBase {
+  ticker: string;
+  name: string;
+  logo_url: string;
+  quantity: number;
+  cost_basis: number;
+  latest_price: number;
+}
+
+interface StockHolding extends StockHoldingBase {
+  total_amount: number;
+}
 
 export function useStockHoldings() {
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);

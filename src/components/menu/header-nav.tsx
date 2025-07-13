@@ -37,7 +37,7 @@ export function HeaderNav() {
   const router = useRouter()
 
   const menuItems = [
-    { icon: TvMinimal, label: "Dashboard", path: "/dashboard" },
+    { icon: TvMinimal, label: "Home", path: "/" },
     {
       icon: PiggyBank,
       label: "Assets",
@@ -49,10 +49,11 @@ export function HeaderNav() {
     },
     { icon: Handshake, label: "Transaction", path: "/transactions" },
     { icon: Gauge,
-      label: "Performance",
-      path: "/performance",
+      label: "Analytics",
+      path: "/analytics",
       subMenu: [
-        { label: "Monthly P/L", path: "/performance/monthly" },
+        { label: "Earnings", path: "/analytics/earnings" },
+        { label: "Expenses", path: "/analytics/expenses" },
       ],
     },
   ]

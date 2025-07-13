@@ -9,12 +9,13 @@ import {
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { TwoMetric } from "@/components/cards/two-metric"
-import { calculateCAGR, calculateSharpeRatio } from "@/lib/calculation"
+import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils"
 import { BenchmarkChart } from "@/components/charts/benchmark-chart"
 import {
   Card,
   CardDescription,
   CardHeader,
+  CardTitle
 } from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
 
@@ -143,10 +144,11 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title="Performance" />
-      <PageContent>
+      <PageHeader title="Analytics" />
+      <PageContent className="gap-2">
         <TwoMetric
-          title="Lifetime Metrics"
+          title="Metrics"
+          subtitle="Key indicators of investment efficiency"
           label1="CAGR"
           value1={cagr !== null ? `${cagr.toFixed(2)}%` : "Loading..."}
           label2="Sharpe Ratio"
@@ -155,34 +157,33 @@ export default function Page() {
           }
           icon={false}
         />
-        <div className="flex items-center gap-6">
-          <h2 className="text-sm text-muted-foreground px-3 text-nowrap">
-            Equity
-          </h2>
-          <TabSwitcher
-            options={tabOptions}
-            onValueChange={setDateRange}
-            value={dateRange}
-            defaultValue="all"
-          />
-        </div>
+        <TabSwitcher
+          options={tabOptions}
+          onValueChange={setDateRange}
+          value={dateRange}
+          defaultValue="all"
+        />
         <TwoMetric
-          title={false}
-          label1="Total P/L"
+          title="Earnings"
+          title_url="/analytics/earnings"
+          subtitle="Net profit and time-weighted return of equity"
+          label1="Net P/L"
           value1={
             totalPnl !== null
               ? `${formatNum(totalPnl)}`
               : "Loading..."
           }
-          label2="Total Return"
+          label2="Return"
           value2={
             totalReturn !== null ? `${formatNum(100*totalReturn, 2)}%` : "Loading..."
           }
+          icon={false}
         />
-        <Card className="px-6 bg-muted/50 shadow-none">
-          <CardHeader className="px-0">
+        <Card className="bg-muted/50 shadow-none gap-6">
+          <CardHeader>
+            <CardTitle>Benchmark</CardTitle>
             <CardDescription>
-              Benchmark Performance
+              Visualized performance agaisnt VN-Index
             </CardDescription>
           </CardHeader>
           {chartStartDate && (
@@ -194,7 +195,6 @@ export default function Page() {
             />
           )}
         </Card>
-
       </PageContent>
     </PageMain>
   )

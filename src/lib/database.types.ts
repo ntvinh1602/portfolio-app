@@ -364,7 +364,7 @@ export type Database = {
         }
         Insert: {
           asset_id: string
-          cost_basis: number
+          cost_basis?: number
           creation_date: string
           creation_transaction_id: string
           id?: string
@@ -543,6 +543,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_pnl: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: number
+      }
       calculate_twr: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: number
@@ -558,6 +562,19 @@ export type Database = {
       get_asset_summary: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_benchmark_chart_data: {
+        Args: {
+          p_user_id: string
+          p_start_date: string
+          p_end_date: string
+          p_threshold: number
+        }
+        Returns: {
+          date: string
+          portfolio_value: number
+          vni_value: number
+        }[]
       }
       get_equity_chart_data: {
         Args: {
@@ -586,12 +603,11 @@ export type Database = {
           pnl: number
         }[]
       }
-      get_performance_benchmark_data: {
+      get_monthly_twr: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: {
-          date: string
-          portfolio_value: number
-          vni_value: number
+          month: string
+          twr: number
         }[]
       }
       get_stock_holdings: {
@@ -676,7 +692,6 @@ export type Database = {
           p_user_id: string
           p_transaction_date: string
           p_account_id: string
-          p_amount: number
           p_quantity: number
           p_description: string
           p_asset_id: string
@@ -711,7 +726,7 @@ export type Database = {
           p_user_id: string
           p_asset_id: string
           p_quantity_to_sell: number
-          p_total_proceeds: number
+          p_price: number
           p_fees: number
           p_taxes: number
           p_transaction_date: string
@@ -758,7 +773,7 @@ export type Database = {
       asset_class: "cash" | "stock" | "crypto" | "epf" | "equity" | "liability"
       currency_type: "fiat" | "crypto"
       debt_status: "active" | "paid_off"
-      tax_lot_origin: "purchase" | "split"
+      tax_lot_origin: "purchase" | "split" | "deposit"
       transaction_type:
         | "buy"
         | "sell"
@@ -908,7 +923,7 @@ export const Constants = {
       asset_class: ["cash", "stock", "crypto", "epf", "equity", "liability"],
       currency_type: ["fiat", "crypto"],
       debt_status: ["active", "paid_off"],
-      tax_lot_origin: ["purchase", "split"],
+      tax_lot_origin: ["purchase", "split", "deposit"],
       transaction_type: [
         "buy",
         "sell",

@@ -114,7 +114,7 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title="Monthly P/L" />
+      <PageHeader title="Earnings" />
       <PageContent>
         <TabSwitcher
           options={tabOptions}
@@ -123,18 +123,14 @@ export default function Page() {
           defaultValue="12m"
         />
         <TwoMetric
-          title="Average"
+          title="Monthly Average"
+          subtitle="Your salary if this fund is a full-time job"
           label1="Net P/L"
           value1={formatNum(avgPnl)}
           label2="Return"
           value2={`${formatNum(100*avgTwr, 2)}%`}
         />
-        <div className="flex flex-col gap-1">
-          <h2 className="pt-1 px-3 text-sm text-muted-foreground">
-            Details
-          </h2>
-          <PnLTable data={data} />
-        </div>
+        <PnLTable data={data} />
       </PageContent>
     </PageMain>
   )
