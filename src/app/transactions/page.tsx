@@ -110,13 +110,13 @@ export default function Page() {
       <PageHeader title="Transactions" />
       <PageContent>
         <div className="flex items-center justify-between">
-          <AddTransactionMenu onMenuItemClick={handleMenuItemClick} />
+          <DatePicker mode="range" selected={date} onSelect={setDate} />
           <TransactionForm
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
             transactionType={selectedTransactionType}
           />
-          <DatePicker mode="range" selected={date} onSelect={setDate} />
+          <AddTransactionMenu onMenuItemClick={handleMenuItemClick} />
         </div>
         <TabSwitcher
           options={tabOptions}

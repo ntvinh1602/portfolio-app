@@ -175,7 +175,9 @@ export default function Page() {
           }
           label2="Return"
           value2={
-            totalReturn !== null ? `${formatNum(100*totalReturn, 2)}%` : "Loading..."
+            totalReturn !== null
+              ? `${formatNum(100*totalReturn, 2)}%`
+              : "Loading..."
           }
           icon={false}
         />

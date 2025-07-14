@@ -90,13 +90,13 @@ function StockItem({
               <CardDescription className="flex items-center gap-1 truncate pt-1">
                 <Badge
                   variant="outline"
-                  className="rounded-full bg-secondary/50 gap-0.5 text-muted-foreground"
+                  className="rounded-full bg-accent/50 gap-0.5 text-muted-foreground"
                 >
                   <Leaf />{quantity}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-full bg-secondary/50 gap-1 text-muted-foreground"
+                  className="rounded-full bg-accent/50 gap-1 text-muted-foreground"
                 >
                   {priceStatus === 'loading' ? '...' : price}
                   {priceStatus && (

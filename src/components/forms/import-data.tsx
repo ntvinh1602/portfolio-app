@@ -49,16 +49,17 @@ export function TransactionImportForm({
   const [open, setOpen] = React.useState(false)
   const isMobile = useIsMobile()
 
+  const title = "Ready to import data?"
+  const description = "Make sure your .csv file is in correct header format"
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>{children}</DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Import Transaction Data</DrawerTitle>
-            <DrawerDescription>
-              Upload your transaction data in .csv format.
-            </DrawerDescription>
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
           </DrawerHeader>
           <ImportForm className="px-6 pb-40"/>
         </DrawerContent>
@@ -70,10 +71,8 @@ export function TransactionImportForm({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
-        <DialogTitle>Import Transaction Data</DialogTitle>
-        <DialogDescription>
-          Upload your transaction data in .csv format.
-        </DialogDescription>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
         <ImportForm />
       </DialogContent>
     </Dialog>
@@ -179,9 +178,11 @@ function ImportForm( { className }: ImportFormProps ) {
         disabled={isUploading}
         className="rounded-full h-10"
       />
-      <Button type="submit" disabled={!file || isUploading}>
-        {isUploading ? "Uploading..." : "Upload and Import"}
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={!file || isUploading}>
+          {isUploading ? "Importing..." : "Import"}
+        </Button>
+      </div>
     </form>
   );
 }

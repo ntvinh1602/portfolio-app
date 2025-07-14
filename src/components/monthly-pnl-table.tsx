@@ -92,7 +92,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
     <div className="flex flex-col gap-2">
       <div className="rounded-2xl border overflow-hidden">
         <Table>
-          <TableHeader className="bg-secondary/50">
+          <TableHeader className="bg-accent/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="h-10">
                 {headerGroup.headers.map((header) => {

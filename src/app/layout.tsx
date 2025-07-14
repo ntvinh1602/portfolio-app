@@ -47,7 +47,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className="antialiased bg-gradient-radial-crimson bg-fixed">
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -55,8 +55,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster />
         </ThemeProvider>
-        <Toaster />
       </body>
     </html>
   );
