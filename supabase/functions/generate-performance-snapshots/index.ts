@@ -55,7 +55,7 @@ Deno.serve(async (_req: Request) => {
       ${results.failed.length > 0 ? `Failed users: ${results.failed.map(f => f.userId).join(', ')}` : ''}
     `.trim();
 
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+    if (results.failed.length > 0 && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: {

@@ -1,5 +1,5 @@
 import { Linechart } from "@/components/charts/base-charts/linechart"
-import { formatNum } from "@/lib/utils"
+import { compactNum, formatNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { useState, useEffect, useCallback } from "react"
 
@@ -59,7 +59,7 @@ export function EquityChart({
       lineDataKeys={["net_equity_value"]}
       grid={true}
       xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
-      yAxisTickFormatter={(value) => `${formatNum(Number(value) / 1000000)}m`}
+      yAxisTickFormatter={(value) => compactNum(Number(value))}
     />
   )
 }

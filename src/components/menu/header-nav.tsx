@@ -107,7 +107,7 @@ export function HeaderNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-12 w-12 border-2 border-primary">
+        <Avatar className="h-12 w-12 border-2 border-ring">
           <AvatarImage src={avatarSvg} alt={user.name} />
           <AvatarFallback className="rounded-lg">
             Hi!
@@ -116,7 +116,7 @@ export function HeaderNav() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="border-border/50 rounded-2xl bg-card/25 backdrop-blur-sm w-56"
+        className="border-border rounded-2xl bg-card/40 backdrop-blur-sm w-56"
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

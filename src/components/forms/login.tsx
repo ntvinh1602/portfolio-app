@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "../ui/separator"
 
 export function LoginForm({
   className,
@@ -33,7 +34,7 @@ export function LoginForm({
     } else {
       // On successful login, Supabase client automatically handles the session.
       // Redirect the user to the dashboard.
-      router.push("/dashboard")
+      router.push("/")
     }
     setIsLoading(false)
   }
@@ -41,7 +42,9 @@ export function LoginForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Welcome back!</h1>
+        <h1 className="text-2xl font-bold text-accent-foreground">
+          Welcome back!
+        </h1>
         <p className="text-muted-foreground text-sm text-balance">
           Enter your credentials below to login
         </p>
@@ -49,7 +52,9 @@ export function LoginForm({
       <form onSubmit={handleLogin}>
         <div className="grid gap-6">
           <div className="grid gap-3">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-muted-foreground">
+              Email
+            </Label>
             <Input 
               id="email"
               type="email"
@@ -63,7 +68,9 @@ export function LoginForm({
           </div>
           <div className="grid gap-3">
             <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
+              <Label className="text-muted-foreground" htmlFor="password">
+                Password
+              </Label>
               <a
                 href="#"
                 className="ml-auto text-sm"
@@ -87,10 +94,16 @@ export function LoginForm({
           <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
-          <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-            <span className="bg-muted text-muted-foreground relative z-10 px-2">
+          <div className="flex items-center justify-between">
+            <div className="w-full flex">
+              <Separator />
+            </div>
+            <span className="bg-muted/0 text-nowrap text-muted-foreground text-sm px-2">
               No account yet?
             </span>
+            <div className="w-full flex">
+              <Separator />
+            </div>
           </div>
           <Button variant="outline" className="w-full rounded-full">
             Login as a Guest

@@ -11,7 +11,7 @@ import { ChartConfig } from "../ui/chart"
 import { Badge } from "@/components/ui/badge"
 import { subMonths, format, startOfMonth } from "date-fns"
 import { useState, useEffect } from "react"
-import { formatNum } from "@/lib/utils"
+import { compactNum, formatNum } from "@/lib/utils"
 
 export type MonthlyPnlData = {
   month: string
@@ -82,11 +82,8 @@ export function PnLCard() {
           dataKey="pnl"
           categoryKey="month"
           className="h-full w-full"
-          yAxisTickFormatter={(value) => {
-            const numericValue =
-              typeof value === "string" ? parseFloat(value) : value
-            return `${formatNum(numericValue / 1000000)}m`
-          }}
+          yAxisTickFormatter={(value) => compactNum(Number(value))}
+          xAxisTickFormatter={(value) => format(new Date(value), "MMM ''yy")}
         />
       </CardFooter>
     </Card>

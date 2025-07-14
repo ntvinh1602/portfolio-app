@@ -97,9 +97,9 @@ export default function Page() {
       start = startOfMonth(endDate)
     } else if (dateRange === "ytd") {
       start = startOfYear(endDate)
-      format = "MMM yyyy"
+      format = "MMM ''yy"
     } else if (dateRange === "all") {
-      format = "MMM yyyy"
+      format = "MMM ''yy"
     }
     setChartStartDate(start)
     setXAxisDateFormat(format)
@@ -183,7 +183,7 @@ export default function Page() {
           <CardHeader>
             <CardTitle>Benchmark</CardTitle>
             <CardDescription>
-              Visualized performance agaisnt VN-Index
+              Visualized performance against VN-Index
             </CardDescription>
           </CardHeader>
           {chartStartDate && (
