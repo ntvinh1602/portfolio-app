@@ -23,11 +23,11 @@ export function DebtItem(
     <Card className="gap-2">
       <CardHeader className="px-6">
         <CardDescription>{name}</CardDescription>
-        <CardTitle className="text-2xl">
+        <CardTitle className="text-2xl text-accent-foreground">
           {amount.toLocaleString()}
         </CardTitle>
         <CardAction className="flex flex-col gap-1 items-end">
-          <Badge variant="destructive">
+          <Badge variant="outline">
             {interestRate.toFixed(1)}%
           </Badge>
           <CardDescription className="text-xs">Interest Rate</CardDescription>

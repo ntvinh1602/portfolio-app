@@ -54,10 +54,10 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
         )}
         <div className="flex flex-col w-full min-w-0 gap-1 pl-2">
           <div className="flex flex-1 justify-between min-w-0">
-            <span className="text-sm truncate min-w-0 text-foreground">
+            <span className="text-sm truncate min-w-0">
               {description}
             </span>
-            <span className="text-sm text-foreground flex-shrink-0 pl-2 whitespace-nowrap">
+            <span className="text-sm flex-shrink-0 pl-2 whitespace-nowrap">
               {primaryValue}
             </span>
           </div>

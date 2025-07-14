@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Piechart } from "@/components/charts/base-charts/piechart"
+import { Piechart, PiechartSkeleton } from "@/components/charts/base-charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { format } from "date-fns"
 
@@ -93,7 +93,7 @@ export function ExpenseStructureChart() {
   }, [])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <PiechartSkeleton />
   }
 
   return (

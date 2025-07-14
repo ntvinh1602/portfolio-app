@@ -1,12 +1,6 @@
 import * as React from "react"
 
 import { useRouter } from "next/navigation"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import avatar from 'animal-avatar-generator'
 import { supabase } from "@/lib/supabase/supabaseClient"
 import {
   DropdownMenu,
@@ -17,13 +11,19 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
 import {
-  TvMinimal,
-  PiggyBank,
+  House,
+  Sprout,
   Gauge,
   Wrench,
   FileQuestion,
-  Handshake,
-  LogOut
+  Coins,
+  LogOut,
+  Menu,
+  User,
+  TrendingUp,
+  TrendingDown,
+  HandCoins,
+  Wallet
 } from "lucide-react"
    
 export function HeaderNav() {
@@ -32,28 +32,27 @@ export function HeaderNav() {
     email: "",
     avatar: "",
   })
-  const [avatarSvg, setAvatarSvg] = React.useState("")
 
   const router = useRouter()
 
   const menuItems = [
-    { icon: TvMinimal, label: "Home", path: "/" },
+    { icon: House, label: "Home", path: "/" },
     {
-      icon: PiggyBank,
+      icon: Sprout,
       label: "Assets",
       path: "/assets",
       subMenu: [
-        { label: "Holdings", path: "/assets/holdings" },
-        { label: "Debts", path: "/assets/debts" },
+        { icon: Wallet, label: "Holdings", path: "/assets/holdings" },
+        { icon: HandCoins, label: "Debts", path: "/assets/debts" },
       ],
     },
-    { icon: Handshake, label: "Transaction", path: "/transactions" },
+    { icon: Coins, label: "Transaction", path: "/transactions" },
     { icon: Gauge,
       label: "Analytics",
       path: "/analytics",
       subMenu: [
-        { label: "Earnings", path: "/analytics/earnings" },
-        { label: "Expenses", path: "/analytics/expenses" },
+        { icon: TrendingUp, label: "Earnings", path: "/analytics/earnings" },
+        { icon: TrendingDown, label: "Expenses", path: "/analytics/expenses" },
       ],
     },
   ]
@@ -96,43 +95,27 @@ export function HeaderNav() {
     fetchUser()
   }, [])
 
-  React.useEffect(() => {
-    if (user.email) {
-      const svgString = avatar(user.email, { size: 128 })
-      const dataUri = `data:image/svg+xml;base64,${btoa(svgString)}`
-      setAvatarSvg(dataUri)
-    }
-  }, [user.email])
-
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Avatar className="h-12 w-12 border-2 border-ring">
-          <AvatarImage src={avatarSvg} alt={user.name} />
-          <AvatarFallback className="rounded-lg">
-            Hi!
-          </AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger>
+        <Menu className="size-8 text-accent-foreground"/>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="border-border rounded-2xl bg-card/40 backdrop-blur-sm w-56"
+        className="border-accent rounded-2xl bg-card/40 backdrop-blur-sm w-56"
       >
-        <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarSvg} alt={user.name} />
-              <AvatarFallback className="rounded-lg">Hi!</AvatarFallback>
-            </Avatar>
+        <DropdownMenuLabel className="p-0">
+          <div className="flex items-center gap-3 px-2 py-1.5">
+            <User />
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
+              <span className="truncate">{user.name}</span>
               <span className="text-muted-foreground truncate text-xs">
                 {user.email}
               </span>
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-accent"/>
         {menuItems.map((item) => (
           <React.Fragment key={item.label}>
             <DropdownMenuItem
@@ -147,12 +130,12 @@ export function HeaderNav() {
                   onClick={() => handleNavigation(subItem.path)}
                   className="ml-4 pl-4 border-l-2 rounded-none"
                 >
-                  {subItem.label}
+                  <subItem.icon />{subItem.label}
                 </DropdownMenuItem>
               ))}
           </React.Fragment>
         ))}
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-accent"/>
         {secondaryMenuItems.map((item) => (
           <DropdownMenuItem
             key={item.label}
@@ -161,7 +144,7 @@ export function HeaderNav() {
             <item.icon />{item.label}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-accent"/>
         <DropdownMenuItem
           data-variant="destructive"
           onClick={handleSignOut}

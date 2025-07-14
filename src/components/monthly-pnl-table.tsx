@@ -119,7 +119,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="h-10 bg-card/50"
+                  className="h-10 bg-card/40"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

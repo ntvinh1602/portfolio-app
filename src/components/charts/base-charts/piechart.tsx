@@ -8,6 +8,7 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 
 type PieChartData = {
@@ -27,7 +28,7 @@ interface PiechartProps {
   centerText?: string;
 }
 
-export function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText }: PiechartProps) {
+function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText }: PiechartProps) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
   const renderLabel = ({ payload, ...props }: { payload: PieChartData; cx: number; cy: number; x: number; y: number; textAnchor: string; dominantBaseline: string; }) => {
     const value = Number(payload[dataKey]) || 0;
@@ -117,4 +118,22 @@ export function Piechart({ data, chartConfig, dataKey, nameKey, className, inner
       </PieChart>
     </ChartContainer>
   )
+}
+
+function PiechartSkeleton() {
+  return (
+    <div className="flex flex-col items-center gap-y-4 py-8">
+      <Skeleton className="h-48 w-48 rounded-full" />
+      <div className="flex items-center gap-x-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-4 w-20" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export {
+  Piechart,
+  PiechartSkeleton
 }

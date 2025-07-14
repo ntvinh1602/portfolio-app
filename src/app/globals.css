@@ -103,7 +103,7 @@
     @apply h-full;
   }
   * {
-    @apply border-border;
+    @apply border-accent;
   }
   body {
     font-family: var(--font-roboto-flex);

@@ -2,7 +2,10 @@
 
 import * as React from "react"
 import { subMonths, startOfMonth, endOfMonth, format } from "date-fns"
-import { ChartBarStacked } from "@/components/charts/base-charts/stacked-barchart"
+import {
+  ChartBarStacked,
+  BarStackedSkeleton
+} from "@/components/charts/base-charts/stacked-barchart"
 import { ChartConfig } from "@/components/ui/chart"
 
 type MonthlyExpenseData = {
@@ -78,7 +81,7 @@ export function ExpensesChart() {
 
   // TODO: Add a skeleton loader
   if (isLoading) {
-    return <div>Loading...</div>
+    return <BarStackedSkeleton />
   }
 
   return (

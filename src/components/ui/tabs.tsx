@@ -80,7 +80,7 @@ const TabsList = React.forwardRef<
         ref={ref}
         data-slot="tabs-list"
         className={cn(
-          "bg-card/50 text-muted-foreground relative inline-flex h-10 w-fit items-center justify-center rounded-full p-[3px]",
+          "bg-card/40 text-muted-foreground relative inline-flex h-10 w-fit items-center justify-center rounded-full p-[3px]",
           className
         )}
         {...props}
