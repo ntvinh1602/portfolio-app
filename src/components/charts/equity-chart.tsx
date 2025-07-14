@@ -1,5 +1,5 @@
 import { Linechart } from "@/components/charts/base-charts/linechart"
-import { compactNum, formatNum } from "@/lib/utils"
+import { compactNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { useState, useEffect, useCallback } from "react"
 

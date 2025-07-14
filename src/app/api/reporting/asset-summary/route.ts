@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
 import { unstable_cache } from "next/cache"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
 
   const {
