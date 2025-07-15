@@ -38,7 +38,7 @@ export function Linechart({
         <CartesianGrid horizontal={grid} vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
-          tickLine={false}
+          tickLine={true}
           axisLine={false}
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}

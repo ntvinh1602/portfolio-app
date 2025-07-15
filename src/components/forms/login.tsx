@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "../ui/separator"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function LoginForm({
   className,
@@ -41,81 +42,79 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold text-accent-foreground">
-          Welcome back!
-        </h1>
-        <p className="text-muted-foreground text-sm text-balance">
-          Enter your credentials below to login
-        </p>
-      </div>
-      <form onSubmit={handleLogin}>
-        <div className="grid gap-6">
-          <div className="grid gap-3">
-            <Label htmlFor="email" className="text-muted-foreground">
-              Email
-            </Label>
-            <Input 
-              id="email"
-              type="email"
-              placeholder="m@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              className="rounded-full"
-            />
-          </div>
-          <div className="grid gap-3">
-            <div className="flex items-center">
-              <Label className="text-muted-foreground" htmlFor="password">
-                Password
-              </Label>
-              <a
-                href="#"
-                className="ml-auto text-sm"
-              >
-                Forgot your password?
-              </a>
+      <Card className="border-none bg-card/0">
+        <CardHeader className="px-0 flex flex-col items-center">
+          <h1 className="text-2xl text-accent-foreground">
+            Welcome back!
+          </h1>
+          <CardDescription>
+            Enter your credentials below to login
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          <form onSubmit={handleLogin}>
+            <div className="grid gap-6">
+              <div className="grid gap-3">
+                <Label htmlFor="email" className="text-muted-foreground">
+                  Email
+                </Label>
+                <Input 
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  className="rounded-full font-thin text-sm text-accent-foreground"
+                />
+              </div>
+              <div className="grid gap-3">
+                <div className="flex items-center">
+                  <Label className="text-muted-foreground" htmlFor="password">
+                    Password
+                  </Label>
+                  <a
+                    href="#"
+                    className="ml-auto text-sm font-thin"
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="rounded-full text-accent-foreground"
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+              <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+              <div className="flex items-center justify-between">
+                <div className="w-full flex">
+                  <Separator />
+                </div>
+                <span className="bg-muted/0 text-nowrap font-thin text-muted-foreground text-sm px-2">
+                  No account yet?
+                </span>
+                <div className="w-full flex">
+                  <Separator />
+                </div>
+              </div>
+              <Button variant="outline" className="w-full rounded-full">
+                Login as a Guest
+              </Button>
             </div>
-            <Input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              className="rounded-full"
-            />
-          </div>
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
-          <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
-          </Button>
-          <div className="flex items-center justify-between">
-            <div className="w-full flex">
-              <Separator />
-            </div>
-            <span className="bg-muted/0 text-nowrap text-muted-foreground text-sm px-2">
-              No account yet?
-            </span>
-            <div className="w-full flex">
-              <Separator />
-            </div>
-          </div>
-          <Button variant="outline" className="w-full rounded-full">
-            Login as a Guest
-          </Button>
-        </div>
-      </form>
-      <div className="text-center text-sm">
-        Want to open an account?{" "}
-        <a href="#" className="text-accent-foreground font-bold">
-          Contact us.
-        </a>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

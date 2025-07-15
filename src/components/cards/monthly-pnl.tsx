@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { subMonths, format, startOfMonth } from "date-fns"
 import { useState, useEffect } from "react"
 import { compactNum, formatNum } from "@/lib/utils"
+import { ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export type MonthlyPnlData = {
   month: string
@@ -19,12 +21,14 @@ export type MonthlyPnlData = {
 }
 
 const chartConfig = {
-  pnl: {
-    label: "PnL",
-  },
+  pnl: { label: "PnL" },
 } satisfies ChartConfig
 
 export function PnLCard() {
+  const router = useRouter()
+  const handleNavigation = () => {
+    router.push("/analytics/earnings")
+  }
   const [chartData, setChartData] = useState<MonthlyPnlData[]>([])
   const [mtdPnl, setMtdPnl] = useState<number | null>(null)
   const [avgPnl, setAvgPnl] = useState<number | null>(null)
@@ -64,7 +68,12 @@ export function PnLCard() {
   return (
     <Card className="gap-4 h-full">
       <CardHeader className="px-4">
-        <CardDescription>This month P/L</CardDescription>
+        <CardDescription
+          className="flex items-center gap-1 w-fit"
+          onClick={handleNavigation}
+        >
+          P/L this month<ChevronRight className="size-4"/>
+        </CardDescription>
         <CardTitle className="text-2xl">
           {mtdPnl !== null ? formatNum(mtdPnl) : "Loading..."}
         </CardTitle>

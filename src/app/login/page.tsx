@@ -5,7 +5,7 @@ export default function LoginPage() {
     <div className="grid min-h-svh">
       <div className="flex flex-col gap-4 p-6">
         <div className="flex justify-center gap-2">
-          <a href="#" className="flex items-center gap-2 font-medium">
+          <a href="#" className="flex items-center gap-2 font-light">
             Portfolio Tracker
           </a>
         </div>

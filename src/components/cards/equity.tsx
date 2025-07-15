@@ -12,8 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { ChevronRight } from "lucide-react"
 
 export function EquityCard() {
+  const router = useRouter()
+  const handleNavigation = () => {
+    router.push("/analytics")
+  }
   const [latestEquity, setLatestEquity] = useState<number | null>(null)
   const [twr, setTwr] = useState<number | null>(null)
   const { startDate, endDate } = useMemo(() => {
@@ -46,7 +52,12 @@ export function EquityCard() {
   return (
     <Card className="gap-4 h-full">
       <CardHeader className="px-4">
-        <CardDescription>Total equity</CardDescription>
+        <CardDescription
+          className="flex items-center gap-1 w-fit"
+          onClick={handleNavigation}
+        >
+          Total equity<ChevronRight className="size-4"/>
+        </CardDescription>
         <CardTitle className="text-2xl">
           {latestEquity ? formatNum(latestEquity) : "Loading..."}
         </CardTitle>

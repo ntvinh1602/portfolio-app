@@ -1,7 +1,7 @@
 "use client"
 
 import { Pie, PieChart, Cell, Label } from "recharts"
-import { cn } from "@/lib/utils"
+import { cn, compactNum } from "@/lib/utils"
 import {
   ChartConfig,
   ChartContainer,
@@ -9,7 +9,6 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { compactNum } from "@/lib/utils"
 
 type PieChartData = {
   fill: string;
@@ -26,27 +25,51 @@ interface PiechartProps {
   legend?: string;
   label?: boolean;
   centerText?: string;
-  margin_tb?: number
+  margin_tb?: number;
 }
 
-function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText, margin_tb = 10 }: PiechartProps) {
+function Piechart({
+  data,
+  chartConfig,
+  dataKey,
+  nameKey,
+  className,
+  innerRadius = 50,
+  legend,
+  label,
+  centerText,
+  margin_tb = 10
+}: PiechartProps) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
-  const renderLabel = ({ payload, ...props }: { payload: PieChartData; cx: number; cy: number; x: number; y: number; textAnchor: string; dominantBaseline: string; }) => {
+
+  const RADIAN = Math.PI / 180;
+
+  const renderLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    payload
+  }: any) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 1.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const value = Number(payload[dataKey]) || 0;
     const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : 0;
+
     return (
       <text
-        cx={props.cx}
-        cy={props.cy}
-        x={props.x}
-        y={props.y}
-        textAnchor={props.textAnchor}
-        dominantBaseline={props.dominantBaseline}
+        x={x}
+        y={y}
+        textAnchor="middle"
+        dominantBaseline="middle"
         fill="var(--foreground)"
+        className="text-xs font-light"
       >
         {`${percentage}%`}
       </text>
-    )
+    );
   };
 
   return (
@@ -71,21 +94,22 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
             className="text-md flex flex-col items-start w-15 font-thin"
           />
         )}
+
         <Pie
           data={data}
           dataKey={dataKey}
           nameKey={nameKey}
           labelLine={false}
           label={label !== false && renderLabel}
-          innerRadius={!innerRadius ? "50%" : `${innerRadius}%`}
+          innerRadius={`${innerRadius}%`}
           strokeWidth={5}
           className="font-thin"
         >
           {data?.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />
           ))}
-          {
-            centerText &&
+
+          {centerText && (
             <Label
               content={({ viewBox }) => {
                 if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -105,21 +129,21 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
                       </tspan>
                       <tspan
                         x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 24}
+                        y={(viewBox.cy || 0) + 20}
                         className="fill-muted-foreground font-thin"
                       >
                         {centerText}
                       </tspan>
                     </text>
-                  )
+                  );
                 }
               }}
             />
-          }
+          )}
         </Pie>
       </PieChart>
     </ChartContainer>
-  )
+  );
 }
 
 function PiechartSkeleton() {
@@ -132,7 +156,7 @@ function PiechartSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export {

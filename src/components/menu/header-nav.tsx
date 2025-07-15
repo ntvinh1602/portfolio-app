@@ -102,7 +102,7 @@ export function HeaderNav() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="border-primary rounded-2xl bg-card/40 backdrop-blur-sm w-56"
+        className="rounded-2xl bg-card/40 backdrop-blur-sm w-56"
       >
         <DropdownMenuLabel className="p-0 flex items-center gap-3 px-2 py-1.5">
           <User className="stroke-[1]"/>
@@ -113,7 +113,7 @@ export function HeaderNav() {
             </span>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-primary"/>
+        <DropdownMenuSeparator className="bg-primary/50"/>
         {menuItems.map((item) => (
           <React.Fragment key={item.label}>
             <DropdownMenuItem
@@ -133,7 +133,7 @@ export function HeaderNav() {
               ))}
           </React.Fragment>
         ))}
-        <DropdownMenuSeparator className="bg-primary"/>
+        <DropdownMenuSeparator className="bg-primary/50"/>
         {secondaryMenuItems.map((item) => (
           <DropdownMenuItem
             key={item.label}
@@ -142,7 +142,7 @@ export function HeaderNav() {
             <item.icon className="text-foreground stroke-[1]"/>{item.label}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator className="bg-primary"/>
+        <DropdownMenuSeparator className="bg-primary/50"/>
         <DropdownMenuItem
           data-variant="destructive"
           onClick={handleSignOut}
