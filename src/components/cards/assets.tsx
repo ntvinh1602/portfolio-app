@@ -114,7 +114,7 @@ export function AssetCard() {
 
   return (
     <Card className="bg-muted/0 pt-2 pb-1 border-none gap-0">
-      <CardHeader className="px-8">
+      <CardHeader>
         <CardDescription
           className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
@@ -131,35 +131,29 @@ export function AssetCard() {
           </Badge>
         </CardAction>
       </CardHeader>
-      <CardContent className="flex justify-between">
-        <div className="flex flex-col">
-          <CardDescription>
-          </CardDescription>
+      <CardContent className="flex w-full justify-between">
           <Piechart
             data={assetChartData}
             chartConfig={assetChartCfg}
             dataKey="allocation"
             nameKey="asset"
-            className="h-48 w-48 -my-8"
+            className="h-fit w-full"
             innerRadius={50}
             legend="right"
             label={false}
+            margin_tb={0}
           />
-        </div>
-        <div className="flex flex-col">
-          <CardDescription>
-          </CardDescription>
           <Piechart
             data={liabilityChartData}
             chartConfig={liabilityChartCfg}
             dataKey="allocation"
             nameKey="liability"
-            className="h-48 w-48 -ml-5 -my-8"
+            className="h-fit w-full"
             innerRadius={50}
             legend="right"
             label={false}
-          />  
-        </div>
+            margin_tb={0}
+          />
       </CardContent>
     </Card>
   )

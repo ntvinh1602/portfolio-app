@@ -26,9 +26,10 @@ interface PiechartProps {
   legend?: string;
   label?: boolean;
   centerText?: string;
+  margin_tb?: number
 }
 
-function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText }: PiechartProps) {
+function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius, legend, label, centerText, margin_tb = 10 }: PiechartProps) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
   const renderLabel = ({ payload, ...props }: { payload: PieChartData; cx: number; cy: number; x: number; y: number; textAnchor: string; dominantBaseline: string; }) => {
     const value = Number(payload[dataKey]) || 0;
@@ -53,7 +54,7 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
       config={chartConfig}
       className={cn("mx-auto", legend !== "right" && "aspect-square", className)}
     >
-      <PieChart margin={{ top: 10, bottom: 10 }}>
+      <PieChart margin={{ top: margin_tb, bottom: margin_tb }}>
         {legend === "bottom" && (
           <ChartLegend
             content={<ChartLegendContent nameKey={nameKey} />}

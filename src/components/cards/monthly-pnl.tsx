@@ -81,7 +81,7 @@ export function PnLCard() {
           config={chartConfig}
           dataKey="pnl"
           categoryKey="month"
-          className="h-full w-full"
+          className="h-[180px] w-full"
           yAxisTickFormatter={(value) => compactNum(Number(value))}
           xAxisTickFormatter={(value) => format(new Date(value), "MMM ''yy")}
         />
