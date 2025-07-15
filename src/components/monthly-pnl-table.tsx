@@ -97,10 +97,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
               <TableRow key={headerGroup.id} className="h-10">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      className="text-accent-foreground"
-                      key={header.id}
-                    >
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -149,7 +146,7 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
         >
           <ChevronLeft />
         </Button>
-        <div className="text-muted-foreground text-xs">
+        <div className="text-muted-foreground font-thin text-sm">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>

@@ -51,7 +51,7 @@ export function StockCardCompact() {
                 />
               ))
             ) : (
-              <div className="text-center text-muted-foreground py-4">
+              <div className="text-center font-thin text-muted-foreground py-4">
                 No stock holdings found.
               </div>
             )}

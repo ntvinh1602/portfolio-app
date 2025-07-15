@@ -59,7 +59,7 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
           <ChartLegend
             content={<ChartLegendContent nameKey={nameKey} />}
             verticalAlign="bottom"
-            className="mt-4 text-md"
+            className="mt-4 text-md font-thin"
           />
         )}
         {legend === "right" && (
@@ -68,7 +68,7 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
             layout="vertical"
             align="right"
             verticalAlign="middle"
-            className="text-md flex flex-col items-start w-15"
+            className="text-md flex flex-col items-start w-15 font-thin"
           />
         )}
         <Pie
@@ -79,6 +79,7 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
           label={label !== false && renderLabel}
           innerRadius={!innerRadius ? "50%" : `${innerRadius}%`}
           strokeWidth={5}
+          className="font-thin"
         >
           {data?.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -98,14 +99,14 @@ function Piechart({ data, chartConfig, dataKey, nameKey, className, innerRadius,
                       <tspan
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        className="fill-foreground text-xl font-bold"
+                        className="fill-foreground text-xl font-light"
                       >
                         {compactNum(totalValue)}
                       </tspan>
                       <tspan
                         x={viewBox.cx}
                         y={(viewBox.cy || 0) + 24}
-                        className="fill-muted-foreground"
+                        className="fill-muted-foreground font-thin"
                       >
                         {centerText}
                       </tspan>

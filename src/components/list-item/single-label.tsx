@@ -30,9 +30,8 @@ function SummaryCard({
     <Button
       variant={header ? "secondary" : "ghost"}
       className={cn(
-        "flex w-full justify-between",
-        !header && "font-normal",
-        header && "bg-accent/50 border border-accent font-semibold text-accent-foreground mt-2",
+        "flex w-full justify-between font-thin",
+        header && "bg-accent/50 border border-accent text-accent-foreground mt-2",
       )}
     >
       {

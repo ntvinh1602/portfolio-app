@@ -102,49 +102,47 @@ export function HeaderNav() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="border-accent rounded-2xl bg-card/40 backdrop-blur-sm w-56"
+        className="border-primary rounded-2xl bg-card/40 backdrop-blur-sm w-56"
       >
-        <DropdownMenuLabel className="p-0">
-          <div className="flex items-center gap-3 px-2 py-1.5">
-            <User />
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate">{user.name}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {user.email}
-              </span>
-            </div>
+        <DropdownMenuLabel className="p-0 flex items-center gap-3 px-2 py-1.5">
+          <User className="stroke-[1]"/>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-light">{user.name}</span>
+            <span className="text-muted-foreground font-thin truncate text-xs">
+              {user.email}
+            </span>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-accent"/>
+        <DropdownMenuSeparator className="bg-primary"/>
         {menuItems.map((item) => (
           <React.Fragment key={item.label}>
             <DropdownMenuItem
               onClick={() => handleNavigation(item.path)}
             >
-              <item.icon />{item.label}
+              <item.icon className="text-foreground stroke-[1]"/>{item.label}
             </DropdownMenuItem>
             {item.subMenu &&
               item.subMenu.map((subItem) => (
                 <DropdownMenuItem
                   key={subItem.label}
                   onClick={() => handleNavigation(subItem.path)}
-                  className="ml-4 pl-4 border-l-2 rounded-none"
+                  className="ml-4 pl-4 border-l-1 border-primary rounded-none "
                 >
-                  <subItem.icon />{subItem.label}
+                  <subItem.icon className="text-foreground stroke-[1]"/>{subItem.label}
                 </DropdownMenuItem>
               ))}
           </React.Fragment>
         ))}
-        <DropdownMenuSeparator className="bg-accent"/>
+        <DropdownMenuSeparator className="bg-primary"/>
         {secondaryMenuItems.map((item) => (
           <DropdownMenuItem
             key={item.label}
             onClick={() => handleNavigation(item.path)}
           >
-            <item.icon />{item.label}
+            <item.icon className="text-foreground stroke-[1]"/>{item.label}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator className="bg-accent"/>
+        <DropdownMenuSeparator className="bg-primary"/>
         <DropdownMenuItem
           data-variant="destructive"
           onClick={handleSignOut}

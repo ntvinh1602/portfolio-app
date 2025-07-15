@@ -121,7 +121,7 @@ export function AssetCard() {
         >
           Total assets<ChevronRight className="size-4"/>
         </CardDescription>
-        <CardTitle className="text-2xl font-semibold">
+        <CardTitle className="text-2xl">
             {assetsTotalAmount ? assetsTotalAmount : "Loading..."}
         </CardTitle>
         <CardAction className="flex flex-col gap-1 items-end">

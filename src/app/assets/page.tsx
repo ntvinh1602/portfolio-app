@@ -120,7 +120,7 @@ return (
           <CardAction>
             <Popover> 
               <PopoverTrigger>
-                <FileChartPie />
+                <FileChartPie className="stroke-[1]"/>
               </PopoverTrigger>
               <PopoverContent
                 align="end"
@@ -159,7 +159,7 @@ return (
           )}
         </CardContent>
         <div className="px-6 pb-2">
-          <Separator />
+          <Separator className="bg-primary"/>
         </div>
         <CardHeader>
           <CardTitle>Total Liabilities</CardTitle>

@@ -42,6 +42,7 @@ export function BarChart({
           axisLine={false}
           tickMargin={8}
           tickFormatter={yAxisTickFormatter}
+          className="font-thin"          
         />
         <XAxis
           dataKey={categoryKey}
@@ -49,8 +50,9 @@ export function BarChart({
           axisLine={false}
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
+          className="font-thin"
         />
-        <Bar dataKey={dataKey} radius={5}>
+        <Bar dataKey={dataKey} radius={4}>
           {data.map((item) => (
             <Cell
               key={item[categoryKey]}

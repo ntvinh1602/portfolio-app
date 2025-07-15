@@ -50,6 +50,7 @@ export function ChartBarStacked<TData extends object>({
           tickLine={false}
           tickMargin={10}
           axisLine={false}
+          className="font-thin"
         />
         <XAxis
           type="number"
@@ -57,10 +58,11 @@ export function ChartBarStacked<TData extends object>({
           tickLine={false}
           tickMargin={10}
           tickFormatter={(value: number) => compactNum(value)}
+          className="font-thin"
         />
         <ChartLegend 
           content={<ChartLegendContent />}
-          className="pl-8"
+          className="pl-8 font-thin"
         />
         {keys.map((key, index) => (
           <Bar
@@ -75,7 +77,7 @@ export function ChartBarStacked<TData extends object>({
                 dataKey={labelKey}
                 position="right"
                 offset={8}
-                className="fill-foreground"
+                className="fill-foreground font-thin"
                 fontSize={12}
                 formatter={(value: number) => compactNum(value)}
               />

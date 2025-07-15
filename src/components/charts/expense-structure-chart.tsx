@@ -105,7 +105,7 @@ export function ExpenseStructureChart() {
       className="h-[250px] w-full"
       legend="right"
       label={true}
-      centerText="Total"
+      centerText="Total Expenses"
     />
   )
 }

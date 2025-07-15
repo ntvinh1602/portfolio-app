@@ -42,6 +42,7 @@ export function Linechart({
           axisLine={false}
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
+          className="font-thin"
         />
         <YAxis
           tickLine={false}
@@ -53,6 +54,7 @@ export function Linechart({
             (dataMax: number) => Number(dataMax) * 1.01,
           ]}
           allowDataOverflow={true}
+          className="font-thin"
         />
         {lineDataKeys.map((key) => (
           <Line
@@ -61,11 +63,11 @@ export function Linechart({
             type="natural"
             connectNulls={true}
             stroke={`var(--color-${key})`}
-            strokeWidth={2}
+            strokeWidth={1.5}
             dot={false}
           />
         ))}
-        {legend && <ChartLegend content={<ChartLegendContent />} />}
+        {legend && <ChartLegend content={<ChartLegendContent />} className="font-thin"/>}
       </LineChart>
     </ChartContainer>
   )

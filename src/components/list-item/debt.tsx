@@ -36,13 +36,13 @@ export function DebtItem(
       <CardContent className="flex justify-between">
         <div className="flex flex-col">
           <CardDescription className="text-xs">Start Date</CardDescription>
-          <CardTitle className="font-normal text-sm">
+          <CardTitle className="font-thin text-sm">
             {startDate}
           </CardTitle>
         </div>
         <div className="flex flex-col text-right">
           <CardDescription className="text-xs">Accrued Interest</CardDescription>
-          <CardTitle className="font-normal text-sm">
+          <CardTitle className="font-thin text-sm">
             {accruedInterest.toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })}

@@ -47,7 +47,7 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
       </head>
-      <body className="antialiased">
+      <body className="antialiased bg-fixed">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

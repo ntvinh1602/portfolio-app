@@ -30,7 +30,7 @@ export function AddTransactionMenu({ onMenuItemClick }: AddTransactionMenuProps)
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="rounded-2xl bg-card/25 backdrop-blur-sm"
+        className="border-primary rounded-2xl bg-card/25 backdrop-blur-sm"
       >
         {transactionTypes.map(type => (
           <DropdownMenuItem

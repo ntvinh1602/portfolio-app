@@ -112,13 +112,11 @@ export function StockCardFull() {
     <Card className="gap-4 pb-0">
       <CardHeader>
         <CardTitle>Stocks</CardTitle>
-        <CardDescription>
-          Built on fundamentals
-        </CardDescription>
+        <CardDescription>Built on fundamentals</CardDescription>
         <CardAction className="flex gap-6">
           <Popover>
             <PopoverTrigger>
-              <FileChartPie />
+              <FileChartPie className="stroke-[1]"/>
             </PopoverTrigger>
             <PopoverContent
               align="end"
@@ -135,8 +133,11 @@ export function StockCardFull() {
           </Popover>
           {
             pendingRefreshes > 0
-              ? 'Refreshing...' 
-              : <RefreshCw onClick={handleRefresh} />
+              ? <RefreshCw className="stroke-[1] animate-spin"/> 
+              : <RefreshCw
+                  className="stroke-[1]"
+                  onClick={handleRefresh}
+                />
           }
         </CardAction>
       </CardHeader>
@@ -161,7 +162,7 @@ export function StockCardFull() {
               />
             ))
           ) : (
-            <div className="text-center text-muted-foreground py-4">
+            <div className="text-center font-thin text-muted-foreground py-4">
               No stock holdings found.
             </div>
           )}

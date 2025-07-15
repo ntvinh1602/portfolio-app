@@ -13,7 +13,7 @@ function PageHeader({ title = "Untitled" }: SiteHeaderProps) {
   return (
     <header className="flex items-center p-6 max-w-4xl xl:mx-auto w-full">
       <div className="flex w-full justify-between items-center">
-        <h1 className="text-accent-foreground text-3xl font-medium">{title}</h1>
+        <h1 className="text-accent-foreground text-3xl font-regular">{title}</h1>
         <HeaderNav />
       </div>
     </header>
