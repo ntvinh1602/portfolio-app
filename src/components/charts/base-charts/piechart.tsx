@@ -26,6 +26,7 @@ interface PiechartProps {
   label?: boolean;
   centerText?: string;
   margin_tb?: number;
+  label_pos?: number;
 }
 
 function Piechart({
@@ -38,11 +39,21 @@ function Piechart({
   legend,
   label,
   centerText,
-  margin_tb = 10
+  margin_tb = 10,
+  label_pos = 1.5
 }: PiechartProps) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
 
   const RADIAN = Math.PI / 180;
+
+interface RenderLabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  payload: PieChartData;
+}
 
   const renderLabel = ({
     cx,
@@ -51,8 +62,8 @@ function Piechart({
     innerRadius,
     outerRadius,
     payload
-  }: any) => {
-    const radius = innerRadius + (outerRadius - innerRadius) * 1.5;
+  }: RenderLabelProps) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * label_pos;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const value = Number(payload[dataKey]) || 0;

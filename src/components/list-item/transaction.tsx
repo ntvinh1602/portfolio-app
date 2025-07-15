@@ -48,8 +48,8 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
             className="rounded-full object-contain"
           />
         ) : (
-          <div className="h-9 w-9 flex-shrink-0 rounded-full bg-muted flex items-center justify-center">
-            <span className="text-xs">{ticker}</span>
+          <div className="h-9 w-9 flex-shrink-0 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-xs text-primary-foreground">{ticker}</span>
           </div>
         )}
         <div className="flex flex-col w-full min-w-0 gap-1 pl-2">

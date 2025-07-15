@@ -596,6 +596,15 @@ export type Database = {
         Args: { p_security_id: string }
         Returns: number
       }
+      get_monthly_expenses: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: {
+          month: string
+          trading_fees: number
+          taxes: number
+          interest: number
+        }[]
+      }
       get_monthly_pnl: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: {

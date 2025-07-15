@@ -31,7 +31,7 @@ function SummaryCard({
       variant={header ? "secondary" : "ghost"}
       className={cn(
         "flex w-full justify-between font-thin",
-        header && "bg-accent/50 border border-accent text-accent-foreground mt-2",
+        header && "bg-primary/50 border border-primary text-foreground mt-2",
       )}
     >
       {

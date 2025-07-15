@@ -79,9 +79,7 @@ export default function Page() {
           </CardHeader>
           <CardContent className="flex justify-end">
             <TransactionImportForm>
-              <Button variant="secondary">
-                Import Data
-              </Button>
+              <Button>Import Data</Button>
             </TransactionImportForm>
           </CardContent>
         </Card>

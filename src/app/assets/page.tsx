@@ -132,6 +132,7 @@ return (
                   dataKey="allocation"
                   nameKey="asset"
                   legend="bottom"
+                  label_pos={1.7}
                 />
               </PopoverContent>
             </Popover>
@@ -159,7 +160,7 @@ return (
           )}
         </CardContent>
         <div className="px-6 pb-2">
-          <Separator className="bg-primary"/>
+          <Separator />
         </div>
         <CardHeader>
           <CardTitle>Total Liabilities</CardTitle>
