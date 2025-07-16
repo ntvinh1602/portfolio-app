@@ -37,7 +37,7 @@ export function TradeForm({
 
   return (
     <>
-      <div className="grid gap-3 col-span-2">
+      <div className="grid gap-3">
         <Label htmlFor="account">Account</Label>
         <Select
           name="account"
@@ -56,8 +56,8 @@ export function TradeForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="cash_asset_id">Cash Asset</Label>
+      <div className="grid gap-3">
+        <Label htmlFor="cash_asset_id">Cash Source</Label>
         <Select
           name="cash_asset_id"
           onValueChange={handleSelectChange("cash_asset_id")}
@@ -80,7 +80,9 @@ export function TradeForm({
         </Select>
       </div>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Asset</Label>
+        <Label htmlFor="asset">
+          {transactionType === "buy" ? "Purchased " : "Sold "}Assets
+        </Label>
         <Combobox
           items={assets
             .filter(
@@ -100,7 +102,9 @@ export function TradeForm({
         />
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="quantity">Quantity</Label>
+        <Label htmlFor="quantity">
+          {transactionType === "buy" ? "Purchased " : "Sold "}Quantity
+        </Label>
         <Input
           id="quantity"
           name="quantity"
@@ -121,7 +125,7 @@ export function TradeForm({
           onChange={handleInputChange}
         />
       </div>
-      <div className="grid gap-3 col-span-2">
+      <div className="grid gap-3">
         <Label htmlFor="fees">Fees</Label>
         <Input
           id="fees"
@@ -133,7 +137,7 @@ export function TradeForm({
         />
       </div>
       {transactionType === "sell" && (
-        <div className="grid gap-3 col-span-2">
+        <div className="grid gap-3">
           <Label htmlFor="taxes">Taxes</Label>
           <Input
             id="taxes"

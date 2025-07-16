@@ -142,8 +142,9 @@ return (
           {!summaryData ? (
             <>
               <SummarySkeleton header={true} />
-              <SummarySkeleton />
-              <SummarySkeleton />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SummarySkeleton key={i}/>
+              ))}
             </>
           ) : (
             <>
@@ -171,10 +172,14 @@ return (
         <CardContent className="px-0">
           {!summaryData ? (
             <>
-              <SummarySkeleton header={true} />
-              <SummarySkeleton />
-              <SummarySkeleton header={true} />
-              <SummarySkeleton />
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i}>
+                  <SummarySkeleton header={true} />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <SummarySkeleton key={i}/>
+                  ))}
+                </div>
+              ))}
             </>
           ) : (
             <>

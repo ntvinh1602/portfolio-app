@@ -17,7 +17,7 @@ export function BenchmarkCard() {
   return (
     <Card className="gap-2 h-full">
       <CardHeader className="px-4">
-        <CardDescription>90-day Benchmark</CardDescription>
+        <CardDescription>Performance in the last 90 days</CardDescription>
         <CardTitle className="text-2xl"></CardTitle>
       </CardHeader>
       <CardFooter className="px-4">

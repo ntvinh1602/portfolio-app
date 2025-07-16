@@ -54,7 +54,18 @@ export function DividendForm({
         </Select>
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="asset">Asset</Label>
+        <Label htmlFor="quantity">Quantity</Label>
+        <Input
+          id="quantity"
+          name="quantity"
+          type="number"
+          placeholder="0.00"
+          value={formState.quantity || ""}
+          onChange={handleInputChange}
+        />
+      </div>
+      <div className="grid gap-3 col-span-2">
+        <Label htmlFor="asset">Cash asset to be debited</Label>
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
@@ -79,19 +90,8 @@ export function DividendForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-3">
-        <Label htmlFor="quantity">Quantity</Label>
-        <Input
-          id="quantity"
-          name="quantity"
-          type="number"
-          placeholder="0.00"
-          value={formState.quantity || ""}
-          onChange={handleInputChange}
-        />
-      </div>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="dividend-asset">Asset</Label>
+        <Label htmlFor="dividend_asset">Dividend Asset</Label>
         <Combobox
           items={assets
             .filter(
@@ -104,8 +104,8 @@ export function DividendForm({
               value: asset.id,
               label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
             }))}
-          value={formState["dividend-asset"]}
-          onChange={handlePickerChange("dividend-asset")}
+          value={formState.dividend_asset}
+          onChange={handlePickerChange(dividend_asset)}
           placeholder="Select asset..."
           searchPlaceholder="Search assets..."
           emptyPlaceholder="No assets found."

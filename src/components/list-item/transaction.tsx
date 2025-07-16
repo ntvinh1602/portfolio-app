@@ -82,7 +82,7 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
 
 function TransactionSkeleton() {
   return (
-    <Card className="gap-1 py-0 border-none bg-background shadow-none">
+    <Card className="gap-1 py-0 border-none bg-card/0 shadow-none">
       <Skeleton className="h-5 w-24" />
       <CardContent className="flex items-center border-t py-2 px-0 gap-2">
         <Skeleton className="h-9 w-9 rounded-full" />

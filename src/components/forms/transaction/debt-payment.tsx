@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { formatNum } from "@/lib/utils"
 
 type DebtPaymentFormProps = {
   formState: Record<string, string | undefined>
@@ -31,7 +32,7 @@ export function DebtPaymentForm({
 
   return (
     <>
-      <div className="grid gap-3">
+      <div className="grid gap-3 col-span-2">
         <Label htmlFor="debt">Debt</Label>
         <Select
           name="debt"
@@ -44,18 +45,18 @@ export function DebtPaymentForm({
           <SelectContent>
             {debts.map(debt => (
               <SelectItem key={debt.id} value={debt.id}>
-                {debt.lender_name} ({debt.principal_amount})
+                {debt.lender_name} - {formatNum(debt.principal_amount)} VND
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="from-account">From Account</Label>
+        <Label htmlFor="from_account_id">From Account</Label>
         <Select
-          name="from-account"
-          onValueChange={handleSelectChange("from-account")}
-          value={formState["from-account"]}
+          name="from_account_id"
+          onValueChange={handleSelectChange(from_account_id)}
+          value={formState.from_account_id}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select account..." />
@@ -93,24 +94,24 @@ export function DebtPaymentForm({
         </Select>
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="principal-payment">Principal</Label>
+        <Label htmlFor="principal_payment">Principal</Label>
         <Input
-          id="principal-payment"
-          name="principal-payment"
+          id="principal_payment"
+          name="principal_payment"
           type="number"
           placeholder="0.00"
-          value={formState["principal-payment"] || ""}
+          value={formState.principal_payment || ""}
           onChange={handleInputChange}
         />
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="interest-payment">Interest</Label>
+        <Label htmlFor="interest_payment">Interest</Label>
         <Input
-          id="interest-payment"
-          name="interest-payment"
+          id="interest_payment"
+          name="interest_payment"
           type="number"
           placeholder="0.00"
-          value={formState["interest-payment"] || ""}
+          value={formState.interest_payment || ""}
           onChange={handleInputChange}
         />
       </div>

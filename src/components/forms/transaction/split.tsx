@@ -44,13 +44,13 @@ export function SplitForm({
         />
       </div>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="split-quantity">New Shares Quantity</Label>
+        <Label htmlFor="split_quantity">New Shares Quantity</Label>
         <Input
-          id="split-quantity"
-          name="split-quantity"
+          id="split_quantity"
+          name="split_quantity"
           type="number"
           placeholder="0"
-          value={formState["split-quantity"] || ""}
+          value={formState.split_quantity || ""}
           onChange={handleInputChange}
         />
       </div>

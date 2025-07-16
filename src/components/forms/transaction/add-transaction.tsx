@@ -126,7 +126,7 @@ export function TransactionForm({
             ...baseBody,
             account: formState.account,
             quantity: parseFloat(formState.quantity || "0"),
-            "dividend-asset": formState["dividend-asset"],
+            dividend_asset: formState.dividend_asset,
             asset: formState.asset, // This is the cash asset
           }
           break
@@ -150,8 +150,8 @@ export function TransactionForm({
             ...baseBody,
             lender: formState.lender,
             principal: parseFloat(formState.principal || "0"),
-            "interest-rate": parseFloat(formState["interest-rate"] || "0"),
-            "deposit-account": formState["deposit-account"],
+            interest_rate: parseFloat(formState.interest_rate || "0"),
+            deposit_account_id: formState.deposit_account_id,
             asset: formState.asset,
           }
           break
@@ -159,12 +159,12 @@ export function TransactionForm({
           body = {
             ...baseBody,
             debt: formState.debt,
-            "from-account": formState["from-account"],
-            "principal-payment": parseFloat(
-              formState["principal-payment"] || "0",
+            from_account_id: formState.from_account_id,
+            principal_payment: parseFloat(
+              formState.principal_payment || "0",
             ),
-            "interest-payment": parseFloat(
-              formState["interest-payment"] || "0",
+            interest_payment: parseFloat(
+              formState.interest_payment || "0",
             ),
             asset: formState.asset,
           }
@@ -174,7 +174,7 @@ export function TransactionForm({
             transaction_date: formatISO(date, { representation: "date" }),
             transaction_type: "split",
             asset: formState.asset,
-            "split-quantity": parseFloat(formState["split-quantity"] || "0"),
+            split_quantity: parseFloat(formState.split_quantity || "0"),
           }
           break
         default:
@@ -303,7 +303,7 @@ export function TransactionForm({
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-3">
-              <Label htmlFor="name-1">Date</Label>
+              <Label htmlFor="date">Date</Label>
               <DatePicker
                 mode="single"
                 selected={date}

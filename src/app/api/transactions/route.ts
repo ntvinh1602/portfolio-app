@@ -68,7 +68,7 @@ const dividendSchema = z.object({
   transaction_type: z.literal("dividend"),
   account: z.string().uuid(),
   quantity: z.number().positive(),
-  "dividend-asset": z.string().uuid(),
+  dividend_asset: z.string().uuid(),
   description: z.string().optional(),
   asset: z.string().uuid(), // This is the cash asset
 })
@@ -78,8 +78,8 @@ const borrowSchema = z.object({
   transaction_type: z.literal("borrow"),
   lender: z.string(),
   principal: z.number().positive(),
-  "interest-rate": z.number().nonnegative(),
-  "deposit-account": z.string().uuid(),
+  interest_rate: z.number().nonnegative(),
+  deposit_account_id: z.string().uuid(),
   description: z.string().optional(),
   asset: z.string().uuid(),
 })
@@ -88,9 +88,9 @@ const debtPaymentSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("debt_payment"),
   debt: z.string().uuid(),
-  "from-account": z.string().uuid(),
-  "principal-payment": z.number().positive(),
-  "interest-payment": z.number().nonnegative(),
+  from_account_id: z.string().uuid(),
+  principal_payment: z.number().positive(),
+  interest_payment: z.number().nonnegative(),
   description: z.string().optional(),
   asset: z.string().uuid(),
 })
@@ -99,7 +99,7 @@ const splitSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("split"),
   asset: z.string().uuid(),
-  "split-quantity": z.number().positive(),
+  split_quantity: z.number().positive(),
 })
 
 const transactionSchema = z.discriminatedUnion("transaction_type", [
@@ -360,7 +360,7 @@ async function handleIncome(
         await supabase
           .from("assets")
           .select("security_id")
-          .eq("id", dividendData["dividend-asset"])
+          .eq("id", dividendData.dividend_asset)
           .single()
 
       if (assetSecurityError) {
@@ -400,9 +400,7 @@ async function handleIncome(
 
   if (error) {
     console.error(
-      `Error calling handle_income_transaction (${transaction_type}):`,
-      error,
-    )
+      `Error calling handle_income_transaction:`, error)
     throw new Error(
       `Failed to execute ${transaction_type} transaction: ${error.message}`,
     )
@@ -441,13 +439,12 @@ async function handleExpense(
   })
 
   if (error) {
-    console.error("Error calling handle_income_expense_transaction (expense):", error)
+    console.error("Error calling handle_expense_transaction:", error)
     throw new Error(`Failed to execute expense transaction: ${error.message}`)
   }
 
   return { response: { success: true }, status: 200 }
 }
-
 
 async function handleBorrow(
   supabase: ReturnType<typeof createClient>["supabase"],
@@ -458,8 +455,8 @@ async function handleBorrow(
     transaction_date,
     lender,
     principal,
-    "interest-rate": interest_rate,
-    "deposit-account": deposit_account_id,
+    interest_rate,
+    deposit_account_id,
     description,
     asset: cash_asset_id,
   } = data
@@ -494,9 +491,9 @@ async function handleDebtPayment(
   const {
     transaction_date,
     debt: debt_id,
-    "from-account": from_account_id,
-    "principal-payment": principal_payment,
-    "interest-payment": interest_payment,
+    from_account_id, 
+    principal_payment,
+    interest_payment,
     description,
     asset: cash_asset_id,
   } = data
@@ -554,7 +551,7 @@ async function handleSplit(
   const {
     transaction_date,
     asset: asset_id,
-    "split-quantity": quantity,
+    split_quantity: quantity,
   } = data
 
   const { data: assetSecurity, error: assetSecurityError } = await supabase

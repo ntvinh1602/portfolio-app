@@ -53,21 +53,21 @@ export function BorrowForm({
         />
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="interest-rate">Interest Rate (%)</Label>
+        <Label htmlFor="interest_rate">Interest Rate (%)</Label>
         <Input
-          id="interest-rate"
-          name="interest-rate"
+          id="interest_rate"
+          name="interest_rate"
           type="number"
           placeholder="0.0"
-          value={formState["interest-rate"] || ""}
+          value={formState.interest_rate || ""}
           onChange={handleInputChange}
         />
       </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="deposit-account">Deposit Account</Label>
+      <div className="grid gap-3">
+        <Label htmlFor="deposit_account_id">Deposit Account</Label>
         <Select
-          name="deposit-account"
-          onValueChange={handleSelectChange("deposit-account")}
+          name="deposit_account_id"
+          onValueChange={handleSelectChange(deposit_account_id)}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select account..." />
@@ -81,7 +81,7 @@ export function BorrowForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-3 col-span-2">
+      <div className="grid gap-3">
         <Label htmlFor="asset">Cash Asset</Label>
         <Select
           name="asset"

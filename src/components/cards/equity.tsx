@@ -56,7 +56,7 @@ export function EquityCard() {
           className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
         >
-          Total equity<ChevronRight className="size-4"/>
+          Net worth<ChevronRight className="size-4"/>
         </CardDescription>
         <CardTitle className="text-2xl">
           {latestEquity ? formatNum(latestEquity) : "Loading..."}

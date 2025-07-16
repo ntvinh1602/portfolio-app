@@ -98,7 +98,7 @@ export function HeaderNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Menu className="size-8 text-accent-foreground"/>
+        <Menu className="size-8 text-accent dark:text-accent-foreground"/>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
@@ -113,7 +113,7 @@ export function HeaderNav() {
             </span>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-primary/50"/>
+        <DropdownMenuSeparator />
         {menuItems.map((item) => (
           <React.Fragment key={item.label}>
             <DropdownMenuItem
@@ -126,14 +126,14 @@ export function HeaderNav() {
                 <DropdownMenuItem
                   key={subItem.label}
                   onClick={() => handleNavigation(subItem.path)}
-                  className="ml-4 pl-4 border-l-1 border-primary rounded-none "
+                  className="ml-4 pl-4 border-l-1 rounded-none "
                 >
                   <subItem.icon className="text-foreground stroke-[1]"/>{subItem.label}
                 </DropdownMenuItem>
               ))}
           </React.Fragment>
         ))}
-        <DropdownMenuSeparator className="bg-primary/50"/>
+        <DropdownMenuSeparator />
         {secondaryMenuItems.map((item) => (
           <DropdownMenuItem
             key={item.label}
@@ -142,7 +142,7 @@ export function HeaderNav() {
             <item.icon className="text-foreground stroke-[1]"/>{item.label}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator className="bg-primary/50"/>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           data-variant="destructive"
           onClick={handleSignOut}

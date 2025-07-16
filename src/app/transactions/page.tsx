@@ -149,7 +149,7 @@ export default function Page() {
             <p className="text-center text-muted-foreground">Loading...</p>
           )}
           {!loading && transactions.length === 0 && (
-            <p className="mx-auto py-10">No transactions found</p>
+            <p className="mx-auto font-thin py-10">No transactions found</p>
           )}
           {!loading && hasMore && (
             <Button

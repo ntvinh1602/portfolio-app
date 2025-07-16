@@ -92,12 +92,12 @@ export function PnLTable({ data }: { data: MonthlyData[] }) {
     <div className="flex flex-col gap-2">
       <div className="rounded-2xl border overflow-hidden">
         <Table>
-          <TableHeader className="bg-accent/50">
+          <TableHeader className="bg-accent">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="h-10">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="bg-card/0 text-background dark:text-foreground">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
