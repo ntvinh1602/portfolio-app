@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Try importing yahoo-finance2 via ESM.sh
+import yahooFinance from 'https://esm.sh/yahoo-finance2@2.13.3';
 
 // Initialize the Supabase client with the service_role key
 const supabase = createClient(
@@ -9,94 +11,122 @@ const supabase = createClient(
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
 
-// Helper function to fetch index price from Yahoo Finance API
-async function getIndexPrice(ticker: string): Promise<number | null> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
+// Helper function using yahoo-finance2
+async function getIndexPriceYF2(ticker: string): Promise<number | null> {
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    const quote = await yahooFinance.quote(ticker, {
+      // Configure options for better reliability
     });
-    if (!response.ok) {
-      console.error(`Yahoo API request failed for ${ticker} with status: ${response.status}`);
-      return null;
-    }
-    const data = await response.json();
-    const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if (typeof price === 'number') {
-      return price;
-    } else {
-      console.error(`Price not found in Yahoo API response for ${ticker}`);
-      return null;
-    }
+    
+    return quote.regularMarketPrice ?? null;
   } catch (error) {
-    console.error(`Error fetching price for ${ticker} from Yahoo API:`, error);
+    console.error(`Error fetching price for ${ticker} with yahoo-finance2:`, error);
     return null;
   }
 }
 
 Deno.serve(async (_req: Request) => {
+  const startTime = Date.now();
+  const ticker = '^VNINDEX.VN'; // The ticker for VN-Index
+
   try {
-    const ticker = '^VNINDEX.VN';
-    const price = await getIndexPrice(ticker);
+    console.log(`Starting market index fetch for ${ticker} using yahoo-finance2...`);
+    
+    const price = await getIndexPriceYF2(ticker);
 
     let summaryMessage: string;
+    let success = false;
 
     if (price !== null) {
       const dataToUpsert = {
         date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-        symbol: '^VNINDEX',
+        symbol: '^VNINDEX', // The symbol in the database
         close: price,
       };
 
       const { error: upsertError } = await supabase
         .from('daily_market_indices')
-        .upsert(dataToUpsert);
+        .upsert(dataToUpsert, {
+            onConflict: 'symbol,date' // Ensure upsert works correctly
+        });
 
       if (upsertError) {
         console.error('Error saving index price:', upsertError);
-        summaryMessage = `Error saving price for ${ticker}: ${upsertError.message}`;
+        throw new Error(`Database error: ${upsertError.message}`);
       } else {
+        success = true;
         const today = new Date();
-        const day = today.getDate();
-        const month = today.toLocaleString('default', { month: 'short' });
-        const year = today.getFullYear();
-        const formattedDate = `${day} ${month} ${year}`;
-        summaryMessage = `Updated closing price of VN-Index on ${formattedDate}: ${price}`;
+        const formattedDate = today.toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+        summaryMessage = `✅ Successfully updated VN-Index on ${formattedDate}: ${price}`;
       }
     } else {
-      summaryMessage = `Failed to fetch closing price for VN-Index.`;
+      summaryMessage = `❌ Failed to fetch closing price for VN-Index.`;
     }
 
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: summaryMessage,
-        }),
-      });
-    }
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(1);
 
-    return new Response(JSON.stringify({ message: "Market index price fetching complete." }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (e) {
-    const error = e instanceof Error ? e : new Error(String(e));
-    console.error('Unhandled error:', error);
+    const finalMessage = `
+📈 Market Index Update (yahoo-finance2)
+
+${summaryMessage}
+⏱️ Duration: ${duration}s
+    `.trim();
+
+    // Send Telegram notification
     if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: `Critical Error in fetch-market-indices: ${error.message}` }),
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: finalMessage,
+        }),
       });
     }
-    return new Response(JSON.stringify({ error: error.message }), {
+
+    return new Response(JSON.stringify({
+      success: success,
+      message: success ? "Market index price fetching complete." : "Failed to fetch market index price.",
+      method: "yahoo-finance2",
+      stats: {
+        ticker: ticker,
+        price: price,
+        duration: `${duration}s`,
+      }
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    
+    console.error('Critical error:', errorMessage);
+    
+    // Send error notification
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: `🚨 ERROR (fetch-market-indices)\n\n${errorMessage}\n\nDuration: ${duration}s`,
+        }),
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: false,
+      error: errorMessage,
+      method: "yahoo-finance2",
+      duration: `${duration}s`
+    }), {
       headers: { 'Content-Type': 'application/json' },
       status: 500,
     });
