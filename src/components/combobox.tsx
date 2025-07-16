@@ -63,7 +63,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0"
+        className="w-[--radix-popover-trigger-width] rounded-2xl bg-card/25 p-0 backdrop-blur-sm"
         onTouchMove={(e) => {
           e.stopPropagation();
         }}
@@ -78,6 +78,7 @@ export function Combobox({
             <CommandGroup>
               {items.map(item => (
                 <CommandItem
+                  className="p-3"
                   key={item.value}
                   value={item.label}
                   onSelect={() => {

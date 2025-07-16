@@ -55,7 +55,7 @@ export function DebtPaymentForm({
         <Label htmlFor="from_account_id">From Account</Label>
         <Select
           name="from_account_id"
-          onValueChange={handleSelectChange(from_account_id)}
+          onValueChange={handleSelectChange("from_account_id")}
           value={formState.from_account_id}
         >
           <SelectTrigger className="w-full">

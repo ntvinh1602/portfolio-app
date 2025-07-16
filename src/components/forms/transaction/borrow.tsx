@@ -67,7 +67,7 @@ export function BorrowForm({
         <Label htmlFor="deposit_account_id">Deposit Account</Label>
         <Select
           name="deposit_account_id"
-          onValueChange={handleSelectChange(deposit_account_id)}
+          onValueChange={handleSelectChange("deposit_account_id")}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select account..." />

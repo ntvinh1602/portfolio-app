@@ -25,7 +25,6 @@ import { Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import DatePicker from "@/components/date-picker"
 import { Toaster } from "@/components/ui/sonner"
-import { Separator } from "@/components/ui/separator"
 
 export default function Page() {
   const router = useRouter()
@@ -65,7 +64,7 @@ export default function Page() {
       toast.success("Backfill process started successfully.", {
         id: toastId
       })
-    } catch (error) {
+    } catch {
       toast.error("An error occurred while starting the backfill process.", {
         id: toastId
       })

@@ -8,13 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 import {
   Select,
   SelectContent,
@@ -22,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Enums, Constants } from "@/lib/database.types"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -31,6 +38,7 @@ import { DividendForm } from "./dividend"
 import { BorrowForm } from "./borrow"
 import { DebtPaymentForm } from "./debt-payment"
 import { SplitForm } from "./split"
+import { cn } from "@/lib/utils"
 
 type TransactionType = Enums<"transaction_type">
 
@@ -43,6 +51,51 @@ export function TransactionForm({
   onOpenChange: (open: boolean) => void
   transactionType?: TransactionType
 }) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Add Transaction</DrawerTitle>
+          </DrawerHeader>
+          <AddTransactionForm
+            className="px-6 pb-40"
+            initialTransactionType={initialTransactionType}
+            onClose={() => onOpenChange(false)}
+          />
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Transaction</DialogTitle>
+        </DialogHeader>
+        <AddTransactionForm
+          initialTransactionType={initialTransactionType}
+          onClose={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface AddTransactionFormProps {
+  className?: string
+  initialTransactionType: TransactionType
+  onClose: () => void
+}
+
+function AddTransactionForm({
+  className,
+  initialTransactionType,
+  onClose,
+}: AddTransactionFormProps) {
   const router = useRouter()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
   const [isSubmitting, setIsSubmitting] = React.useState(false)
@@ -90,44 +143,18 @@ export function TransactionForm({
 
       switch (transactionType) {
         case "deposit":
-          body = {
-            ...baseBody,
-            account: formState.account,
-            quantity: parseFloat(formState.quantity || "0"),
-            asset: formState.asset,
-          }
-          break
         case "withdraw":
-          body = {
-            ...baseBody,
-            account: formState.account,
-            quantity: parseFloat(formState.quantity || "0"),
-            asset: formState.asset,
-          }
-          break
         case "income":
-          body = {
-            ...baseBody,
-            account: formState.account,
-            quantity: parseFloat(formState.quantity || "0"),
-            asset: formState.asset,
-          }
-          break
         case "expense":
-          body = {
-            ...baseBody,
-            account: formState.account,
-            quantity: parseFloat(formState.quantity || "0"),
-            asset: formState.asset,
-          }
-          break
         case "dividend":
           body = {
             ...baseBody,
             account: formState.account,
             quantity: parseFloat(formState.quantity || "0"),
-            dividend_asset: formState.dividend_asset,
-            asset: formState.asset, // This is the cash asset
+            asset: formState.asset,
+            ...(transactionType === "dividend" && {
+              dividend_asset: formState.dividend_asset,
+            }),
           }
           break
         case "buy":
@@ -210,7 +237,7 @@ export function TransactionForm({
 
       toast.success("Transaction saved successfully!")
       setFormState({})
-      document.getElementById("close-dialog")?.click()
+      onClose()
       router.refresh()
     } catch (error) {
       if (error instanceof Error) {
@@ -293,77 +320,70 @@ export function TransactionForm({
     return null
   }
 
+  const isMobile = useIsMobile()
+  const Footer = isMobile ? DrawerFooter : DialogFooter
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <form id="transaction-form" onSubmit={handleSubmit}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Transaction</DialogTitle>
-            <DialogDescription></DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-3">
-              <Label htmlFor="date">Date</Label>
-              <DatePicker
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="transaction-type">Type</Label>
-              <Select
-                onValueChange={value =>
-                  setTransactionType(value as TransactionType)
-                }
-                defaultValue={transactionType}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Constants.public.Enums.transaction_type.map(type => (
-                    <SelectItem key={type} value={type}>
-                      {type
-                        .split("_")
-                        .map(
-                          word => word.charAt(0).toUpperCase() + word.slice(1),
-                        )
-                        .join(" ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid col-span-2 gap-3">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                name="description"
-                type="text"
-                placeholder="Enter a description..."
-                value={formState.description || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            {renderFormFields()}
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" id="close-dialog">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              form="transaction-form"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </form>
-    </Dialog>
+    <form
+      id="transaction-form"
+      onSubmit={handleSubmit}
+      className={cn("space-y-4", className)}
+    >
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-3">
+          <Label htmlFor="date">Date</Label>
+          <DatePicker mode="single" selected={date} onSelect={setDate} />
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="transaction-type">Type</Label>
+          <Select
+            onValueChange={value =>
+              setTransactionType(value as TransactionType)
+            }
+            defaultValue={transactionType}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select type..." />
+            </SelectTrigger>
+            <SelectContent>
+              {Constants.public.Enums.transaction_type.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type
+                    .split("_")
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid col-span-2 gap-3">
+          <Label htmlFor="description">Description</Label>
+          <Input
+            id="description"
+            name="description"
+            type="text"
+            placeholder="Enter a description..."
+            value={formState.description || ""}
+            onChange={handleInputChange}
+          />
+        </div>
+        {renderFormFields()}
+      </div>
+      <Footer>
+        <DrawerClose asChild>
+          <Button variant="outline">
+            Cancel
+          </Button>
+        </DrawerClose>
+        <Button
+          type="submit"
+          form="transaction-form"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Saving..." : "Save"}
+        </Button>
+      </Footer>
+    </form>
   )
 }

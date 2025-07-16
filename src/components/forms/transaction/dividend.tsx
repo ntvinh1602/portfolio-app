@@ -105,7 +105,7 @@ export function DividendForm({
               label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
             }))}
           value={formState.dividend_asset}
-          onChange={handlePickerChange(dividend_asset)}
+          onChange={handlePickerChange("dividend_asset")}
           placeholder="Select asset..."
           searchPlaceholder="Search assets..."
           emptyPlaceholder="No assets found."
