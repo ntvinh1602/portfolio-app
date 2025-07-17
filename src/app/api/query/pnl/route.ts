@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const start_date = searchParams.get("start_date")
   const end_date = searchParams.get("end_date")
   console.log(
-    `'/api/reporting/pnl' called with: start_date=${start_date}, end_date=${end_date}`,
+    `'/api/query/pnl' called with: start_date=${start_date}, end_date=${end_date}`,
   )
   if (!start_date || !end_date) {
     console.error("API Route: Missing start_date or end_date")

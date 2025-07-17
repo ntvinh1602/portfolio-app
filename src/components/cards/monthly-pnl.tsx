@@ -43,7 +43,7 @@ export function PnLCard() {
       end_date: format(endDate, "yyyy-MM-dd"),
     })
 
-    const response = await fetch(`/api/reporting/monthly-pnl?${params.toString()}`)
+    const response = await fetch(`/api/query/monthly-pnl?${params.toString()}`)
     if (!response.ok) {
       console.error("Failed to fetch PnL data")
       return

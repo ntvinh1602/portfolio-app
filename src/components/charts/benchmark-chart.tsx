@@ -39,7 +39,7 @@ export function BenchmarkChart({
       })
 
       const response = await fetch(
-        `/api/reporting/benchmark-chart?${params.toString()}`
+        `/api/query/benchmark-chart?${params.toString()}`
       )
       if (!response.ok) {
         const errorData = await response.json()

@@ -28,7 +28,7 @@ export function EquityChart({
       threshold: "200",
     })
     const equityResponse = await fetch(
-      `/api/reporting/equity-chart?${equityParams.toString()}`
+      `/api/query/equity-chart?${equityParams.toString()}`
     )
     if (!equityResponse.ok) {
       const errorData = await equityResponse.json()

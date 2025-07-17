@@ -186,7 +186,7 @@ export function TransactionForm({
 
     try {
       const body = buildRequestBody()
-      const response = await fetch("/api/transactions", {
+      const response = await fetch("/api/database/add-transaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

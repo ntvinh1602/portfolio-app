@@ -36,7 +36,7 @@ export default function Page() {
   React.useEffect(() => {
     const fetchFirstSnapshot = async () => {
       try {
-        const res = await fetch("/api/reporting/first-snapshot-date")
+        const res = await fetch("/api/query/first-snapshot-date")
         const data = await res.json()
         setFirstSnapshotDate(new Date(data.date))
       } catch (error) {
@@ -57,10 +57,10 @@ export default function Page() {
 
         const [performanceRes, twrRes] = await Promise.all([
           fetch(
-            `/api/reporting/twr?start_date=${startDate}&end_date=${endDateStr}`
+            `/api/query/twr?start_date=${startDate}&end_date=${endDateStr}`
           ),
           fetch(
-            `/api/reporting/monthly-twr?start_date=${startDate}&end_date=${endDateStr}`
+            `/api/query/monthly-twr?start_date=${startDate}&end_date=${endDateStr}`
           ),
         ])
 
@@ -116,10 +116,10 @@ export default function Page() {
 
         const [pnlRes, twrRes] = await Promise.all([
           fetch(
-            `/api/reporting/pnl?start_date=${startDate}&end_date=${endDateStr}`
+            `/api/query/pnl?start_date=${startDate}&end_date=${endDateStr}`
           ),
           fetch(
-            `/api/reporting/twr?start_date=${startDate}&end_date=${endDateStr}`
+            `/api/query/twr?start_date=${startDate}&end_date=${endDateStr}`
           ),
         ])
 

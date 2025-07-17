@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const endDate = searchParams.get("end_date")
 
   console.log(
-    `'/api/reporting/monthly-expenses' called with: start_date=${startDate}, end_date=${endDate}`,
+    `'/api/query/monthly-expenses' called with: start_date=${startDate}, end_date=${endDate}`,
   )
   if (!startDate || !endDate) {
     return NextResponse.json(

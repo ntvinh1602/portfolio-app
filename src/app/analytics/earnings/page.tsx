@@ -49,7 +49,7 @@ export default function Page() {
         startDate = format(startOfMonth(sub(now, { months: 11 })), "yyyy-MM-dd")
       } else {
         try {
-          const response = await fetch("/api/reporting/first-snapshot-date")
+          const response = await fetch("/api/query/first-snapshot-date")
           if (response.ok) {
             const data = await response.json()
             startDate = data.date
@@ -72,10 +72,10 @@ export default function Page() {
       try {
         const [pnlResponse, twrResponse] = await Promise.all([
           fetch(
-            `/api/reporting/monthly-pnl?start_date=${startDate}&end_date=${endDate}`
+            `/api/query/monthly-pnl?start_date=${startDate}&end_date=${endDate}`
           ),
           fetch(
-            `/api/reporting/monthly-twr?start_date=${startDate}&end_date=${endDate}`
+            `/api/query/monthly-twr?start_date=${startDate}&end_date=${endDate}`
           ),
         ])
 

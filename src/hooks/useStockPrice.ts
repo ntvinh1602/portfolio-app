@@ -15,7 +15,7 @@ export function useStockPrice({ ticker, refreshKey, lastUpdatedPrice, onRefreshC
     async function fetchPrice() {
       setPriceStatus('loading');
       try {
-        const response = await fetch(`/api/market-data?ticker=${ticker}`);
+        const response = await fetch(`/api/external/fetch-stock-data?ticker=${ticker}`);
         if (!response.ok) {
           throw new Error('Failed to fetch price');
         }
@@ -24,7 +24,7 @@ export function useStockPrice({ ticker, refreshKey, lastUpdatedPrice, onRefreshC
         setPriceStatus('success');
 
         // Save the new price to the database
-        await fetch('/api/stock-price', {
+        await fetch('/api/database/save-stock-price', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

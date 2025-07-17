@@ -48,7 +48,7 @@ export default function Page() {
   const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
   const fetchAssets = useCallback(async () => {
-    const response = await fetch('/api/reporting/asset-summary');
+    const response = await fetch('/api/query/asset-summary');
     if (!response.ok) {
       console.error('Error fetching asset summary:', response.statusText);
       return;

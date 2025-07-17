@@ -35,7 +35,7 @@ export function EquityCard() {
       end_date: format(endDate, "yyyy-MM-dd"),
     })
     const twrResponse = await fetch(
-      `/api/reporting/twr?${twrParams.toString()}`
+      `/api/query/twr?${twrParams.toString()}`
     )
     if (!twrResponse.ok) {
       const errorData = await twrResponse.json()

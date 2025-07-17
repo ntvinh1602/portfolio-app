@@ -42,7 +42,7 @@ export function ExpenseStructureChart() {
       setIsLoading(true)
       try {
         const firstDateResponse = await fetch(
-          "/api/reporting/first-snapshot-date"
+          "/api/query/first-snapshot-date"
         )
         if (!firstDateResponse.ok) {
           throw new Error("Failed to fetch first snapshot date")
@@ -55,7 +55,7 @@ export function ExpenseStructureChart() {
         })
 
         const response = await fetch(
-          `/api/reporting/monthly-expenses?${params.toString()}`
+          `/api/query/monthly-expenses?${params.toString()}`
         )
         if (!response.ok) {
           throw new Error("Failed to fetch data")

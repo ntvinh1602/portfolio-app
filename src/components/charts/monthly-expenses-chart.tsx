@@ -49,7 +49,7 @@ export function ExpensesChart() {
 
       try {
         const response = await fetch(
-          `/api/reporting/monthly-expenses?${params.toString()}`
+          `/api/query/monthly-expenses?${params.toString()}`
         )
         if (!response.ok) {
           throw new Error("Failed to fetch data")

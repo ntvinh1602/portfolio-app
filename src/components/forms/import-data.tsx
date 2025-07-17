@@ -135,7 +135,7 @@ function ImportForm( { className }: ImportFormProps ) {
             formData.append("file", file);
 
             try {
-              const response = await fetch("/api/transactions/import", {
+              const response = await fetch("/api/database/import", {
                 method: "POST",
                 body: formData,
               });

@@ -49,7 +49,7 @@ export default function Page() {
     const toastId = toast.loading("Starting backfill process...")
 
     try {
-      const response = await fetch("/api/backfill", {
+      const response = await fetch("/api/database/backfill", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
