@@ -45,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning>
       <head>
-        <meta name="apple-mobile-web-app-title" content="Portfolio Tracker" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="antialiased bg-fixed">
         <ThemeProvider
