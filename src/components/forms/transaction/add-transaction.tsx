@@ -56,15 +56,17 @@ export function TransactionForm({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col h-full max-h-[95vh]">
+          <DrawerHeader className="flex-none text-left">
             <DrawerTitle>Add Transaction</DrawerTitle>
           </DrawerHeader>
-          <AddTransactionForm
-            className="px-6 pb-40"
-            initialTransactionType={initialTransactionType}
-            onClose={() => onOpenChange(false)}
-          />
+          <div className="flex-auto overflow-y-auto">
+            <AddTransactionForm
+              className="px-4"
+              initialTransactionType={initialTransactionType}
+              onClose={() => onOpenChange(false)}
+            />
+          </div>
         </DrawerContent>
       </Drawer>
     )
@@ -329,7 +331,7 @@ function AddTransactionForm({
       onSubmit={handleSubmit}
       className={cn("space-y-4", className)}
     >
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 pb-4">
         <div className="grid gap-3">
           <Label htmlFor="date">Date</Label>
           <DatePicker mode="single" selected={date} onSelect={setDate} />
@@ -370,7 +372,7 @@ function AddTransactionForm({
         </div>
         {renderFormFields()}
       </div>
-      <Footer>
+      <Footer className="sticky bottom-0 bg-background border-t pt-4">
         <DrawerClose asChild>
           <Button variant="outline">
             Cancel
