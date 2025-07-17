@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { unstable_cache } from "next/cache"
 import { NextResponse } from "next/server"
 
 export async function GET() {
@@ -14,26 +13,17 @@ export async function GET() {
   }
 
   try {
-    const getAssetSummary = unstable_cache(
-      async () => {
-        const { data, error } = await supabase.rpc("get_asset_summary")
+    const { data, error } = await supabase.rpc("get_asset_summary")
 
-        if (error) {
-          console.error("Error calling get_asset_summary function:", error)
-          throw new Error("Internal Server Error")
-        }
-        return data
+    if (error) {
+      console.error("Error calling get_asset_summary function:", error)
+      throw new Error("Internal Server Error")
+    }
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "s-maxage=3600, stale-while-revalidate=59",
       },
-      [`asset-summary-${user.id}`],
-      {
-        revalidate: 3600, // 1 hour
-        tags: [`asset-summary`, `asset-summary-${user.id}`],
-      },
-    )
-
-    const data = await getAssetSummary()
-
-    return NextResponse.json(data)
+    })
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage =

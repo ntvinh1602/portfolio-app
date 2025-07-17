@@ -57,7 +57,7 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
-  const { accounts, assets, debts, loading } = useTransactionFormData()
+  const { accounts, assets, debts } = useTransactionFormData()
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))

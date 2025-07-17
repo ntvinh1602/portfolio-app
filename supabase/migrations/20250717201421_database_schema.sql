@@ -1214,13 +1214,14 @@ BEGIN
     IF v_asset_currency_code = 'VND' THEN
         v_calculated_amount := p_quantity;
     ELSE
+        -- Correctly fetch the historical exchange rate
         SELECT rate INTO v_exchange_rate
         FROM public.daily_exchange_rates
-        WHERE currency_code = v_asset_currency_code
+        WHERE currency_code = v_asset_currency_code AND date <= p_transaction_date
         ORDER BY date DESC
         LIMIT 1;
         IF v_exchange_rate IS NULL THEN
-            RETURN jsonb_build_object('error', 'Could not find exchange rate for ' || v_asset_currency_code);
+            RETURN jsonb_build_object('error', 'Could not find exchange rate for ' || v_asset_currency_code || ' on or before ' || p_transaction_date);
         END IF;
         v_calculated_amount := p_quantity * v_exchange_rate;
     END IF;
@@ -1241,7 +1242,6 @@ BEGIN
         (v_transaction_id, p_account_id, p_asset_id, p_quantity, v_calculated_amount, v_asset_currency_code),
         (v_transaction_id, v_equity_account_id, v_capital_asset_id, p_quantity * -1, v_calculated_amount * -1, v_asset_currency_code);
     -- Create tax lot for non-VND cash assets
-    -- TODO: In the future, handle non-cash assets like stocks and crypto by fetching their market price.
     IF (v_asset_class = 'cash' or v_asset_class = 'epf') AND v_asset_currency_code != 'VND' THEN
         INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
         VALUES (p_user_id, p_asset_id, v_transaction_id, 'deposit', p_transaction_date, p_quantity, p_quantity, v_calculated_amount);
@@ -1870,7 +1870,8 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "display_currency" character varying(10) NOT NULL,
     "display_name" "text",
-    "last_stock_fetching" timestamp with time zone
+    "last_stock_fetching" timestamp with time zone,
+    "inception_date" "date" DEFAULT '2020-01-01'::"date" NOT NULL
 );
 COMMENT ON COLUMN "public"."profiles"."display_name" IS 'The user''s preferred display name in the application.';
 CREATE TABLE IF NOT EXISTS "public"."securities" (

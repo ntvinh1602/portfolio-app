@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { unstable_cache } from "next/cache"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -25,30 +24,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   try {
-    const getTwr = unstable_cache(
-      async () => {
-        const { data, error } = await supabase.rpc("calculate_twr", {
-          p_user_id: user.id,
-          p_start_date: start_date,
-          p_end_date: end_date,
-        })
+    const { data, error } = await supabase.rpc("calculate_twr", {
+      p_user_id: user.id,
+      p_start_date: start_date,
+      p_end_date: end_date,
+    })
 
-        if (error) {
-          console.error("Error calling calculate_twr function:", error)
-          throw new Error("Internal Server Error")
-        }
-        return data
-      },
-      [`twr-${user.id}-${start_date}-${end_date}`],
+    if (error) {
+      console.error("Error calling calculate_twr function:", error)
+      throw new Error("Internal Server Error")
+    }
+
+    return NextResponse.json(
+      { twr: data },
       {
-        revalidate: 3600, // 1 hour
-        tags: [`twr`, `twr-${user.id}`],
+        headers: {
+          "Cache-Control": "s-maxage=3600, stale-while-revalidate=59",
+        },
       },
     )
-
-    const data = await getTwr()
-
-    return NextResponse.json({ twr: data })
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage =

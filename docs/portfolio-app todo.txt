@@ -1,7 +1,0 @@
-Bugs
-- Debt select field overflow in debt payment add transaction form
-- Date picker in transaction form not automatically closed after selection
-
-Improvement
-- Thousand separator to numeric input in add transaction form
-- Auto populate default input value in add transaction form

@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { unstable_cache } from "next/cache"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -26,33 +25,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const getBenchmarkChartData = unstable_cache(
-      async () => {
-        const { data, error } = await supabase.rpc("get_benchmark_chart_data", {
-          p_user_id: user.id,
-          p_start_date: start_date,
-          p_end_date: end_date,
-          p_threshold: parseInt(threshold),
-        })
+    const { data, error } = await supabase.rpc("get_benchmark_chart_data", {
+      p_user_id: user.id,
+      p_start_date: start_date,
+      p_end_date: end_date,
+      p_threshold: parseInt(threshold),
+    })
 
-        if (error) {
-          console.error(
-            "Error calling get_benchmark_chart_data function:",
-            error,
-          )
-          throw new Error("Internal Server Error")
-        }
-        return data
+    if (error) {
+      console.error(
+        "Error calling get_benchmark_chart_data function:",
+        error,
+      )
+      throw new Error("Internal Server Error")
+    }
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "s-maxage=3600, stale-while-revalidate=59",
       },
-      [`benchmark-chart-${user.id}-${start_date}-${end_date}-${threshold}`],
-      {
-        revalidate: 3600, // 1 hour
-        tags: [`benchmark-chart`, `benchmark-chart-${user.id}`],
-      },
-    )
-    const data = await getBenchmarkChartData()
-
-    return NextResponse.json(data)
+    })
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage =
