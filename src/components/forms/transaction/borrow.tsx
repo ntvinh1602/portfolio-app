@@ -46,7 +46,8 @@ export function BorrowForm({
         <Input
           id="principal"
           name="principal"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.principal || ""}
           onChange={handleInputChange}
@@ -57,7 +58,8 @@ export function BorrowForm({
         <Input
           id="interest_rate"
           name="interest_rate"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0.0"
           value={formState.interest_rate || ""}
           onChange={handleInputChange}

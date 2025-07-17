@@ -85,3 +85,22 @@ export function getGreeting(): string {
     return "Hi";
   }
 }
+
+// Format number with commas for display
+export function formatNumberWithCommas(value: string | number): string {
+  if (value === "" || value === null || value === undefined) {
+    return ""
+  }
+  const num = typeof value === "string" ? value.replace(/,/g, "") : value.toString()
+  if (isNaN(parseFloat(num))) {
+    return ""
+  }
+  const parts = num.split(".")
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return parts.join(".")
+}
+
+// Parse formatted number back to a raw number string
+export function parseFormattedNumber(value: string): string {
+  return value.replace(/,/g, "")
+}

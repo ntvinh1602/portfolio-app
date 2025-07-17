@@ -59,7 +59,8 @@ export function CashFlowForm({
           <Input
             id="quantity"
             name="quantity"
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="0"
             value={formState.quantity || ""}
             onChange={handleInputChange}

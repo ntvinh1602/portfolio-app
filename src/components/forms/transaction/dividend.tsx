@@ -58,7 +58,8 @@ export function DividendForm({
         <Input
           id="quantity"
           name="quantity"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0.00"
           value={formState.quantity || ""}
           onChange={handleInputChange}

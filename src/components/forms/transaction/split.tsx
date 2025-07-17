@@ -48,7 +48,8 @@ export function SplitForm({
         <Input
           id="split_quantity"
           name="split_quantity"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.split_quantity || ""}
           onChange={handleInputChange}

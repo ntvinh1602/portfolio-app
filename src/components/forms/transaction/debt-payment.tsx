@@ -98,7 +98,8 @@ export function DebtPaymentForm({
         <Input
           id="principal_payment"
           name="principal_payment"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.principal_payment || ""}
           onChange={handleInputChange}
@@ -109,7 +110,8 @@ export function DebtPaymentForm({
         <Input
           id="interest_payment"
           name="interest_payment"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.interest_payment || ""}
           onChange={handleInputChange}

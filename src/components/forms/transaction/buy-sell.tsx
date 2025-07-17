@@ -108,7 +108,8 @@ export function TradeForm({
         <Input
           id="quantity"
           name="quantity"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.quantity || ""}
           onChange={handleInputChange}
@@ -119,7 +120,8 @@ export function TradeForm({
         <Input
           id="price"
           name="price"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.price || ""}
           onChange={handleInputChange}
@@ -130,7 +132,8 @@ export function TradeForm({
         <Input
           id="fees"
           name="fees"
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="0"
           value={formState.fees || ""}
           onChange={handleInputChange}
@@ -142,7 +145,8 @@ export function TradeForm({
           <Input
             id="taxes"
             name="taxes"
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="0"
             value={formState.taxes || ""}
             onChange={handleInputChange}

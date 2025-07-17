@@ -20,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Enums, Constants } from "@/lib/database.types"
+import { Enums, Constants, Tables } from "@/lib/database.types"
+import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
+import { useTransactionFormData, AssetWithSecurity } from "@/hooks/useTransactionFormData"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { CashFlowForm } from "./cashflow"
@@ -55,15 +57,35 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
+  const { accounts, assets, debts, loading } = useTransactionFormData()
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))
   }, [])
 
-  const handleInputChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target
-    updateFormState({ [name]: value })
-  }, [updateFormState])
+  const handleInputChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = event.target
+      const numericFields = [
+        "quantity",
+        "price",
+        "fees",
+        "taxes",
+        "principal",
+        "interest_rate",
+        "principal_payment",
+        "interest_payment",
+        "split_quantity",
+      ]
+
+      if (numericFields.includes(name)) {
+        updateFormState({ [name]: formatNumberWithCommas(value) })
+      } else {
+        updateFormState({ [name]: value })
+      }
+    },
+    [updateFormState],
+  )
 
   const handleSelectChange = React.useCallback((name: string) => (value: string) => {
     updateFormState({ [name]: value })
@@ -85,7 +107,8 @@ export function TransactionForm({
       description: formState.description,
     }
 
-    const parseFloat = (value: string | undefined): number => parseFloat(value || "0")
+    const parseFloat = (value: string | undefined): number =>
+      global.parseFloat(parseFormattedNumber(value || "0"))
 
     switch (transactionType) {
       case "deposit":
@@ -226,51 +249,91 @@ export function TransactionForm({
 
   const formatTransactionType = (type: string) =>
     type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-h-[95vh]">
-        <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
-        </DialogHeader>
-        <div className="flex-auto overflow-y-auto">
-          <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 pb-4">
-              <div className="grid gap-3">
-                <Label htmlFor="date">Date</Label>
-                <DatePicker mode="single" selected={date} onSelect={setDate} />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="transaction-type">Type</Label>
-                <Select
-                  onValueChange={value => setTransactionType(value as TransactionType)}
-                  defaultValue={transactionType}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Constants.public.Enums.transaction_type.map(type => (
-                      <SelectItem key={type} value={type}>
-                        {formatTransactionType(type)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid col-span-2 gap-3">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  name="description"
-                  type="text"
-                  placeholder="Enter a description..."
-                  value={formState.description || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              {renderFormFields()}
-            </div>
+ 
+   const placeholder = React.useMemo(() => {
+     const getAccountName = (id: string) => accounts.find((a: Tables<'accounts'>) => a.id === id)?.name || "..."
+     const getAssetName = (id: string) => {
+       const asset = assets.find((a: AssetWithSecurity) => a.id === id)
+       return asset?.securities?.ticker || asset?.securities?.name || "..."
+     }
+     const getDebtName = (id: string) => debts.find((d: Tables<'debts'>) => d.id === id)?.lender_name || "..."
+ 
+     switch (transactionType) {
+       case "buy":
+         return `Buy ${formState.quantity || "..."} ${getAssetName(
+         formState.asset || "..."
+       )} at ${formState.price || "..."}`
+       case "sell":
+         return `Sell ${formState.quantity || "..."} ${getAssetName(
+         formState.asset || "..."
+       )} at ${formState.price || "..."}`
+       case "deposit":
+         return `Deposit to ${getAccountName(formState.account || "...")}`
+       case "withdraw":
+         return `Withdrawal from ${getAccountName(formState.account || "...")}`
+       case "dividend":
+         return `Dividend from ${getAssetName(
+         formState.dividend_asset || "..."
+       )} to ${getAccountName(formState.account || "...")}`
+       case "debt_payment":
+         return `Debt payment to ${getDebtName(
+         formState.debt || "..."
+       )} from ${getAccountName(formState.from_account_id || "...")}`
+       case "split":
+         return `Stock split for ${getAssetName(formState.asset || "...")}`
+       case "borrow":
+         return `Loan from ${formState.lender || "..."} at ${
+         formState.interest_rate || "..."
+       }% p.a`
+       default:
+         return "Enter a description..."
+     }
+   }, [transactionType, formState, accounts, assets, debts])
+ 
+   return (
+     <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="flex flex-col max-h-[95vh]">
+         <DialogHeader>
+           <DialogTitle>Add Transaction</DialogTitle>
+         </DialogHeader>
+         <div className="flex-auto overflow-y-auto">
+           <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
+             <div className="grid grid-cols-2 gap-4 pb-4">
+               <div className="grid gap-3">
+                 <Label htmlFor="date">Date</Label>
+                 <DatePicker mode="single" selected={date} onSelect={setDate} />
+               </div>
+               <div className="grid gap-3">
+                 <Label htmlFor="transaction-type">Type</Label>
+                 <Select
+                   onValueChange={value => setTransactionType(value as TransactionType)}
+                   defaultValue={transactionType}
+                 >
+                   <SelectTrigger className="w-full">
+                     <SelectValue placeholder="Select type..." />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {Constants.public.Enums.transaction_type.map(type => (
+                       <SelectItem key={type} value={type}>
+                         {formatTransactionType(type)}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
+               <div className="grid col-span-2 gap-3">
+                 <Label htmlFor="description">Description</Label>
+                 <Input
+                   id="description"
+                   name="description"
+                   type="text"
+                   placeholder={placeholder}
+                   value={formState.description || ""}
+                   onChange={handleInputChange}
+                 />
+               </div>
+               {renderFormFields()}
+             </div>
             <DialogFooter className="sticky bottom-0 bg-background">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancel
