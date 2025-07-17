@@ -35,11 +35,7 @@ export function CashFlowForm({
   return (
     <>
       <div className="grid gap-3">
-        <Label htmlFor="account">
-          {["deposit", "income"].includes(transactionType)
-            ? "To Account"
-            : "From Account"}
-        </Label>
+        <Label htmlFor="account">Account</Label>
         <Select
           name="account"
           onValueChange={handleSelectChange("account")}
@@ -64,7 +60,7 @@ export function CashFlowForm({
             id="quantity"
             name="quantity"
             type="number"
-            placeholder="0.00"
+            placeholder="0"
             value={formState.quantity || ""}
             onChange={handleInputChange}
           />
@@ -78,7 +74,12 @@ export function CashFlowForm({
           value={formState.asset}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select asset..." />
+            <SelectValue placeholder={
+              `Select cash asset to be ` +
+              (transactionType === "deposit" || transactionType === "income"
+                ? "debited"
+                : "credited") + `...`
+            } />
           </SelectTrigger>
           <SelectContent>
             {assets

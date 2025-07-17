@@ -57,14 +57,14 @@ export function TradeForm({
         </Select>
       </div>
       <div className="grid gap-3">
-        <Label htmlFor="cash_asset_id">Cash Source</Label>
+        <Label htmlFor="cash_asset_id">Cash</Label>
         <Select
           name="cash_asset_id"
           onValueChange={handleSelectChange("cash_asset_id")}
           value={formState.cash_asset_id}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select cash asset..." />
+            <SelectValue placeholder="Select cash..." />
           </SelectTrigger>
           <SelectContent>
             {assets
@@ -80,9 +80,7 @@ export function TradeForm({
         </Select>
       </div>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">
-          {transactionType === "buy" ? "Purchased " : "Sold "}Assets
-        </Label>
+        <Label htmlFor="asset">Assets</Label>
         <Combobox
           items={assets
             .filter(
@@ -96,14 +94,16 @@ export function TradeForm({
             }))}
           value={formState.asset}
           onChange={handlePickerChange("asset")}
-          placeholder="Select asset..."
-          searchPlaceholder="Search assets..."
+          placeholder={
+            `Select asset you're ${transactionType}ing...`
+          }
+          searchPlaceholder="Search asset..."
           emptyPlaceholder="No assets found."
         />
       </div>
       <div className="grid gap-3">
         <Label htmlFor="quantity">
-          {transactionType === "buy" ? "Purchased " : "Sold "}Quantity
+          {transactionType === "buy" ? "Buy " : "Sell "}Quantity
         </Label>
         <Input
           id="quantity"
@@ -120,7 +120,7 @@ export function TradeForm({
           id="price"
           name="price"
           type="number"
-          placeholder="0.00"
+          placeholder="0"
           value={formState.price || ""}
           onChange={handleInputChange}
         />
@@ -131,7 +131,7 @@ export function TradeForm({
           id="fees"
           name="fees"
           type="number"
-          placeholder="0.00"
+          placeholder="0"
           value={formState.fees || ""}
           onChange={handleInputChange}
         />
@@ -143,7 +143,7 @@ export function TradeForm({
             id="taxes"
             name="taxes"
             type="number"
-            placeholder="0.00"
+            placeholder="0"
             value={formState.taxes || ""}
             onChange={handleInputChange}
           />

@@ -99,7 +99,7 @@ export function DebtPaymentForm({
           id="principal_payment"
           name="principal_payment"
           type="number"
-          placeholder="0.00"
+          placeholder="0"
           value={formState.principal_payment || ""}
           onChange={handleInputChange}
         />
@@ -110,7 +110,7 @@ export function DebtPaymentForm({
           id="interest_payment"
           name="interest_payment"
           type="number"
-          placeholder="0.00"
+          placeholder="0"
           value={formState.interest_payment || ""}
           onChange={handleInputChange}
         />

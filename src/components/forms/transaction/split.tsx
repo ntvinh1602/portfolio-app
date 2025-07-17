@@ -26,7 +26,7 @@ export function SplitForm({
   return (
     <>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Asset</Label>
+        <Label htmlFor="asset">Stock</Label>
         <Combobox
           items={assets
             .filter(
@@ -38,13 +38,13 @@ export function SplitForm({
             }))}
           value={formState.asset}
           onChange={handlePickerChange("asset")}
-          placeholder="Select asset..."
-          searchPlaceholder="Search assets..."
+          placeholder="Select stock..."
+          searchPlaceholder="Search stocks..."
           emptyPlaceholder="No assets found."
         />
       </div>
       <div className="grid gap-3 col-span-2">
-        <Label htmlFor="split_quantity">New Shares Quantity</Label>
+        <Label htmlFor="split_quantity">Quantity of new shares received</Label>
         <Input
           id="split_quantity"
           name="split_quantity"
