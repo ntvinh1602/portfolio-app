@@ -5,6 +5,7 @@ import {
   PageMain,
   PageHeader,
   PageContent,
+  BottomNavBar,
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
@@ -142,6 +143,7 @@ export default function Page() {
         />
         <PnLTable data={data} />
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

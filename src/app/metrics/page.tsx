@@ -6,6 +6,7 @@ import {
   PageMain,
   PageHeader,
   PageContent,
+  BottomNavBar,
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { TwoMetric } from "@/components/cards/two-metric"
@@ -165,7 +166,7 @@ export default function Page() {
         />
         <TwoMetric
           title="Earnings"
-          title_url="/analytics/earnings"
+          title_url="/earnings"
           subtitle="Net profit and time-weighted return of equity"
           label1="Net P/L"
           value1={
@@ -198,6 +199,7 @@ export default function Page() {
           )}
         </Card>
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

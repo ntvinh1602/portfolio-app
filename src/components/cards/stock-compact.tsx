@@ -18,7 +18,7 @@ export function StockCardCompact() {
   const { stockHoldings, loading } = useStockHoldings()
 
   const handleNavigation = () => {
-    router.push("/assets/holdings")
+    router.push("/holdings")
   }
 
   return (

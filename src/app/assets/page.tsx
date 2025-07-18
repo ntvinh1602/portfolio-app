@@ -4,7 +4,8 @@ import * as React from "react"
 import {
   PageMain,
   PageHeader,
-  PageContent
+  PageContent,
+  BottomNavBar
 } from "@/components/page-layout"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
@@ -152,7 +153,7 @@ return (
                 header={true}
                 label="Assets"
                 value={assetsTotalAmount}
-                link="/assets/holdings"
+                link="/holdings"
               />
               {assetsItems.map(item => (
                 <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
@@ -187,7 +188,7 @@ return (
                 header={true}
                 label="Liabilities"
                 value={liabilitiesTotalAmount}
-                link="/assets/debts"
+                link="/debts"
               />
               {liabilitiesItems.map(item => (
                 <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
@@ -205,6 +206,7 @@ return (
         </CardContent>
       </Card>
     </PageContent>
+    <BottomNavBar />
   </PageMain>
   )
 }

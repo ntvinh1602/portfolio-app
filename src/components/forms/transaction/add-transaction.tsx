@@ -334,7 +334,7 @@ export function TransactionForm({
                </div>
                {renderFormFields()}
              </div>
-            <DialogFooter className="sticky bottom-0 bg-background">
+            <DialogFooter className="sticky bottom-0 bg-card/0">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

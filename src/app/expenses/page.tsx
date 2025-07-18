@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
+import { BottomNavBar, PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { ExpensesChart } from "@/components/charts/monthly-expenses-chart"
 import { ExpenseStructureChart } from "@/components/charts/expense-structure-chart"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,6 +39,7 @@ export default function Page() {
           </div>
         </Card>
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

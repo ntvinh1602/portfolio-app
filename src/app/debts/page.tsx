@@ -1,7 +1,7 @@
 "use client"
 
 import { DebtItem } from "@/components/list-item/debt"
-import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
+import { BottomNavBar, PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
@@ -62,6 +62,7 @@ export default function Page() {
               />
         ))}
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

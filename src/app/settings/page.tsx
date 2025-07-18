@@ -7,7 +7,8 @@ import { toast } from "sonner"
 import {
   PageMain,
   PageHeader,
-  PageContent
+  PageContent,
+  BottomNavBar
 } from "@/components/page-layout"
 import {
   Card,
@@ -134,6 +135,7 @@ export default function Page() {
           </div>
         </Card>
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

@@ -6,7 +6,8 @@ import { getGreeting } from "@/lib/utils"
 import {
   PageMain,
   PageHeader,
-  PageContent
+  PageContent,
+  BottomNavBar
 } from "@/components/page-layout"
 import {
   Carousel,
@@ -62,6 +63,7 @@ export default function Page() {
         <AssetCard />
         <StockCardCompact />
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }

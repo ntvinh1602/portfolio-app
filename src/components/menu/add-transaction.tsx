@@ -7,30 +7,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { PlusIcon } from "lucide-react"
 import { Enums } from "@/lib/database.types"
 
 type AddTransactionMenuProps = {
   onMenuItemClick: (type: Enums<"transaction_type">) => void
+  children: React.ReactNode
 }
 
-export function AddTransactionMenu({ onMenuItemClick }: AddTransactionMenuProps) {
+export function AddTransactionMenu({ onMenuItemClick, children }: AddTransactionMenuProps) {
   const transactionTypes: Enums<"transaction_type">[] = [
-    "buy", "sell", "deposit", "withdraw", "income", "expense", 
+    "buy", "sell", "deposit", "withdraw", "income", "expense",
     "borrow", "debt_payment", "dividend", "split"
   ];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <PlusIcon />Add
-        </Button>
+        {children}
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="end"
-        className="rounded-2xl bg-card/25 backdrop-blur-sm"
+        align="center"
+        className="rounded-2xl bg-card/25 backdrop-blur-sm mb-4"
       >
         {transactionTypes.map(type => (
           <DropdownMenuItem

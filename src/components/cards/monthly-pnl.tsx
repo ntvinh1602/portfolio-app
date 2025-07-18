@@ -27,7 +27,7 @@ const chartConfig = {
 export function PnLCard() {
   const router = useRouter()
   const handleNavigation = () => {
-    router.push("/analytics/earnings")
+    router.push("/earnings")
   }
   const [chartData, setChartData] = useState<MonthlyPnlData[]>([])
   const [mtdPnl, setMtdPnl] = useState<number | null>(null)

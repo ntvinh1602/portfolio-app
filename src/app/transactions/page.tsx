@@ -5,6 +5,7 @@ import {
   PageMain,
   PageHeader,
   PageContent,
+  BottomNavBar
 } from "@/components/page-layout"
 import {
   TransactionCard,
@@ -16,8 +17,6 @@ import { type DateRange } from "react-day-picker"
 import TabSwitcher from "@/components/tab-switcher"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { TransactionForm } from "@/components/forms/transaction/add-transaction"
-import { AddTransactionMenu } from "@/components/menu/add-transaction"
 import { Enums } from "@/lib/database.types"
 
 type TransactionFeed = {
@@ -43,8 +42,6 @@ export default function Page() {
   const [page, setPage] = React.useState(1)
   const [hasMore, setHasMore] = React.useState(true)
   const [assetType, setAssetType] = React.useState("stock")
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
-  const [selectedTransactionType, setSelectedTransactionType] =
     React.useState<Enums<"transaction_type">>("deposit")
   const tabOptions = [
     { value: "cash", label: "Cash" },
@@ -100,23 +97,12 @@ export default function Page() {
     fetchTransactions(nextPage, false)
   }
 
-  const handleMenuItemClick = (type: Enums<"transaction_type">) => {
-    setSelectedTransactionType(type)
-    setIsDialogOpen(true)
-  }
-
   return (
     <PageMain>
       <PageHeader title="Transactions" />
       <PageContent>
         <div className="flex items-center justify-between">
           <DatePicker mode="range" selected={date} onSelect={setDate} />
-          <TransactionForm
-            open={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            transactionType={selectedTransactionType}
-          />
-          <AddTransactionMenu onMenuItemClick={handleMenuItemClick} />
         </div>
         <TabSwitcher
           options={tabOptions}
@@ -162,6 +148,7 @@ export default function Page() {
           )}
         </div>
       </PageContent>
+      <BottomNavBar />
     </PageMain>
   )
 }
