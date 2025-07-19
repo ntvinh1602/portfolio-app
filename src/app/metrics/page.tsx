@@ -55,7 +55,7 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title="Analytics" />
+      <PageHeader title="Key Metrics" />
       <PageContent className="gap-2">
         <TwoMetric
           title="Metrics"

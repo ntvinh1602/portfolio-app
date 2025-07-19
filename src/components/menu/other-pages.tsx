@@ -13,7 +13,7 @@ import {
   HandCoins,
   TrendingDown,
   TrendingUp,
-  Wallet,
+  Boxes,
 } from "lucide-react"
 
 interface OtherPagesMenuProps {
@@ -22,10 +22,10 @@ interface OtherPagesMenuProps {
 }
 
 const menuItems = [
-  { icon: Wallet, label: "Active Holdings", path: "/holdings" },
-  { icon: HandCoins, label: "Outstanding Debts", path: "/debts" },
-  { icon: Coins, label: "Transaction History", path: "/transactions" },
-  { icon: TrendingUp, label: "Monthly P/L", path: "/earnings" },
+  { icon: Boxes, label: "Active Holdings", path: "/holdings" },
+  { icon: HandCoins, label: "Active Debts", path: "/debts" },
+  { icon: Coins, label: "Transaction Log", path: "/transactions" },
+  { icon: TrendingUp, label: "Monthly Earnings", path: "/earnings" },
   { icon: TrendingDown, label: "Expenses Analysis", path: "/expenses" },
 ]
 

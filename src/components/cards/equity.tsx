@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { Linechart } from "@/components/charts/linechart"
+import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
@@ -59,7 +59,7 @@ export function EquityCard({ latestEquity, twr, equityChartData }: EquityCardPro
         </CardAction>
       </CardHeader>
       <CardFooter className="px-4">
-        <Linechart
+        <Areachart
           data={equityChartData}
           chartConfig={{
             net_equity_value: {
