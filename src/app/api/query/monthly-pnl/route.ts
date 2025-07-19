@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedData, {
       headers: {
-        "Cache-Control": "s-maxage=3600, stale-while-revalidate=59",
+        "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
       },
     })
   } catch (error) {

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    return NextResponse.json(data, { headers: { 'Cache-Control': 's-maxage=3600' } })
+    return NextResponse.json(data, { headers: { 'Cache-Control': 's-maxage=31536000, stale-while-revalidate=59' } })
   } catch (error) {
     console.error("Error fetching transaction feed:", error)
     return NextResponse.json(

@@ -25,11 +25,11 @@ export async function GET(request: Request) {
       twrRes,
       benchmarkChartRes,
     ] = await Promise.all([
-      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { revalidate: 86400 } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { revalidate: 86400 } }),
-      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { revalidate: 86400 } }),
-      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { revalidate: 86400 } }),
-      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { revalidate: 86400 } }),
+      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
+      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
+      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
+      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: ['performance-data'] } }),
     ])
 
     for (const response of [performanceRes, monthlyTwrRes, pnlRes, twrRes, benchmarkChartRes]) {

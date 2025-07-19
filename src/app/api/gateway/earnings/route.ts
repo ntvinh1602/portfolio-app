@@ -27,8 +27,8 @@ export async function GET(request: Request) {
     const baseUrl = request.url.split('/api')[0]
 
     const [pnlResponse, twrResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, { headers, next: { revalidate: 86400 } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${startDate}&end_date=${endDate}`, { headers, next: { revalidate: 86400 } }),
+      fetch(`${baseUrl}/api/query/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: ['performance-data'] } }),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: ['performance-data'] } }),
     ])
 
     for (const response of [pnlResponse, twrResponse]) {
