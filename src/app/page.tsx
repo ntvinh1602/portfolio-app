@@ -20,12 +20,18 @@ import { PnLCard } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard } from "@/components/cards/benchmark"
 import { StockCardCompact } from "@/components/cards/stock-compact"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
-import { useDashboardData } from "@/hooks/useDashboardData"
+import { useDashboardCache } from "@/context/DashboardCacheContext"
 import { format, subDays } from "date-fns"
 
 export default function Page() {
   const [userName, setUserName] = React.useState("...")
-  const { equityData, twr, monthlyPnlData, benchmarkData, assetSummaryData, isLoading, error } = useDashboardData()
+  const { data, isLoading, error } = useDashboardCache()
+
+  const equityData = data?.equityData || []
+  const twr = data?.twr || null
+  const monthlyPnlData = data?.monthlyPnlData || []
+  const benchmarkData = data?.benchmarkData || []
+  const assetSummaryData = data?.assetSummaryData || null
 
   const latestEquity = equityData.length > 0 ? equityData[equityData.length - 1].net_equity_value : null;
   const mtdPnl = monthlyPnlData.length > 0 ? monthlyPnlData[monthlyPnlData.length - 1].pnl : null;
@@ -56,10 +62,10 @@ export default function Page() {
   if (isLoading) {
     return (
       <PageMain>
-        <PageHeader title="Loading..." />
+        <PageHeader title=""/>
         <PageContent className="px-0">
-          <div className="flex items-center justify-center h-full">
-            Loading dashboard data...
+          <div className="flex items-center justify-center h-full animate-pulse">
+            Waking up, be patient...
           </div>
         </PageContent>
         <BottomNavBar />
