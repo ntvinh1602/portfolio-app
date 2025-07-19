@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,8 @@ export function OtherPagesMenu({
   onMenuItemClick,
   children,
 }: OtherPagesMenuProps) {
+  const pathname = usePathname()
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
@@ -43,10 +46,14 @@ export function OtherPagesMenu({
           <DropdownMenuItem
             key={item.label}
             onClick={() => onMenuItemClick(item.path)}
-            className="gap-2 justify-end"
+            className={`gap-2 justify-end ${
+              pathname === item.path ? "text-accent-foreground" : ""
+            }`}
           >
             <span>{item.label}</span>
-            <item.icon className="stroke-[1]" />
+            <item.icon className={`stroke-[1] ${
+              pathname === item.path ? "text-accent-foreground" : ""
+            }`} />
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

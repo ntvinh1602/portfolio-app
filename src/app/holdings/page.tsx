@@ -4,7 +4,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
 import {
   Card,
@@ -13,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { StockCardFull } from "@/components/cards/stock-full"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
   return (

@@ -8,8 +8,8 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 import {
   Card,
   CardAction,

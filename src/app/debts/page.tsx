@@ -1,11 +1,12 @@
 "use client"
 
 import { DebtItem } from "@/components/list-item/debt"
-import { BottomNavBar, PageContent, PageHeader, PageMain } from "@/components/page-layout"
+import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
   const [debts, setDebts] = useState<Tables<"debts">[] | null>(null)

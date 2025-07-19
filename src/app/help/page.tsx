@@ -2,9 +2,9 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
 import { HelpAccordion } from "@/components/help-accordion"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
 

@@ -5,10 +5,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const startDate = searchParams.get("start_date")
   const endDate = searchParams.get("end_date")
-
-  console.log(
-    `'/api/query/monthly-pnl' called with: start_date=${startDate}, end_date=${endDate}`,
-  )
+  
   if (!startDate || !endDate) {
     return NextResponse.json(
       { error: "start_date and end_date are required" },

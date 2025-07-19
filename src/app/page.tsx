@@ -7,7 +7,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
 import {
   Carousel,
@@ -20,6 +19,7 @@ import { AssetCard } from "@/components/cards/assets"
 import { PnLCard } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard } from "@/components/cards/benchmark"
 import { StockCardCompact } from "@/components/cards/stock-compact"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
   const [userName, setUserName] = React.useState("...")

@@ -6,7 +6,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar,
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { TwoMetric } from "@/components/cards/two-metric"
@@ -19,6 +18,7 @@ import {
   CardTitle
 } from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
   const [dateRange, setDateRange] = React.useState("all")

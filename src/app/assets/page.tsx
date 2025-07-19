@@ -5,7 +5,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
 import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
@@ -30,6 +29,7 @@ import {
 } from "@/components/ui/popover"
 import { Piechart } from "@/components/charts/base-charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 interface SummaryItem {
   type: string;

@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { BottomNavBar, PageContent, PageHeader, PageMain } from "@/components/page-layout"
+import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { ExpensesChart } from "@/components/charts/monthly-expenses-chart"
 import { ExpenseStructureChart } from "@/components/charts/expense-structure-chart"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
 

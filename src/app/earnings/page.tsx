@@ -5,7 +5,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar,
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
@@ -17,6 +16,7 @@ import {
 } from "date-fns"
 import { formatNum } from "@/lib/utils"
 import { TwoMetric } from "@/components/cards/two-metric"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 type MonthlyData = {
   month: string

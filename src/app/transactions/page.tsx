@@ -5,7 +5,6 @@ import {
   PageMain,
   PageHeader,
   PageContent,
-  BottomNavBar
 } from "@/components/page-layout"
 import {
   TransactionCard,
@@ -18,6 +17,7 @@ import TabSwitcher from "@/components/tab-switcher"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { Enums } from "@/lib/database.types"
+import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 type TransactionFeed = {
   transaction_id: string
