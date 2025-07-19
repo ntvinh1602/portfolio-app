@@ -1470,6 +1470,54 @@ BEGIN
     END IF;
 END;
 $$;
+CREATE OR REPLACE FUNCTION "public"."handle_new_exchange_rate"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  user_record RECORD;
+BEGIN
+  -- Find all users who have assets in the updated currency and trigger snapshot generation.
+  FOR user_record IN
+    SELECT DISTINCT a.user_id
+    FROM public.assets a
+    JOIN public.securities s ON a.security_id = s.id
+    WHERE s.currency_code = NEW.currency_code
+  LOOP
+    PERFORM public.generate_performance_snapshots(user_record.user_id, NEW.date, CURRENT_DATE);
+  END LOOP;
+  RETURN NEW;
+END;
+$$;
+CREATE OR REPLACE FUNCTION "public"."handle_new_stock_price"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  user_record RECORD;
+BEGIN
+  -- Find all users who hold the stock and trigger snapshot generation for them.
+  FOR user_record IN
+    SELECT DISTINCT a.user_id
+    FROM public.assets a
+    WHERE a.security_id = NEW.security_id
+  LOOP
+    PERFORM public.generate_performance_snapshots(user_record.user_id, NEW.date, CURRENT_DATE);
+  END LOOP;
+  RETURN NEW;
+END;
+$$;
+CREATE OR REPLACE FUNCTION "public"."handle_new_transaction"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- Call the snapshot generation function for the user who made the transaction
+  -- from the transaction date to the current date.
+  PERFORM public.generate_performance_snapshots(NEW.user_id, NEW.transaction_date, CURRENT_DATE);
+  RETURN NEW;
+END;
+$$;
 CREATE OR REPLACE FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") RETURNS "uuid"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1617,6 +1665,16 @@ BEGIN
         (v_transaction_id, v_asset_account_id, p_asset_id, p_quantity, 0, v_asset_currency_code),
         (v_transaction_id, v_equity_account_id, v_capital_asset_id, 0, 0, v_asset_currency_code);
     INSERT INTO tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (p_user_id, p_asset_id, v_transaction_id, 'split', p_transaction_date, p_quantity, p_quantity, 0);
+END;
+$$;
+CREATE OR REPLACE FUNCTION "public"."handle_table_change_and_queue"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- Call the main logic function, passing the table name
+  PERFORM queue_revalidation_jobs(TG_TABLE_NAME);
+  RETURN NULL; -- The return value is ignored for AFTER triggers
 END;
 $$;
 CREATE OR REPLACE FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") RETURNS "jsonb"
@@ -1784,6 +1842,45 @@ EXCEPTION
         RAISE;
 END;
 $$;
+CREATE OR REPLACE FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- This function now maps table changes to all affected cache tags and paths.
+  
+  -- A change in transactions, prices, rates, or debts affects performance data.
+  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_exchange_rates', 'debts') THEN
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('tag', 'performance-data') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/benchmark-chart') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/equity-chart') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/first-snapshot-date') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/monthly-pnl') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/monthly-twr') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/pnl') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/twr') ON CONFLICT DO NOTHING;
+  END IF;
+  -- A change in transactions, prices, rates, or debts also affects asset data.
+  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_exchange_rates', 'debts') THEN
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('tag', 'asset-data') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/asset-summary') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/stock-holdings') ON CONFLICT DO NOTHING;
+  END IF;
+  -- Specific paths for specific table changes
+  IF table_name = 'transactions' THEN
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/monthly-expenses') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/transaction-feed') ON CONFLICT DO NOTHING;
+  END IF;
+  IF table_name = 'debts' THEN
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/debts') ON CONFLICT DO NOTHING;
+  END IF;
+  -- A change in market indices has a very limited impact
+  IF table_name = 'daily_market_indices' THEN
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('tag', 'performance-data') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/benchmark-chart') ON CONFLICT DO NOTHING;
+  END IF;
+END;
+$$;
 CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1874,13 +1971,16 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "inception_date" "date" DEFAULT '2020-01-01'::"date" NOT NULL
 );
 COMMENT ON COLUMN "public"."profiles"."display_name" IS 'The user''s preferred display name in the application.';
-CREATE TABLE IF NOT EXISTS "public"."securities" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_class" "public"."asset_class" NOT NULL,
-    "ticker" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "currency_code" character varying(10),
-    "logo_url" "text"
+CREATE TABLE IF NOT EXISTS "public"."revalidation_queue" (
+    "id" bigint NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "processed_at" timestamp with time zone,
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "job_type" "text" NOT NULL,
+    "identifier" "text" NOT NULL,
+    "attempts" integer DEFAULT 0 NOT NULL,
+    "last_error" "text",
+    CONSTRAINT "revalidation_queue_job_type_check" CHECK (("job_type" = ANY (ARRAY['tag'::"text", 'path'::"text"])))
 );
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -1921,88 +2021,6 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "description" "text",
     "related_debt_id" "uuid"
 );
-ALTER TABLE ONLY "public"."accounts"
-    ADD CONSTRAINT "accounts_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_user_id_security_id_key" UNIQUE ("user_id", "security_id");
-ALTER TABLE ONLY "public"."currencies"
-    ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
-ALTER TABLE ONLY "public"."daily_performance_snapshots"
-    ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."daily_performance_snapshots"
-    ADD CONSTRAINT "daily_performance_snapshots_user_id_date_key" UNIQUE ("user_id", "date");
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."daily_exchange_rates"
-    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("currency_code", "date");
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
-ALTER TABLE ONLY "public"."daily_market_indices"
-    ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."securities"
-    ADD CONSTRAINT "securities_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."securities"
-    ADD CONSTRAINT "securities_ticker_key" UNIQUE ("ticker");
-ALTER TABLE ONLY "public"."daily_stock_prices"
-    ADD CONSTRAINT "security_daily_prices_pkey" PRIMARY KEY ("security_id", "date");
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."transaction_details"
-    ADD CONSTRAINT "transaction_details_pkey" PRIMARY KEY ("transaction_id");
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."transactions"
-    ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
-ALTER TABLE ONLY "public"."accounts"
-    ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."assets"
-    ADD CONSTRAINT "assets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."daily_performance_snapshots"
-    ADD CONSTRAINT "daily_performance_snapshots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."daily_exchange_rates"
-    ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_sell_transaction_leg_id_fkey" FOREIGN KEY ("sell_transaction_leg_id") REFERENCES "public"."transaction_legs"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE RESTRICT;
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_display_currency_fkey" FOREIGN KEY ("display_currency") REFERENCES "public"."currencies"("code");
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."securities"
-    ADD CONSTRAINT "securities_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
-ALTER TABLE ONLY "public"."daily_stock_prices"
-    ADD CONSTRAINT "security_daily_prices_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_creation_transaction_id_fkey" FOREIGN KEY ("creation_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."transaction_details"
-    ADD CONSTRAINT "transaction_details_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id");
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
-ALTER TABLE ONLY "public"."transactions"
-    ADD CONSTRAINT "transactions_related_debt_id_fkey" FOREIGN KEY ("related_debt_id") REFERENCES "public"."debts"("id") ON DELETE SET NULL;
-ALTER TABLE ONLY "public"."transactions"
-    ADD CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 RESET ALL;
 --
 -- Dumped schema changes for auth and storage

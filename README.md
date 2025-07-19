@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfolio App
 
-## Getting Started
+This is a comprehensive portfolio management application built with Next.js, designed to help users track their financial assets, liabilities, and performance. It provides robust tools for managing various transaction types, visualizing financial data, and integrating with external market data.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Double-entry Accounting**: Record and categorize various financial transactions based on double-entry accounting method with FIFO cost-basis tracking for both tradable securities and foreign currencies:
+    - Income and Expenses
+    - Buy and Sell of assets
+    - Deposits and Withdrawals
+    - Borrowing and Debt Payments
+    - Stock Splits and Dividend
+- **Consolidated Portfolio Tracking**: Monitor your asset holdings, debts, and overall portfolio performance across many asset types (stocks, crypto, cash, funds)
+- **Financial Reporting & Analytics**:
+    - Real-time balance sheet (Total assets, total liabilities)
+    - Monthly Profit & Loss (P&L) and Time-Weighted Returns (TWR)
+    - Analyze Monthly Expenses
+    - Visualize data with various charts (Area, Bar, Line, Pie, Stacked Bar)
+- **Market Data Integration**: Fetch and save real-time stock prices and indices through Yahoo-finance2 library
+- **User Authentication**: Secure login system.
+- **Responsive Design**: Built with modern UI components for a seamless experience across devices.
