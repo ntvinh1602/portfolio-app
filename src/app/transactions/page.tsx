@@ -10,12 +10,10 @@ import {
   TransactionCard,
   TransactionSkeleton
 } from "@/components/list-item/transaction"
-import { toast } from "sonner"
 import { type DateRange } from "react-day-picker"
 import TabSwitcher from "@/components/tab-switcher"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { Enums } from "@/lib/database.types"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWRInfinite from "swr/infinite"
 import { fetcher } from "@/lib/fetcher"
@@ -55,7 +53,7 @@ export default function Page() {
     return `/api/query/transaction-feed?${params.toString()}`
   }
 
-  const { data, error, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(getKey, fetcher);
+  const { data, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(getKey, fetcher);
 
   const transactions = data ? ([] as TransactionFeed[]).concat(...data) : [];
   const isLoadingMore = isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");

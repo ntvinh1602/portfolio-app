@@ -10,10 +10,6 @@ interface StockHoldingBase {
   latest_price: number;
 }
 
-interface StockHolding extends StockHoldingBase {
-  total_amount: number;
-}
-
 export function useStockHoldings() {
   const { data, error, isLoading } = useSWR<StockHoldingBase[]>('/api/query/stock-holdings', fetcher);
 

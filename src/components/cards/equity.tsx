@@ -28,7 +28,7 @@ interface EquityCardProps {
   endDate: Date;
 }
 
-export function EquityCard({ latestEquity, twr, equityChartData, startDate, endDate }: EquityCardProps) {
+export function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
     router.push("/analytics")

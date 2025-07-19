@@ -9,11 +9,6 @@ type MonthlyExpense = {
   interest: number;
 };
 
-type ExpenseStructure = {
-  category: string;
-  total_amount: number;
-};
-
 export function useExpensesData() {
   // Fetch last 12 months of expenses for the bar chart
   const monthlyEndDate = endOfMonth(new Date());

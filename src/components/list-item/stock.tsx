@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatNum } from "@/lib/utils"
 
 interface StockItemProps {
   ticker: string;

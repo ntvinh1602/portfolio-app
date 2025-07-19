@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { format as formatDate } from "date-fns"
 import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils"
 
 export async function GET(request: Request) {

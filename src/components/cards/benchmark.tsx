@@ -23,7 +23,7 @@ interface BenchmarkCardProps {
   endDate: Date;
 }
 
-export function BenchmarkCard({ benchmarkChartData, startDate, endDate }: BenchmarkCardProps) {
+export function BenchmarkCard({ benchmarkChartData }: BenchmarkCardProps) {
   return (
     <Card className="gap-2 h-full">
       <CardHeader className="px-4">

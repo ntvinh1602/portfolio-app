@@ -47,8 +47,6 @@ export default function Page() {
     benchmarkChartError,
   } = useMetricsData(dateRange)
 
-  const endDate = React.useMemo(() => new Date(), [])
-
   const tabOptions = [
     { value: "mtd", label: "This Month" },
     { value: "ytd", label: "This Year" },

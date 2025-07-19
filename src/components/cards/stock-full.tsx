@@ -31,7 +31,7 @@ import { mutate } from "swr"
 import { formatNum } from "@/lib/utils"
 
 export function StockCardFull() {
-  const { stockHoldings, loading, error } = useStockHoldings()
+  const { stockHoldings, loading } = useStockHoldings()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
