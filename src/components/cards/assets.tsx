@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/base-charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { useEffect, useState, useCallback } from "react"
 import { formatNum } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight } from "lucide-react"
@@ -31,31 +30,20 @@ interface AssetSummaryData {
   totalEquity: number;
 }
 
-export function AssetCard() {
+interface AssetCardProps {
+  assetSummaryData: AssetSummaryData | null;
+}
+
+export function AssetCard({ assetSummaryData }: AssetCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
     router.push("/assets")
   }
-  const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
 
-  const fetchAssets = useCallback(async () => {
-    const response = await fetch('/api/query/asset-summary');
-    if (!response.ok) {
-      console.error('Error fetching asset summary:', response.statusText);
-      return;
-    }
-    const data = await response.json();
-    setSummaryData(data as AssetSummaryData);
-  }, []);
-
-  useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets])
-
-  const assetsTotalAmount = formatNum(summaryData?.totalAssets || 0)
-  const liabilitiesTotalAmount = summaryData?.totalLiabilities || 0
-  const equityTotalAmount = summaryData?.totalEquity || 0
-  const leverage = (liabilitiesTotalAmount / equityTotalAmount).toFixed(2)
+  const assetsTotalAmount = formatNum(assetSummaryData?.totalAssets || 0)
+  const liabilitiesTotalAmount = assetSummaryData?.totalLiabilities || 0
+  const equityTotalAmount = assetSummaryData?.totalEquity || 0
+  const leverage = (equityTotalAmount !== 0) ? (liabilitiesTotalAmount / equityTotalAmount).toFixed(2) : "N/A"
 
   const assetChartCfg = {
     allocation: {
@@ -79,7 +67,7 @@ export function AssetCard() {
     },
   } satisfies ChartConfig
 
-  const assetChartData = summaryData?.assets?.filter(item => item.totalAmount > 0).map(item => ({
+  const assetChartData = assetSummaryData?.assets?.filter(item => item.totalAmount > 0).map(item => ({
     asset: item.type.toLowerCase(),
     allocation: item.totalAmount,
     fill: `var(--color-${item.type.toLowerCase()})`
@@ -102,12 +90,12 @@ export function AssetCard() {
   const liabilityChartData = [
     {
       liability: "equity",
-      allocation: summaryData?.totalEquity ?? 0,
+      allocation: assetSummaryData?.totalEquity ?? 0,
       fill: "var(--chart-1)",
     },
     {
       liability: "liabilities",
-      allocation: summaryData?.totalLiabilities ?? 0,
+      allocation: assetSummaryData?.totalLiabilities ?? 0,
       fill: "var(--chart-2)",
     },
   ].filter((d) => d.allocation > 0)

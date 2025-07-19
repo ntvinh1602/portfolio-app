@@ -1,8 +1,7 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { EquityChart } from "@/components/charts/equity-chart"
+import { Linechart } from "@/components/charts/base-charts/linechart"
 import { formatNum } from "@/lib/utils"
-import { subDays, format } from "date-fns"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -14,40 +13,26 @@ import {
 } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { ChevronRight } from "lucide-react"
+import { compactNum } from "@/lib/utils"
 
-export function EquityCard() {
+type EquityData = {
+  date: string
+  net_equity_value: number
+}
+
+interface EquityCardProps {
+  latestEquity: number | null;
+  twr: number | null;
+  equityChartData: EquityData[];
+  startDate: Date;
+  endDate: Date;
+}
+
+export function EquityCard({ latestEquity, twr, equityChartData, startDate, endDate }: EquityCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
     router.push("/analytics")
   }
-  const [latestEquity, setLatestEquity] = useState<number | null>(null)
-  const [twr, setTwr] = useState<number | null>(null)
-  const { startDate, endDate } = useMemo(() => {
-    const endDate = new Date()
-    const startDate = subDays(endDate, 90)
-    return { startDate, endDate }
-  }, [])
-
-  const fetchTWR = useCallback(async () => {
-    setTwr(null)
-    const twrParams = new URLSearchParams({
-      start_date: format(startDate, "yyyy-MM-dd"),
-      end_date: format(endDate, "yyyy-MM-dd"),
-    })
-    const twrResponse = await fetch(
-      `/api/query/twr?${twrParams.toString()}`
-    )
-    if (!twrResponse.ok) {
-      const errorData = await twrResponse.json()
-      throw new Error(errorData.error || "Failed to fetch TWR data.")
-    }
-    const twrData = await twrResponse.json()
-    setTwr(twrData.twr)
-  }, [startDate, endDate])
-
-  useEffect(() => {
-    fetchTWR()
-  }, [fetchTWR])
 
   return (
     <Card className="gap-4 h-full">
@@ -74,11 +59,20 @@ export function EquityCard() {
         </CardAction>
       </CardHeader>
       <CardFooter className="px-4">
-        <EquityChart
-          startDate={startDate}
-          endDate={endDate}
-          onLatestValue={setLatestEquity}
-          height="h-[180px]"
+        <Linechart
+          data={equityChartData}
+          chartConfig={{
+            net_equity_value: {
+              label: "Equity",
+              color: "var(--chart-1)",
+            },
+          }}
+          className="h-[180px] w-full"
+          xAxisDataKey="date"
+          lineDataKeys={["net_equity_value"]}
+          grid={true}
+          xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
+          yAxisTickFormatter={(value) => compactNum(Number(value))}
         />
       </CardFooter>
     </Card>

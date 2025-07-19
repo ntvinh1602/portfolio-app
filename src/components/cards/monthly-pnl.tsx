@@ -9,8 +9,7 @@ import {
 } from "../ui/card"
 import { ChartConfig } from "../ui/chart"
 import { Badge } from "@/components/ui/badge"
-import { subMonths, format, startOfMonth } from "date-fns"
-import { useState, useEffect } from "react"
+import { format } from "date-fns"
 import { compactNum, formatNum } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -20,50 +19,21 @@ export type MonthlyPnlData = {
   pnl: number
 }
 
+interface PnLCardProps {
+  mtdPnl: number | null;
+  avgPnl: number | null;
+  monthlyPnlData: MonthlyPnlData[];
+}
+
 const chartConfig = {
   pnl: { label: "PnL" },
 } satisfies ChartConfig
 
-export function PnLCard() {
+export function PnLCard({ mtdPnl, avgPnl, monthlyPnlData }: PnLCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
     router.push("/earnings")
   }
-  const [chartData, setChartData] = useState<MonthlyPnlData[]>([])
-  const [mtdPnl, setMtdPnl] = useState<number | null>(null)
-  const [avgPnl, setAvgPnl] = useState<number | null>(null)
-
-  const fetchData = async () => {
-    const today = new Date()
-    const endDate = new Date()
-    const startDate = startOfMonth(subMonths(today, 11))
-
-    const params = new URLSearchParams({
-      start_date: format(startDate, "yyyy-MM-dd"),
-      end_date: format(endDate, "yyyy-MM-dd"),
-    })
-
-    const response = await fetch(`/api/query/monthly-pnl?${params.toString()}`)
-    if (!response.ok) {
-      console.error("Failed to fetch PnL data")
-      return
-    }
-
-    const data: MonthlyPnlData[] = await response.json()
-    setChartData(data)
-
-    if (data.length > 0) {
-      const currentMonthPnl = data[data.length - 1].pnl
-      setMtdPnl(currentMonthPnl)
-
-      const totalPnl = data.reduce((acc, item) => acc + item.pnl, 0)
-      setAvgPnl(totalPnl / data.length)
-    }
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   return (
     <Card className="gap-4 h-full">
@@ -86,7 +56,7 @@ export function PnLCard() {
       </CardHeader>
       <CardFooter className="px-4">
         <BarChart
-          data={chartData}
+          data={monthlyPnlData}
           config={chartConfig}
           dataKey="pnl"
           categoryKey="month"

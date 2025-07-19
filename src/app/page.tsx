@@ -20,9 +20,19 @@ import { PnLCard } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard } from "@/components/cards/benchmark"
 import { StockCardCompact } from "@/components/cards/stock-compact"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
+import { useDashboardData } from "@/hooks/useDashboardData"
+import { format, subDays } from "date-fns"
 
 export default function Page() {
   const [userName, setUserName] = React.useState("...")
+  const { equityData, twr, monthlyPnlData, benchmarkData, assetSummaryData, isLoading, error } = useDashboardData()
+
+  const latestEquity = equityData.length > 0 ? equityData[equityData.length - 1].net_equity_value : null;
+  const mtdPnl = monthlyPnlData.length > 0 ? monthlyPnlData[monthlyPnlData.length - 1].pnl : null;
+  const avgPnl = monthlyPnlData.length > 0 ? monthlyPnlData.reduce((acc, item) => acc + item.pnl, 0) / monthlyPnlData.length : null;
+
+  const startDate = React.useMemo(() => subDays(new Date(), 90), []);
+  const endDate = React.useMemo(() => new Date(), []);
 
   React.useEffect(() => {
     const fetchUser = async () => {
@@ -43,6 +53,34 @@ export default function Page() {
     fetchUser()
   }, [])
 
+  if (isLoading) {
+    return (
+      <PageMain>
+        <PageHeader title="Loading..." />
+        <PageContent className="px-0">
+          <div className="flex items-center justify-center h-full">
+            Loading dashboard data...
+          </div>
+        </PageContent>
+        <BottomNavBar />
+      </PageMain>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageMain>
+        <PageHeader title="Error" />
+        <PageContent className="px-0">
+          <div className="flex items-center justify-center h-full text-red-500">
+            Error: {error}
+          </div>
+        </PageContent>
+        <BottomNavBar />
+      </PageMain>
+    )
+  }
+
   return (
     <PageMain>
       <PageHeader title={`${getGreeting()}, ${userName}!`} />
@@ -50,17 +88,31 @@ export default function Page() {
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
             <CarouselItem className="basis-10/12 pl-8">
-              <EquityCard />
+              <EquityCard
+                latestEquity={latestEquity}
+                twr={twr}
+                equityChartData={equityData}
+                startDate={startDate}
+                endDate={endDate}
+              />
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2">
-              <PnLCard />
+              <PnLCard
+                mtdPnl={mtdPnl}
+                avgPnl={avgPnl}
+                monthlyPnlData={monthlyPnlData}
+              />
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2 pr-6">
-              <BenchmarkCard />
+              <BenchmarkCard
+                benchmarkChartData={benchmarkData}
+                startDate={startDate}
+                endDate={endDate}
+              />
             </CarouselItem>
           </CarouselContent>
         </Carousel>
-        <AssetCard />
+        <AssetCard assetSummaryData={assetSummaryData} />
         <StockCardCompact />
       </PageContent>
       <BottomNavBar />
