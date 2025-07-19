@@ -3,25 +3,13 @@
 import { DebtItem } from "@/components/list-item/debt"
 import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
 
 export default function Page() {
-  const [debts, setDebts] = useState<Tables<"debts">[] | null>(null)
-
-  useEffect(() => {
-    const fetchDebts = async () => {
-      const { data } = await supabase
-        .from("debts")
-        .select("*")
-        .eq("status", "active")
-      setDebts(data)
-    }
-
-    fetchDebts()
-  }, [])
+  const { data: debts, error } = useSWR<Tables<"debts">[]>('/api/query/debts', fetcher)
 
   const calculateAccruedInterest = (debt: Tables<"debts">): number => {
     const principal = debt.principal_amount
@@ -48,11 +36,10 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Debts" />
       <PageContent>
-        {debts === null
-          ? null
-          : debts.length === 0
-            ? <p>No outstanding debt found.</p>
-            : debts.map((debt) => (
+        {error && <p>Error loading debts.</p>}
+        {!debts && !error && <p>Loading...</p>}
+        {debts && debts.length === 0 && <p>No outstanding debt found.</p>}
+        {debts && debts.map((debt) => (
               <DebtItem
                 key={debt.id}
                 name={debt.lender_name}

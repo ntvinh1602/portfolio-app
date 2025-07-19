@@ -1,21 +1,46 @@
 import * as React from "react"
-import { useMetricsCache } from "@/context/MetricsCacheContext"
-import { startOfMonth, startOfYear } from "date-fns"
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
+import { startOfMonth, startOfYear, format as formatDate } from "date-fns"
 
 export function useMetricsData(dateRange: string) {
-  const { data, isLoading, error, fetchDataForDateRange, firstSnapshotDate } = useMetricsCache()
-  const [xAxisDateFormat, setXAxisDateFormat] = React.useState("MMM dd")
+  const [firstSnapshotDate, setFirstSnapshotDate] = React.useState<Date | null>(null)
+  const { data: firstSnapshotDateData } = useSWR("/api/query/first-snapshot-date", fetcher)
 
   React.useEffect(() => {
-    fetchDataForDateRange(dateRange)
-  }, [dateRange, fetchDataForDateRange])
-
-  React.useEffect(() => {
-    let format = "MMM dd"
-    if (dateRange === "ytd" || dateRange === "all") {
-      format = "MMM ''yy"
+    if (firstSnapshotDateData) {
+      setFirstSnapshotDate(new Date(firstSnapshotDateData.date))
     }
-    setXAxisDateFormat(format)
+  }, [firstSnapshotDateData])
+
+  const { data, error, isLoading } = useSWR(
+    () => {
+      if (!firstSnapshotDate) return null
+
+      const endDate = new Date()
+      let startDate = firstSnapshotDate
+      if (dateRange === "mtd") {
+        startDate = startOfMonth(endDate)
+      } else if (dateRange === "ytd") {
+        startDate = startOfYear(endDate)
+      }
+
+      const params = new URLSearchParams({
+        start_date: formatDate(startDate, "yyyy-MM-dd"),
+        end_date: formatDate(endDate, "yyyy-MM-dd"),
+        lifetime_start_date: formatDate(firstSnapshotDate, "yyyy-MM-dd"),
+      })
+
+      return `/api/query/metrics?${params.toString()}`
+    },
+    fetcher
+  )
+
+  const xAxisDateFormat = React.useMemo(() => {
+    if (dateRange === "ytd" || dateRange === "all") {
+      return "MMM ''yy"
+    }
+    return "MMM dd"
   }, [dateRange])
 
   const chartStartDate = React.useMemo(() => {
@@ -35,6 +60,6 @@ export function useMetricsData(dateRange: string) {
     isBenchmarkChartLoading: isLoading,
     benchmarkChartError: error,
     xAxisDateFormat,
-    chartStartDate, // This is now simplified
+    chartStartDate,
   }
 }

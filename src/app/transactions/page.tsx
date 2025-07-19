@@ -10,7 +10,6 @@ import {
   TransactionCard,
   TransactionSkeleton
 } from "@/components/list-item/transaction"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { toast } from "sonner"
 import { type DateRange } from "react-day-picker"
 import TabSwitcher from "@/components/tab-switcher"
@@ -18,6 +17,8 @@ import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { Enums } from "@/lib/database.types"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
+import useSWRInfinite from "swr/infinite"
+import { fetcher } from "@/lib/fetcher"
 
 type TransactionFeed = {
   transaction_id: string
@@ -36,66 +37,37 @@ type TransactionFeed = {
 const PAGE_SIZE = 6
 
 export default function Page() {
-  const [transactions, setTransactions] = React.useState<TransactionFeed[]>([])
-  const [loading, setLoading] = React.useState(true)
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
-  const [page, setPage] = React.useState(1)
-  const [hasMore, setHasMore] = React.useState(true)
   const [assetType, setAssetType] = React.useState("stock")
-    React.useState<Enums<"transaction_type">>("deposit")
+
+  const getKey = (pageIndex: number, previousPageData: TransactionFeed[] | null) => {
+    if (previousPageData && !previousPageData.length) return null // reached the end
+    
+    const params = new URLSearchParams({
+      page_size: PAGE_SIZE.toString(),
+      page_number: (pageIndex + 1).toString(),
+      asset_class_filter: assetType,
+    });
+
+    if (date?.from) params.append("start_date", date.from.toISOString());
+    if (date?.to) params.append("end_date", date.to.toISOString());
+
+    return `/api/query/transaction-feed?${params.toString()}`
+  }
+
+  const { data, error, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(getKey, fetcher);
+
+  const transactions = data ? ([] as TransactionFeed[]).concat(...data) : [];
+  const isLoadingMore = isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");
+  const isEmpty = data?.[0]?.length === 0;
+  const hasMore = !isEmpty && (data?.[data.length - 1]?.length ?? 0) === PAGE_SIZE;
+
   const tabOptions = [
     { value: "cash", label: "Cash" },
     { value: "stock", label: "Stock" },
     { value: "epf", label: "EPF" },
     { value: "crypto", label: "Crypto" },
   ]
-
-  const fetchTransactions = React.useCallback(
-    async (pageNumber: number, reset: boolean = false) => {
-      setLoading(true)
-      const { data, error } = await supabase.rpc("get_transaction_feed", {
-        page_size: PAGE_SIZE,
-        page_number: pageNumber,
-        start_date: date?.from?.toISOString(),
-        end_date: date?.to?.toISOString(),
-        asset_class_filter: assetType,
-      })
-
-      if (error) {
-        toast.error("Failed to fetch transaction feed: " + error.message)
-        setTransactions([])
-      } else {
-        const fetchedTransactions = (data as TransactionFeed[]) || []
-        setTransactions(prev => {
-          const newTransactions =
-            pageNumber === 1 || reset
-              ? fetchedTransactions
-              : [...prev, ...fetchedTransactions]
-          // Ensure uniqueness of transactions by ID
-          const uniqueTransactions = Array.from(
-            new Map(
-              newTransactions.map(item => [item.transaction_id, item]),
-            ).values(),
-          )
-          return uniqueTransactions
-        })
-        setHasMore(fetchedTransactions.length === PAGE_SIZE)
-      }
-      setLoading(false)
-    },
-    [assetType, date],
-  )
-
-  React.useEffect(() => {
-    setPage(1)
-    fetchTransactions(1, true)
-  }, [fetchTransactions])
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1
-    setPage(nextPage)
-    fetchTransactions(nextPage, false)
-  }
 
   return (
     <PageMain>
@@ -111,35 +83,32 @@ export default function Page() {
           defaultValue="stock"
         />
         <div className="flex flex-col pt-2 gap-2">
-          {loading && transactions.length === 0 ? (
+          {isLoading && !data &&
             Array.from({ length: PAGE_SIZE }).map((_, index) => (
               <TransactionSkeleton key={index} />
-            ))
-          ) : (
-            transactions.map(tx => (
-              <TransactionCard
-                key={tx.transaction_id}
-                ticker={tx.ticker}
-                name={tx.name}
-                logoUrl={tx.logo_url || ""}
-                amount={tx.amount}
-                quantity={tx.quantity}
-                type={tx.type}
-                description={tx.description || ""}
-                currencyCode={tx.currency_code}
-                date={tx.transaction_date}
-              />
-            ))
-          )}
-          {loading && transactions.length > 0 && (
-            <p className="text-center text-muted-foreground">Loading...</p>
-          )}
-          {!loading && transactions.length === 0 && (
-            <p className="mx-auto font-thin py-10">No transactions found</p>
-          )}
-          {!loading && hasMore && (
+            ))}
+          {transactions.map(tx => (
+            <TransactionCard
+              key={tx.transaction_id}
+              ticker={tx.ticker}
+              name={tx.name}
+              logoUrl={tx.logo_url || ""}
+              amount={tx.amount}
+              quantity={tx.quantity}
+              type={tx.type}
+              description={tx.description || ""}
+              currencyCode={tx.currency_code}
+              date={tx.transaction_date}
+            />
+          ))}
+          {isLoadingMore &&
+            Array.from({ length: 3 }).map((_, index) => (
+              <TransactionSkeleton key={`loading-${index}`} />
+            ))}
+          {isEmpty && <p className="mx-auto font-thin py-10">No transactions found</p>}
+          {hasMore && !isLoadingMore && (
             <Button
-              onClick={handleLoadMore}
+              onClick={() => setSize(size + 1)}
               variant="outline"
               className="mx-auto mb-20"
             >

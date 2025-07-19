@@ -13,36 +13,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatNum } from "@/lib/utils"
-import { useStockPrice } from "@/hooks/useStockPrice"
-
-interface StockItemWrapperProps {
-  ticker: string;
-  name: string;
-  logoUrl: string;
-  quantity: number;
-  costBasis: number;
-  refreshKey: number;
-  lastUpdatedPrice: number;
-  onRefreshComplete: () => void;
-}
-
-function StockItemWrapper({ ticker, name, logoUrl, quantity, costBasis, refreshKey, lastUpdatedPrice, onRefreshComplete }: StockItemWrapperProps) {
-  const { price, priceStatus } = useStockPrice({ ticker, refreshKey, lastUpdatedPrice, onRefreshComplete });
-
-  return (
-    <StockItem
-      ticker={ticker}
-      name={name}
-      logoUrl={logoUrl}
-      quantity={formatNum(quantity)}
-      totalAmount={priceStatus === 'success' ? formatNum(quantity * price) : "..."}
-      pnl={priceStatus === 'success' ? formatNum((quantity * price / costBasis - 1) * 100, 1) : "..."}
-      price={formatNum(price / 1000, 2)}
-      priceStatus={priceStatus}
-      variant="full"
-    />
-  )
-}
 
 interface StockItemProps {
   ticker: string;
@@ -172,5 +142,4 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
 export {
   StockItem,
   StockSkeleton,
-  StockItemWrapper,
 }

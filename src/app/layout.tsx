@@ -6,8 +6,6 @@ import {
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
-import { MetricsCacheProvider } from "@/context/MetricsCacheContext"
-import { DashboardCacheProvider } from "@/context/DashboardCacheContext"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
@@ -56,11 +54,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DashboardCacheProvider>
-            <MetricsCacheProvider>
-              {children}
-            </MetricsCacheProvider>
-          </DashboardCacheProvider>
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>

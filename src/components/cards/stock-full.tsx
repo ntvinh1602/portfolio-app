@@ -22,63 +22,42 @@ import { Piechart } from "@/components/charts/base-charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { useStockHoldings } from "@/hooks/useStockHoldings"
 import {
-  StockItemWrapper,
+  StockItem,
   StockSkeleton
 } from "@/components/list-item/stock"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { mutate } from "swr"
+import { formatNum } from "@/lib/utils"
 
 export function StockCardFull() {
-  const { stockHoldings, loading } = useStockHoldings()
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { stockHoldings, loading, error } = useStockHoldings()
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [pendingRefreshes, setPendingRefreshes] = useState(0);
 
-  const handleRefresh = () => {
-    setPendingRefreshes(stockHoldings.length);
-    setRefreshKey(prevKey => prevKey + 1);
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetch('/api/external/refresh-all-stock-prices', { method: 'POST' });
+    // Re-fetch the holdings data
+    await mutate('/api/query/stock-holdings');
+    setIsRefreshing(false)
+    setLastUpdated(new Date());
   };
-
-  const updateLastFetchedTimestamp = useCallback(async (timestamp: Date) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ last_stock_fetching: timestamp.toISOString() })
-        .eq('id', user.id);
-    }
-  }, []);
-
-  const handleRefreshComplete = useCallback(() => {
-    setPendingRefreshes(prev => {
-      const newCount = prev - 1;
-      if (newCount === 0) {
-        const newTimestamp = new Date();
-        setLastUpdated(newTimestamp);
-        updateLastFetchedTimestamp(newTimestamp);
-      }
-      return newCount;
-    });
-  }, [updateLastFetchedTimestamp]);
 
   useEffect(() => {
     async function fetchLastUpdated() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('last_stock_fetching')
           .eq('id', user.id)
           .single()
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
-        } else if (profile?.last_stock_fetching) {
+        if (profile?.last_stock_fetching) {
           setLastUpdated(new Date(profile.last_stock_fetching))
         }
       }
     }
-
     fetchLastUpdated();
   }, [])
 
@@ -131,14 +110,14 @@ export function StockCardFull() {
               />
             </PopoverContent>
           </Popover>
-          {
-            pendingRefreshes > 0
-              ? <RefreshCw className="stroke-[1] animate-spin"/> 
-              : <RefreshCw
-                  className="stroke-[1]"
-                  onClick={handleRefresh}
-                />
-          }
+          {isRefreshing ? (
+            <RefreshCw className="stroke-[1] animate-spin" />
+          ) : (
+            <RefreshCw
+              className="stroke-[1]"
+              onClick={handleRefresh}
+            />
+          )}
         </CardAction>
       </CardHeader>
       <CardContent className="px-0 pb-2">
@@ -149,16 +128,17 @@ export function StockCardFull() {
             ))
           ) : stockHoldings.length > 0 ? (
             stockHoldings.map((stock) => (
-              <StockItemWrapper
+              <StockItem
                 key={stock.ticker}
                 ticker={stock.ticker}
                 name={stock.name}
                 logoUrl={stock.logo_url}
-                quantity={stock.quantity}
-                costBasis={stock.cost_basis}
-                refreshKey={refreshKey}
-                lastUpdatedPrice={stock.latest_price}
-                onRefreshComplete={handleRefreshComplete}
+                quantity={formatNum(stock.quantity)}
+                totalAmount={formatNum(stock.total_amount)}
+                pnl={stock.cost_basis > 0 ? formatNum(((stock.total_amount / stock.cost_basis) - 1) * 100, 1) : "0.0"}
+                price={formatNum(stock.latest_price / 1000, 2)}
+                priceStatus="success"
+                variant="full"
               />
             ))
           ) : (

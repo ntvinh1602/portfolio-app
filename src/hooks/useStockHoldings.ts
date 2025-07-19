@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/supabaseClient';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/fetcher';
 
 interface StockHoldingBase {
   ticker: string;
@@ -15,41 +15,12 @@ interface StockHolding extends StockHoldingBase {
 }
 
 export function useStockHoldings() {
-  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, error, isLoading } = useSWR<StockHoldingBase[]>('/api/query/stock-holdings', fetcher);
 
-  useEffect(() => {
-    async function fetchStockHoldings() {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase.rpc('get_stock_holdings');
+  const stockHoldings = data?.map((holding) => ({
+    ...holding,
+    total_amount: holding.quantity * holding.latest_price,
+  })) ?? [];
 
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          const holdingsWithTotalAmount: StockHolding[] = (data as StockHoldingBase[]).map((holding: StockHoldingBase) => ({
-            ...holding,
-            total_amount: holding.quantity * holding.latest_price,
-          }));
-          setStockHoldings(holdingsWithTotalAmount);
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error);
-        } else {
-          setError(new Error(String(error)));
-        }
-        console.error('Error fetching stock holdings:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchStockHoldings();
-  }, []);
-
-  return { stockHoldings, loading, error };
+  return { stockHoldings, loading: isLoading, error };
 }

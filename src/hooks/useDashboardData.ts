@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
 import { format, subDays, startOfMonth, subMonths } from "date-fns"
 
 type EquityData = {
@@ -31,73 +32,36 @@ interface AssetSummaryData {
   totalEquity: number;
 }
 
-interface DashboardData {
+interface DashboardApiResponse {
   equityData: EquityData[];
-  twr: number | null;
+  twrData: { twr: number | null };
   monthlyPnlData: MonthlyPnlData[];
   benchmarkData: BenchmarkData[];
   assetSummaryData: AssetSummaryData | null;
-  isLoading: boolean;
-  error: string | null;
 }
 
-export function useDashboardData(): DashboardData {
-  const [equityData, setEquityData] = useState<EquityData[]>([])
-  const [twr, setTwr] = useState<number | null>(null)
-  const [monthlyPnlData, setMonthlyPnlData] = useState<MonthlyPnlData[]>([])
-  const [benchmarkData, setBenchmarkData] = useState<BenchmarkData[]>([])
-  const [assetSummaryData, setAssetSummaryData] = useState<AssetSummaryData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function useDashboardData() {
+  const endDate = new Date()
+  const startDate = subDays(endDate, 90)
+  const monthlyPnlStartDate = startOfMonth(subMonths(endDate, 11))
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const endDate = new Date()
-      const startDate = subDays(endDate, 90)
-      const monthlyPnlStartDate = startOfMonth(subMonths(endDate, 11))
+  const params = new URLSearchParams({
+    start_date: format(startDate, "yyyy-MM-dd"),
+    end_date: format(endDate, "yyyy-MM-dd"),
+    monthly_pnl_start_date: format(monthlyPnlStartDate, "yyyy-MM-dd"),
+  })
 
-      const params = new URLSearchParams({
-        start_date: format(startDate, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
-        monthly_pnl_start_date: format(monthlyPnlStartDate, "yyyy-MM-dd"),
-      })
-
-      const response = await fetch(`/api/query/dashboard?${params.toString()}`)
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to fetch dashboard data.")
-      }
-
-      const data = await response.json()
-      setEquityData(data.equityData)
-      setTwr(data.twrData.twr)
-      setMonthlyPnlData(data.monthlyPnlData)
-      setBenchmarkData(data.benchmarkData)
-      setAssetSummaryData(data.assetSummaryData)
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        setError(e.message)
-      } else {
-        setError("An unknown error occurred.")
-      }
-      console.error(e)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  const { data, error, isLoading } = useSWR<DashboardApiResponse>(
+    `/api/query/dashboard?${params.toString()}`,
+    fetcher
+  )
 
   return {
-    equityData,
-    twr,
-    monthlyPnlData,
-    benchmarkData,
-    assetSummaryData,
+    equityData: data?.equityData ?? [],
+    twr: data?.twrData?.twr ?? null,
+    monthlyPnlData: data?.monthlyPnlData ?? [],
+    benchmarkData: data?.benchmarkData ?? [],
+    assetSummaryData: data?.assetSummaryData ?? null,
     isLoading,
     error,
   }

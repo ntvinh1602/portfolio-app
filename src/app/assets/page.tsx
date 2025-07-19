@@ -6,7 +6,8 @@ import {
   PageHeader,
   PageContent,
 } from "@/components/page-layout"
-import { useEffect, useState, useCallback } from "react"
+import { fetcher } from "@/lib/fetcher"
+import useSWR from "swr"
 import { formatNum } from "@/lib/utils"
 import {
   Card,
@@ -46,21 +47,12 @@ interface AssetSummaryData {
 }
 
 export default function Page() {
-  const [summaryData, setSummaryData] = useState<AssetSummaryData | null>(null);
+  const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>('/api/query/asset-summary', fetcher)
 
-  const fetchAssets = useCallback(async () => {
-    const response = await fetch('/api/query/asset-summary');
-    if (!response.ok) {
-      console.error('Error fetching asset summary:', response.statusText);
-      return;
-    }
-    const data = await response.json();
-    setSummaryData(data as AssetSummaryData);
-  }, []);
-
-  useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets])
+  if (error) {
+    // You can render a more sophisticated error state here
+    return <div>Error loading data</div>;
+  }
 
   const assetsItems = (summaryData?.assets || []).map((item) => ({
     ...item,
@@ -140,7 +132,7 @@ return (
           </CardAction>
         </CardHeader>
         <CardContent className="px-0">
-          {!summaryData ? (
+          {isLoading ? (
             <>
               <SummarySkeleton header={true} />
               {Array.from({ length: 4 }).map((_, i) => (
@@ -171,7 +163,7 @@ return (
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          {!summaryData ? (
+          {isLoading ? (
             <>
               {Array.from({ length: 2 }).map((_, i) => (
                 <div key={i}>
