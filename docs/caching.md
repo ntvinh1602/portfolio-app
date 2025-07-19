@@ -57,7 +57,7 @@ import useSWR from 'swr';
 import { fetcher } from ''lib/fetcher'' (see below for file content);
 
 export function useDashboardData() {
-  const { data, error, isLoading } = useSWR('/api/query/dashboard', fetcher);
+  const { data, error, isLoading } = useSWR('/api/gateway/dashboard', fetcher);
   // ... return transformed data
 }
 ```
@@ -70,7 +70,7 @@ To reduce database load and speed up API responses, we leverage the built-in Nex
 
 ### Core Concepts:
 
-*   **Route Handlers:** All data fetching from the database is now done exclusively within API Route Handlers (e.g., `src/app/api/query/dashboard/route.ts`). **No component should ever call the database directly.**
+*   **Route Handlers:** All data fetching from the database is now done exclusively within API Route Handlers (e.g., `src/app/api/gateway/dashboard/route.ts`). **No component should ever call the database directly.**
 *   **Caching Strategies:** We use two primary strategies for server-side caching depending on how the data is fetched within the API route:
     1.  **`fetch` with `revalidate`:** For API routes that themselves use `fetch` to call other internal or external APIs (like our consolidated endpoints), we use the `next: { revalidate: 86400 }` option. This instructs Next.js to cache the response for **86,400 seconds (24 hours)**.
     2.  **`Cache-Control` Header:** For API routes that fetch data directly from the database (e.g., calling a Supabase RPC), we set the `Cache-Control` header on the `NextResponse`. This instructs the CDN and browser how to cache the response. We typically use `s-maxage=3600` to cache on the CDN for 1 hour.
@@ -81,7 +81,7 @@ To reduce database load and speed up API responses, we leverage the built-in Nex
 
 *   **When using `fetch` in an API route:**
     ```javascript
-    // In an API Route Handler like /api/query/dashboard
+    // In an API Route Handler like /api/gateway/dashboard
     const response = await fetch('.../api/query/asset-summary', {
       next: { revalidate: 86400 } // Cache for 24 hours
     });
@@ -104,9 +104,9 @@ To reduce database load and speed up API responses, we leverage the built-in Nex
 All data-querying API routes are located under `src/app/api/query/`.
 
 *   **Consolidated Endpoints:** For pages that require multiple, distinct pieces of data, we have created consolidated API endpoints to minimize client-side network requests.
-    *   [`/api/query/dashboard`](src/app/api/query/dashboard/route.ts)
-    *   [`/api/query/metrics`](src/app/api/query/metrics/route.ts)
-    *   [`/api/query/earnings`](src/app/api/query/earnings/route.ts)
+    *   [`/api/gateway/dashboard`](src/app/api/gateway/dashboard/route.ts)
+    *   [`/api/gateway/metrics`](src/a/api/gateway/metricscs/route.ts)
+    *   [`/api/gateway/earnings`](src/app/api/gateway/earnings/route.ts)
 *   **Direct Query Endpoints:** For simpler data needs, we have direct endpoints that map closely to a database query.
     *   [`/api/query/stock-holdings`](src/app/api/query/stock-holdings/route.ts)
     *   [`/api/query/debts`](src/app/api/query/debts/route.ts)

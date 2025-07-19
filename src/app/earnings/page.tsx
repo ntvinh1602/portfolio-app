@@ -44,7 +44,7 @@ export default function Page() {
         return null
       }
 
-      return `/api/query/earnings?start_date=${startDate}&end_date=${endDate}`
+      return `/api/gateway/earnings?start_date=${startDate}&end_date=${endDate}`
     },
     fetcher
   )

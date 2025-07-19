@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Piechart } from "@/components/charts/base-charts/piechart"
+import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"

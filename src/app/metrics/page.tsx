@@ -17,7 +17,7 @@ import {
 import { formatNum } from "@/lib/utils"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useMetricsData } from "@/hooks/useMetricsData"
-import { Linechart } from "@/components/charts/base-charts/linechart"
+import { Linechart } from "@/components/charts/linechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { format as formatDate } from "date-fns"
 

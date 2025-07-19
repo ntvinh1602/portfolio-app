@@ -28,7 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Piechart } from "@/components/charts/base-charts/piechart"
+import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 

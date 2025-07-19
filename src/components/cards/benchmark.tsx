@@ -1,6 +1,6 @@
 "use client"
 
-import { Linechart } from "@/components/charts/base-charts/linechart"
+import { Linechart } from "@/components/charts/linechart"
 import {
   Card,
   CardDescription,

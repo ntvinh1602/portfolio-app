@@ -52,7 +52,7 @@ export function useDashboardData() {
   })
 
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
-    `/api/query/dashboard?${params.toString()}`,
+    `/api/gateway/dashboard?${params.toString()}`,
     fetcher
   )
 

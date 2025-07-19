@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { Linechart } from "@/components/charts/base-charts/linechart"
+import { Linechart } from "@/components/charts/linechart"
 import { formatNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"

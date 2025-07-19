@@ -6,11 +6,11 @@ import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import {
   ChartBarStacked,
   BarStackedSkeleton,
-} from "@/components/charts/base-charts/stacked-barchart"
+} from "@/components/charts/stacked-barchart"
 import {
   Piechart,
   PiechartSkeleton,
-} from "@/components/charts/base-charts/piechart"
+} from "@/components/charts/piechart"
 import { useExpensesData } from "@/hooks/useExpensesData"
 import {
   Card,

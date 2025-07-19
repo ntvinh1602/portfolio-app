@@ -1,4 +1,4 @@
-import { BarChart } from "../charts/base-charts/barchart"
+import { BarChart } from "../charts/barchart"
 import {
   Card,
   CardAction,

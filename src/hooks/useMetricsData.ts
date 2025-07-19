@@ -31,7 +31,7 @@ export function useMetricsData(dateRange: string) {
         lifetime_start_date: formatDate(firstSnapshotDate, "yyyy-MM-dd"),
       })
 
-      return `/api/query/metrics?${params.toString()}`
+      return `/api/gateway/metrics?${params.toString()}`
     },
     fetcher
   )
