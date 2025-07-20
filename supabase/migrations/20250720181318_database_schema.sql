@@ -424,116 +424,6 @@ BEGIN
 END;
 $$;
 ALTER FUNCTION "public"."get_asset_summary"() OWNER TO "postgres";
-CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-    v_user_id uuid;
-    v_first_portfolio_value numeric;
-    v_first_vni_value numeric;
-    data_count INT;
-    data RECORD;
-    result_data RECORD;
-    avg_x NUMERIC;
-    avg_y NUMERIC;
-    range_start INT;
-    range_end INT;
-    point_area NUMERIC;
-    max_area NUMERIC;
-    point_to_add RECORD;
-    every NUMERIC;
-    i INT;
-    a INT := 0;
-BEGIN
-    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
-    SELECT dps.equity_index INTO v_first_portfolio_value
-    FROM daily_performance_snapshots dps
-    WHERE dps.user_id = v_user_id AND dps.date >= p_start_date
-    ORDER BY dps.date
-    LIMIT 1;
-    SELECT md.close INTO v_first_vni_value
-    FROM daily_market_indices md
-    WHERE md.symbol = '^VNINDEX' AND md.date >= p_start_date
-    ORDER BY md.date
-    LIMIT 1;
-    CREATE TEMP TABLE raw_data AS
-    WITH date_series AS (
-        SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date as day
-    ),
-    portfolio_data AS (
-        SELECT
-            dps.date,
-            dps.equity_index
-        FROM daily_performance_snapshots dps
-        WHERE dps.user_id = v_user_id AND dps.date BETWEEN p_start_date AND p_end_date
-    ),
-    vni_data AS (
-        SELECT
-            md.date,
-            md.close
-        FROM daily_market_indices md
-        WHERE md.symbol = '^VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
-    )
-    SELECT
-        ds.day as date,
-        (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
-        (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
-        ROW_NUMBER() OVER (ORDER BY ds.day) as rn
-    FROM date_series ds
-    LEFT JOIN portfolio_data pd ON ds.day = pd.date
-    LEFT JOIN vni_data vni ON ds.day = vni.date
-    WHERE pd.equity_index IS NOT NULL OR vni.close IS NOT NULL
-    ORDER BY ds.day;
-    SELECT COUNT(*) INTO data_count FROM raw_data;
-    IF data_count <= p_threshold THEN
-        RETURN QUERY SELECT to_char(rd.date, 'YYYY-MM-DD'), rd.portfolio_value, rd.vni_value FROM raw_data rd;
-        DROP TABLE raw_data;
-        RETURN;
-    END IF;
-    CREATE TEMP TABLE result_data_temp (
-        date DATE,
-        portfolio_value NUMERIC,
-        vni_value NUMERIC
-    );
-    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
-    every := (data_count - 2.0) / (p_threshold - 2.0);
-    FOR i IN 0..p_threshold - 3 LOOP
-        range_start := floor(a * every) + 2;
-        range_end := floor((a + 1) * every) + 1;
-        
-        IF range_end > data_count THEN
-            range_end := data_count;
-        END IF;
-        
-        IF range_start > range_end THEN
-            CONTINUE;
-        END IF;
-        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        SELECT AVG(rd.portfolio_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        max_area := -1;
-        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
-        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
-            point_area := abs(
-                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
-                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.portfolio_value)
-            ) * 0.5;
-            IF point_area > max_area THEN
-                max_area := point_area;
-                point_to_add := data;
-            END IF;
-        END LOOP;
-        INSERT INTO result_data_temp (date, portfolio_value, vni_value)
-        VALUES (point_to_add.date, point_to_add.portfolio_value, point_to_add.vni_value);
-        a := a + 1;
-    END LOOP;
-    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
-    RETURN QUERY SELECT to_char(r.date, 'YYYY-MM-DD'), r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.date;
-    DROP TABLE raw_data;
-    DROP TABLE result_data_temp;
-END;
-$$;
-ALTER FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -683,80 +573,6 @@ BEGIN
 END;
 $$;
 ALTER FUNCTION "public"."get_crypto_holdings"() OWNER TO "postgres";
-CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-    v_user_id uuid;
-    data_count INT;
-    data RECORD;
-    result_data RECORD;
-    avg_x NUMERIC;
-    avg_y NUMERIC;
-    range_start INT;
-    range_end INT;
-    point_area NUMERIC;
-    max_area NUMERIC;
-    point_to_add RECORD;
-    every NUMERIC;
-    i INT;
-    a INT := 0;
-BEGIN
-    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
-    CREATE TEMP TABLE raw_data AS
-    SELECT
-        dps.date,
-        dps.net_equity_value::numeric as net_equity_value,
-        ROW_NUMBER() OVER (ORDER BY dps.date) as rn
-    FROM
-        daily_performance_snapshots dps
-    WHERE
-        dps.user_id = v_user_id
-        AND dps.date >= p_start_date
-        AND dps.date <= p_end_date
-    ORDER BY
-        dps.date;
-    SELECT COUNT(*) INTO data_count FROM raw_data;
-    IF data_count <= p_threshold THEN
-        RETURN QUERY SELECT rd.date, rd.net_equity_value FROM raw_data rd;
-        DROP TABLE raw_data;
-        RETURN;
-    END IF;
-    CREATE TEMP TABLE result_data_temp (
-        date DATE,
-        net_equity_value NUMERIC
-    );
-    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = 1;
-    every := (data_count - 2.0) / (p_threshold - 2.0);
-    FOR i IN 0..p_threshold - 3 LOOP
-        range_start := floor(a * every) + 2;
-        range_end := floor((a + 1) * every) + 1;
-        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        SELECT AVG(rd.net_equity_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        max_area := -1;
-        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
-        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
-            point_area := abs(
-                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
-                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
-            ) * 0.5;
-            IF point_area > max_area THEN
-                max_area := point_area;
-                point_to_add := data;
-            END IF;
-        END LOOP;
-        INSERT INTO result_data_temp (date, net_equity_value)
-        VALUES (point_to_add.date, point_to_add.net_equity_value);
-        a := a + 1;
-    END LOOP;
-    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = data_count;
-    RETURN QUERY SELECT * FROM result_data_temp ORDER BY date;
-    DROP TABLE raw_data;
-    DROP TABLE result_data_temp;
-END;
-$$;
-ALTER FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -890,73 +706,6 @@ BEGIN
 END;
 $$;
 ALTER FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") OWNER TO "postgres";
-CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-    v_user_id uuid;
-BEGIN
-    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
-    RETURN QUERY
-    WITH month_series AS (
-        SELECT date_trunc('month', dd)::date AS month
-        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
-    ),
-    trading_costs AS (
-        SELECT
-            date_trunc('month', t.transaction_date)::date AS month,
-            COALESCE(SUM(td.fees), 0) AS total_fees,
-            COALESCE(SUM(td.taxes), 0) AS total_taxes
-        FROM transactions t
-        JOIN transaction_details td ON t.id = td.transaction_id
-        WHERE t.user_id = v_user_id
-          AND t.transaction_date BETWEEN p_start_date AND p_end_date
-          AND t.type IN ('buy', 'sell')
-        GROUP BY 1
-    ),
-    loan_interest_costs AS (
-        SELECT
-            date_trunc('month', t.transaction_date)::date AS month,
-            COALESCE(SUM(tl.amount), 0) AS total_interest
-        FROM transactions t
-        JOIN transaction_legs tl ON t.id = tl.transaction_id
-        JOIN assets a ON tl.asset_id = a.id
-        JOIN securities s ON a.security_id = s.id
-        WHERE t.user_id = v_user_id
-          AND t.transaction_date BETWEEN p_start_date AND p_end_date
-          AND t.type = 'debt_payment'
-          AND s.ticker IN ('EARNINGS', 'CAPITAL')
-        GROUP BY 1
-    ),
-    other_interest_costs AS (
-        SELECT
-            date_trunc('month', t.transaction_date)::date AS month,
-            COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Margin%'), 0) AS total_margin_interest,
-            COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Cash advance%'), 0) AS total_cash_advance_interest
-        FROM transactions t
-        JOIN transaction_legs tl ON t.id = tl.transaction_id
-        JOIN assets a ON tl.asset_id = a.id
-        JOIN securities s ON a.security_id = s.id
-        WHERE t.user_id = v_user_id
-          AND t.transaction_date BETWEEN p_start_date AND p_end_date
-          AND t.type = 'expense'
-          AND s.ticker IN ('EARNINGS', 'CAPITAL')
-        GROUP BY 1
-    )
-    SELECT
-        to_char(ms.month, 'YYYY-MM') AS month,
-        COALESCE(tc.total_fees, 0) AS trading_fees,
-        COALESCE(tc.total_taxes, 0) AS taxes,
-        (COALESCE(lic.total_interest, 0) + COALESCE(oic.total_margin_interest, 0) + COALESCE(oic.total_cash_advance_interest, 0)) AS interest
-    FROM month_series ms
-    LEFT JOIN trading_costs tc ON ms.month = tc.month
-    LEFT JOIN loan_interest_costs lic ON ms.month = lic.month
-    LEFT JOIN other_interest_costs oic ON ms.month = oic.month
-    ORDER BY ms.month;
-END;
-$$;
-ALTER FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1025,34 +774,6 @@ BEGIN
 END;
 $$;
 ALTER FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-CREATE OR REPLACE FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "pnl" numeric)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-    v_user_id uuid;
-    v_month_start DATE;
-    v_month_end DATE;
-    v_pnl NUMERIC;
-BEGIN
-    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
-    FOR v_month_start IN
-        SELECT date_trunc('month', dd)::DATE
-        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
-    LOOP
-        IF date_trunc('month', v_month_start) = date_trunc('month', p_end_date) THEN
-            v_month_end := p_end_date;
-        ELSE
-            v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
-        END IF;
-        SELECT public.calculate_pnl(v_user_id, v_month_start, v_month_end) INTO v_pnl;
-        month := to_char(v_month_start, 'YYYY-MM');
-        pnl := v_pnl;
-        RETURN NEXT;
-    END LOOP;
-END;
-$$;
-ALTER FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "pnl" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1082,30 +803,6 @@ BEGIN
 END;
 $$;
 ALTER FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-CREATE OR REPLACE FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "twr" numeric)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-    v_user_id uuid;
-    v_month_start DATE;
-    v_month_end DATE;
-    v_twr NUMERIC;
-BEGIN
-    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
-    FOR v_month_start IN
-        SELECT date_trunc('month', dd)::DATE
-        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
-    LOOP
-        v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
-        SELECT public.calculate_twr(v_user_id, v_month_start, v_month_end) INTO v_twr;
-        month := to_char(v_month_start, 'YYYY-MM');
-        twr := v_twr;
-        RETURN NEXT;
-    END LOOP;
-END;
-$$;
-ALTER FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "twr" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2652,18 +2349,12 @@ GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_
 GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "service_role";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "service_role";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
@@ -2676,21 +2367,12 @@ GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "tex
 GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "service_role";
-GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
-GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
-GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
