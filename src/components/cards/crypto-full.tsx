@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  RefreshCw,
   FileChartPie
 } from "lucide-react"
 import {
@@ -27,23 +26,11 @@ import {
 } from "@/components/list-item/security"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
-import { mutate } from "swr"
 import { formatNum } from "@/lib/utils"
 
 export function CryptoCardFull() {
   const { cryptoHoldings, loading } = useCryptoHoldings()
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    // Note: This endpoint does not exist yet
-    await fetch('/api/external/refresh-all-crypto-prices', { method: 'POST' });
-    // Re-fetch the holdings data
-    await mutate('/api/query/crypto-holdings');
-    setIsRefreshing(false)
-    setLastUpdated(new Date());
-  };
 
   useEffect(() => {
     async function fetchLastUpdated() {
@@ -51,11 +38,11 @@ export function CryptoCardFull() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('last_crypto_fetching')
+          .select('last_stock_fetching')
           .eq('id', user.id)
           .single()
-        if (profile?.last_crypto_fetching) {
-          setLastUpdated(new Date(profile.last_crypto_fetching))
+        if (profile?.last_stock_fetching) {
+          setLastUpdated(new Date(profile.last_stock_fetching))
         }
       }
     }
