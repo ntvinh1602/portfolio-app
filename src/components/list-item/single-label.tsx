@@ -13,6 +13,7 @@ interface SummaryCardProps {
 
 interface SummarySkeletonProps {
   header?: boolean
+  label: string
 }
 
 function SummaryCard({
@@ -50,18 +51,17 @@ function SummaryCard({
   )
 }
 
-function SummarySkeleton({ header = false }: SummarySkeletonProps) {
+function SummarySkeleton({ header = false, label }: SummarySkeletonProps) {
   return (
     <Button
       variant={header ? "secondary" : "ghost"}
       className={cn(
-        "flex w-full justify-between",
-        !header && "font-normal",
-        header && "text-foreground mt-2",
+        "flex w-full justify-between disabled:opacity-100",
+        header && "bg-primary/80 border text-background border-primary/50 mt-2",
       )}
       disabled
     >
-      <Skeleton className="h-5 w-24" />
+      <span>{label}</span>
       <Skeleton className="h-5 w-32" />
     </Button>
   )

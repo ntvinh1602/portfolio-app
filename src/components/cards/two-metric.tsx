@@ -65,7 +65,9 @@ export function TwoMetric({
           <CardDescription>{label1}</CardDescription>
           <CardTitle className="flex text-xl gap-1 items-center">
             <>
-              {value1}
+              <span className={value1 === "Loading..." ? "animate-pulse" : ""}>
+                {value1}
+              </span>
               {icon && (
                 parseFloat(value1) > 0
                   ? <TrendingUp className="text-green-700 dark:text-green-400"/>
@@ -81,7 +83,9 @@ export function TwoMetric({
           <CardDescription>{label2}</CardDescription>
           <CardTitle className="flex text-xl gap-1 items-center">
             <>
-              {value2}
+              <span className={value2 === "Loading..." ? "animate-pulse" : ""}>
+                {value2}
+              </span>
               {icon && (
                 parseFloat(value2) > 0
                   ? <TrendingUp className="text-green-700 dark:text-green-400"/>

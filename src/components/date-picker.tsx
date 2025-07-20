@@ -27,6 +27,8 @@ type DatePickerProps = (
 )
 
 export default function DatePicker(props: DatePickerProps) {
+  const [open, setOpen] = React.useState(false)
+
   const buttonText = React.useMemo(() => {
     if (props.mode === "range") {
       const { selected } = props
@@ -48,45 +50,74 @@ export default function DatePicker(props: DatePickerProps) {
     }
   }, [props])
 
-  return (
-    <div className="flex flex-col gap-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            id="dates"
-            className="w-full justify-between"
-          >
-            <CalendarIcon className="size-4 stroke-[1]" />
-            <span className="flex-1 text-left">{buttonText}</span>
-            <ChevronDownIcon className="size-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="rounded-2xl bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0" align="start">
-          <Calendar
-            captionLayout="dropdown"
-            weekStartsOn={1}
-            {...props}
-          />
-          <div className="p-2 text-xs">
-            {props.mode === "single" && (
+  const trigger = (
+    <Button
+      variant="outline"
+      id="dates"
+      className="w-full justify-between"
+    >
+      <CalendarIcon className="size-4 stroke-[1]" />
+      <span className="flex-1 text-left">{buttonText}</span>
+      <ChevronDownIcon className="size-4" />
+    </Button>
+  )
+
+  if (props.mode === "single") {
+    return (
+      <div className="flex flex-col gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+          <PopoverContent className="rounded-2xl bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0" align="start">
+            <Calendar
+              mode="single"
+              captionLayout="dropdown"
+              weekStartsOn={1}
+              selected={props.selected}
+              defaultMonth={props.selected}
+              onSelect={(day) => {
+                props.onSelect(day)
+                setOpen(false)
+              }}
+            />
+            <div className="p-2 text-xs">
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => props.onSelect(new Date())}
+                onClick={() => {
+                  props.onSelect(new Date())
+                  setOpen(false)
+                }}
               >
                 Today
               </Button>
-            )}
-            {props.mode === "range" && (
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => props.onSelect(undefined)}
-              >
-                Clear Selection
-              </Button>
-            )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent className="rounded-2xl bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0" align="start">
+          <Calendar
+            mode="range"
+            captionLayout="dropdown"
+            weekStartsOn={1}
+            defaultMonth={props.selected?.from}
+            selected={props.selected}
+            onSelect={props.onSelect}
+          />
+          <div className="p-2 text-xs">
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => props.onSelect(undefined)}
+            >
+              Clear Selection
+            </Button>
           </div>
         </PopoverContent>
       </Popover>

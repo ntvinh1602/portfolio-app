@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Card,
   CardAction,
@@ -120,28 +121,53 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
         </CardAction>
       </CardHeader>
       <CardContent className="flex w-full justify-between">
-          <Piechart
-            data={assetChartData}
-            chartConfig={assetChartCfg}
-            dataKey="allocation"
-            nameKey="asset"
-            className="h-fit w-full"
-            innerRadius={50}
-            legend="right"
-            label={false}
-            margin_tb={0}
-          />
-          <Piechart
-            data={liabilityChartData}
-            chartConfig={liabilityChartCfg}
-            dataKey="allocation"
-            nameKey="liability"
-            className="h-fit w-full"
-            innerRadius={50}
-            legend="right"
-            label={false}
-            margin_tb={0}
-          />
+        <Piechart
+          data={assetChartData}
+          chartConfig={assetChartCfg}
+          dataKey="allocation"
+          nameKey="asset"
+          className="h-fit w-full"
+          innerRadius={50}
+          legend="right"
+          label={false}
+          margin_tb={0}
+        />
+        <Piechart
+          data={liabilityChartData}
+          chartConfig={liabilityChartCfg}
+          dataKey="allocation"
+          nameKey="liability"
+          className="h-fit w-full"
+          innerRadius={50}
+          legend="right"
+          label={false}
+          margin_tb={0}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
+export function AssetCardSkeleton() {
+  return (
+    <Card className="bg-muted/0 pt-2 pb-1 border-none gap-2">
+      <CardHeader>
+        <CardDescription className="flex items-center gap-1 w-fit">
+          Total assets<ChevronRight className="size-4" />
+        </CardDescription>
+        <CardTitle className="text-2xl">
+          <Skeleton className="h-8 w-32" />
+        </CardTitle>
+        <CardAction className="flex flex-col gap-1 items-end">
+          <CardDescription className="text-xs">
+            Leverage
+          </CardDescription>
+          <Skeleton className="h-4 w-12" />
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex w-full justify-between gap-2">
+        <Skeleton className="h-[100px] w-full" />
+        <Skeleton className="h-[100px] w-full" />
       </CardContent>
     </Card>
   )

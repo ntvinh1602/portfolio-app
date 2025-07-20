@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -13,6 +14,7 @@ import {
 import { useTransactionFormData } from "@/hooks/useTransactionFormData"
 import { Combobox } from "@/components/combobox"
 import { Enums } from "@/lib/database.types"
+import { formatNum } from "@/lib/utils"
 
 type TradeFormProps = {
   transactionType: Enums<"transaction_type">
@@ -31,9 +33,43 @@ export function TradeForm({
 }: TradeFormProps) {
   const { accounts, assets, loading } = useTransactionFormData()
 
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  const { estimatedProceeds, estimatedFee, estimatedTaxes } = useMemo(() => {
+    const quantity = parseFloat((formState.quantity || "0").replace(/,/g, ""))
+    const price = parseFloat((formState.price || "0").replace(/,/g, ""))
+
+    // For placeholders
+    const calculatedFee = quantity * price * 0.00072
+    const calculatedTaxes = quantity * price * 0.001
+
+    // For final calculation, using user input if available
+    const finalFees = parseFloat((formState.fees || "0").replace(/,/g, ""))
+    const finalTaxes = parseFloat((formState.taxes || "0").replace(/,/g, ""))
+
+    let proceedsAmount = 0
+    if (transactionType === "buy") {
+      proceedsAmount = quantity * price + finalFees
+    } else if (transactionType === "sell") {
+      proceedsAmount = quantity * price - finalFees - finalTaxes
+    }
+
+    return {
+      estimatedFee: isNaN(calculatedFee) ? "0" : `~ ${formatNum(calculatedFee)}`,
+      estimatedTaxes: isNaN(calculatedTaxes)
+        ? "0"
+        : `~ ${formatNum(calculatedTaxes)}`,
+      estimatedProceeds: isNaN(proceedsAmount) ? "0" : formatNum(proceedsAmount),
+    }
+  }, [
+    formState.quantity,
+    formState.price,
+    formState.fees,
+    formState.taxes,
+    transactionType,
+  ])
+ 
+   if (loading) {
+     return <div>Loading...</div>
+   }
 
   return (
     <>
@@ -134,7 +170,7 @@ export function TradeForm({
           name="fees"
           type="text"
           inputMode="decimal"
-          placeholder="0"
+          placeholder={estimatedFee}
           value={formState.fees || ""}
           onChange={handleInputChange}
         />
@@ -147,12 +183,15 @@ export function TradeForm({
             name="taxes"
             type="text"
             inputMode="decimal"
-            placeholder="0"
+            placeholder={estimatedTaxes}
             value={formState.taxes || ""}
             onChange={handleInputChange}
           />
         </div>
       )}
+        <div className="col-span-2 flex justify-end text-xs font-thin">
+          {`Estimated net amount: ${estimatedProceeds}`}
+        </div>
     </>
   )
 }

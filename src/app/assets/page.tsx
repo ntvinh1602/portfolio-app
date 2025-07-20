@@ -134,9 +134,9 @@ return (
         <CardContent className="px-0">
           {isLoading ? (
             <>
-              <SummarySkeleton header={true} />
-              {Array.from({ length: 4 }).map((_, i) => (
-                <SummarySkeleton key={i}/>
+              <SummarySkeleton header={true} label="Assets"/>
+              {Array.from(["Cash","Stocks","EPF","Crypto"]).map((label) => (
+                <SummarySkeleton key={label} label={label}/>
               ))}
             </>
           ) : (
@@ -165,13 +165,13 @@ return (
         <CardContent className="px-0">
           {isLoading ? (
             <>
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i}>
-                  <SummarySkeleton header={true} />
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <SummarySkeleton key={i}/>
-                  ))}
-                </div>
+              <SummarySkeleton header={true} label="Liabilities"/>
+              {Array.from(["Loans Payable", "Margins Payable", "Accrued Interest"]).map((label, i) => (
+                <SummarySkeleton key={i} label={label}/>
+              ))}
+              <SummarySkeleton header={true} label="Equities"/>
+              {Array.from(["Paid-in Capital", "Retained Earnings", "Unrealized P/L"]).map((label, i) => (
+                <SummarySkeleton key={i} label={label}/>
               ))}
             </>
           ) : (

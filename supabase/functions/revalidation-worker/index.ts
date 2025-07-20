@@ -13,7 +13,7 @@ serve(async (_req) => {
     const { data: jobs, error: fetchError } = await supabase
       .from("revalidation_queue")
       .select("*")
-      .eq("status", "pending")
+      .in("status", ["pending", "failed"])
       .limit(20);
 
     if (fetchError) throw fetchError;
@@ -49,7 +49,8 @@ serve(async (_req) => {
 
         if (!response.ok) {
           const errorBody = await response.text();
-          throw new Error(`Revalidation failed with status ${response.status}: ${errorBody}`);
+          const headers = JSON.stringify(Object.fromEntries(response.headers.entries()));
+          throw new Error(`Revalidation failed with status ${response.status}. Headers: ${headers}. Body: ${errorBody}`);
         }
 
         // Mark as completed

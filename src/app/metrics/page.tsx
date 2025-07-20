@@ -17,7 +17,7 @@ import {
 import { formatNum } from "@/lib/utils"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useMetricsData } from "@/hooks/useMetricsData"
-import { Linechart } from "@/components/charts/linechart"
+import { Linechart, LinechartSkeleton } from "@/components/charts/linechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { format as formatDate } from "date-fns"
 
@@ -100,8 +100,8 @@ export default function Page() {
             </CardDescription>
           </CardHeader>
           {isBenchmarkChartLoading && (
-            <div className="h-[250px] w-full flex items-center justify-center">
-              Loading chart...
+            <div className="h-[250px] px-4 w-full">
+              <LinechartSkeleton />
             </div>
           )}
           {benchmarkChartError && (

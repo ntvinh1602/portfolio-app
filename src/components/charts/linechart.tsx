@@ -7,6 +7,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 interface LinechartProps {
@@ -70,5 +71,11 @@ export function Linechart({
         {legend && <ChartLegend content={<ChartLegendContent />} className="font-thin"/>}
       </LineChart>
     </ChartContainer>
+  )
+}
+
+export function LinechartSkeleton() {
+  return (
+    <Skeleton className="h-[210px] w-full" />
   )
 }

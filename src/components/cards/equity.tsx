@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import { format } from "date-fns"
@@ -28,7 +29,7 @@ interface EquityCardProps {
   endDate: Date;
 }
 
-export function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
+function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
     router.push("/analytics")
@@ -77,4 +78,31 @@ export function EquityCard({ latestEquity, twr, equityChartData }: EquityCardPro
       </CardFooter>
     </Card>
   )
+}
+
+function EquityCardSkeleton() {
+  return (
+    <Card className="gap-4 h-full">
+      <CardHeader className="px-4">
+        <CardDescription className="flex items-center gap-1 w-fit">
+          Net worth<ChevronRight className="size-4"/>
+        </CardDescription>
+        <CardTitle className="text-2xl">
+          <Skeleton className="h-8 w-32" />
+        </CardTitle>
+        <CardAction className="flex flex-col gap-1 items-end">
+          <Skeleton className="h-4 w-16" />
+          <CardDescription className="text-xs">Last 90 days</CardDescription>
+        </CardAction>
+      </CardHeader>
+      <CardFooter className="px-4">
+        <Skeleton className="h-[180px] w-full" />
+      </CardFooter>
+    </Card>
+  )
+}
+
+export {
+  EquityCard,
+  EquityCardSkeleton
 }

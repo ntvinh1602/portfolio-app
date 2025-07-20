@@ -1,6 +1,6 @@
 "use client"
 
-import { DebtItem } from "@/components/list-item/debt"
+import { DebtItem, DebtItemSkeleton } from "@/components/list-item/debt"
 import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
 import { format } from "date-fns"
@@ -37,17 +37,23 @@ export default function Page() {
       <PageHeader title="Debts" />
       <PageContent>
         {error && <p>Error loading debts.</p>}
-        {!debts && !error && <p>Loading...</p>}
+        {!debts && !error &&
+        <>
+          <DebtItemSkeleton />
+          <DebtItemSkeleton />
+          <DebtItemSkeleton />
+        </>
+        }
         {debts && debts.length === 0 && <p>No outstanding debt found.</p>}
         {debts && debts.map((debt) => (
-              <DebtItem
-                key={debt.id}
-                name={debt.lender_name}
-                amount={debt.principal_amount}
-                interestRate={debt.interest_rate}
-                startDate={format(debt.start_date, "dd MMMM yyyy")}
-                accruedInterest={calculateAccruedInterest(debt)}
-              />
+          <DebtItem
+            key={debt.id}
+            name={debt.lender_name}
+            amount={debt.principal_amount}
+            interestRate={debt.interest_rate}
+            startDate={format(debt.start_date, "dd MMMM yyyy")}
+            accruedInterest={calculateAccruedInterest(debt)}
+          />
         ))}
       </PageContent>
       <BottomNavBar />

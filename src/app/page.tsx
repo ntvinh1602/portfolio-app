@@ -14,11 +14,11 @@ import {
   CarouselItem
 } from "@/components/ui/carousel"
 
-import { EquityCard } from "@/components/cards/equity"
-import { AssetCard } from "@/components/cards/assets"
-import { PnLCard } from "@/components/cards/monthly-pnl"
-import { BenchmarkCard } from "@/components/cards/benchmark"
-import { StockCardCompact } from "@/components/cards/stock-compact"
+import { EquityCard, EquityCardSkeleton } from "@/components/cards/equity"
+import { AssetCard, AssetCardSkeleton } from "@/components/cards/assets"
+import { PnLCard, PnLCardSkeleton } from "@/components/cards/monthly-pnl"
+import { BenchmarkCard, BenchmarkCardSkeleton } from "@/components/cards/benchmark"
+import { StockCardCompact, StockCardCompactSkeleton } from "@/components/cards/stock-compact"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { subDays } from "date-fns"
@@ -62,20 +62,6 @@ export default function Page() {
     fetchUser()
   }, [])
 
-  if (isLoading) {
-    return (
-      <PageMain>
-        <PageHeader title=""/>
-        <PageContent className="px-0">
-          <div className="flex items-center justify-center h-full animate-pulse">
-            Waking up, be patient...
-          </div>
-        </PageContent>
-        <BottomNavBar />
-      </PageMain>
-    )
-  }
-
   if (error) {
     return (
       <PageMain>
@@ -97,32 +83,42 @@ export default function Page() {
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
             <CarouselItem className="basis-10/12 pl-8">
-              <EquityCard
-                latestEquity={latestEquity}
-                twr={twr}
-                equityChartData={equityData}
-                startDate={startDate}
-                endDate={endDate}
-              />
+              {isLoading ? <EquityCardSkeleton /> :
+                <EquityCard
+                  latestEquity={latestEquity}
+                  twr={twr}
+                  equityChartData={equityData}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              }
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2">
-              <PnLCard
-                mtdPnl={mtdPnl}
-                avgPnl={avgPnl}
-                monthlyPnlData={monthlyPnlData}
-              />
+              {isLoading ? <PnLCardSkeleton /> :
+                <PnLCard
+                  mtdPnl={mtdPnl}
+                  avgPnl={avgPnl}
+                  monthlyPnlData={monthlyPnlData}
+                />
+              }
             </CarouselItem>
             <CarouselItem className="basis-10/12 pl-2 pr-6">
-              <BenchmarkCard
-                benchmarkChartData={benchmarkData}
-                startDate={startDate}
-                endDate={endDate}
-              />
+              {isLoading ? <BenchmarkCardSkeleton /> :
+                <BenchmarkCard
+                  benchmarkChartData={benchmarkData}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              }
             </CarouselItem>
           </CarouselContent>
         </Carousel>
-        <AssetCard assetSummaryData={assetSummaryData} />
-        <StockCardCompact />
+          {isLoading ? <AssetCardSkeleton /> :
+            <AssetCard assetSummaryData={assetSummaryData} />
+          }
+          {isLoading ? <StockCardCompactSkeleton /> :
+            <StockCardCompact />
+          }
       </PageContent>
       <BottomNavBar />
     </PageMain>

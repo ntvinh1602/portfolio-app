@@ -13,7 +13,7 @@ import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useStockHoldings } from "@/hooks/useStockHoldings"
 
-export function StockCardCompact() {
+function StockCardCompact() {
   const router = useRouter()
   const { stockHoldings, loading } = useStockHoldings()
 
@@ -23,7 +23,7 @@ export function StockCardCompact() {
 
   return (
     <div className="px-6">
-      <Card className="gap-0 pb-0">
+      <Card className="gap-0 pb-0 min-h-[200px]">
         <CardHeader className="px-4">
         <CardDescription
           className="flex items-center gap-1 w-fit"
@@ -51,7 +51,7 @@ export function StockCardCompact() {
                 />
               ))
             ) : (
-              <div className="text-center font-thin text-muted-foreground py-4">
+              <div className="text-center text-sm font-thin text-muted-foreground py-4">
                 No stock holdings found.
               </div>
             )}
@@ -60,4 +60,30 @@ export function StockCardCompact() {
       </Card>
     </div>
   )
+}
+
+function StockCardCompactSkeleton() {
+  return (
+    <div className="px-6">
+      <Card className="gap-0 pb-0">
+        <CardHeader className="px-4">
+          <CardDescription className="flex items-center gap-1 w-fit">
+            Stocks<ChevronRight className="size-4"/>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-0 pb-2">
+          <div className="flex flex-col">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <StockSkeleton variant="compact" key={index} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export {
+  StockCardCompact,
+  StockCardCompactSkeleton
 }

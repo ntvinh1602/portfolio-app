@@ -1,6 +1,7 @@
 "use client"
 
 import { Linechart } from "@/components/charts/linechart"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Card,
   CardDescription,
@@ -23,7 +24,7 @@ interface BenchmarkCardProps {
   endDate: Date;
 }
 
-export function BenchmarkCard({ benchmarkChartData }: BenchmarkCardProps) {
+function BenchmarkCard({ benchmarkChartData }: BenchmarkCardProps) {
   return (
     <Card className="gap-2 h-full">
       <CardHeader className="px-4">
@@ -54,4 +55,27 @@ export function BenchmarkCard({ benchmarkChartData }: BenchmarkCardProps) {
       </CardFooter>
     </Card>
   )
+}
+
+function BenchmarkCardSkeleton() {
+  return (
+    <Card className="gap-2 h-full">
+      <CardHeader className="px-4">
+        <CardDescription>
+          Performance in the last 90 days
+        </CardDescription>
+        <CardTitle className="text-2xl">
+          <Skeleton className="h-8 w-32" />
+        </CardTitle>
+      </CardHeader>
+      <CardFooter className="px-4">
+        <Skeleton className="h-[210px] w-full" />
+      </CardFooter>
+    </Card>
+  )
+}
+
+export {
+  BenchmarkCard,
+  BenchmarkCardSkeleton
 }
