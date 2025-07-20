@@ -35,7 +35,7 @@ export function BottomNavBar() {
     <div className="fixed bottom-2 inset-x-2 rounded-full px-2 flex border h-[70px] justify-around items-center bg-card/25 backdrop-blur-sm max-w-4xl mx-auto text-muted-foreground text-xs font-thin [&_svg]:size-5 [&_svg]:stroke-[1]">
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent-foreground": pathname === "/",
+          "text-accent dark:text-accent-foreground": pathname === "/",
         })}
         onClick={() => handleNavigation("/")}
       >
@@ -43,20 +43,20 @@ export function BottomNavBar() {
       </div>
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent-foreground": pathname === "/assets",
+          "text-accent dark:text-accent-foreground": pathname === "/assets",
         })}
         onClick={() => handleNavigation("/assets")}
       >
         <Sprout />Assets
       </div>
       <AddTransactionMenu onMenuItemClick={handleMenuItemClick}>
-        <div className="flex flex-col items-center border bg-primary/50 border-accent/40 text-accent-foreground rounded-full p-3 -m-2">
+        <div className="flex flex-col items-center border bg-secondary dark:bg-primary/50 border-accent/40 text-accent-foreground rounded-full p-3 -m-2">
           <Plus />
         </div>
       </AddTransactionMenu>
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent-foreground": pathname === "/metrics",
+          "text-accent dark:text-accent-foreground": pathname === "/metrics",
         })}
         onClick={() => handleNavigation("/metrics")}
       >
@@ -65,7 +65,7 @@ export function BottomNavBar() {
       <OtherPagesMenu onMenuItemClick={handleNavigation}>
         <div
           className={cn("flex flex-col items-center gap-1", {
-            "text-accent-foreground": [
+            "text-accent dark:text-accent-foreground": [
               "/holdings",
               "/debts",
               "/transactions",

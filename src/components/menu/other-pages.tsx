@@ -47,12 +47,12 @@ export function OtherPagesMenu({
             key={item.label}
             onClick={() => onMenuItemClick(item.path)}
             className={`gap-2 justify-end ${
-              pathname === item.path ? "text-accent-foreground" : ""
+              pathname === item.path ? "text-accent dark:text-accent-foreground" : ""
             }`}
           >
             <span>{item.label}</span>
             <item.icon className={`stroke-[1] ${
-              pathname === item.path ? "text-accent-foreground" : ""
+              pathname === item.path ? "text-accent dark:text-accent-foreground" : ""
             }`} />
           </DropdownMenuItem>
         ))}

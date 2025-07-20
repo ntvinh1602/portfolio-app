@@ -69,7 +69,7 @@ export function HeaderNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-          <UserRound className="size-6 stroke-[1] text-accent-foreground dark:text-accent-foreground"/>
+          <UserRound className="size-6 stroke-[1] text-secondary dark:text-accent-foreground"/>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"

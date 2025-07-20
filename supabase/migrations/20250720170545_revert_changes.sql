@@ -8,6 +8,7 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
 CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
@@ -23,6 +24,7 @@ CREATE TYPE "public"."account_type" AS ENUM (
     'wallet',
     'conceptual'
 );
+ALTER TYPE "public"."account_type" OWNER TO "postgres";
 CREATE TYPE "public"."asset_class" AS ENUM (
     'cash',
     'stock',
@@ -31,19 +33,23 @@ CREATE TYPE "public"."asset_class" AS ENUM (
     'equity',
     'liability'
 );
+ALTER TYPE "public"."asset_class" OWNER TO "postgres";
 CREATE TYPE "public"."currency_type" AS ENUM (
     'fiat',
     'crypto'
 );
+ALTER TYPE "public"."currency_type" OWNER TO "postgres";
 CREATE TYPE "public"."debt_status" AS ENUM (
     'active',
     'paid_off'
 );
+ALTER TYPE "public"."debt_status" OWNER TO "postgres";
 CREATE TYPE "public"."tax_lot_origin" AS ENUM (
     'purchase',
     'split',
     'deposit'
 );
+ALTER TYPE "public"."tax_lot_origin" OWNER TO "postgres";
 CREATE TYPE "public"."transaction_type" AS ENUM (
     'buy',
     'sell',
@@ -56,6 +62,7 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
     'split',
     'borrow'
 );
+ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -96,6 +103,7 @@ BEGIN
     RETURN v_pnl;
 END;
 $$;
+ALTER FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -131,6 +139,7 @@ BEGIN
     RETURN v_twr;
 END;
 $$;
+ALTER FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -170,6 +179,7 @@ BEGIN
         SELECT COALESCE(SUM(
             CASE
                 WHEN ua.asset_class = 'stock' THEN ua.total_quantity * sdp.price
+                WHEN ua.asset_class = 'crypto' THEN ua.total_quantity * COALESCE(dcp.price, 0) * COALESCE(er_usd.rate, 1)
                 ELSE ua.total_quantity * COALESCE(er.rate, 1)
             END
         ), 0)
@@ -181,10 +191,20 @@ BEGIN
             ORDER BY date DESC LIMIT 1
         ) sdp ON ua.asset_class = 'stock'
         LEFT JOIN LATERAL (
+            SELECT price FROM daily_crypto_prices
+            WHERE security_id = ua.security_id AND date <= loop_date
+            ORDER BY date DESC LIMIT 1
+        ) dcp ON ua.asset_class = 'crypto'
+        LEFT JOIN LATERAL (
             SELECT rate FROM daily_exchange_rates
             WHERE currency_code = ua.currency_code AND date <= loop_date
             ORDER BY date DESC LIMIT 1
-        ) er ON ua.asset_class != 'stock';
+        ) er ON ua.asset_class NOT IN ('stock', 'crypto')
+        LEFT JOIN LATERAL (
+            SELECT rate FROM daily_exchange_rates
+            WHERE currency_code = 'USD' AND date <= loop_date
+            ORDER BY date DESC LIMIT 1
+        ) er_usd ON ua.asset_class = 'crypto';
         -- Calculate total liabilities value for the day
         WITH historical_debt_balances AS (
             SELECT
@@ -250,17 +270,16 @@ BEGIN
             v_equity_index := v_previous_equity_index * (1 + v_daily_return);
         END IF;
         -- Insert or update the snapshot for the day
-        INSERT INTO daily_performance_snapshots (user_id, date, total_assets_value, total_liabilities_value, net_equity_value, net_cash_flow, equity_index)
-        VALUES (p_user_id, loop_date, v_total_assets_value, v_total_liabilities_value, v_net_equity_value, v_net_cash_flow, v_equity_index)
+        INSERT INTO daily_performance_snapshots (user_id, date, net_equity_value, net_cash_flow, equity_index)
+        VALUES (p_user_id, loop_date, v_net_equity_value, v_net_cash_flow, v_equity_index)
         ON CONFLICT (user_id, date) DO UPDATE
-        SET total_assets_value = excluded.total_assets_value,
-            total_liabilities_value = excluded.total_liabilities_value,
-            net_equity_value = excluded.net_equity_value,
+        SET net_equity_value = excluded.net_equity_value,
             net_cash_flow = excluded.net_cash_flow,
             equity_index = excluded.equity_index;
     END LOOP;
 END;
 $$;
+ALTER FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -276,6 +295,7 @@ BEGIN
     RETURN v_balance;
 END;
 $$;
+ALTER FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_asset_summary"() RETURNS json
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -327,6 +347,7 @@ BEGIN
         SUM(
           CASE
             WHEN s.asset_class = 'stock' THEN COALESCE(qty.total_quantity, 0) * COALESCE(public.get_latest_stock_price(s.id), 0)
+            WHEN s.asset_class = 'crypto' THEN COALESCE(qty.total_quantity, 0) * COALESCE(public.get_latest_crypto_price(s.id), 0) * COALESCE(public.get_latest_exchange_rate('USD'), 1)
             ELSE COALESCE(qty.total_quantity, 0) * COALESCE(public.get_latest_exchange_rate(s.currency_code), 1)
           END
         ) AS market_value
@@ -402,6 +423,117 @@ BEGIN
   RETURN result;
 END;
 $$;
+ALTER FUNCTION "public"."get_asset_summary"() OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid;
+    v_first_portfolio_value numeric;
+    v_first_vni_value numeric;
+    data_count INT;
+    data RECORD;
+    result_data RECORD;
+    avg_x NUMERIC;
+    avg_y NUMERIC;
+    range_start INT;
+    range_end INT;
+    point_area NUMERIC;
+    max_area NUMERIC;
+    point_to_add RECORD;
+    every NUMERIC;
+    i INT;
+    a INT := 0;
+BEGIN
+    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
+    SELECT dps.equity_index INTO v_first_portfolio_value
+    FROM daily_performance_snapshots dps
+    WHERE dps.user_id = v_user_id AND dps.date >= p_start_date
+    ORDER BY dps.date
+    LIMIT 1;
+    SELECT md.close INTO v_first_vni_value
+    FROM daily_market_indices md
+    WHERE md.symbol = '^VNINDEX' AND md.date >= p_start_date
+    ORDER BY md.date
+    LIMIT 1;
+    CREATE TEMP TABLE raw_data AS
+    WITH date_series AS (
+        SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date as day
+    ),
+    portfolio_data AS (
+        SELECT
+            dps.date,
+            dps.equity_index
+        FROM daily_performance_snapshots dps
+        WHERE dps.user_id = v_user_id AND dps.date BETWEEN p_start_date AND p_end_date
+    ),
+    vni_data AS (
+        SELECT
+            md.date,
+            md.close
+        FROM daily_market_indices md
+        WHERE md.symbol = '^VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
+    )
+    SELECT
+        ds.day as date,
+        (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
+        (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
+        ROW_NUMBER() OVER (ORDER BY ds.day) as rn
+    FROM date_series ds
+    LEFT JOIN portfolio_data pd ON ds.day = pd.date
+    LEFT JOIN vni_data vni ON ds.day = vni.date
+    WHERE pd.equity_index IS NOT NULL OR vni.close IS NOT NULL
+    ORDER BY ds.day;
+    SELECT COUNT(*) INTO data_count FROM raw_data;
+    IF data_count <= p_threshold THEN
+        RETURN QUERY SELECT to_char(rd.date, 'YYYY-MM-DD'), rd.portfolio_value, rd.vni_value FROM raw_data rd;
+        DROP TABLE raw_data;
+        RETURN;
+    END IF;
+    CREATE TEMP TABLE result_data_temp (
+        date DATE,
+        portfolio_value NUMERIC,
+        vni_value NUMERIC
+    );
+    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
+    every := (data_count - 2.0) / (p_threshold - 2.0);
+    FOR i IN 0..p_threshold - 3 LOOP
+        range_start := floor(a * every) + 2;
+        range_end := floor((a + 1) * every) + 1;
+        
+        IF range_end > data_count THEN
+            range_end := data_count;
+        END IF;
+        
+        IF range_start > range_end THEN
+            CONTINUE;
+        END IF;
+        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+        SELECT AVG(rd.portfolio_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+        max_area := -1;
+        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
+        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
+            point_area := abs(
+                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
+                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.portfolio_value)
+            ) * 0.5;
+            IF point_area > max_area THEN
+                max_area := point_area;
+                point_to_add := data;
+            END IF;
+        END LOOP;
+        INSERT INTO result_data_temp (date, portfolio_value, vni_value)
+        VALUES (point_to_add.date, point_to_add.portfolio_value, point_to_add.vni_value);
+        a := a + 1;
+    END LOOP;
+    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
+    RETURN QUERY SELECT to_char(r.date, 'YYYY-MM-DD'), r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.date;
+    DROP TABLE raw_data;
+    DROP TABLE result_data_temp;
+END;
+$$;
+ALTER FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -521,6 +653,110 @@ BEGIN
     DROP TABLE result_data_temp;
 END;
 $$;
+ALTER FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        s.ticker,
+        s.name,
+        'https://s3-symbol-logo.tradingview.com/' || s.logo_url || '--big.svg' AS logo_url,
+        SUM(tl.quantity) AS quantity,
+        SUM(tl.amount) AS cost_basis,
+        public.get_latest_crypto_price(s.id) AS latest_price,
+        public.get_latest_exchange_rate('USD') AS latest_usd_rate
+    FROM
+        public.assets a
+    JOIN
+        public.securities s ON a.security_id = s.id
+    JOIN
+        public.transaction_legs tl ON a.id = tl.asset_id
+    WHERE
+        s.asset_class = 'crypto' AND a.user_id = auth.uid()
+    GROUP BY
+        a.id, s.id, s.ticker, s.name, s.logo_url
+    HAVING
+        SUM(tl.quantity) > 0;
+END;
+$$;
+ALTER FUNCTION "public"."get_crypto_holdings"() OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid;
+    data_count INT;
+    data RECORD;
+    result_data RECORD;
+    avg_x NUMERIC;
+    avg_y NUMERIC;
+    range_start INT;
+    range_end INT;
+    point_area NUMERIC;
+    max_area NUMERIC;
+    point_to_add RECORD;
+    every NUMERIC;
+    i INT;
+    a INT := 0;
+BEGIN
+    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
+    CREATE TEMP TABLE raw_data AS
+    SELECT
+        dps.date,
+        dps.net_equity_value::numeric as net_equity_value,
+        ROW_NUMBER() OVER (ORDER BY dps.date) as rn
+    FROM
+        daily_performance_snapshots dps
+    WHERE
+        dps.user_id = v_user_id
+        AND dps.date >= p_start_date
+        AND dps.date <= p_end_date
+    ORDER BY
+        dps.date;
+    SELECT COUNT(*) INTO data_count FROM raw_data;
+    IF data_count <= p_threshold THEN
+        RETURN QUERY SELECT rd.date, rd.net_equity_value FROM raw_data rd;
+        DROP TABLE raw_data;
+        RETURN;
+    END IF;
+    CREATE TEMP TABLE result_data_temp (
+        date DATE,
+        net_equity_value NUMERIC
+    );
+    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = 1;
+    every := (data_count - 2.0) / (p_threshold - 2.0);
+    FOR i IN 0..p_threshold - 3 LOOP
+        range_start := floor(a * every) + 2;
+        range_end := floor((a + 1) * every) + 1;
+        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+        SELECT AVG(rd.net_equity_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+        max_area := -1;
+        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
+        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
+            point_area := abs(
+                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
+                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
+            ) * 0.5;
+            IF point_area > max_area THEN
+                max_area := point_area;
+                point_to_add := data;
+            END IF;
+        END LOOP;
+        INSERT INTO result_data_temp (date, net_equity_value)
+        VALUES (point_to_add.date, point_to_add.net_equity_value);
+        a := a + 1;
+    END LOOP;
+    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = data_count;
+    RETURN QUERY SELECT * FROM result_data_temp ORDER BY date;
+    DROP TABLE raw_data;
+    DROP TABLE result_data_temp;
+END;
+$$;
+ALTER FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -602,6 +838,24 @@ BEGIN
     DROP TABLE result_data_temp;
 END;
 $$;
+ALTER FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") RETURNS numeric
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  latest_price NUMERIC;
+BEGIN
+  SELECT price
+  INTO latest_price
+  FROM public.daily_crypto_prices
+  WHERE security_id = p_security_id
+  ORDER BY date DESC
+  LIMIT 1;
+  RETURN latest_price;
+END;
+$$;
+ALTER FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -618,6 +872,7 @@ BEGIN
   RETURN latest_rate;
 END;
 $$;
+ALTER FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -634,6 +889,74 @@ BEGIN
   RETURN latest_price;
 END;
 $$;
+ALTER FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid;
+BEGIN
+    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
+    RETURN QUERY
+    WITH month_series AS (
+        SELECT date_trunc('month', dd)::date AS month
+        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
+    ),
+    trading_costs AS (
+        SELECT
+            date_trunc('month', t.transaction_date)::date AS month,
+            COALESCE(SUM(td.fees), 0) AS total_fees,
+            COALESCE(SUM(td.taxes), 0) AS total_taxes
+        FROM transactions t
+        JOIN transaction_details td ON t.id = td.transaction_id
+        WHERE t.user_id = v_user_id
+          AND t.transaction_date BETWEEN p_start_date AND p_end_date
+          AND t.type IN ('buy', 'sell')
+        GROUP BY 1
+    ),
+    loan_interest_costs AS (
+        SELECT
+            date_trunc('month', t.transaction_date)::date AS month,
+            COALESCE(SUM(tl.amount), 0) AS total_interest
+        FROM transactions t
+        JOIN transaction_legs tl ON t.id = tl.transaction_id
+        JOIN assets a ON tl.asset_id = a.id
+        JOIN securities s ON a.security_id = s.id
+        WHERE t.user_id = v_user_id
+          AND t.transaction_date BETWEEN p_start_date AND p_end_date
+          AND t.type = 'debt_payment'
+          AND s.ticker IN ('EARNINGS', 'CAPITAL')
+        GROUP BY 1
+    ),
+    other_interest_costs AS (
+        SELECT
+            date_trunc('month', t.transaction_date)::date AS month,
+            COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Margin%'), 0) AS total_margin_interest,
+            COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Cash advance%'), 0) AS total_cash_advance_interest
+        FROM transactions t
+        JOIN transaction_legs tl ON t.id = tl.transaction_id
+        JOIN assets a ON tl.asset_id = a.id
+        JOIN securities s ON a.security_id = s.id
+        WHERE t.user_id = v_user_id
+          AND t.transaction_date BETWEEN p_start_date AND p_end_date
+          AND t.type = 'expense'
+          AND s.ticker IN ('EARNINGS', 'CAPITAL')
+        GROUP BY 1
+    )
+    SELECT
+        to_char(ms.month, 'YYYY-MM') AS month,
+        COALESCE(tc.total_fees, 0) AS trading_fees,
+        COALESCE(tc.total_taxes, 0) AS taxes,
+        (COALESCE(lic.total_interest, 0) + COALESCE(oic.total_margin_interest, 0) + COALESCE(oic.total_cash_advance_interest, 0)) AS interest
+    FROM month_series ms
+    LEFT JOIN trading_costs tc ON ms.month = tc.month
+    LEFT JOIN loan_interest_costs lic ON ms.month = lic.month
+    LEFT JOIN other_interest_costs oic ON ms.month = oic.month
+    ORDER BY ms.month;
+END;
+$$;
+ALTER FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -701,6 +1024,35 @@ BEGIN
     ORDER BY ms.month;
 END;
 $$;
+ALTER FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "pnl" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid;
+    v_month_start DATE;
+    v_month_end DATE;
+    v_pnl NUMERIC;
+BEGIN
+    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
+    FOR v_month_start IN
+        SELECT date_trunc('month', dd)::DATE
+        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
+    LOOP
+        IF date_trunc('month', v_month_start) = date_trunc('month', p_end_date) THEN
+            v_month_end := p_end_date;
+        ELSE
+            v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
+        END IF;
+        SELECT public.calculate_pnl(v_user_id, v_month_start, v_month_end) INTO v_pnl;
+        month := to_char(v_month_start, 'YYYY-MM');
+        pnl := v_pnl;
+        RETURN NEXT;
+    END LOOP;
+END;
+$$;
+ALTER FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "pnl" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -729,6 +1081,31 @@ BEGIN
     END LOOP;
 END;
 $$;
+ALTER FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "twr" numeric)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid;
+    v_month_start DATE;
+    v_month_end DATE;
+    v_twr NUMERIC;
+BEGIN
+    v_user_id := COALESCE(auth.uid(), '519fcecb-2177-4978-a8d1-086a53b7ac23');
+    FOR v_month_start IN
+        SELECT date_trunc('month', dd)::DATE
+        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
+    LOOP
+        v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
+        SELECT public.calculate_twr(v_user_id, v_month_start, v_month_end) INTO v_twr;
+        month := to_char(v_month_start, 'YYYY-MM');
+        twr := v_twr;
+        RETURN NEXT;
+    END LOOP;
+END;
+$$;
+ALTER FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "twr" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -752,6 +1129,7 @@ BEGIN
     END LOOP;
 END;
 $$;
+ALTER FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -779,6 +1157,7 @@ BEGIN
         SUM(tl.quantity) > 0;
 END;
 $$;
+ALTER FUNCTION "public"."get_stock_holdings"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date" DEFAULT NULL::"date", "end_date" "date" DEFAULT NULL::"date", "asset_class_filter" "text" DEFAULT NULL::"text") RETURNS TABLE("transaction_id" "uuid", "transaction_date" "date", "type" "text", "description" "text", "ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "amount" numeric, "currency_code" "text", "net_sold" numeric)
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -832,6 +1211,7 @@ BEGIN
     OFFSET v_offset;
 END;
 $$;
+ALTER FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -898,6 +1278,7 @@ BEGIN
     VALUES (v_transaction_id, v_loans_payable_account_id, v_loans_payable_asset_id, p_principal_amount * -1, p_principal_amount * -1, v_liability_currency_code);
 END;
 $$;
+ALTER FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -972,6 +1353,7 @@ BEGIN
     END LOOP;
 END;
 $$;
+ALTER FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") RETURNS "uuid"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1090,6 +1472,7 @@ BEGIN
     RETURN v_transaction_id;
 END;
 $$;
+ALTER FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1186,6 +1569,7 @@ BEGIN
     END IF;
 END;
 $$;
+ALTER FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1252,6 +1636,7 @@ EXCEPTION WHEN OTHERS THEN
     RAISE;
 END;
 $$;
+ALTER FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1400,6 +1785,7 @@ BEGIN
     END IF;
 END;
 $$;
+ALTER FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1470,6 +1856,7 @@ BEGIN
     END IF;
 END;
 $$;
+ALTER FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_new_exchange_rate"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1489,6 +1876,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+ALTER FUNCTION "public"."handle_new_exchange_rate"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_new_stock_price"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1507,6 +1895,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+ALTER FUNCTION "public"."handle_new_stock_price"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_new_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1518,6 +1907,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+ALTER FUNCTION "public"."handle_new_transaction"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") RETURNS "uuid"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1635,6 +2025,7 @@ BEGIN
     RETURN v_transaction_id;
 END;
 $$;
+ALTER FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1667,6 +2058,7 @@ BEGIN
     INSERT INTO tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (p_user_id, p_asset_id, v_transaction_id, 'split', p_transaction_date, p_quantity, p_quantity, 0);
 END;
 $$;
+ALTER FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_table_change_and_queue"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1677,6 +2069,7 @@ BEGIN
   RETURN NULL; -- The return value is ignored for AFTER triggers
 END;
 $$;
+ALTER FUNCTION "public"."handle_table_change_and_queue"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1842,6 +2235,7 @@ EXCEPTION
         RAISE;
 END;
 $$;
+ALTER FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1850,7 +2244,7 @@ BEGIN
   -- This function now maps table changes to all affected cache tags and paths.
   
   -- A change in transactions, prices, rates, or debts affects performance data.
-  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_exchange_rates', 'debts') THEN
+  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_crypto_prices', 'daily_exchange_rates', 'debts') THEN
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('tag', 'performance-data') ON CONFLICT DO NOTHING;
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/benchmark-chart') ON CONFLICT DO NOTHING;
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/equity-chart') ON CONFLICT DO NOTHING;
@@ -1861,10 +2255,11 @@ BEGIN
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/twr') ON CONFLICT DO NOTHING;
   END IF;
   -- A change in transactions, prices, rates, or debts also affects asset data.
-  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_exchange_rates', 'debts') THEN
+  IF table_name IN ('transactions', 'daily_stock_prices', 'daily_crypto_prices', 'daily_exchange_rates', 'debts') THEN
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('tag', 'asset-data') ON CONFLICT DO NOTHING;
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/asset-summary') ON CONFLICT DO NOTHING;
     INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/stock-holdings') ON CONFLICT DO NOTHING;
+    INSERT INTO public.revalidation_queue (job_type, identifier) VALUES ('path', '/api/query/crypto-holdings') ON CONFLICT DO NOTHING;
   END IF;
   -- Specific paths for specific table changes
   IF table_name = 'transactions' THEN
@@ -1881,27 +2276,43 @@ BEGIN
   END IF;
 END;
 $$;
-CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
+ALTER FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
     AS $$
 DECLARE
   v_security_id UUID;
 BEGIN
-  -- Find the security_id for the given ticker
-  SELECT id INTO v_security_id
-  FROM public.securities
-  WHERE ticker = p_ticker;
-  IF v_security_id IS NULL THEN
-    RAISE EXCEPTION 'Security with ticker % not found', p_ticker;
+  -- Get the security_id from the securities table for crypto assets
+  SELECT id INTO v_security_id FROM securities WHERE ticker = p_ticker AND asset_class = 'crypto';
+  -- If the security exists, insert or update the price
+  IF v_security_id IS NOT NULL THEN
+    INSERT INTO daily_crypto_prices (security_id, price, date)
+    VALUES (v_security_id, p_price, CURRENT_DATE)
+    ON CONFLICT (security_id, date) 
+    DO UPDATE SET price = p_price;
   END IF;
-  -- Upsert the price into the daily_stock_prices table
-  INSERT INTO public.daily_stock_prices (security_id, date, price)
-  VALUES (v_security_id, CURRENT_DATE, p_price)
-  ON CONFLICT (security_id, date) DO UPDATE
-  SET price = EXCLUDED.price;
 END;
 $$;
+ALTER FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) OWNER TO "postgres";
+CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+DECLARE
+  v_security_id UUID;
+BEGIN
+  -- Get the security_id from the securities table for stock assets
+  SELECT id INTO v_security_id FROM securities WHERE ticker = p_ticker AND asset_class = 'stock';
+  -- If the security exists, insert or update the price
+  IF v_security_id IS NOT NULL THEN
+    INSERT INTO daily_stock_prices (security_id, price, date)
+    VALUES (v_security_id, p_price, CURRENT_DATE)
+    ON CONFLICT (security_id, date) 
+    DO UPDATE SET price = p_price;
+  END IF;
+END;
+$$;
+ALTER FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) OWNER TO "postgres";
 SET default_tablespace = '';
 SET default_table_access_method = "heap";
 CREATE TABLE IF NOT EXISTS "public"."accounts" (
@@ -1910,41 +2321,52 @@ CREATE TABLE IF NOT EXISTS "public"."accounts" (
     "name" "text" NOT NULL,
     "type" "public"."account_type" NOT NULL
 );
+ALTER TABLE "public"."accounts" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
     "security_id" "uuid"
 );
+ALTER TABLE "public"."assets" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" character varying(10) NOT NULL,
     "name" "text" NOT NULL,
     "type" "public"."currency_type" NOT NULL
 );
+ALTER TABLE "public"."currencies" OWNER TO "postgres";
+CREATE TABLE IF NOT EXISTS "public"."daily_crypto_prices" (
+    "security_id" "uuid" NOT NULL,
+    "date" "date" NOT NULL,
+    "price" numeric NOT NULL
+);
+ALTER TABLE "public"."daily_crypto_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
     "currency_code" character varying(10) NOT NULL,
     "date" "date" NOT NULL,
     "rate" numeric(14,2) NOT NULL
 );
+ALTER TABLE "public"."daily_exchange_rates" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
     "date" "date" NOT NULL,
     "symbol" "text" NOT NULL,
     "close" numeric
 );
+ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
-    "total_assets_value" numeric(16,4) NOT NULL,
-    "total_liabilities_value" numeric(16,4) NOT NULL,
     "net_equity_value" numeric(16,4) NOT NULL,
     "net_cash_flow" numeric(16,4) NOT NULL,
     "equity_index" numeric(8,2)
 );
+ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."daily_stock_prices" (
     "security_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
+ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."debts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1955,12 +2377,14 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
     "start_date" "date" NOT NULL,
     "status" "public"."debt_status" NOT NULL
 );
+ALTER TABLE "public"."debts" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
     "sell_transaction_leg_id" "uuid" NOT NULL,
     "tax_lot_id" "uuid" NOT NULL,
     "quantity_consumed" numeric(16,4) NOT NULL,
     CONSTRAINT "lot_consumptions_quantity_consumed_check" CHECK ((("quantity_consumed")::numeric > (0)::numeric))
 );
+ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
 COMMENT ON COLUMN "public"."lot_consumptions"."tax_lot_id" IS 'The tax lot that was consumed from.';
 COMMENT ON COLUMN "public"."lot_consumptions"."quantity_consumed" IS 'The number of shares consumed from this lot in a specific sale.';
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
@@ -1970,6 +2394,7 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "last_stock_fetching" timestamp with time zone,
     "inception_date" "date" DEFAULT '2020-01-01'::"date" NOT NULL
 );
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
 COMMENT ON COLUMN "public"."profiles"."display_name" IS 'The user''s preferred display name in the application.';
 CREATE TABLE IF NOT EXISTS "public"."revalidation_queue" (
     "id" bigint NOT NULL,
@@ -1982,6 +2407,24 @@ CREATE TABLE IF NOT EXISTS "public"."revalidation_queue" (
     "last_error" "text",
     CONSTRAINT "revalidation_queue_job_type_check" CHECK (("job_type" = ANY (ARRAY['tag'::"text", 'path'::"text"])))
 );
+ALTER TABLE "public"."revalidation_queue" OWNER TO "postgres";
+ALTER TABLE "public"."revalidation_queue" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."revalidation_queue_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+CREATE TABLE IF NOT EXISTS "public"."securities" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_class" "public"."asset_class" NOT NULL,
+    "ticker" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "currency_code" character varying(10),
+    "logo_url" "text"
+);
+ALTER TABLE "public"."securities" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1996,6 +2439,7 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
     CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
 );
+ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
 COMMENT ON COLUMN "public"."tax_lots"."origin" IS 'The type of transaction that created the lot (e.g., ''buy'', ''split''). Reuses the transaction_type enum.';
 COMMENT ON COLUMN "public"."tax_lots"."remaining_quantity" IS 'The quantity of the asset remaining in this lot. Updated upon sale.';
 CREATE TABLE IF NOT EXISTS "public"."transaction_details" (
@@ -2004,6 +2448,7 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_details" (
     "fees" numeric(16,4) DEFAULT 0 NOT NULL,
     "taxes" numeric(16,4) DEFAULT 0 NOT NULL
 );
+ALTER TABLE "public"."transaction_details" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "transaction_id" "uuid" NOT NULL,
@@ -2013,6 +2458,7 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "amount" numeric(16,4) NOT NULL,
     "currency_code" character varying(10) NOT NULL
 );
+ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2021,6 +2467,356 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "description" "text",
     "related_debt_id" "uuid"
 );
+ALTER TABLE "public"."transactions" OWNER TO "postgres";
+ALTER TABLE ONLY "public"."accounts"
+    ADD CONSTRAINT "accounts_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_user_id_security_id_key" UNIQUE ("user_id", "security_id");
+ALTER TABLE ONLY "public"."currencies"
+    ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
+ALTER TABLE ONLY "public"."daily_crypto_prices"
+    ADD CONSTRAINT "daily_crypto_prices_pkey" PRIMARY KEY ("security_id", "date");
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_user_id_date_key" UNIQUE ("user_id", "date");
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."daily_exchange_rates"
+    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("currency_code", "date");
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
+ALTER TABLE ONLY "public"."daily_market_indices"
+    ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."revalidation_queue"
+    ADD CONSTRAINT "revalidation_queue_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_ticker_key" UNIQUE ("ticker");
+ALTER TABLE ONLY "public"."daily_stock_prices"
+    ADD CONSTRAINT "security_daily_prices_pkey" PRIMARY KEY ("security_id", "date");
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."transaction_details"
+    ADD CONSTRAINT "transaction_details_pkey" PRIMARY KEY ("transaction_id");
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."transactions"
+    ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
+CREATE INDEX "accounts_user_id_fkey_idx" ON "public"."accounts" USING "btree" ("user_id");
+CREATE INDEX "assets_security_id_idx" ON "public"."assets" USING "btree" ("security_id");
+CREATE UNIQUE INDEX "daily_crypto_prices_security_id_date_idx" ON "public"."daily_crypto_prices" USING "btree" ("security_id", "date");
+CREATE INDEX "debts_currency_code_idx" ON "public"."debts" USING "btree" ("currency_code");
+CREATE INDEX "debts_user_id_idx" ON "public"."debts" USING "btree" ("user_id");
+CREATE INDEX "lot_consumptions_tax_lot_id_idx" ON "public"."lot_consumptions" USING "btree" ("tax_lot_id");
+CREATE INDEX "profiles_display_currency_idx" ON "public"."profiles" USING "btree" ("display_currency");
+CREATE UNIQUE INDEX "revalidation_queue_unique_pending_job_idx" ON "public"."revalidation_queue" USING "btree" ("job_type", "identifier") WHERE ("status" = 'pending'::"text");
+CREATE INDEX "securities_currency_code_idx" ON "public"."securities" USING "btree" ("currency_code");
+CREATE INDEX "tax_lots_asset_id_idx" ON "public"."tax_lots" USING "btree" ("asset_id");
+CREATE INDEX "tax_lots_creation_transaction_id_idx" ON "public"."tax_lots" USING "btree" ("creation_transaction_id");
+CREATE INDEX "tax_lots_user_id_idx" ON "public"."tax_lots" USING "btree" ("user_id");
+CREATE INDEX "transaction_legs_account_id_idx" ON "public"."transaction_legs" USING "btree" ("account_id");
+CREATE INDEX "transaction_legs_asset_id_idx" ON "public"."transaction_legs" USING "btree" ("asset_id");
+CREATE INDEX "transaction_legs_currency_code_idx" ON "public"."transaction_legs" USING "btree" ("currency_code");
+CREATE INDEX "transaction_legs_transaction_id_idx" ON "public"."transaction_legs" USING "btree" ("transaction_id");
+CREATE INDEX "transactions_related_debt_id_idx" ON "public"."transactions" USING "btree" ("related_debt_id");
+CREATE INDEX "transactions_user_id_idx" ON "public"."transactions" USING "btree" ("user_id");
+CREATE OR REPLACE TRIGGER "handle_crypto_price_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+CREATE OR REPLACE TRIGGER "on_daily_exchange_rates_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."daily_exchange_rates" FOR EACH STATEMENT EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+CREATE OR REPLACE TRIGGER "on_daily_market_indices_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."daily_market_indices" FOR EACH STATEMENT EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+CREATE OR REPLACE TRIGGER "on_daily_stock_prices_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."daily_stock_prices" FOR EACH STATEMENT EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+CREATE OR REPLACE TRIGGER "on_debts_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."debts" FOR EACH STATEMENT EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+CREATE OR REPLACE TRIGGER "on_new_exchange_rate" AFTER INSERT OR UPDATE ON "public"."daily_exchange_rates" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_exchange_rate"();
+CREATE OR REPLACE TRIGGER "on_new_stock_price" AFTER INSERT OR UPDATE ON "public"."daily_stock_prices" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_stock_price"();
+CREATE OR REPLACE TRIGGER "on_new_transaction" AFTER INSERT ON "public"."transactions" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_transaction"();
+CREATE OR REPLACE TRIGGER "on_transactions_change" AFTER INSERT OR DELETE OR UPDATE ON "public"."transactions" FOR EACH STATEMENT EXECUTE FUNCTION "public"."handle_table_change_and_queue"();
+ALTER TABLE ONLY "public"."accounts"
+    ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."daily_crypto_prices"
+    ADD CONSTRAINT "daily_crypto_prices_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."daily_exchange_rates"
+    ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_sell_transaction_leg_id_fkey" FOREIGN KEY ("sell_transaction_leg_id") REFERENCES "public"."transaction_legs"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE RESTRICT;
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_display_currency_fkey" FOREIGN KEY ("display_currency") REFERENCES "public"."currencies"("code");
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."securities"
+    ADD CONSTRAINT "securities_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+ALTER TABLE ONLY "public"."daily_stock_prices"
+    ADD CONSTRAINT "security_daily_prices_security_id_fkey" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_creation_transaction_id_fkey" FOREIGN KEY ("creation_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."transaction_details"
+    ADD CONSTRAINT "transaction_details_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id");
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."transactions"
+    ADD CONSTRAINT "transactions_related_debt_id_fkey" FOREIGN KEY ("related_debt_id") REFERENCES "public"."debts"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."transactions"
+    ADD CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+CREATE POLICY "Allow authenticated users to read exchange rates" ON "public"."daily_exchange_rates" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "Allow read access to authenticated users" ON "public"."daily_market_indices" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "Allow service_role to perform all actions" ON "public"."daily_exchange_rates" TO "service_role" USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can insert into revalidation_queue" ON "public"."revalidation_queue" FOR INSERT TO "authenticated" WITH CHECK (true);
+CREATE POLICY "Authenticated users can read currencies" ON "public"."currencies" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
+CREATE POLICY "Authenticated users can read securities" ON "public"."securities" FOR SELECT USING ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
+CREATE POLICY "Enable read access for all users" ON "public"."daily_crypto_prices" FOR SELECT USING (true);
+CREATE POLICY "Service role can manage revalidation queue" ON "public"."revalidation_queue" TO "service_role" USING (true);
+CREATE POLICY "Service role can manage security prices" ON "public"."daily_stock_prices" TO "service_role" USING (true) WITH CHECK (true);
+CREATE POLICY "Users can manage details for their own transactions" ON "public"."transaction_details" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_details"."transaction_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_details"."transaction_id"))));
+CREATE POLICY "Users can manage their own accounts" ON "public"."accounts" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can manage their own assets" ON "public"."assets" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can manage their own debts" ON "public"."debts" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can manage their own lot consumptions" ON "public"."lot_consumptions" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "tax_lots"."user_id"
+   FROM "public"."tax_lots"
+  WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "tax_lots"."user_id"
+   FROM "public"."tax_lots"
+  WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id"))));
+CREATE POLICY "Users can manage their own performance snapshots" ON "public"."daily_performance_snapshots" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can manage their own profile" ON "public"."profiles" USING ((( SELECT "auth"."uid"() AS "uid") = "id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "id"));
+CREATE POLICY "Users can manage their own tax lots" ON "public"."tax_lots" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can manage their own transaction_legs" ON "public"."transaction_legs" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_legs"."transaction_id")))) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_legs"."transaction_id"))));
+CREATE POLICY "Users can manage their own transactions" ON "public"."transactions" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+CREATE POLICY "Users can read security prices" ON "public"."daily_stock_prices" FOR SELECT TO "authenticated", "anon" USING (true);
+ALTER TABLE "public"."accounts" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_crypto_prices" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_exchange_rates" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_market_indices" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_stock_prices" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."revalidation_queue" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."securities" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."transaction_details" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."transaction_legs" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "anon";
+GRANT USAGE ON SCHEMA "public" TO "authenticated";
+GRANT USAGE ON SCHEMA "public" TO "service_role";
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_summary"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_table_change_and_queue"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_table_change_and_queue"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_table_change_and_queue"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."queue_revalidation_jobs"("table_name" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
+GRANT ALL ON TABLE "public"."accounts" TO "anon";
+GRANT ALL ON TABLE "public"."accounts" TO "authenticated";
+GRANT ALL ON TABLE "public"."accounts" TO "service_role";
+GRANT ALL ON TABLE "public"."assets" TO "anon";
+GRANT ALL ON TABLE "public"."assets" TO "authenticated";
+GRANT ALL ON TABLE "public"."assets" TO "service_role";
+GRANT ALL ON TABLE "public"."currencies" TO "anon";
+GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
+GRANT ALL ON TABLE "public"."currencies" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
+GRANT ALL ON TABLE "public"."debts" TO "anon";
+GRANT ALL ON TABLE "public"."debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."debts" TO "service_role";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
+GRANT ALL ON TABLE "public"."profiles" TO "anon";
+GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+GRANT ALL ON TABLE "public"."revalidation_queue" TO "anon";
+GRANT ALL ON TABLE "public"."revalidation_queue" TO "authenticated";
+GRANT ALL ON TABLE "public"."revalidation_queue" TO "service_role";
+GRANT ALL ON SEQUENCE "public"."revalidation_queue_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."revalidation_queue_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."revalidation_queue_id_seq" TO "service_role";
+GRANT ALL ON TABLE "public"."securities" TO "anon";
+GRANT ALL ON TABLE "public"."securities" TO "authenticated";
+GRANT ALL ON TABLE "public"."securities" TO "service_role";
+GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
+GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
+GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
+GRANT ALL ON TABLE "public"."transaction_details" TO "anon";
+GRANT ALL ON TABLE "public"."transaction_details" TO "authenticated";
+GRANT ALL ON TABLE "public"."transaction_details" TO "service_role";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
+GRANT ALL ON TABLE "public"."transactions" TO "anon";
+GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
+GRANT ALL ON TABLE "public"."transactions" TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 RESET ALL;
 --
 -- Dumped schema changes for auth and storage

@@ -43,7 +43,7 @@ function SecurityItem({
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`rounded-full border-0 text-card-foreground ${isCompact ? 'bg-card/0 py-2' : 'bg-card/40 backdrop-blur-sm py-3'}`}>
+    <Card className={`rounded-full border-0 text-card-foreground ${isCompact ? 'bg-card/0 py-2' : 'bg-border/25 dark:bg-card/40 backdrop-blur-sm py-3'}`}>
       <CardContent className={`flex items-center gap-3 ${isCompact ? 'px-4' : 'px-3'}`}>
         <Image
           src={logoUrl}
