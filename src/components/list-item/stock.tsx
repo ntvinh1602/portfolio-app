@@ -40,7 +40,7 @@ function StockItem({
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`rounded-full text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
+    <Card className={`rounded-full border-0 text-card-foreground ${isCompact ? 'bg-card/0 py-2' : 'bg-card/40 backdrop-blur-sm py-3'}`}>
       <CardContent className={`flex items-center gap-3 ${isCompact ? 'px-4' : 'px-3'}`}>
         <Image
           src={logoUrl}
@@ -59,13 +59,13 @@ function StockItem({
               <CardDescription className="flex items-center gap-1 truncate pt-1">
                 <Badge
                   variant="outline"
-                  className="rounded-full bg-accent/50 gap-0.5 text-muted-foreground"
+                  className="rounded-full gap-0.5 text-muted-foreground"
                 >
                   <Leaf />{quantity}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-full bg-accent/50 gap-1 text-muted-foreground"
+                  className="rounded-full gap-1 text-muted-foreground"
                 >
                   {priceStatus === 'loading' ? '...' : price}
                   {priceStatus && (
@@ -81,7 +81,7 @@ function StockItem({
               </CardDescription>
             )}
           </div>
-          <div className="flex flex-col justify-end px-1">
+          <div className="flex flex-col justify-end pr-2">
             <CardTitle className="text-right text-sm">
               {totalAmount}
             </CardTitle>
@@ -110,7 +110,7 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`rounded-full text-card-foreground ${isCompact ? 'border-none py-2' : 'border-t-0 py-3'}`}>
+    <Card className={`rounded-full border-0 text-card-foreground ${isCompact ? 'py-2' : 'py-3'}`}>
       <CardContent className={`flex items-center gap-3 ${isCompact ? 'px-4' : 'px-3'}`}>
         <Skeleton className={`rounded-full ${isCompact ? 'h-12 w-12' : 'h-14 w-14'}`} />
         <div className="flex justify-between w-full items-center">
@@ -119,8 +119,8 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
             <Skeleton className="h-3 w-[120px]" />
             {!isCompact && (
               <div className="flex items-center gap-1 pt-1">
-                <Skeleton className="h-8 w-[80px] rounded-full" />
-                <Skeleton className="h-8 w-[100px] rounded-full" />
+                <Skeleton className="h-4 w-[80px] rounded-full" />
+                <Skeleton className="h-4 w-[100px] rounded-full" />
               </div>
             )}
           </div>
@@ -129,7 +129,7 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
             {isCompact ? (
               <Skeleton className="h-4 w-[50px]" />
             ) : (
-              <Skeleton className="h-8 w-[70px] rounded-full" />
+              <Skeleton className="h-4 w-[40px] rounded-full" />
             )}
           </div>
         </div>

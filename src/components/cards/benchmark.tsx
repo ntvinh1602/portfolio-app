@@ -44,7 +44,7 @@ function BenchmarkCard({ benchmarkChartData }: BenchmarkCardProps) {
               color: "var(--chart-2)",
             },
           }}
-          className="h-[210px] w-full -ml-4"
+          className="h-[220px] w-full -ml-4"
           xAxisDataKey="date"
           lineDataKeys={["portfolio_value", "vni_value"]}
           grid={true}

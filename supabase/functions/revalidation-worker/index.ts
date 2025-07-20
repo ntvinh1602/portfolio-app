@@ -7,13 +7,16 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+const MAX_ATTEMPTS = 3;
+
 serve(async (_req) => {
   try {
-    // 1. Fetch a batch of pending jobs
+    // 1. Fetch a batch of pending or retry-able jobs.
+    // It selects jobs that are 'pending' OR have 'failed' but have been attempted less than MAX_ATTEMPTS.
     const { data: jobs, error: fetchError } = await supabase
       .from("revalidation_queue")
-      .select("*")
-      .in("status", ["pending", "failed"])
+      .select("*, attempts")
+      .or(`status.eq.pending,and(status.eq.failed,attempts.lt.${MAX_ATTEMPTS})`)
       .limit(20);
 
     if (fetchError) throw fetchError;
@@ -23,16 +26,17 @@ serve(async (_req) => {
       });
     }
 
-    // 2. Mark jobs as 'processing' to prevent duplicate execution
-    const jobIds = jobs.map((job) => job.id);
-    await supabase
-      .from("revalidation_queue")
-      .update({ status: "processing", attempts: 1 }) // Simplified: assumes first attempt
-      .in("id", jobIds);
-
-    // 3. Process each job
+    // 2. Process each job individually to handle retries.
     const processingPromises = jobs.map(async (job) => {
       try {
+        // 3. Mark job as 'processing' and increment its attempt count atomically.
+        const currentAttempt = (job.attempts || 0) + 1;
+        await supabase
+          .from("revalidation_queue")
+          .update({ status: "processing", attempts: currentAttempt })
+          .eq("id", job.id);
+
+        // 4. Attempt the revalidation call.
         const response = await fetch(
           `${Deno.env.get("APP_URL")}/api/revalidate`,
           {
@@ -49,18 +53,17 @@ serve(async (_req) => {
 
         if (!response.ok) {
           const errorBody = await response.text();
-          const headers = JSON.stringify(Object.fromEntries(response.headers.entries()));
-          throw new Error(`Revalidation failed with status ${response.status}. Headers: ${headers}. Body: ${errorBody}`);
+          throw new Error(`Revalidation failed with status ${response.status}: ${errorBody}`);
         }
 
-        // Mark as completed
+        // 5. If successful, mark as 'completed'.
         await supabase
           .from("revalidation_queue")
           .update({ status: "completed", processed_at: new Date().toISOString() })
           .eq("id", job.id);
 
       } catch (e) {
-        // Mark as failed
+        // 6. If it fails, mark as 'failed'. The query will pick it up again if attempts < MAX_ATTEMPTS.
         await supabase
           .from("revalidation_queue")
           .update({ status: "failed", last_error: (e as Error).message })

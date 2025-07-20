@@ -93,7 +93,7 @@ interface RenderLabelProps {
           <ChartLegend
             content={<ChartLegendContent nameKey={nameKey} />}
             verticalAlign="bottom"
-            className="mt-4 text-md font-thin"
+            className="justify-between"
           />
         )}
         {legend === "right" && (
@@ -102,7 +102,7 @@ interface RenderLabelProps {
             layout="vertical"
             align="right"
             verticalAlign="middle"
-            className="text-md flex flex-col items-start w-15 font-thin"
+            className="flex-col items-start w-15 gap-1"
           />
         )}
 

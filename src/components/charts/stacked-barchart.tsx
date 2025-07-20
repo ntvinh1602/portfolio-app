@@ -62,7 +62,7 @@ export function ChartBarStacked<TData extends object>({
         />
         <ChartLegend 
           content={<ChartLegendContent />}
-          className="pl-8 font-thin"
+          className="justify-center pt-3 gap-4"
         />
         {keys.map((key, index) => (
           <Bar

@@ -68,7 +68,7 @@ export function Linechart({
             dot={false}
           />
         ))}
-        {legend && <ChartLegend content={<ChartLegendContent />} className="font-thin"/>}
+        {legend && <ChartLegend content={<ChartLegendContent />} className="gap-4 justify-center pt-3"/>}
       </LineChart>
     </ChartContainer>
   )

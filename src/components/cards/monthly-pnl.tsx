@@ -61,7 +61,7 @@ function PnLCard({ mtdPnl, avgPnl, monthlyPnlData }: PnLCardProps) {
           config={chartConfig}
           dataKey="pnl"
           categoryKey="month"
-          className="h-[180px] w-full"
+          className="h-[180px] w-full -ml-4"
           yAxisTickFormatter={(value) => compactNum(Number(value))}
           xAxisTickFormatter={(value) => format(new Date(value), "MMM ''yy")}
         />

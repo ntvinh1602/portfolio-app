@@ -68,7 +68,7 @@ function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
               color: "var(--chart-1)",
             },
           }}
-          className="h-[180px] w-full"
+          className="h-[180px] w-full -ml-4"
           xAxisDataKey="date"
           lineDataKeys={["net_equity_value"]}
           grid={true}

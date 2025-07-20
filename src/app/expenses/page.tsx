@@ -120,9 +120,10 @@ export default function Page() {
                   chartConfig={structureChartConfig}
                   nameKey="category"
                   dataKey="total_amount"
-                  className="h-[360px] w-full"
+                  className="h-[240px] w-full"
                   legend="right"
                   centerText="Total"
+                  label_pos={1.6}
                 />
               )}
             </div>
