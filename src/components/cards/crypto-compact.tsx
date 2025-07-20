@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useStockHoldings } from "@/hooks/useStockHoldings"
+import { useCryptoHoldings } from "@/hooks/useCryptoHoldings"
 
-function StockCardCompact() {
+function CryptoCardCompact() {
   const router = useRouter()
-  const { stockHoldings, loading } = useStockHoldings()
+  const { cryptoHoldings, loading } = useCryptoHoldings()
 
   const handleNavigation = () => {
     router.push("/holdings")
@@ -29,7 +29,7 @@ function StockCardCompact() {
           className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
         >
-          Stocks<ChevronRight className="size-4"/>
+          Crypto<ChevronRight className="size-4"/>
         </CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">
@@ -38,22 +38,23 @@ function StockCardCompact() {
               Array.from({ length: 3 }).map((_, index) => (
                 <SecuritySkeleton variant="compact" key={index} />
               ))
-            ) : stockHoldings.length > 0 ? (
-              stockHoldings.map((stock) => (
+            ) : cryptoHoldings.length > 0 ? (
+              cryptoHoldings.map((crypto) => (
                 <SecurityItem
-                  key={stock.ticker}
-                  ticker={stock.ticker}
-                  name={stock.name}
-                  logoUrl={stock.logo_url}
-                  totalAmount={formatNum(stock.total_amount)}
-                  pnl={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
+                  key={crypto.ticker}
+                  ticker={crypto.ticker}
+                  name={crypto.name}
+                  logoUrl={crypto.logo_url}
+                  totalAmount={formatNum(crypto.total_amount)}
+                  quantity={formatNum(crypto.quantity, 2)}
+                  pnl={formatNum((crypto.total_amount / crypto.cost_basis - 1) * 100, 1)}
                   variant="compact"
-                  type="stock"
+                  type="crypto"
                 />
               ))
             ) : (
               <div className="text-center text-sm font-thin text-muted-foreground py-4">
-                No stock holdings found.
+                No crypto holdings found.
               </div>
             )}
           </div>
@@ -63,13 +64,13 @@ function StockCardCompact() {
   )
 }
 
-function StockCardCompactSkeleton() {
+function CryptoCardCompactSkeleton() {
   return (
     <div className="px-6">
       <Card className="gap-0 pb-0">
         <CardHeader className="px-4">
           <CardDescription className="flex items-center gap-1 w-fit">
-            Stocks<ChevronRight className="size-4"/>
+            Crypto<ChevronRight className="size-4"/>
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-2">
@@ -85,6 +86,6 @@ function StockCardCompactSkeleton() {
 }
 
 export {
-  StockCardCompact,
-  StockCardCompactSkeleton
+  CryptoCardCompact,
+  CryptoCardCompactSkeleton
 }

@@ -19,6 +19,7 @@ import { AssetCard, AssetCardSkeleton } from "@/components/cards/assets"
 import { PnLCard, PnLCardSkeleton } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard, BenchmarkCardSkeleton } from "@/components/cards/benchmark"
 import { StockCardCompact, StockCardCompactSkeleton } from "@/components/cards/stock-compact"
+import { CryptoCardCompact, CryptoCardCompactSkeleton } from "@/components/cards/crypto-compact"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { subDays } from "date-fns"
@@ -116,9 +117,14 @@ export default function Page() {
           {isLoading ? <AssetCardSkeleton /> :
             <AssetCard assetSummaryData={assetSummaryData} />
           }
-          {isLoading ? <StockCardCompactSkeleton /> :
-            <StockCardCompact />
-          }
+          <div className="flex flex-col gap-2">
+            {isLoading ? <StockCardCompactSkeleton /> :
+              <StockCardCompact />
+            }
+            {isLoading ? <CryptoCardCompactSkeleton /> :
+              <CryptoCardCompact />
+            }
+          </div>
       </PageContent>
       <BottomNavBar />
     </PageMain>

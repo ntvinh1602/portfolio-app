@@ -31,28 +31,65 @@ async function getExchangeRates(): Promise<ExchangeRates | null> {
   }
 }
 
+async function getFiatCurrencies(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('currencies')
+    .select('code')
+    .eq('type', 'fiat')
+    .neq('code', 'VND');
+
+  if (error) {
+    console.error('Error fetching currencies:', error);
+    return [];
+  }
+  // @ts-ignore: data is not null here
+  return data.map((c: { code: string }) => c.code);
+}
+
 Deno.serve(async (_req: Request) => {
   const startTime = Date.now();
 
   try {
-    const rates = await getExchangeRates();
-    if (!rates || !rates.VND || !rates.MYR) {
-      throw new Error('Failed to fetch exchange rates or missing VND/MYR rates.');
+    const [rates, currenciesToFetch] = await Promise.all([
+      getExchangeRates(),
+      getFiatCurrencies(),
+    ]);
+
+    if (!rates || !rates.VND) {
+      throw new Error('Failed to fetch exchange rates or missing VND rate.');
+    }
+
+    if (currenciesToFetch.length === 0) {
+      throw new Error('No fiat currencies found to process.');
     }
 
     const vndRate = rates.VND;
-    const myrRate = rates.MYR;
-    const myrToVndRate = vndRate / myrRate;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    const dataToUpsert = {
-      date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-      currency_code: 'MYR',
-      rate: myrToVndRate,
-    };
+    const dataToUpsert = currenciesToFetch
+      .map(currencyCode => {
+        const currencyRate = rates[currencyCode];
+        if (!currencyRate) {
+          console.warn(`Rate for ${currencyCode} not found in API response. Skipping.`);
+          return null;
+        }
+        const rateToVnd = vndRate / currencyRate;
+        return {
+          date: today,
+          currency_code: currencyCode,
+          rate: rateToVnd,
+        };
+      })
+      .filter(item => item !== null);
 
+    if (dataToUpsert.length === 0) {
+        throw new Error('No valid exchange rates could be calculated.');
+    }
+
+    // @ts-ignore: dataToUpsert is not null here
     const { error: upsertError } = await supabase
       .from('daily_exchange_rates')
-      .upsert(dataToUpsert, { onConflict: 'date,currency_code' }); // Added onConflict for safety
+      .upsert(dataToUpsert, { onConflict: 'date,currency_code' });
 
     if (upsertError) {
       throw new Error(`Database error: ${upsertError.message}`);
@@ -60,8 +97,7 @@ Deno.serve(async (_req: Request) => {
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(1);
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', {
+    const formattedDate = new Date().toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -70,8 +106,7 @@ Deno.serve(async (_req: Request) => {
     const summaryMessage = `
 💹 Exchange Rate Update - ${formattedDate}
 
-✅ Success: 1/1 (100.0%)
-FX Rate: 1 MYR = ${myrToVndRate.toFixed(2)} VND
+✅ Success: ${dataToUpsert.length}/${currenciesToFetch.length} (${((dataToUpsert.length / currenciesToFetch.length) * 100).toFixed(1)}%)
 ⏱️ Duration: ${duration}s
     `.trim();
 
@@ -91,7 +126,8 @@ FX Rate: 1 MYR = ${myrToVndRate.toFixed(2)} VND
       success: true,
       message: "Exchange rate fetching complete.",
       stats: {
-        rate: `1 MYR = ${myrToVndRate.toFixed(2)} VND`,
+        successful_updates: dataToUpsert.length,
+        total_currencies: currenciesToFetch.length,
         duration: `${duration}s`,
       }
     }), {

@@ -4,12 +4,13 @@ import yahooFinance from 'yahoo-finance2';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const ticker = searchParams.get('ticker');
+  const type = searchParams.get('type') ?? 'stock'; // default to stock
 
   if (!ticker) {
     return NextResponse.json({ error: 'Ticker symbol is required' }, { status: 400 });
   }
 
-  const suffixedTicker = `${ticker}.VN`;
+  const suffixedTicker = type === 'crypto' ? `${ticker}-USD` : `${ticker}.VN`;
 
   try {
     const quote = await yahooFinance.quote(suffixedTicker);

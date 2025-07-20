@@ -36,7 +36,7 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
   return (
     <Card className="bg-card/0 gap-1 py-0 border-none">
       <CardTitle className="text-sm font-thin">
-        {format(new Date(date), "dd MMM yyyy")}
+        {format(new Date(date), "EEEE, dd MMMM yyyy")}
       </CardTitle>
       <CardContent className="flex items-center text-sm font-thin border-t py-2 px-0 gap-2">
         {logoUrl ? (

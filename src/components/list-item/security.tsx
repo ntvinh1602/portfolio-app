@@ -8,12 +8,13 @@ import Image from 'next/image'
 import {
   Leaf,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Bitcoin
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
-interface StockItemProps {
+interface SecurityItemProps {
   ticker: string;
   name: string;
   logoUrl: string;
@@ -23,9 +24,10 @@ interface StockItemProps {
   price?: string;
   priceStatus?: 'loading' | 'error' | 'success';
   variant?: 'full' | 'compact';
+  type: 'stock' | 'crypto';
 }
 
-function StockItem({
+function SecurityItem({
   ticker,
   name,
   logoUrl,
@@ -34,8 +36,9 @@ function StockItem({
   pnl,
   price,
   priceStatus,
-  variant = 'full'
-}: StockItemProps) {
+  variant = 'full',
+  type
+}: SecurityItemProps) {
   const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
   const isCompact = variant === 'compact';
 
@@ -61,7 +64,7 @@ function StockItem({
                   variant="outline"
                   className="rounded-full gap-0.5 text-muted-foreground"
                 >
-                  <Leaf />{quantity}
+                  {type === 'stock' ? <Leaf /> : <Bitcoin />}{quantity}
                 </Badge>
                 <Badge
                   variant="outline"
@@ -102,11 +105,11 @@ function StockItem({
   )
 }
 
-interface StockSkeletonProps {
+interface SecuritySkeletonProps {
   variant?: 'full' | 'compact';
 }
 
-function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
+function SecuritySkeleton({ variant = 'full' }: SecuritySkeletonProps) {
   const isCompact = variant === 'compact';
 
   return (
@@ -139,6 +142,6 @@ function StockSkeleton({ variant = 'full' }: StockSkeletonProps) {
 }
 
 export {
-  StockItem,
-  StockSkeleton,
+  SecurityItem,
+  SecuritySkeleton,
 }

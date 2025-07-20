@@ -6,6 +6,7 @@ import {
   PageContent,
 } from "@/components/page-layout"
 import { StockCardFull } from "@/components/cards/stock-full"
+import { CryptoCardFull } from "@/components/cards/crypto-full"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 
 export default function Page() {
@@ -13,7 +14,10 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Holdings" />
       <PageContent>
-        <StockCardFull />
+        <div className="flex flex-col gap-4">
+          <StockCardFull />
+          <CryptoCardFull />
+        </div>
       </PageContent>
       <BottomNavBar />
     </PageMain>

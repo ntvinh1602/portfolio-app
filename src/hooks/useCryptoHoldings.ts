@@ -8,6 +8,7 @@ interface CryptoHoldingBase {
   quantity: number;
   cost_basis: number;
   latest_price: number;
+  latest_usd_rate: number;
 }
 
 export function useCryptoHoldings() {
@@ -15,7 +16,7 @@ export function useCryptoHoldings() {
 
   const cryptoHoldings = data?.map((holding) => ({
     ...holding,
-    total_amount: holding.quantity * holding.latest_price,
+    total_amount: holding.quantity * holding.latest_price * holding.latest_usd_rate,
   })) ?? [];
 
   return { cryptoHoldings, loading: isLoading, error };
