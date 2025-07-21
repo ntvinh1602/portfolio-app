@@ -3,7 +3,6 @@
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +17,7 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGuestLoading, setIsGuestLoading] = useState(false)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -25,19 +25,37 @@ export function LoginForm({
     setError(null)
     setIsLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      // On successful login, Supabase client automatically handles the session.
-      // Redirect the user to the dashboard.
+    if (res.ok) {
       router.push("/")
+    } else {
+      const { error } = await res.json()
+      setError(error)
     }
+
     setIsLoading(false)
+  }
+
+  const handleAnonymousLogin = async () => {
+    setError(null)
+    setIsGuestLoading(true)
+
+    const res = await fetch("/api/auth/anonymous", {
+      method: "POST",
+    })
+
+    if (res.ok) {
+      router.push("/")
+    } else {
+      const { error } = await res.json()
+      setError(error)
+    }
+
+    setIsGuestLoading(false)
   }
 
   return (
@@ -65,7 +83,7 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGuestLoading}
                   className="rounded-full font-thin text-sm text-accent-foreground"
                 />
               </div>
@@ -87,14 +105,18 @@ export function LoginForm({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGuestLoading}
                   className="rounded-full text-accent-foreground"
                 />
               </div>
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
-              <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full rounded-full"
+                disabled={isLoading || isGuestLoading}
+              >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
               <div className="flex items-center justify-between">
@@ -108,8 +130,14 @@ export function LoginForm({
                   <Separator />
                 </div>
               </div>
-              <Button variant="outline" className="w-full rounded-full">
-                Login as a Guest
+              <Button
+                variant="outline"
+                type="button"
+                className="w-full rounded-full"
+                onClick={handleAnonymousLogin}
+                disabled={isLoading || isGuestLoading}
+              >
+                {isGuestLoading ? "Logging in..." : "Login as a Guest"}
               </Button>
             </div>
           </form>
