@@ -5,7 +5,6 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const { headers } = request
-    console.log("Dashboard API headers:", Object.fromEntries(headers.entries()));
     const startDateParam = searchParams.get("start_date")
     const endDateParam = searchParams.get("end_date")
 
@@ -24,11 +23,11 @@ export async function GET(request: Request) {
       benchmarkResponse,
       assetSummaryResponse,
     ] = await Promise.all([
-      fetch(`${request.url.split('/api')[0]}/api/query/equity-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${request.url.split('/api')[0]}/api/query/twr?start_date=${formattedStartDate}&end_date=${formattedEndDate}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${request.url.split('/api')[0]}/api/query/monthly-pnl?start_date=${formattedMonthlyPnlStartDate}&end_date=${formattedEndDate}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${request.url.split('/api')[0]}/api/query/benchmark-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${request.url.split('/api')[0]}/api/query/asset-summary`, { headers, next: { tags: ['asset-data'] } }),
+      fetch(`${request.url.split('/api')[0]}/api/query/equity-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`, { headers, cache: 'no-store', next: { tags: ['performance-data'] } }),
+      fetch(`${request.url.split('/api')[0]}/api/query/twr?start_date=${formattedStartDate}&end_date=${formattedEndDate}`, { headers, cache: 'no-store', next: { tags: ['performance-data'] } }),
+      fetch(`${request.url.split('/api')[0]}/api/query/monthly-pnl?start_date=${formattedMonthlyPnlStartDate}&end_date=${formattedEndDate}`, { headers, cache: 'no-store', next: { tags: ['performance-data'] } }),
+      fetch(`${request.url.split('/api')[0]}/api/query/benchmark-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`, { headers, cache: 'no-store', next: { tags: ['performance-data'] } }),
+      fetch(`${request.url.split('/api')[0]}/api/query/asset-summary`, { headers, cache: 'no-store', next: { tags: ['asset-data'] } }),
     ])
 
     for (const response of [equityResponse, twrResponse, monthlyPnlResponse, benchmarkResponse, assetSummaryResponse]) {
