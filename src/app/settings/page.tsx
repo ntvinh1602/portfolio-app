@@ -4,6 +4,7 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase/supabaseClient"
 import {
   PageMain,
   PageHeader,
@@ -21,6 +22,14 @@ import {
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { TransactionImportForm } from "@/components/forms/import-data"
 import { Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -31,6 +40,7 @@ export default function Page() {
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [showAuthAlert, setShowAuthAlert] = useState(false)
   const [startDate, setStartDate] = useState<Date | undefined>()
 
   useEffect(() => {
@@ -38,10 +48,20 @@ export default function Page() {
   }, [])
 
   const handleNavigation = () => {
-    router.push("/helps")
+    router.push("/help")
   }
 
   const handleBackfill = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const isAnonymous = !user?.email
+
+    if (isAnonymous) {
+      setShowAuthAlert(true)
+      return
+    }
+
     if (!startDate) {
       toast.error("Please select a start date.")
       return
@@ -136,6 +156,19 @@ export default function Page() {
         </Card>
       </PageContent>
       <BottomNavBar />
+      <Dialog open={showAuthAlert} onOpenChange={setShowAuthAlert}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{"You're not logged in"}</DialogTitle>
+            <DialogDescription>
+              As an guest user, you are not permitted to generate snapshots. Please sign up for an account to use this feature.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowAuthAlert(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageMain>
   )
 }

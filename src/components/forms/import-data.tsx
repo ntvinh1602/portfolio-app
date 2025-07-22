@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/supabaseClient";
 import { parse as parseCsv } from "papaparse";
 import {
   Dialog,
@@ -86,6 +87,7 @@ interface ImportFormProps {
 function ImportForm( { className }: ImportFormProps ) {
   const [file, setFile] = React.useState<File | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [showAuthAlert, setShowAuthAlert] = React.useState(false)
   const router = useRouter()
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +98,17 @@ function ImportForm( { className }: ImportFormProps ) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const isAnonymous = !user?.email
+
+    if (isAnonymous) {
+      setShowAuthAlert(true)
+      return
+    }
+
     if (!file) {
       toast.error("Please select a file to upload.");
       return;
@@ -169,20 +182,33 @@ function ImportForm( { className }: ImportFormProps ) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
-      <Input
-        id="csv-file"
-        type="file"
-        accept=".csv"
-        onChange={handleFileChange}
-        disabled={isUploading}
-        className="rounded-full h-10"
-      />
-      <div className="flex justify-end">
-        <Button type="submit" disabled={!file || isUploading}>
-          {isUploading ? "Importing..." : "Import"}
-        </Button>
-      </div>
-    </form>
-  );
+    <>
+      <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
+        <Input
+          id="csv-file"
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          disabled={isUploading}
+          className="rounded-full h-10"
+        />
+        <div className="flex justify-end">
+          <Button type="submit" disabled={!file || isUploading}>
+            {isUploading ? "Importing..." : "Import"}
+          </Button>
+        </div>
+      </form>
+      <Dialog open={showAuthAlert} onOpenChange={setShowAuthAlert}>
+        <DialogContent>
+          <DialogTitle>{"You're not logged in"}</DialogTitle>
+          <DialogDescription>
+            As an guest user, you are not permitted to import data. Please sign up for an account to use this feature.
+          </DialogDescription>
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowAuthAlert(false)}>OK</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }

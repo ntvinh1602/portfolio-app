@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -24,6 +25,7 @@ import { Enums, Constants, Tables } from "@/lib/database.types"
 import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
 import { useTransactionFormData, AssetWithSecurity } from "@/hooks/useTransactionFormData"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase/supabaseClient"
 import { useRouter } from "next/navigation"
 import { CashFlowForm } from "./cashflow"
 import { TradeForm } from "./buy-sell"
@@ -55,6 +57,7 @@ export function TransactionForm({
   const router = useRouter()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showAuthAlert, setShowAuthAlert] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
   const { accounts, assets, debts } = useTransactionFormData()
@@ -176,7 +179,17 @@ export function TransactionForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const isAnonymous = !user?.email
+
+    if (isAnonymous) {
+      setShowAuthAlert(true)
+      return
+    }
+
     if (!date) {
       toast.error("Please select a date.")
       return
@@ -291,7 +304,8 @@ export function TransactionForm({
    }, [transactionType, formState, accounts, assets, debts])
  
    return (
-     <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
        <DialogContent className="flex flex-col max-h-[95vh]">
          <DialogHeader>
            <DialogTitle>Add Transaction</DialogTitle>
@@ -346,5 +360,19 @@ export function TransactionForm({
         </div>
       </DialogContent>
     </Dialog>
+      <Dialog open={showAuthAlert} onOpenChange={setShowAuthAlert}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{"You're not logged in"}</DialogTitle>
+            <DialogDescription>
+              As an anonymous user, you are not permitted to add transactions. Please sign up for an account to use this feature.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowAuthAlert(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

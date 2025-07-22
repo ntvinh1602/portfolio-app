@@ -18,6 +18,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { useStockHoldings } from "@/hooks/useStockHoldings"
@@ -34,8 +43,17 @@ export function StockCardFull() {
   const { stockHoldings, loading } = useStockHoldings()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showAuthAlert, setShowAuthAlert] = useState(false)
 
   const handleRefresh = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const isAnonymous = !user?.email
+
+    if (isAnonymous) {
+      setShowAuthAlert(true)
+      return
+    }
+
     setIsRefreshing(true)
     await fetch('/api/external/refresh-all-stock-prices', { method: 'POST' });
     // Re-fetch the holdings data
@@ -47,6 +65,7 @@ export function StockCardFull() {
   useEffect(() => {
     async function fetchLastUpdated() {
       const { data: { user } } = await supabase.auth.getUser()
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -88,7 +107,8 @@ export function StockCardFull() {
   }, [stockHoldings]);
 
   return (
-    <Card className="gap-4">
+    <>
+      <Card className="gap-4">
       <CardHeader>
         <CardTitle>Stocks</CardTitle>
         <CardDescription>Built on fundamentals</CardDescription>
@@ -164,5 +184,19 @@ export function StockCardFull() {
         </div>
       </CardContent>
     </Card>
+      <Dialog open={showAuthAlert} onOpenChange={setShowAuthAlert}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{"You're not logged in"}</DialogTitle>
+            <DialogDescription>
+              As an anonymous user, you are not permitted to refresh stock prices. Please sign up for an account to use this feature.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowAuthAlert(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

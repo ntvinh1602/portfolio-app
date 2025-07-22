@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
 
 export async function GET(request: NextRequest) {
+  const DEMO_USER_ID = process.env.DEMO_USER_ID
+
+  if (!DEMO_USER_ID) {
+    throw new Error("DEMO_USER_ID is not set in environment variables")
+  }
+  
   const { searchParams } = new URL(request.url)
   const startDate = searchParams.get("start_date")
   const endDate = searchParams.get("end_date")
@@ -23,8 +29,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Determine if the user is anonymous
+    const isAnonymous = !user.email
+
+    // Use demo user ID for anonymous users, otherwise use their real user ID
+    const userIdToUse = isAnonymous ? DEMO_USER_ID : user.id
+
     const { data, error } = await supabase.rpc("get_monthly_expenses", {
-      p_user_id: user.id,
+      p_user_id: userIdToUse,
       p_start_date: startDate,
       p_end_date: endDate,
     })

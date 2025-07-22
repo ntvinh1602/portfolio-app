@@ -2,12 +2,15 @@ import { createClient } from "@/lib/supabase/supabaseServer"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json()
+  const { email, password, token } = await req.json()
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
+    options: {
+      captchaToken: token,
+    },
   })
 
   if (error) {

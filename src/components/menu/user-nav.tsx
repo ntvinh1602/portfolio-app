@@ -56,7 +56,7 @@ export function HeaderNav() {
           .single()
 
         setUser({
-          name: profile?.display_name || "Anonymous",
+          name: profile?.display_name || "Guest",
           email: user.email || "",
           avatar: "",
         })

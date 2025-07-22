@@ -56,7 +56,7 @@ export default function Page() {
           .select("display_name")
           .eq("id", user.id)
           .single()
-        setUserName(profile?.display_name || "Anonymous")
+        setUserName(profile?.display_name || "Guest")
       }
     }
 

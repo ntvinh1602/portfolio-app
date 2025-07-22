@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "../ui/separator"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { TurnstileWidget } from "../turnstile"
 
 export function LoginForm({
   className,
@@ -18,6 +19,7 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGuestLoading, setIsGuestLoading] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -27,7 +29,7 @@ export function LoginForm({
 
     const res = await fetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, token }),
     })
 
     if (res.ok) {
@@ -41,11 +43,16 @@ export function LoginForm({
   }
 
   const handleAnonymousLogin = async () => {
+    if (!token) {
+      setError("Please complete the captcha.")
+      return
+    }
     setError(null)
     setIsGuestLoading(true)
 
     const res = await fetch("/api/auth/anonymous", {
       method: "POST",
+      body: JSON.stringify({ token }),
     })
 
     if (res.ok) {
@@ -115,10 +122,13 @@ export function LoginForm({
               <Button
                 type="submit"
                 className="w-full rounded-full"
-                disabled={isLoading || isGuestLoading}
+                disabled={isLoading || isGuestLoading || !token}
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
+              <div className="flex justify-center">
+                <TurnstileWidget onSuccess={setToken} />
+              </div>
               <div className="flex items-center justify-between">
                 <div className="w-full flex">
                   <Separator />
@@ -135,7 +145,7 @@ export function LoginForm({
                 type="button"
                 className="w-full rounded-full"
                 onClick={handleAnonymousLogin}
-                disabled={isLoading || isGuestLoading}
+                disabled={isLoading || isGuestLoading || !token}
               >
                 {isGuestLoading ? "Logging in..." : "Login as a Guest"}
               </Button>
