@@ -3,8 +3,6 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
-
-  productionBrowserSourceMaps: true, // Add this temporarily
 };
 
 export default withPWA({
