@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const { headers } = request
+    console.log("Dashboard API headers:", Object.fromEntries(headers.entries()));
     const startDateParam = searchParams.get("start_date")
     const endDateParam = searchParams.get("end_date")
 
