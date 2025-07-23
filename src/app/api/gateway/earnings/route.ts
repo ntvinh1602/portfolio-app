@@ -33,8 +33,15 @@ export async function GET(request: Request) {
       data: { session },
     } = await supabase.auth.getSession()
 
+    const DEMO_USER_ID = process.env.DEMO_USER_ID
+
+    if (!DEMO_USER_ID) {
+      throw new Error("DEMO_USER_ID is not set in environment variables")
+    }
+
     const user = session?.user
     const isAnonymous = !user?.email
+    const userIdToUse = isAnonymous ? DEMO_USER_ID : user?.id
     const sessionId = session?.access_token?.slice(-10) ?? "anon"
     const cacheKey = user ? `earnings-${user.id}-${sessionId}` : "earnings-anonymous"
     const revalidateTime = isAnonymous ? 3600 : 1800
@@ -77,7 +84,15 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(combinedData);
+    return NextResponse.json(combinedData, {
+      headers: {
+        "Vary": "Authorization",
+        "Cache-Control": isAnonymous
+          ? "public, max-age=1800, stale-while-revalidate=360"
+          : "private, max-age=900, stale-while-revalidate=180",
+        "X-Cache-Key": `${userIdToUse}-${sessionId}`,
+      },
+    })
   } catch (error) {
     console.error("Error fetching earnings data:", error);
     return NextResponse.json(

@@ -25,8 +25,15 @@ export async function GET(request: Request) {
       data: { session },
     } = await supabase.auth.getSession()
 
+    const DEMO_USER_ID = process.env.DEMO_USER_ID
+
+    if (!DEMO_USER_ID) {
+      throw new Error("DEMO_USER_ID is not set in environment variables")
+    }
+
     const user = session?.user
     const isAnonymous = !user?.email
+    const userIdToUse = isAnonymous ? DEMO_USER_ID : user?.id
     const sessionId = session?.access_token?.slice(-10) ?? "anon"
     const cacheKey = user ? `metrics-${user.id}-${sessionId}` : "metrics-anonymous"
     const revalidateTime = isAnonymous ? 3600 : 1800
@@ -85,13 +92,24 @@ export async function GET(request: Request) {
     const monthlyReturns = monthlyTwrData.map((item: { twr: number }) => item.twr);
     const sharpeRatioValue = calculateSharpeRatio(monthlyReturns, 0.055);
 
-    return NextResponse.json({
-      cagr: cagrValue,
-      sharpeRatio: sharpeRatioValue,
-      totalPnl: pnlData.pnl,
-      totalReturn: twrData.twr,
-      benchmarkChartData: benchmarkData,
-    });
+    return NextResponse.json(
+      {
+        cagr: cagrValue,
+        sharpeRatio: sharpeRatioValue,
+        totalPnl: pnlData.pnl,
+        totalReturn: twrData.twr,
+        benchmarkChartData: benchmarkData,
+      },
+      {
+        headers: {
+          "Vary": "Authorization",
+          "Cache-Control": isAnonymous
+            ? "public, max-age=1800, stale-while-revalidate=360"
+            : "private, max-age=900, stale-while-revalidate=180",
+          "X-Cache-Key": `${userIdToUse}-${sessionId}`,
+        },
+      },
+    )
   } catch (error) {
     console.error("Error fetching metrics data:", error);
     return NextResponse.json(
