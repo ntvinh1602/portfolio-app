@@ -35,6 +35,7 @@ import { Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import DatePicker from "@/components/date-picker"
 import { Toaster } from "@/components/ui/sonner"
+import { ClearCacheButton } from "@/components/forms/clear-cache-button"
 
 export default function Page() {
   const router = useRouter()
@@ -119,6 +120,17 @@ export default function Page() {
                 <Label htmlFor="dark-mode">Dark mode</Label>
               </div>
             )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Clear Cache</CardTitle>
+            <CardDescription>
+              Manually clear the cache to get the latest data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ClearCacheButton />
           </CardContent>
         </Card>
         <Card className="gap-8">
