@@ -2,30 +2,36 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/supabaseServer";
 
 // Route segment configuration
-export const revalidate = 3600;
-export const dynamic = "force-dynamic"; // Since we need user-specific data
+export const dynamic = "force-dynamic" // Since we need user-specific data
 
 export async function GET(request: Request) {
   try {
-    const { headers } = request;
-    const supabase = await createClient();
+    const { headers } = request
+    const supabase = await createClient()
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const userId = user?.id ?? "anonymous";
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    const baseUrl = request.url.split("/api")[0];
+    const user = session?.user
+    const isAnonymous = !user?.email
+    const sessionId = session?.access_token?.slice(-10) ?? "anon"
+    const cacheKey = user ? `holdings-${user.id}-${sessionId}` : "holdings-anonymous"
+    const revalidateTime = isAnonymous ? 3600 : 1800
+
+    const baseUrl = request.url.split("/api")[0]
+
+    const fetchOptions = {
+      headers,
+      next: {
+        tags: [cacheKey],
+        revalidate: revalidateTime,
+      },
+    }
 
     const [stockHoldingsResponse, cryptoHoldingsResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/stock-holdings`, {
-        headers,
-        next: { tags: [`asset-data-${userId}`, "holdings", "stocks"] },
-      }),
-      fetch(`${baseUrl}/api/query/crypto-holdings`, {
-        headers,
-        next: { tags: [`asset-data-${userId}`, "holdings", "crypto"] },
-      }),
-    ]);
+      fetch(`${baseUrl}/api/query/stock-holdings`, fetchOptions),
+      fetch(`${baseUrl}/api/query/crypto-holdings`, fetchOptions),
+    ])
 
     for (const response of [stockHoldingsResponse, cryptoHoldingsResponse]) {
       if (!response.ok) {

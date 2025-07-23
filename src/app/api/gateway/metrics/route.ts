@@ -3,29 +3,43 @@ import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/supabaseServer";
 
 // Route segment configuration
-export const revalidate = 3600
-export const dynamic = 'force-dynamic' // Since we need user-specific data
+export const dynamic = "force-dynamic" // Since we need user-specific data
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const { headers } = request;
-    const startDateStr = searchParams.get("start_date");
-    const endDateStr = searchParams.get("end_date");
-    const lifetimeStartDateStr = searchParams.get("lifetime_start_date");
+    const { searchParams } = new URL(request.url)
+    const { headers } = request
+    const startDateStr = searchParams.get("start_date")
+    const endDateStr = searchParams.get("end_date")
+    const lifetimeStartDateStr = searchParams.get("lifetime_start_date")
 
     if (!startDateStr || !endDateStr || !lifetimeStartDateStr) {
       return NextResponse.json(
         { error: "start_date, end_date, and lifetime_start_date are required" },
-        { status: 400 }
-      );
+        { status: 400 },
+      )
     }
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id ?? 'anonymous';
+    const supabase = await createClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    const baseUrl = request.url.split('/api')[0];
+    const user = session?.user
+    const isAnonymous = !user?.email
+    const sessionId = session?.access_token?.slice(-10) ?? "anon"
+    const cacheKey = user ? `metrics-${user.id}-${sessionId}` : "metrics-anonymous"
+    const revalidateTime = isAnonymous ? 3600 : 1800
+
+    const baseUrl = request.url.split("/api")[0]
+
+    const fetchOptions = {
+      headers,
+      next: {
+        tags: [cacheKey],
+        revalidate: revalidateTime,
+      },
+    }
 
     const [
       performanceRes,
@@ -34,12 +48,15 @@ export async function GET(request: Request) {
       twrRes,
       benchmarkChartRes,
     ] = await Promise.all([
-      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
-      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'pnl'] } }),
-      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
-      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: [`performance-data-${userId}`, 'benchmark'] } }),
-    ]);
+      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, fetchOptions),
+      fetch(
+        `${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`,
+        fetchOptions,
+      ),
+    ])
 
     for (const response of [performanceRes, monthlyTwrRes, pnlRes, twrRes, benchmarkChartRes]) {
       if (!response.ok) {
