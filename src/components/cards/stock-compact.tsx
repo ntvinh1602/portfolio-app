@@ -11,11 +11,15 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useStockHoldings } from "@/hooks/useStockHoldings"
+import { Holding } from "@/hooks/useHoldings"
 
-function StockCardCompact() {
+interface StockCardCompactProps {
+  stockHoldings: (Holding & { total_amount: number })[]
+}
+
+function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
   const router = useRouter()
-  const { stockHoldings, loading } = useStockHoldings()
+  const loading = !stockHoldings
 
   const handleNavigation = () => {
     router.push("/holdings")

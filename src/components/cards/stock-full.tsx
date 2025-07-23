@@ -29,7 +29,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { useStockHoldings } from "@/hooks/useStockHoldings"
 import {
   SecurityItem,
   SecuritySkeleton
@@ -39,9 +38,15 @@ import { useEffect, useState } from "react"
 import { mutate } from "swr"
 import { formatNum } from "@/lib/utils"
 
-export function StockCardFull() {
-  const { stockHoldings, loading } = useStockHoldings()
+import { Holding } from "@/hooks/useHoldings"
+
+interface StockCardFullProps {
+  stockHoldings: (Holding & { total_amount: number })[]
+}
+
+export function StockCardFull({ stockHoldings }: StockCardFullProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const loading = !stockHoldings
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showAuthAlert, setShowAuthAlert] = useState(false)
 
@@ -57,7 +62,7 @@ export function StockCardFull() {
     setIsRefreshing(true)
     await fetch('/api/external/refresh-all-stock-prices', { method: 'POST' });
     // Re-fetch the holdings data
-    await mutate('/api/query/stock-holdings');
+    await mutate('/api/gateway/holdings');
     setIsRefreshing(false)
     setLastUpdated(new Date());
   };

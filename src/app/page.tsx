@@ -33,9 +33,10 @@ export default function Page() {
     monthlyPnlData,
     benchmarkData,
     assetSummaryData,
+    holdingsData,
     isLoading,
     error,
-  } = useDashboardData()
+  } = useDashboardData();
 
   const latestEquity = equityData.length > 0 ? equityData[equityData.length - 1].net_equity_value : null;
   const mtdPnl = monthlyPnlData.length > 0 ? monthlyPnlData[monthlyPnlData.length - 1].pnl : null;
@@ -119,10 +120,10 @@ export default function Page() {
           }
           <div className="flex flex-col gap-2">
             {isLoading ? <StockCardCompactSkeleton /> :
-              <StockCardCompact />
+              <StockCardCompact stockHoldings={holdingsData.stockHoldings} />
             }
             {isLoading ? <CryptoCardCompactSkeleton /> :
-              <CryptoCardCompact />
+              <CryptoCardCompact cryptoHoldings={holdingsData.cryptoHoldings} />
             }
           </div>
       </PageContent>

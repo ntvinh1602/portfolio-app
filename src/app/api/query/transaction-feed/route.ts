@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
 
+// Route segment configuration
+export const dynamic = 'force-dynamic' // User-specific data
+export const revalidate = 3600
+
 export async function GET(request: Request) {
   const DEMO_USER_ID = process.env.DEMO_USER_ID
 
@@ -44,11 +48,21 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    return NextResponse.json(data, { headers: { 'Cache-Control': 's-maxage=31536000, stale-while-revalidate=59', "Vary": "Authorization" } })
-  } catch (error) {
-    console.error("Error fetching transaction feed:", error)
+    return NextResponse.json(data, {
+      headers: {
+        "Vary": "Authorization",
+        // Optional: Add cache hints for CDN/browser
+        ...(isAnonymous && {
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=360"
+        })
+      },
+    })
+  } catch (e) {
+    console.error("Unexpected error:", e)
+    const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
+    
     return NextResponse.json(
-      { error: "Failed to fetch transaction feed" },
+      { error: errorMessage },
       { status: 500 }
     )
   }

@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/popover"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { useCryptoHoldings } from "@/hooks/useCryptoHoldings"
 import {
   SecurityItem,
   SecuritySkeleton
@@ -28,9 +27,15 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { useEffect, useState } from "react"
 import { formatNum } from "@/lib/utils"
 
-export function CryptoCardFull() {
-  const { cryptoHoldings, loading } = useCryptoHoldings()
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+import { CryptoHolding } from "@/hooks/useHoldings"
+
+interface CryptoCardFullProps {
+  cryptoHoldings: (CryptoHolding & { total_amount: number })[]
+}
+
+export function CryptoCardFull({ cryptoHoldings }: CryptoCardFullProps) {
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const loading = !cryptoHoldings
 
   useEffect(() => {
     async function fetchLastUpdated() {

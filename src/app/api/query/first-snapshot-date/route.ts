@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
 import { NextResponse } from "next/server"
 
-export const dynamic = "force-dynamic"
+// Route segment configuration
+export const dynamic = 'force-dynamic' // User-specific data
+export const revalidate = 3600
 
 export async function GET() {
   const supabase = await createClient()
@@ -36,8 +38,11 @@ export async function GET() {
     }
     return NextResponse.json({ date: data }, {
       headers: {
-        "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
-        "Vary": "Authorization"
+        "Vary": "Authorization",
+        // Optional: Add cache hints for CDN/browser
+        ...(isAnonymous && {
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=360"
+        })
       },
     })
   } catch (e) {

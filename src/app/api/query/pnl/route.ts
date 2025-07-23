@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
 import { type NextRequest, NextResponse } from "next/server"
 
+// Route segment configuration
+export const dynamic = 'force-dynamic' // User-specific data
+export const revalidate = 3600
+
 export async function GET(request: NextRequest) {
   const DEMO_USER_ID = process.env.DEMO_USER_ID
 
@@ -53,8 +57,11 @@ export async function GET(request: NextRequest) {
       { pnl: data },
       {
         headers: {
-          "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
-          "Vary": "Authorization"
+          "Vary": "Authorization",
+          // Optional: Add cache hints for CDN/browser
+          ...(isAnonymous && {
+            "Cache-Control": "public, max-age=1800, stale-while-revalidate=360"
+          })
         },
       },
     )

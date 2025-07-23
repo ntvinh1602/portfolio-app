@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/supabaseServer";
 
+// Route segment configuration
+export const revalidate = 3600
+export const dynamic = 'force-dynamic' // Since we need user-specific data
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -30,11 +34,11 @@ export async function GET(request: Request) {
       twrRes,
       benchmarkChartRes,
     ] = await Promise.all([
-      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
-      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
-      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
-      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
+      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'pnl'] } }),
+      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
+      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: [`performance-data-${userId}`, 'benchmark'] } }),
     ]);
 
     for (const response of [performanceRes, monthlyTwrRes, pnlRes, twrRes, benchmarkChartRes]) {
@@ -70,11 +74,6 @@ export async function GET(request: Request) {
       totalPnl: pnlData.pnl,
       totalReturn: twrData.twr,
       benchmarkChartData: benchmarkData,
-    }, {
-      headers: {
-        "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
-        "Vary": "Authorization"
-      }
     });
   } catch (error) {
     console.error("Error fetching metrics data:", error);

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/supabaseServer";
 
+// Route segment configuration
+export const revalidate = 3600
+export const dynamic = 'force-dynamic' // Since we need user-specific data
+
 type PnlData = {
   month: string;
   pnl: number;
@@ -32,8 +36,8 @@ export async function GET(request: Request) {
     const baseUrl = request.url.split('/api')[0];
 
     const [pnlResponse, twrResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: [`performance-data-${userId}`, 'pnl'] } }),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${startDate}&end_date=${endDate}`, { headers, next: { tags: [`performance-data-${userId}`, 'twr'] } }),
     ]);
 
     for (const response of [pnlResponse, twrResponse]) {
@@ -59,12 +63,7 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(combinedData, {
-      headers: {
-        "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
-        "Vary": "Authorization"
-      }
-    });
+    return NextResponse.json(combinedData);
   } catch (error) {
     console.error("Error fetching earnings data:", error);
     return NextResponse.json(

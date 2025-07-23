@@ -11,11 +11,15 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useCryptoHoldings } from "@/hooks/useCryptoHoldings"
+import { CryptoHolding } from "@/hooks/useHoldings"
 
-function CryptoCardCompact() {
+interface CryptoCardCompactProps {
+  cryptoHoldings: (CryptoHolding & { total_amount: number })[]
+}
+
+function CryptoCardCompact({ cryptoHoldings }: CryptoCardCompactProps) {
   const router = useRouter()
-  const { cryptoHoldings, loading } = useCryptoHoldings()
+  const loading = !cryptoHoldings
 
   const handleNavigation = () => {
     router.push("/holdings")

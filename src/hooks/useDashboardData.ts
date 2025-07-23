@@ -32,12 +32,20 @@ interface AssetSummaryData {
   totalEquity: number;
 }
 
+import { Holding, CryptoHolding } from "./useHoldings";
+
+interface HoldingsData {
+  stockHoldings: (Holding & { total_amount: number })[];
+  cryptoHoldings: (CryptoHolding & { total_amount: number })[];
+}
+
 interface DashboardApiResponse {
   equityData: EquityData[];
   twrData: { twr: number | null };
   monthlyPnlData: MonthlyPnlData[];
   benchmarkData: BenchmarkData[];
   assetSummaryData: AssetSummaryData | null;
+  holdingsData: HoldingsData;
 }
 
 export function useDashboardData() {
@@ -62,7 +70,8 @@ export function useDashboardData() {
     monthlyPnlData: data?.monthlyPnlData ?? [],
     benchmarkData: data?.benchmarkData ?? [],
     assetSummaryData: data?.assetSummaryData ?? null,
+    holdingsData: data?.holdingsData ?? { stockHoldings: [], cryptoHoldings: [] },
     isLoading,
     error,
-  }
+  };
 }
