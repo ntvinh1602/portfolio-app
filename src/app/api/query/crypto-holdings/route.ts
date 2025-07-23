@@ -32,7 +32,7 @@ export async function GET() {
       throw error;
     }
 
-    return NextResponse.json(data, { headers: { 'Cache-Control': 's-maxage=31536000, stale-while-revalidate=59' } })
+    return NextResponse.json(data, { headers: { 'Cache-Control': 's-maxage=31536000, stale-while-revalidate=59', "Vary": "Authorization" } })
   } catch (error) {
     console.error("Error fetching crypto holdings:", error)
     return NextResponse.json(

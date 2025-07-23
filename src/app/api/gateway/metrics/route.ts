@@ -1,22 +1,27 @@
-import { NextResponse } from "next/server"
-import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils"
+import { NextResponse } from "next/server";
+import { calculateCAGR, calculateSharpeRatio } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/supabaseServer";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const { headers } = request
-    const startDateStr = searchParams.get("start_date")
-    const endDateStr = searchParams.get("end_date")
-    const lifetimeStartDateStr = searchParams.get("lifetime_start_date")
+    const { searchParams } = new URL(request.url);
+    const { headers } = request;
+    const startDateStr = searchParams.get("start_date");
+    const endDateStr = searchParams.get("end_date");
+    const lifetimeStartDateStr = searchParams.get("lifetime_start_date");
 
     if (!startDateStr || !endDateStr || !lifetimeStartDateStr) {
       return NextResponse.json(
         { error: "start_date, end_date, and lifetime_start_date are required" },
         { status: 400 }
-      )
+      );
     }
 
-    const baseUrl = request.url.split('/api')[0]
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id ?? 'anonymous';
+
+    const baseUrl = request.url.split('/api')[0];
 
     const [
       performanceRes,
@@ -25,12 +30,12 @@ export async function GET(request: Request) {
       twrRes,
       benchmarkChartRes,
     ] = await Promise.all([
-      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: ['performance-data'] } }),
-      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: ['performance-data'] } }),
-    ])
+      fetch(`${baseUrl}/api/query/twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/twr?start_date=${startDateStr}&end_date=${endDateStr}`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+      fetch(`${baseUrl}/api/query/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, { headers, next: { tags: [`performance-data-${userId}`] } }),
+    ]);
 
     for (const response of [performanceRes, monthlyTwrRes, pnlRes, twrRes, benchmarkChartRes]) {
       if (!response.ok) {
@@ -52,12 +57,12 @@ export async function GET(request: Request) {
       pnlRes.json(),
       twrRes.json(),
       benchmarkChartRes.json(),
-    ])
+    ]);
 
-    const years = (new Date(endDateStr).getTime() - new Date(lifetimeStartDateStr).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-    const cagrValue = calculateCAGR(1, 1 + performance.twr, years)
-    const monthlyReturns = monthlyTwrData.map((item: { twr: number }) => item.twr)
-    const sharpeRatioValue = calculateSharpeRatio(monthlyReturns, 0.055)
+    const years = (new Date(endDateStr).getTime() - new Date(lifetimeStartDateStr).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    const cagrValue = calculateCAGR(1, 1 + performance.twr, years);
+    const monthlyReturns = monthlyTwrData.map((item: { twr: number }) => item.twr);
+    const sharpeRatioValue = calculateSharpeRatio(monthlyReturns, 0.055);
 
     return NextResponse.json({
       cagr: cagrValue,
@@ -65,12 +70,17 @@ export async function GET(request: Request) {
       totalPnl: pnlData.pnl,
       totalReturn: twrData.twr,
       benchmarkChartData: benchmarkData,
-    })
+    }, {
+      headers: {
+        "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
+        "Vary": "Authorization"
+      }
+    });
   } catch (error) {
-    console.error("Error fetching metrics data:", error)
+    console.error("Error fetching metrics data:", error);
     return NextResponse.json(
       { error: "Failed to fetch metrics data" },
       { status: 500 }
-    )
+    );
   }
 }

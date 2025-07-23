@@ -37,6 +37,7 @@ export async function GET() {
     return NextResponse.json({ date: data }, {
       headers: {
         "Cache-Control": "s-maxage=31536000, stale-while-revalidate=59",
+        "Vary": "Authorization"
       },
     })
   } catch (e) {
