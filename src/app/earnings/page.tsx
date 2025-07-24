@@ -28,8 +28,7 @@ type MonthlyData = {
 }
 
 export default function Page() {
-  const { session } = useAuth()
-  const userId = session?.user?.id
+  const { userId } = useAuth()
   const [dateRange, setDateRange] = React.useState("12m")
   const { data: firstSnapshotDateData } = useSWR(
     userId ? `/api/query/${userId}/first-snapshot-date` : null,

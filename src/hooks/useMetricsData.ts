@@ -5,8 +5,7 @@ import { startOfMonth, startOfYear, format as formatDate } from "date-fns"
 import { useAuth } from "@/hooks/useAuth"
 
 export function useMetricsData(dateRange: string) {
-  const { session } = useAuth()
-  const userId = session?.user?.id
+  const { userId } = useAuth()
   const [firstSnapshotDate, setFirstSnapshotDate] = React.useState<Date | null>(null)
   const { data: firstSnapshotDateData } = useSWR(
     userId ? `/api/query/${userId}/first-snapshot-date` : null,
