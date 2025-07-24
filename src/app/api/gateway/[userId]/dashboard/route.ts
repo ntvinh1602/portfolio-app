@@ -2,6 +2,24 @@ import { NextResponse } from "next/server"
 import { format, subDays, startOfMonth, subMonths } from "date-fns"
 import { createClient } from "@/lib/supabase/supabaseServer"
 
+interface StockHolding {
+  ticker: string
+  name: string
+  logo_url: string
+  quantity: number
+  cost_basis: number
+  latest_price: number
+}
+
+interface CryptoHolding {
+  ticker: string
+  name: string
+  logo_url: string
+  quantity: number
+  cost_basis: number
+  latest_price: number
+  latest_usd_rate: number
+}
 // Route segment configuration
 export const dynamic = "force-dynamic" // Since we need user-specific data
 
@@ -112,6 +130,18 @@ export async function GET(
       holdingsResponse.json(),
     ])
 
+    const holdingsDataWithTotalAmount = {
+      stockHoldings: holdingsData.stockHoldings.map((holding: StockHolding) => ({
+        ...holding,
+        total_amount: holding.quantity * holding.latest_price,
+      })),
+      cryptoHoldings: holdingsData.cryptoHoldings.map((holding: CryptoHolding) => ({
+        ...holding,
+        total_amount:
+          holding.quantity * holding.latest_price * holding.latest_usd_rate,
+      })),
+    }
+
     return NextResponse.json(
       {
         equityData,
@@ -119,7 +149,7 @@ export async function GET(
         monthlyPnlData,
         benchmarkData,
         assetSummaryData,
-        holdingsData,
+        holdingsData: holdingsDataWithTotalAmount,
       },
       {
         headers: {

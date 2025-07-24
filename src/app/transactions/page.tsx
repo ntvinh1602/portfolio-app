@@ -36,8 +36,7 @@ type TransactionFeed = {
 const PAGE_SIZE = 6
 
 export default function Page() {
-  const { session } = useAuth()
-  const userId = session?.user?.id
+  const { userId } = useAuth()
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [assetType, setAssetType] = React.useState("stock")
 

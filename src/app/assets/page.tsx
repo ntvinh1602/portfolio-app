@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useAuth } from "@/hooks/useAuth";
 import {
   PageMain,
   PageHeader,
@@ -8,8 +9,6 @@ import {
 } from "@/components/page-layout"
 import { fetcher } from "@/lib/fetcher";
 import useSWR from "swr";
-import { supabase } from "@/lib/supabase/supabaseClient";
-import { Session } from "@supabase/supabase-js";
 import { formatNum } from "@/lib/utils";
 import {
   Card,
@@ -49,17 +48,7 @@ interface AssetSummaryData {
 }
 
 export default function Page() {
-  const [session, setSession] = React.useState<Session | null>(null);
-
-  React.useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    };
-    getSession();
-  }, []);
-
-  const userId = session?.user?.id;
+  const { userId } = useAuth();
   const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>(
     userId ? `/api/query/${userId}/asset-summary` : null,
     fetcher

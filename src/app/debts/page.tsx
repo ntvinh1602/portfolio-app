@@ -10,8 +10,7 @@ import { fetcher } from "@/lib/fetcher"
 import { useAuth } from "@/hooks/useAuth"
 
 export default function Page() {
-  const { session } = useAuth()
-  const userId = session?.user?.id
+  const { userId } = useAuth()
   const { data: debts, error } = useSWR<Tables<"debts">[]>(
     userId ? `/api/query/${userId}/debts` : null,
     fetcher

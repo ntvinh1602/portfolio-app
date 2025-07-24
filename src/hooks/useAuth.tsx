@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
       const isAnonymous = !session?.user?.email
       setUserId(
         isAnonymous
-          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
+          ? process.env.DEMO_USER_ID ?? null
           : session?.user?.id ?? null,
       )
     }
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
       const isAnonymous = !session?.user?.email
       setUserId(
         isAnonymous
-          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
+          ? process.env.DEMO_USER_ID ?? null
           : session?.user?.id ?? null,
       )
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
