@@ -6,7 +6,7 @@ import {
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
-import SupabaseAuthProvider from "@/components/supabase-auth-provider"
+import { AuthProvider } from "@/hooks/useAuth"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
@@ -50,7 +50,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="antialiased bg-fixed">
-        <SupabaseAuthProvider>
+        <AuthProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
@@ -60,7 +60,7 @@ export default function RootLayout({
             {children}
             <Toaster />
           </ThemeProvider>
-        </SupabaseAuthProvider>
+        </AuthProvider>
       </body>
     </html>
   );

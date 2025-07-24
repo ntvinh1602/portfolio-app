@@ -1,6 +1,7 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { format, subDays, startOfMonth, subMonths } from "date-fns"
+import { useAuth } from "@/hooks/useAuth"
 
 type EquityData = {
   date: string
@@ -49,6 +50,9 @@ interface DashboardApiResponse {
 }
 
 export function useDashboardData() {
+  const { session } = useAuth()
+  const userId = session?.user?.id
+
   const endDate = new Date()
   const startDate = subDays(endDate, 90)
   const monthlyPnlStartDate = startOfMonth(subMonths(endDate, 11))
@@ -60,7 +64,7 @@ export function useDashboardData() {
   })
 
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
-    `/api/gateway/dashboard?${params.toString()}`,
+    userId ? `/api/gateway/${userId}/dashboard?${params.toString()}` : null,
     fetcher
   )
 

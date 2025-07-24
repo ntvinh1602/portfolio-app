@@ -2,10 +2,16 @@ import * as React from "react"
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { startOfMonth, startOfYear, format as formatDate } from "date-fns"
+import { useAuth } from "@/hooks/useAuth"
 
 export function useMetricsData(dateRange: string) {
+  const { session } = useAuth()
+  const userId = session?.user?.id
   const [firstSnapshotDate, setFirstSnapshotDate] = React.useState<Date | null>(null)
-  const { data: firstSnapshotDateData } = useSWR("/api/query/first-snapshot-date", fetcher)
+  const { data: firstSnapshotDateData } = useSWR(
+    userId ? `/api/query/${userId}/first-snapshot-date` : null,
+    fetcher
+  )
 
   React.useEffect(() => {
     if (firstSnapshotDateData) {
@@ -15,7 +21,7 @@ export function useMetricsData(dateRange: string) {
 
   const { data, error, isLoading } = useSWR(
     () => {
-      if (!firstSnapshotDate) return null
+      if (!firstSnapshotDate || !userId) return null
 
       const endDate = new Date()
       let startDate = firstSnapshotDate
@@ -31,7 +37,7 @@ export function useMetricsData(dateRange: string) {
         lifetime_start_date: formatDate(firstSnapshotDate, "yyyy-MM-dd"),
       })
 
-      return `/api/gateway/metrics?${params.toString()}`
+      return `/api/gateway/${userId}/metrics?${params.toString()}`
     },
     fetcher
   )

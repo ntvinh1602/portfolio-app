@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Holding {
   ticker: string;
@@ -20,8 +21,11 @@ interface HoldingsData {
 }
 
 export function useHoldings() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+
   const { data, error, isLoading } = useSWR<HoldingsData>(
-    "/api/gateway/holdings",
+    userId ? `/api/gateway/${userId}/holdings` : null,
     fetcher
   );
 

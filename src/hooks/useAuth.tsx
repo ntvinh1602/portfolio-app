@@ -1,0 +1,66 @@
+"use client"
+
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import type { Session } from "@supabase/supabase-js"
+
+type AuthContextType = {
+  session: Session | null
+  isLoading: boolean
+}
+
+const AuthContext = createContext<AuthContextType>({
+  session: null,
+  isLoading: true,
+})
+
+export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode => {
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const getSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      setSession(session)
+      setIsLoading(false)
+    }
+
+    getSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        fetch("/api/revalidate-cache", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: event,
+            userId: session?.user?.id,
+          }),
+        })
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return (
+    <AuthContext.Provider value={{ session, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}

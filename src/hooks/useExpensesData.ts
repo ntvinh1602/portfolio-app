@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 type MonthlyExpense = {
   month: string;
@@ -10,6 +11,9 @@ type MonthlyExpense = {
 };
 
 export function useExpensesData() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+
   // Fetch last 12 months of expenses for the bar chart
   const monthlyEndDate = endOfMonth(new Date());
   const monthlyStartDate = startOfMonth(subMonths(new Date(), 11));
@@ -23,28 +27,32 @@ export function useExpensesData() {
     error: monthlyError,
     isLoading: monthlyLoading,
   } = useSWR<MonthlyExpense[]>(
-    `/api/query/monthly-expenses?${monthlyParams.toString()}`,
+    userId
+      ? `/api/gateway/${userId}/expenses?${monthlyParams.toString()}`
+      : null,
     fetcher
   );
 
   // Fetch all expenses for the pie chart structure
   const { data: firstDateData } = useSWR<{ date: string }>(
-    "/api/query/first-snapshot-date",
+    userId ? `/api/query/${userId}/first-snapshot-date` : null,
     fetcher
   );
 
   const allTimeParams = new URLSearchParams({
-    start_date: firstDateData ? format(new Date(firstDateData.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+    start_date: firstDateData
+      ? format(new Date(firstDateData.date), "yyyy-MM-dd")
+      : format(new Date(), "yyyy-MM-dd"),
     end_date: format(new Date(), "yyyy-MM-dd"),
   });
 
-  const {
-    data: allExpenses,
-    isLoading: structureLoading,
-  } = useSWR<MonthlyExpense[]>(
-    firstDateData ? `/api/query/monthly-expenses?${allTimeParams.toString()}` : null,
-    fetcher
-  );
+  const { data: allExpenses, isLoading: structureLoading } =
+    useSWR<MonthlyExpense[]>(
+      userId && firstDateData
+        ? `/api/gateway/${userId}/expenses?${allTimeParams.toString()}`
+        : null,
+      fetcher
+    );
 
   const expenseStructure = allExpenses
     ? Object.entries(
@@ -58,7 +66,9 @@ export function useExpensesData() {
           { trading_fees: 0, taxes: 0, interest: 0 }
         )
       ).map(([key, value]) => ({
-        category: key.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase()),
+        category: key
+          .replace("_", " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
         total_amount: value,
       }))
     : [];

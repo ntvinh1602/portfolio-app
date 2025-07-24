@@ -1,52 +1,34 @@
 "use client"
 
-import * as React from "react"
-import { supabase } from "@/lib/supabase/supabaseClient"
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
+import { useAuth } from "@/hooks/useAuth"
 import { Tables } from "@/lib/database.types"
 
 export type AssetWithSecurity = Tables<"assets"> & {
   securities: Tables<"securities">
 }
 
+interface TransactionFormData {
+  accounts: Tables<"accounts">[]
+  assets: AssetWithSecurity[]
+  debts: Tables<"debts">[]
+}
+
 export function useTransactionFormData() {
-  const [accounts, setAccounts] = React.useState<Tables<"accounts">[]>([])
-  const [assets, setAssets] = React.useState<AssetWithSecurity[]>([])
-  const [debts, setDebts] = React.useState<Tables<"debts">[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const { session } = useAuth()
+  const userId = session?.user?.id
 
-  React.useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true)
-      try {
-        const { data: accountsData, error: accountsError } = await supabase
-          .from("accounts")
-          .select("*")
-          .not("type", "eq", "conceptual")
-        if (accountsError) throw accountsError
-        setAccounts(accountsData || [])
+  const { data, error, isLoading } = useSWR<TransactionFormData>(
+    userId ? `/api/gateway/${userId}/transactions` : null,
+    fetcher
+  )
 
-        const { data: assetsData, error: assetsError } = await supabase
-          .from("assets")
-          .select("*, securities(*)")
-          .not("securities.asset_class", "in", "(equity,liability)")
-        if (assetsError) throw assetsError
-        setAssets((assetsData as AssetWithSecurity[]) || [])
-
-        const { data: debtsData, error: debtsError } = await supabase
-          .from("debts")
-          .select("*")
-          .eq("status", "active")
-        if (debtsError) throw debtsError
-        setDebts(debtsData || [])
-      } catch (error) {
-        console.error("Error fetching transaction form data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchInitialData()
-  }, [])
-
-  return { accounts, assets, debts, loading }
+  return {
+    accounts: data?.accounts ?? [],
+    assets: data?.assets ?? [],
+    debts: data?.debts ?? [],
+    loading: isLoading,
+    error,
+  }
 }
