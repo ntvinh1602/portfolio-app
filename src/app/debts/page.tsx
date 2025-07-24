@@ -7,9 +7,15 @@ import { format } from "date-fns"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function Page() {
-  const { data: debts, error } = useSWR<Tables<"debts">[]>('/api/query/debts', fetcher)
+  const { session } = useAuth()
+  const userId = session?.user?.id
+  const { data: debts, error } = useSWR<Tables<"debts">[]>(
+    userId ? `/api/query/${userId}/debts` : null,
+    fetcher
+  )
 
   const calculateAccruedInterest = (debt: Tables<"debts">): number => {
     const principal = debt.principal_amount

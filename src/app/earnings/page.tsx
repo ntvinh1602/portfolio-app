@@ -19,6 +19,7 @@ import { formatNum } from "@/lib/utils"
 import { TwoMetric } from "@/components/cards/two-metric"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { fetcher } from "@/lib/fetcher"
+import { useAuth } from "@/hooks/useAuth"
 
 type MonthlyData = {
   month: string
@@ -27,11 +28,18 @@ type MonthlyData = {
 }
 
 export default function Page() {
+  const { session } = useAuth()
+  const userId = session?.user?.id
   const [dateRange, setDateRange] = React.useState("12m")
-  const { data: firstSnapshotDateData } = useSWR("/api/query/first-snapshot-date", fetcher)
+  const { data: firstSnapshotDateData } = useSWR(
+    userId ? `/api/query/${userId}/first-snapshot-date` : null,
+    fetcher
+  )
 
   const { data, error } = useSWR<MonthlyData[]>(
     () => {
+      if (!userId) return null
+
       const now = new Date()
       let startDate
       const endDate = format(endOfMonth(now), "yyyy-MM-dd")
@@ -44,7 +52,7 @@ export default function Page() {
         return null
       }
 
-      return `/api/gateway/earnings?start_date=${startDate}&end_date=${endDate}`
+      return `/api/gateway/${userId}/earnings?start_date=${startDate}&end_date=${endDate}`
     },
     fetcher
   )
