@@ -6,9 +6,11 @@ import {
   PageHeader,
   PageContent,
 } from "@/components/page-layout"
-import { fetcher } from "@/lib/fetcher"
-import useSWR from "swr"
-import { formatNum } from "@/lib/utils"
+import { fetcher } from "@/lib/fetcher";
+import useSWR from "swr";
+import { supabase } from "@/lib/supabase/supabaseClient";
+import { Session } from "@supabase/supabase-js";
+import { formatNum } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -47,26 +49,40 @@ interface AssetSummaryData {
 }
 
 export default function Page() {
-  const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>('/api/query/asset-summary', fetcher)
+  const [session, setSession] = React.useState<Session | null>(null);
+
+  React.useEffect(() => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    };
+    getSession();
+  }, []);
+
+  const userId = session?.user?.id;
+  const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>(
+    userId ? `/api/query/${userId}/asset-summary` : null,
+    fetcher
+  );
 
   if (error) {
     // You can render a more sophisticated error state here
     return <div>Error loading data</div>;
   }
 
-  const assetsItems = (summaryData?.assets || []).map((item) => ({
+  const assetsItems = (summaryData?.assets || []).map((item: SummaryItem) => ({
     ...item,
     totalAmount: formatNum(item.totalAmount),
   }))
   const assetsTotalAmount = formatNum(summaryData?.totalAssets || 0)
 
-  const liabilitiesItems = (summaryData?.liabilities || []).map((item) => ({
+  const liabilitiesItems = (summaryData?.liabilities || []).map((item: SummaryItem) => ({
     ...item,
     totalAmount: formatNum(item.totalAmount),
   }))
   const liabilitiesTotalAmount = formatNum(summaryData?.totalLiabilities || 0)
 
-  const equityItems = (summaryData?.equity || []).map((item) => ({
+  const equityItems = (summaryData?.equity || []).map((item: SummaryItem) => ({
     ...item,
     totalAmount: formatNum(item.totalAmount),
   }))
@@ -94,7 +110,7 @@ export default function Page() {
     },
   } satisfies ChartConfig
 
-  const chartData = summaryData?.assets?.filter(item => item.totalAmount > 0).map(item => ({
+  const chartData = summaryData?.assets?.filter((item: SummaryItem) => item.totalAmount > 0).map((item: SummaryItem) => ({
     asset: item.type.toLowerCase(),
     allocation: item.totalAmount,
     fill: `var(--color-${item.type.toLowerCase()})`
@@ -147,7 +163,7 @@ return (
                 value={assetsTotalAmount}
                 link="/holdings"
               />
-              {assetsItems.map(item => (
+              {assetsItems.map((item: { type: string; totalAmount: string }) => (
                 <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
               ))}
             </>
@@ -182,7 +198,7 @@ return (
                 value={liabilitiesTotalAmount}
                 link="/debts"
               />
-              {liabilitiesItems.map(item => (
+              {liabilitiesItems.map((item: { type: string; totalAmount: string }) => (
                 <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
               ))}
               <SummaryCard
@@ -190,7 +206,7 @@ return (
                 label="Equities"
                 value={equityTotalAmount}
               />
-              {equityItems.map(item => (
+              {equityItems.map((item: { type: string; totalAmount: string }) => (
                 <SummaryCard key={item.type} label={item.type} value={item.totalAmount} />
               ))}
             </>
