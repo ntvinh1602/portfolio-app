@@ -7,16 +7,19 @@ import type { Session } from "@supabase/supabase-js"
 type AuthContextType = {
   session: Session | null
   isLoading: boolean
+  userId: string | null
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
+  userId: null,
 })
 
 export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const getSession = async () => {
@@ -25,6 +28,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
       } = await supabase.auth.getSession()
       setSession(session)
       setIsLoading(false)
+      const isAnonymous = !session?.user?.email
+      setUserId(
+        isAnonymous
+          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
+          : session?.user?.id ?? null,
+      )
     }
 
     getSession()
@@ -33,6 +42,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
+      const isAnonymous = !session?.user?.email
+      setUserId(
+        isAnonymous
+          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
+          : session?.user?.id ?? null,
+      )
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
         fetch("/api/revalidate-cache", {
           method: "POST",
@@ -51,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
   }, [])
 
   return (
-    <AuthContext.Provider value={{ session, isLoading }}>
+    <AuthContext.Provider value={{ session, isLoading, userId }}>
       {children}
     </AuthContext.Provider>
   )

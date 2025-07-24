@@ -3,6 +3,9 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+  env: {
+    NEXT_PUBLIC_DEMO_USER_ID: process.env.DEMO_USER_ID,
+  },
 };
 
 export default withPWA({

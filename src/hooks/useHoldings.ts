@@ -21,8 +21,7 @@ interface HoldingsData {
 }
 
 export function useHoldings() {
-  const { session } = useAuth();
-  const userId = session?.user?.id;
+  const { userId } = useAuth();
 
   const { data, error, isLoading } = useSWR<HoldingsData>(
     userId ? `/api/gateway/${userId}/holdings` : null,

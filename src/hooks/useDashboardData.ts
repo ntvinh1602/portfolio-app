@@ -50,8 +50,7 @@ interface DashboardApiResponse {
 }
 
 export function useDashboardData() {
-  const { session } = useAuth()
-  const userId = session?.user?.id
+  const { userId } = useAuth()
 
   const endDate = new Date()
   const startDate = subDays(endDate, 90)

@@ -11,8 +11,7 @@ type MonthlyExpense = {
 };
 
 export function useExpensesData() {
-  const { session } = useAuth();
-  const userId = session?.user?.id;
+  const { userId } = useAuth();
 
   // Fetch last 12 months of expenses for the bar chart
   const monthlyEndDate = endOfMonth(new Date());
