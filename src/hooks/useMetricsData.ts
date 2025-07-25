@@ -9,7 +9,8 @@ export function useMetricsData(dateRange: string) {
   const [firstSnapshotDate, setFirstSnapshotDate] = React.useState<Date | null>(null)
   const { data: firstSnapshotDateData } = useSWR(
     userId ? `/api/query/${userId}/first-snapshot-date` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   React.useEffect(() => {

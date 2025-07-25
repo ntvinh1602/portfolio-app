@@ -35,7 +35,8 @@ export function useExpensesData() {
   // Fetch all expenses for the pie chart structure
   const { data: firstDateData } = useSWR<{ date: string }>(
     userId ? `/api/query/${userId}/first-snapshot-date` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   const allTimeParams = new URLSearchParams({

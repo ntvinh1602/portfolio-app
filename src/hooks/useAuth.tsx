@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
           ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
           : session?.user?.id ?? null,
       )
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+      if (event === "SIGNED_OUT") {
         fetch("/api/revalidate-cache", {
           method: "POST",
           headers: {

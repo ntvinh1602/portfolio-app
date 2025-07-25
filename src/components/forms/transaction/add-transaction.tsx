@@ -60,7 +60,7 @@ export function TransactionForm({
   const [showAuthAlert, setShowAuthAlert] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
-  const { accounts, assets, debts } = useTransactionFormData()
+  const { accounts, assets, debts, loading } = useTransactionFormData(open)
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))
@@ -346,7 +346,13 @@ export function TransactionForm({
                    onChange={handleInputChange}
                  />
                </div>
-               {renderFormFields()}
+               {loading ? (
+                 <div className="col-span-2 flex justify-center items-center h-24">
+                   <p>Loading form data...</p>
+                 </div>
+               ) : (
+                 renderFormFields()
+               )}
              </div>
             <DialogFooter className="sticky bottom-0 bg-card/0">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>

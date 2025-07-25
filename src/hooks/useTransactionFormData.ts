@@ -15,12 +15,12 @@ interface TransactionFormData {
   debts: Tables<"debts">[]
 }
 
-export function useTransactionFormData() {
+export function useTransactionFormData(enabled: boolean = true) {
   const { session } = useAuth()
   const userId = session?.user?.id
 
   const { data, error, isLoading } = useSWR<TransactionFormData>(
-    userId ? `/api/gateway/${userId}/transactions` : null,
+    userId && enabled ? `/api/gateway/${userId}/transactions` : null,
     fetcher
   )
 

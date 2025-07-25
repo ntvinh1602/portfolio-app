@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 // Route segment configuration
 export const dynamic = "force-dynamic";
-export const revalidate = 1800; // CDN cache TTL: 30 minutes
+export const revalidate = 2678400; // CDN cache TTL: 30 minutes
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId: requestedUserId } = await params;
@@ -46,7 +46,7 @@ export async function GET(
       {
         headers: {
           "Vary": "Authorization",
-          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=360",
+          "Cache-Control": "public, s-maxage=2678400, stale-while-revalidate=360",
           "x-vercel-cache-tags": `first-snapshot-date-${requestedUserId}`,
         },
       }

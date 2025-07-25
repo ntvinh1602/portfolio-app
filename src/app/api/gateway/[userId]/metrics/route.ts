@@ -65,10 +65,7 @@ export async function GET(
       fetch(`${baseUrl}/api/query/${userIdToUse}/monthly-twr?start_date=${lifetimeStartDateStr}&end_date=${endDateStr}`, fetchOptions),
       fetch(`${baseUrl}/api/query/${userIdToUse}/pnl?start_date=${startDateStr}&end_date=${endDateStr}`, fetchOptions),
       fetch(`${baseUrl}/api/query/${userIdToUse}/twr?start_date=${startDateStr}&end_date=${endDateStr}`, fetchOptions),
-      fetch(
-        `${baseUrl}/api/query/${userIdToUse}/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`,
-        fetchOptions,
-      ),
+      fetch(`${baseUrl}/api/query/${userIdToUse}/benchmark-chart?start_date=${startDateStr}&end_date=${endDateStr}&threshold=200`, fetchOptions),
     ])
 
     for (const response of [performanceRes, monthlyTwrRes, pnlRes, twrRes, benchmarkChartRes]) {

@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/supabaseServer";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // Route segment configuration
 export const dynamic = "force-dynamic";
 export const revalidate = 1800; // CDN cache TTL: 30 minutes
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId: requestedUserId } = await params;
