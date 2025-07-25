@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId: requestedUserId } = await params;
-  const DEMO_USER_ID = process.env.DEMO_USER_ID;
+  const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID;
   if (!DEMO_USER_ID) {
     throw new Error("DEMO_USER_ID is not set in environment variables");
   }
@@ -30,15 +30,13 @@ export async function GET(
   try {
     const supabase = await createClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       console.error("API Route: Unauthorized access attempt.");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { user } = session;
     const isAnonymous = !user.email;
     const authenticatedUserId = isAnonymous ? DEMO_USER_ID : user.id;
 

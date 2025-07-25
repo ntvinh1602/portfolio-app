@@ -23,16 +23,14 @@ export async function GET(
 
     const supabase = await createClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { user } = session;
     const isAnonymous = !user.email;
-    const DEMO_USER_ID = process.env.DEMO_USER_ID;
+    const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID;
     if (!DEMO_USER_ID) {
       throw new Error("DEMO_USER_ID is not set in environment variables");
     }

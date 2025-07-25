@@ -22,30 +22,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setIsLoading(false)
       const isAnonymous = !session?.user?.email
       setUserId(
         isAnonymous
-          ? process.env.DEMO_USER_ID ?? null
-          : session?.user?.id ?? null,
-      )
-    }
-
-    getSession()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session)
-      const isAnonymous = !session?.user?.email
-      setUserId(
-        isAnonymous
-          ? process.env.DEMO_USER_ID ?? null
+          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
           : session?.user?.id ?? null,
       )
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
