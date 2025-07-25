@@ -1,1 +1,0 @@
-ALTER FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") security DEFINER;
