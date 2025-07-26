@@ -21,7 +21,8 @@ export function useTransactionFormData(enabled: boolean = true) {
 
   const { data, error, isLoading } = useSWR<TransactionFormData>(
     userId && enabled ? `/api/gateway/${userId}/transactions` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   return {

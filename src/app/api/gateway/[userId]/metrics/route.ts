@@ -106,7 +106,7 @@ export async function GET(
       {
         headers: {
           "Vary": "Authorization",
-          "Cache-Control": "public, max-age=900, stale-while-revalidate=180",
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=180",
           "x-vercel-cache-tags": `metrics-${userIdToUse}`,
         },
       },

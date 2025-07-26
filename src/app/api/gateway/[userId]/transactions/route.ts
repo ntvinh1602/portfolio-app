@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/supabaseServer";
 import { Tables } from "@/lib/database.types";
 
@@ -8,9 +8,13 @@ export type AssetWithSecurity = Tables<"assets"> & {
   securities: Tables<"securities">;
 };
 
-export async function GET() {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> },
+) {
   try {
     const supabase = await createClient();
+    const { userId } = await params;
 
     const { data: accounts, error: accountsError } = await supabase
       .from("accounts")
@@ -26,10 +30,12 @@ export async function GET() {
 
     if (assetsError) throw assetsError;
 
-    const { data: debts, error: debtsError } = await supabase
-      .from("debts")
-      .select("*")
-      .eq("status", "active");
+    const { data: debts, error: debtsError } = await supabase.rpc(
+      "get_active_debts",
+      {
+        p_user_id: userId,
+      },
+    );
 
     if (debtsError) throw debtsError;
 

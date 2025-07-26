@@ -56,7 +56,11 @@ export default function Page() {
     return `/api/query/${userId}/transaction-feed?${params.toString()}`
   }
 
-  const { data, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(getKey, fetcher);
+  const { data, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(
+    getKey,
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
+  );
 
   const transactions = data ? ([] as TransactionFeed[]).concat(...data) : [];
   const isLoadingMore = isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");

@@ -64,7 +64,8 @@ export function useDashboardData() {
 
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
     userId ? `/api/gateway/${userId}/dashboard?${params.toString()}` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   return {

@@ -29,7 +29,8 @@ export function useExpensesData() {
     userId
       ? `/api/gateway/${userId}/expenses?${monthlyParams.toString()}`
       : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   // Fetch all expenses for the pie chart structure
@@ -51,7 +52,8 @@ export function useExpensesData() {
       userId && firstDateData
         ? `/api/gateway/${userId}/expenses?${allTimeParams.toString()}`
         : null,
-      fetcher
+      fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
     );
 
   const expenseStructure = allExpenses

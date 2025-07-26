@@ -33,18 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
           ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
           : session?.user?.id ?? null,
       )
-      if (event === "SIGNED_OUT") {
-        fetch("/api/revalidate-cache", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: event,
-            userId: session?.user?.id,
-          }),
-        })
-      }
     })
 
     return () => subscription.unsubscribe()

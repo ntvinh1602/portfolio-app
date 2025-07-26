@@ -51,7 +51,8 @@ export default function Page() {
   const { userId } = useAuth();
   const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>(
     userId ? `/api/query/${userId}/asset-summary` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   if (error) {

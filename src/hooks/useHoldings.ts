@@ -25,7 +25,8 @@ export function useHoldings() {
 
   const { data, error, isLoading } = useSWR<HoldingsData>(
     userId ? `/api/gateway/${userId}/holdings` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
   const stockHoldings =

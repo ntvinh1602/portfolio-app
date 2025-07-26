@@ -13,7 +13,8 @@ export default function Page() {
   const { userId } = useAuth()
   const { data: debts, error } = useSWR<Tables<"debts">[]>(
     userId ? `/api/query/${userId}/debts` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   const calculateAccruedInterest = (debt: Tables<"debts">): number => {

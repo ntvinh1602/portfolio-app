@@ -32,7 +32,8 @@ export default function Page() {
   const [dateRange, setDateRange] = React.useState("12m")
   const { data: firstSnapshotDateData } = useSWR(
     userId ? `/api/query/${userId}/first-snapshot-date` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   const { data, error } = useSWR<MonthlyData[]>(
