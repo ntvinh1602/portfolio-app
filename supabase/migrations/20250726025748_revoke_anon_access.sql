@@ -2901,7 +2901,6 @@ ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
-GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 
@@ -3084,217 +3083,181 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "anon";
 GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."debts" TO "anon";
 GRANT ALL ON TABLE "public"."debts" TO "authenticated";
 GRANT ALL ON TABLE "public"."debts" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_fees" numeric, "p_description" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_fees" numeric, "p_taxes" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "anon";
 GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "anon";
 GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "anon";
 GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
 
@@ -3321,91 +3284,76 @@ GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_
 
 
 
-GRANT ALL ON TABLE "public"."accounts" TO "anon";
 GRANT ALL ON TABLE "public"."accounts" TO "authenticated";
 GRANT ALL ON TABLE "public"."accounts" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."assets" TO "anon";
 GRANT ALL ON TABLE "public"."assets" TO "authenticated";
 GRANT ALL ON TABLE "public"."assets" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."currencies" TO "anon";
 GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
 GRANT ALL ON TABLE "public"."currencies" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
 GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_stock_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_stock_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."securities" TO "anon";
 GRANT ALL ON TABLE "public"."securities" TO "authenticated";
 GRANT ALL ON TABLE "public"."securities" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
 GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
 GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transaction_details" TO "anon";
 GRANT ALL ON TABLE "public"."transaction_details" TO "authenticated";
 GRANT ALL ON TABLE "public"."transaction_details" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transactions" TO "anon";
 GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
 GRANT ALL ON TABLE "public"."transactions" TO "service_role";
 
