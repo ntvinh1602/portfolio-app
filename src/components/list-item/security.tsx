@@ -50,7 +50,7 @@ function SecurityItem({
           alt={name}
           width={isCompact ? 48 : 56}
           height={isCompact ? 48 : 56}
-          className="rounded-full object-contain border"
+          className="rounded-full bg-background"
         />
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col gap-1 max-w-[160px]">
