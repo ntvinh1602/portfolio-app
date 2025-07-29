@@ -34,7 +34,7 @@ import {
   SecuritySkeleton
 } from "@/components/list-item/security"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { mutate } from "swr"
 import { formatNum } from "@/lib/utils"
 
@@ -47,7 +47,6 @@ interface StockCardFullProps {
 export function StockCardFull({ stockHoldings }: StockCardFullProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const loading = !stockHoldings
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showAuthAlert, setShowAuthAlert] = useState(false)
 
   const handleRefresh = async () => {
@@ -64,26 +63,7 @@ export function StockCardFull({ stockHoldings }: StockCardFullProps) {
     // Re-fetch the holdings data
     await mutate('/api/gateway/holdings');
     setIsRefreshing(false)
-    setLastUpdated(new Date());
   };
-
-  useEffect(() => {
-    async function fetchLastUpdated() {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('last_stock_fetching')
-          .eq('id', user.id)
-          .single()
-        if (profile?.last_stock_fetching) {
-          setLastUpdated(new Date(profile.last_stock_fetching))
-        }
-      }
-    }
-    fetchLastUpdated();
-  }, [])
 
   const chartConfig: ChartConfig = React.useMemo(() => {
     const config: ChartConfig = {
@@ -171,20 +151,6 @@ export function StockCardFull({ stockHoldings }: StockCardFullProps) {
             <div className="text-center font-thin py-4">
               No stock holdings found.
             </div>
-          )}
-          {lastUpdated && !loading && stockHoldings.length > 0 && (
-            <span className="text-right text-xs px-4">
-              Last updated at {lastUpdated.toLocaleString(
-                'en-SG',
-                {
-                  year: '2-digit',
-                  month: '2-digit',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  timeZoneName: 'short'
-                })}
-            </span>
           )}
         </div>
       </CardContent>

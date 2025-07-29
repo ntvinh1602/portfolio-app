@@ -23,10 +23,7 @@ import {
   SecurityItem,
   SecuritySkeleton
 } from "@/components/list-item/security"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { useEffect, useState } from "react"
 import { formatNum } from "@/lib/utils"
-
 import { CryptoHolding } from "@/hooks/useHoldings"
 
 interface CryptoCardFullProps {
@@ -34,25 +31,7 @@ interface CryptoCardFullProps {
 }
 
 export function CryptoCardFull({ cryptoHoldings }: CryptoCardFullProps) {
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const loading = !cryptoHoldings
-
-  useEffect(() => {
-    async function fetchLastUpdated() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('last_stock_fetching')
-          .eq('id', user.id)
-          .single()
-        if (profile?.last_stock_fetching) {
-          setLastUpdated(new Date(profile.last_stock_fetching))
-        }
-      }
-    }
-    fetchLastUpdated();
-  }, [])
 
   const chartConfig: ChartConfig = React.useMemo(() => {
     const config: ChartConfig = {
@@ -131,20 +110,6 @@ export function CryptoCardFull({ cryptoHoldings }: CryptoCardFullProps) {
             <div className="text-center font-thin py-4">
               No crypto holdings found.
             </div>
-          )}
-          {lastUpdated && !loading && cryptoHoldings.length > 0 && (
-            <span className="text-right text-xs px-4">
-              Last updated at {lastUpdated.toLocaleString(
-                'en-SG',
-                {
-                  year: '2-digit',
-                  month: '2-digit',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  timeZoneName: 'short'
-                })}
-            </span>
           )}
         </div>
       </CardContent>

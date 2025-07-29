@@ -52,13 +52,6 @@ export async function POST(request: Request) {
 
     await Promise.all(refreshPromises);
 
-    // 3. Update the last_fetching timestamp
-    await supabase
-        .from('profiles')
-        .update({ last_stock_fetching: new Date().toISOString() })
-        .eq('id', user.id);
-
-
     return NextResponse.json({ message: "Asset prices refreshed successfully." })
   } catch (error) {
     console.error("Error refreshing asset prices:", error)
