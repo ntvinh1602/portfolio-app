@@ -27,16 +27,16 @@ function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
 
   return (
     <div className="px-6">
-      <Card className="gap-0 pb-0">
-        <CardHeader className="px-4">
-        <CardDescription
-          className="flex items-center gap-1 w-fit"
-          onClick={handleNavigation}
-        >
-          Stocks<ChevronRight className="size-4"/>
-        </CardDescription>
+      <Card className="gap-1 py-0 border-0">
+        <CardHeader className="px-0">
+          <CardDescription
+            className="flex items-center gap-1 w-fit"
+            onClick={handleNavigation}
+          >
+            Stocks<ChevronRight className="size-4"/>
+          </CardDescription>
         </CardHeader>
-        <CardContent className="px-0 pb-2">
+        <CardContent className="px-0">
           <div className="flex flex-col">
             {loading ? (
               Array.from({ length: 3 }).map((_, index) => (

@@ -81,7 +81,7 @@ export default function Page() {
   return (
     <PageMain>
       <PageHeader title={`${getGreeting()}, ${userName}!`} />
-      <PageContent className="px-0">
+      <PageContent className="px-0 gap-4">
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
             <CarouselItem className="basis-11/12 pl-8">
@@ -118,7 +118,7 @@ export default function Page() {
           {isLoading ? <AssetCardSkeleton /> :
             <AssetCard assetSummaryData={assetSummaryData} />
           }
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-6">
             {isLoading ? <StockCardCompactSkeleton /> :
               <StockCardCompact stockHoldings={holdingsData.stockHoldings} />
             }

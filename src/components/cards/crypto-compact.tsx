@@ -27,8 +27,8 @@ function CryptoCardCompact({ cryptoHoldings }: CryptoCardCompactProps) {
 
   return (
     <div className="px-6">
-      <Card className="gap-0 pb-0">
-        <CardHeader className="px-4">
+      <Card className="gap-1 py-0 border-0">
+        <CardHeader className="px-0">
         <CardDescription
           className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
