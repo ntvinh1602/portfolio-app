@@ -44,7 +44,7 @@ export async function GET(
       headers: {
         "Vary": "Authorization",
         "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=360",
-        "x-vercel-cache-tags": `debts-${requestedUserId}`,
+        "x-vercel-cache-tags": `txn-driven-${requestedUserId}`,
       },
     });
   } catch (e) {

@@ -94,7 +94,7 @@ export async function GET(
       headers: {
         "Vary": "Authorization",
         "Cache-Control": "public, max-age=900, stale-while-revalidate=180",
-        "x-vercel-cache-tags": `earnings-${userIdToUse}`,
+        "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
       },
     })
   } catch (error) {

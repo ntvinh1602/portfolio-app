@@ -71,7 +71,7 @@ export async function GET(
       headers: {
         "Vary": "Authorization",
         "Cache-Control": "public, max-age=900, stale-while-revalidate=180",
-        "x-vercel-cache-tags": `expenses-${userIdToUse}`,
+        "x-vercel-cache-tags": `txn-driven-${userIdToUse}`,
       },
     });
   } catch (error) {
