@@ -84,7 +84,7 @@ export default function Page() {
       <PageContent className="px-0">
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
-            <CarouselItem className="basis-10/12 pl-8">
+            <CarouselItem className="basis-11/12 pl-8">
               {isLoading ? <EquityCardSkeleton /> :
                 <EquityCard
                   latestEquity={latestEquity}
@@ -95,7 +95,7 @@ export default function Page() {
                 />
               }
             </CarouselItem>
-            <CarouselItem className="basis-10/12 pl-2">
+            <CarouselItem className="basis-10/12 pl-1">
               {isLoading ? <PnLCardSkeleton /> :
                 <PnLCard
                   mtdPnl={mtdPnl}
@@ -104,7 +104,7 @@ export default function Page() {
                 />
               }
             </CarouselItem>
-            <CarouselItem className="basis-10/12 pl-2 pr-6">
+            <CarouselItem className="basis-11/12 pl-1 pr-6">
               {isLoading ? <BenchmarkCardSkeleton /> :
                 <BenchmarkCard
                   benchmarkChartData={benchmarkData}
