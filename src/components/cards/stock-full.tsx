@@ -59,7 +59,7 @@ export function StockCardFull({ stockHoldings }: StockCardFullProps) {
     }
 
     setIsRefreshing(true)
-    await fetch('/api/external/refresh-all-stock-prices', { method: 'POST' });
+    await fetch('/api/external/refresh-all-asset-prices', { method: 'POST' });
     // Re-fetch the holdings data
     await mutate('/api/gateway/holdings');
     setIsRefreshing(false)

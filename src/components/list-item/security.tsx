@@ -9,7 +9,8 @@ import {
   Leaf,
   TrendingUp,
   TrendingDown,
-  Bitcoin
+  Bitcoin,
+  Coins
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,16 +71,7 @@ function SecurityItem({
                   variant="outline"
                   className="rounded-full gap-1 text-muted-foreground"
                 >
-                  {priceStatus === 'loading' ? '...' : price}
-                  {priceStatus && (
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        priceStatus === 'loading' ? 'bg-yellow-400 animate-pulse' :
-                        priceStatus === 'success' ? 'bg-green-500' :
-                        'bg-red-500'
-                      }`}
-                    />
-                  )}
+                  <Coins />{price}
                 </Badge>
               </CardDescription>
             )}

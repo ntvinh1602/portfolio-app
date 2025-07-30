@@ -10,17 +10,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 1. Get all stock and crypto holdings
-    const { data: stockHoldings, error: stockHoldingsError } = await supabase.rpc('get_stock_holdings');
-    if (stockHoldingsError) throw stockHoldingsError;
+    // 1. Get all stock and crypto securities from the securities table
+    const { data: securitiesData, error: securitiesError } = await supabase
+      .from("securities")
+      .select("ticker, asset_class")
+      .in("asset_class", ["stock", "crypto"]);
 
-    const { data: cryptoHoldings, error: cryptoHoldingsError } = await supabase.rpc('get_crypto_holdings');
-    if (cryptoHoldingsError) throw cryptoHoldingsError;
+    if (securitiesError) {
+      throw securitiesError;
+    }
 
-    const allHoldings = [
-      ...stockHoldings.map((h: { ticker: string }) => ({ ...h, type: 'stock' })),
-      ...cryptoHoldings.map((h: { ticker: string }) => ({ ...h, type: 'crypto' })),
-    ];
+    const allHoldings = (securitiesData || []).map((s: { ticker: string, asset_class: string }) => ({
+      ticker: s.ticker,
+      type: s.asset_class,
+    }));
 
     const baseUrl = request.url.split('/api')[0]
 

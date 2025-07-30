@@ -59,6 +59,7 @@ export async function GET(
       headers,
       next: {
         revalidate: revalidateTime,
+        tags: [`price-driven-${userIdToUse}`],
       },
     }
 

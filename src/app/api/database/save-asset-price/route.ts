@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/supabaseServer";
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -25,6 +26,23 @@ export async function POST(request: Request) {
     if (error) {
       console.error(`Error inserting new ${type} price:`, error);
       return NextResponse.json({ error: `Failed to update ${type} price` }, { status: 500 });
+    }
+
+    try {
+      const { data: users, error: usersError } = await supabase.from("profiles").select("id");
+
+      if (usersError) {
+        console.error("Error fetching users for revalidation:", usersError);
+      }
+
+      if (users) {
+        for (const user of users) {
+          revalidateTag(`price-driven-${user.id}`);
+        }
+        console.log(`Revalidated price-driven cache for ${users.length} users.`);
+      }
+    } catch (e) {
+      console.error("Failed to revalidate tags", e);
     }
 
     return NextResponse.json({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} price updated successfully` });
