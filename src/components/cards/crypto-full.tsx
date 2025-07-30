@@ -3,22 +3,11 @@
 import * as React from "react"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  FileChartPie
-} from "lucide-react"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Piechart } from "@/components/charts/piechart"
-import { ChartConfig } from "@/components/ui/chart"
 import {
   SecurityItem,
   SecuritySkeleton
@@ -33,56 +22,11 @@ interface CryptoCardFullProps {
 export function CryptoCardFull({ cryptoHoldings }: CryptoCardFullProps) {
   const loading = !cryptoHoldings
 
-  const chartConfig: ChartConfig = React.useMemo(() => {
-    const config: ChartConfig = {
-      allocation: {
-        label: "Allocation",
-      },
-    };
-    const activeHoldings = cryptoHoldings.filter(item => item.total_amount > 0);
-    activeHoldings.forEach((item, index) => {
-      config[item.ticker] = {
-        label: item.ticker,
-        color: `var(--chart-${(index % 5) + 1})`,
-      };
-    });
-    return config;
-  }, [cryptoHoldings]);
-
-  const chartData = React.useMemo(() => {
-    return cryptoHoldings
-      ?.filter(item => item.total_amount > 0)
-      .map(item => ({
-        asset: item.ticker,
-        allocation: item.total_amount,
-        fill: `var(--color-${item.ticker})`,
-      }));
-  }, [cryptoHoldings]);
-
   return (
-    <Card className="gap-4">
-      <CardHeader>
+    <Card className="gap-3 py-0 border-0">
+      <CardHeader className="px-0">
         <CardTitle>Crypto</CardTitle>
         <CardDescription>Digital, decentralized, distributed</CardDescription>
-        <CardAction className="flex gap-6">
-          <Popover>
-            <PopoverTrigger>
-              <FileChartPie className="stroke-[1]"/>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              className="border-border/50 rounded-4xl bg-card/25 backdrop-blur-sm"
-            >
-              <Piechart
-                data={chartData}
-                chartConfig={chartConfig}
-                dataKey="allocation"
-                nameKey="asset"
-                legend="bottom"
-              />
-            </PopoverContent>
-          </Popover>
-        </CardAction>
       </CardHeader>
       <CardContent className="px-0">
         <div className="flex flex-col gap-1 text-muted-foreground font-thin">

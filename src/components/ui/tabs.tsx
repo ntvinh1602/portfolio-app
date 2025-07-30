@@ -80,13 +80,13 @@ const TabsList = React.forwardRef<
         ref={ref}
         data-slot="tabs-list"
         className={cn(
-          "bg-card/40 border text-muted-foreground relative inline-flex h-10 w-fit items-center justify-center rounded-full p-[3px]",
+          "bg-card/40 border text-muted-foreground relative inline-flex h-10 w-fit items-center justify-center rounded-md p-[3px]",
           className
         )}
         {...props}
       />
       <div
-        className="absolute rounded-full text-background dark:text-foreground bg-accent shadow-sm transition-all duration-300 ease-in-out"
+        className="absolute rounded-md text-background dark:text-foreground bg-accent shadow-sm transition-all duration-300 ease-in-out"
         style={indicatorStyle}
       />
     </div>

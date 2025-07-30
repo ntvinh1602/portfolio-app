@@ -36,7 +36,6 @@ function SecurityItem({
   quantity,
   pnl,
   price,
-  priceStatus,
   variant = 'full',
   type
 }: SecurityItemProps) {
@@ -44,7 +43,7 @@ function SecurityItem({
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`border-0 text-card-foreground dark:bg-card/40 backdrop-blur-sm ${isCompact ? 'rounded-2xl py-2' : 'rounded-full py-3'}`}>
+    <Card className={`border-0 text-card-foreground dark:bg-card/40 backdrop-blur-sm rounded-2xl ${isCompact ? 'py-2' : 'py-3'}`}>
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}

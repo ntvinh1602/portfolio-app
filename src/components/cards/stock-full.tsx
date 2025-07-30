@@ -93,11 +93,11 @@ export function StockCardFull({ stockHoldings }: StockCardFullProps) {
 
   return (
     <>
-      <Card className="gap-4">
-      <CardHeader>
+      <Card className="gap-3 py-0 border-0">
+      <CardHeader className="px-0">
         <CardTitle>Stocks</CardTitle>
         <CardDescription>Built on fundamentals</CardDescription>
-        <CardAction className="flex gap-6">
+        <CardAction className="flex gap-6 self-center">
           <Popover>
             <PopoverTrigger>
               <FileChartPie className="stroke-[1]"/>

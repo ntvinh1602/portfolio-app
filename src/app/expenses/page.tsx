@@ -82,14 +82,14 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Expenses" />
       <PageContent>
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="py-0 border-0">
+          <CardHeader className="px-0">
             <CardTitle>Monthly Expenses</CardTitle>
             <CardDescription>
               Stuff that ate your gains in the last 12 months
             </CardDescription>
-          </CardHeader>
-          <div className="px-4">
+          </CardHeader >
+          <div>
             {monthlyLoading ? (
               <BarStackedSkeleton />
             ) : (
@@ -101,17 +101,15 @@ export default function Page() {
               />
             )}
           </div>
-          <div className="px-6">
-            <Separator />
-          </div>
+          <Separator />
           <div className="flex flex-col">
-            <CardHeader>
+            <CardHeader className="px-0">
               <CardTitle>Expenses Structure</CardTitle>
               <CardDescription>
                 How expense distributed since the beginning
               </CardDescription>
             </CardHeader>
-            <div className="px-4">
+            <div>
               {structureLoading ? (
                 <PiechartSkeleton />
               ) : (

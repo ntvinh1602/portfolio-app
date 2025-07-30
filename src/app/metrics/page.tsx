@@ -6,10 +6,11 @@ import {
   PageHeader,
   PageContent,
 } from "@/components/page-layout"
-import TabSwitcher from "@/components/tab-switcher"
 import { TwoMetric } from "@/components/cards/two-metric"
 import {
   Card,
+  CardAction,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle
@@ -20,6 +21,16 @@ import { useMetricsData } from "@/hooks/useMetricsData"
 import { Linechart, LinechartSkeleton } from "@/components/charts/linechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { format as formatDate } from "date-fns"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 
 const benchmarkChartConfig = {
@@ -34,6 +45,11 @@ const benchmarkChartConfig = {
 } satisfies ChartConfig
 
 export default function Page() {
+  const router = useRouter()
+  const handleNavigation = () => {
+      router.push("/earnings")
+    }
+  
   const [dateRange, setDateRange] = React.useState("all")
   const {
     cagr,
@@ -47,16 +63,10 @@ export default function Page() {
     benchmarkChartError,
   } = useMetricsData(dateRange)
 
-  const tabOptions = [
-    { value: "mtd", label: "This Month" },
-    { value: "ytd", label: "This Year" },
-    { value: "all", label: "All Time" },
-  ]
-
   return (
     <PageMain>
       <PageHeader title="Key Metrics" />
-      <PageContent className="gap-2">
+      <PageContent className="gap-6">
         <TwoMetric
           title="Metrics"
           subtitle="Key indicators of investment efficiency"
@@ -67,62 +77,90 @@ export default function Page() {
             sharpeRatio !== null ? sharpeRatio.toFixed(2) : "Loading..."
           }
           icon={false}
+          
         />
-        <TabSwitcher
-          options={tabOptions}
-          onValueChange={setDateRange}
-          value={dateRange}
-          defaultValue="all"
-        />
-        <TwoMetric
-          title="Earnings"
-          title_url="/earnings"
-          subtitle="Net profit and time-weighted return of equity"
-          label1="Net P/L"
-          value1={
-            totalPnl !== null
-              ? `${formatNum(totalPnl)}`
-              : "Loading..."
-          }
-          label2="Return"
-          value2={
-            totalReturn !== null
-              ? `${formatNum(100*totalReturn, 2)}%`
-              : "Loading..."
-          }
-          icon={false}
-        />
-        <Card className="gap-6">
-          <CardHeader>
-            <CardTitle>Benchmark</CardTitle>
-            <CardDescription>
-              Visualized performance against VN-Index
-            </CardDescription>
-          </CardHeader>
-          {isBenchmarkChartLoading && (
-            <div className="h-[250px] px-4 w-full">
-              <LinechartSkeleton />
-            </div>
-          )}
-          {benchmarkChartError && (
-            <div className="h-[250px] w-full flex items-center justify-center text-red-500">
-              {benchmarkChartError}
-            </div>
-          )}
-          {chartStartDate && !isBenchmarkChartLoading && !benchmarkChartError && (
-            <Linechart
-              data={benchmarkChartData}
-              chartConfig={benchmarkChartConfig}
-              className="h-[250px] w-full -ml-4"
-              xAxisDataKey="date"
-              lineDataKeys={["portfolio_value", "vni_value"]}
-              grid={true}
-              legend={true}
-              xAxisTickFormatter={(value) => formatDate(new Date(value), xAxisDateFormat)}
-              yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
-            />
-          )}
-        </Card>
+        <div className="flex flex-col gap-6 rounded-2xl px-0">
+          <Card className="border-0 py-0">
+            <CardHeader className="px-0">
+              <div
+                className="flex items-center"
+                onClick={handleNavigation}
+              >
+                <CardTitle>Earnings</CardTitle>
+                <ChevronRight className="size-4"/>
+              </div>
+              <CardDescription>Profit and Return on Equity</CardDescription>
+              <CardAction>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger size="default" className="w-fit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mtd">This Month</SelectItem>
+                    <SelectItem value="ytd">This Year</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardAction>
+            </CardHeader>
+            <CardContent className="flex">
+              <div className="flex flex-col w-full items-center">
+                <CardDescription>Net P/L</CardDescription>
+                <CardTitle className="flex text-xl gap-1 items-center">
+                  {
+                    totalPnl === null
+                      ? <span className="animate-pulse">Loading...</span>
+                      : `${formatNum(totalPnl)}`
+                  }
+                </CardTitle>
+              </div>
+              <div className="h-12 px-6">
+                <Separator orientation="vertical" />
+              </div>
+              <div className="flex flex-col w-full items-center">
+                <CardDescription>Return</CardDescription>
+                <CardTitle className="flex text-xl gap-1 items-center">
+                  {
+                    totalReturn === null
+                      ? <span className="animate-pulse">Loading...</span>
+                      : `${formatNum(totalReturn*100, 2)}%`
+                  }
+                </CardTitle>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="gap-6 border-0 py-0">
+            <CardHeader className="px-0">
+              <CardTitle>Benchmark</CardTitle>
+              <CardDescription>
+                Visualized performance against VN-Index
+              </CardDescription>
+            </CardHeader>
+            {isBenchmarkChartLoading && (
+              <div className="h-[250px] w-full">
+                <LinechartSkeleton />
+              </div>
+            )}
+            {benchmarkChartError && (
+              <div className="h-[250px] w-full flex items-center justify-center text-red-500">
+                {benchmarkChartError}
+              </div>
+            )}
+            {chartStartDate && !isBenchmarkChartLoading && !benchmarkChartError && (
+              <Linechart
+                data={benchmarkChartData}
+                chartConfig={benchmarkChartConfig}
+                className="h-[250px] w-full -ml-4"
+                xAxisDataKey="date"
+                lineDataKeys={["portfolio_value", "vni_value"]}
+                grid={true}
+                legend={true}
+                xAxisTickFormatter={(value) => formatDate(new Date(value), xAxisDateFormat)}
+                yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
+              />
+            )}
+          </Card>
+        </div>
       </PageContent>
       <BottomNavBar />
     </PageMain>

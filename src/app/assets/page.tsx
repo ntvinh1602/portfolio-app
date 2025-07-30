@@ -110,13 +110,13 @@ return (
   <PageMain>
     <PageHeader title="Assets" />
     <PageContent>
-      <Card className="gap-4">
-        <CardHeader>
+      <Card className="gap-4 border-0 py-0">
+        <CardHeader className="px-0">
           <CardTitle>Total Assets</CardTitle>
           <CardDescription>
             What you own
           </CardDescription>
-          <CardAction>
+          <CardAction className="self-center">
             <Popover> 
               <PopoverTrigger>
                 <FileChartPie className="stroke-[1]"/>
@@ -159,10 +159,10 @@ return (
             </>
           )}
         </CardContent>
-        <div className="px-6 pb-2">
+        <div className="pb-2">
           <Separator />
         </div>
-        <CardHeader>
+        <CardHeader className="px-0">
           <CardTitle>Total Liabilities</CardTitle>
           <CardDescription>
             How you funded your assets

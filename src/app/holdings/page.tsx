@@ -18,7 +18,7 @@ export default function Page() {
     <PageMain>
       <PageHeader title="Holdings" />
       <PageContent>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-6">
           {loading ? (
             <>
               <SecuritySkeleton />
