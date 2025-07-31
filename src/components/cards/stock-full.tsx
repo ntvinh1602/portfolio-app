@@ -36,7 +36,7 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useState } from "react"
 import { mutate } from "swr"
-import { formatNum } from "@/lib/utils"
+import { formatNum, compactNum } from "@/lib/utils"
 
 import { Holding } from "@/hooks/useHoldings"
 
@@ -140,7 +140,8 @@ export function StockCardFull({ stockHoldings }: StockCardFullProps) {
                 logoUrl={stock.logo_url}
                 quantity={formatNum(stock.quantity)}
                 totalAmount={formatNum(stock.total_amount)}
-                pnl={stock.cost_basis > 0 ? formatNum(((stock.total_amount / stock.cost_basis) - 1) * 100, 1) : "0.0"}
+                pnlPct={stock.cost_basis > 0 ? formatNum(((stock.total_amount / stock.cost_basis) - 1) * 100, 1) : "0.0"}
+                pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
                 price={formatNum(stock.latest_price / 1000, 2)}
                 priceStatus="success"
                 variant="full"

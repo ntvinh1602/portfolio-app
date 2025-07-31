@@ -20,7 +20,8 @@ interface SecurityItemProps {
   name: string;
   logoUrl: string;
   totalAmount: string;
-  pnl: string;
+  pnlPct: string;
+  pnlNet: string;
   quantity?: string;
   price?: string;
   priceStatus?: 'loading' | 'error' | 'success';
@@ -34,12 +35,13 @@ function SecurityItem({
   logoUrl,
   totalAmount,
   quantity,
-  pnl,
+  pnlPct,
+  pnlNet,
   price,
   variant = 'full',
   type
 }: SecurityItemProps) {
-  const pnlValue = pnl !== "..." ? parseFloat(pnl) : NaN;
+  const returnValue = pnlPct !== "..." ? parseFloat(pnlPct) : NaN;
   const isCompact = variant === 'compact';
 
   return (
@@ -81,12 +83,15 @@ function SecurityItem({
             </CardTitle>
             <CardDescription className="flex items-center justify-end text-xs gap-1">
               <>
-                {pnlValue !== null && pnlValue < 0 ? (
+                {returnValue !== null && returnValue < 0 ? (
                   <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
                 ) : (
                   <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
                 )}
-                {pnl === "..." ? pnl : <>{pnl}%</>}
+                {pnlPct === "..."
+                  ? "... (...)"
+                  : `${pnlNet} (${pnlPct}%)`
+                }
               </>
             </CardDescription>
           </div>

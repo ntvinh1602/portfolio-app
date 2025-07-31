@@ -2,7 +2,7 @@ import {
   SecurityItem,
   SecuritySkeleton
 } from "@/components/list-item/security"
-import { formatNum } from "@/lib/utils"
+import { formatNum, compactNum } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -50,7 +50,8 @@ function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
                   name={stock.name}
                   logoUrl={stock.logo_url}
                   totalAmount={formatNum(stock.total_amount)}
-                  pnl={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
+                  pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
+                  pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
                   variant="compact"
                   type="stock"
                 />
