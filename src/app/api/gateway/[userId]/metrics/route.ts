@@ -41,16 +41,14 @@ export async function GET(
 
     if (userIdToUse !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    const revalidateTime = isAnonymous ? 3600 : 1800
+    }    
 
     const baseUrl = request.url.split("/api")[0]
 
     const fetchOptions = {
       headers,
       next: {
-        revalidate: revalidateTime,
+        revalidate: 600,
         tags: [`price-driven-${userIdToUse}`],
       },
     }
@@ -107,7 +105,7 @@ export async function GET(
       {
         headers: {
           "Vary": "Authorization",
-          "Cache-Control": "public, max-age=1800, stale-while-revalidate=180",
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=180",
           "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
         },
       },

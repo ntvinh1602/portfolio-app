@@ -53,7 +53,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const revalidateTime = isAnonymous ? 3600 : 1800
+    
 
     const endDate = endDateParam ? new Date(endDateParam) : new Date()
     const startDate = startDateParam ? new Date(startDateParam) : subDays(endDate, 90)
@@ -68,7 +68,7 @@ export async function GET(
     const fetchOptions = {
       headers,
       next: {
-        revalidate: revalidateTime,
+        revalidate: 600,
         tags: [`price-driven-${userIdToUse}`],
       },
     }
@@ -152,7 +152,7 @@ export async function GET(
       },
       {
         headers: {
-          "Cache-Control": "public, max-age=1800, stale-while-revalidate=180",
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=180",
           "Vary": "Authorization",
           "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
         },

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 // Route segment configuration
 export const dynamic = "force-dynamic";
-export const revalidate = 1800; // CDN cache TTL: 30 minutes
+
 
 export async function GET(
   request: NextRequest,
@@ -60,7 +60,7 @@ export async function GET(
       {
         headers: {
           "Vary": "Authorization",
-          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=360",
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=360",
           "x-vercel-cache-tags": `price-driven-${requestedUserId}`,
         },
       }

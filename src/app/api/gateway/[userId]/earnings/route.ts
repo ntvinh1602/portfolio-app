@@ -49,16 +49,14 @@ export async function GET(
 
     if (userIdToUse !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    const revalidateTime = isAnonymous ? 3600 : 1800
+    }    
 
     const baseUrl = request.url.split("/api")[0]
 
     const fetchOptions = {
       headers,
       next: {
-        revalidate: revalidateTime,
+        revalidate: 600,
         tags: [`price-driven-${userIdToUse}`],
       },
     }

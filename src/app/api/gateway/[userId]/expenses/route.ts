@@ -40,14 +40,12 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const revalidateTime = isAnonymous ? 3600 : 1800;
-
     const baseUrl = request.url.split("/api")[0];
 
     const fetchOptions = {
       headers,
       next: {
-        revalidate: revalidateTime,
+        revalidate: 600,
         tags: [`txn-driven-${userIdToUse}`],
       },
     };

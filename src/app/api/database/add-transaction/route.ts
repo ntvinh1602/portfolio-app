@@ -12,7 +12,6 @@ import {
   handleSplit,
   handleWithdraw,
 } from "./handlers"
-import { revalidateTag } from "next/cache"
 
 export async function POST(request: NextRequest) {
   const { supabase } = createClient(request)
@@ -66,11 +65,6 @@ export async function POST(request: NextRequest) {
         break
       default:
         return NextResponse.json({ error: "Invalid transaction type" }, { status: 400 })
-    }
-
-    if (result.status >= 200 && result.status < 300) {
-      revalidateTag(`txn-driven-${user.id}`)
-      revalidateTag(`price-driven-${user.id}`)
     }
 
     return NextResponse.json(result.response, { status: result.status })
