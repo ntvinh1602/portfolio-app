@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Holding } from "@/hooks/useHoldings"
+import { Holding, CryptoHolding } from "@/hooks/useHoldings"
 
-interface StockCardCompactProps {
+interface HoldingsCompactProps {
   stockHoldings: (Holding & { total_amount: number })[]
+  cryptoHoldings: (CryptoHolding & { total_amount: number })[]
 }
 
-function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
+function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps) {
   const router = useRouter()
   const loading = !stockHoldings
 
@@ -33,7 +34,7 @@ function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
             className="flex items-center gap-1 w-fit"
             onClick={handleNavigation}
           >
-            Stocks<ChevronRight className="size-4"/>
+            Holdings<ChevronRight className="size-4"/>
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
@@ -42,23 +43,39 @@ function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
               Array.from({ length: 3 }).map((_, index) => (
                 <SecuritySkeleton variant="compact" key={index} />
               ))
-            ) : stockHoldings.length > 0 ? (
-              stockHoldings.map((stock) => (
-                <SecurityItem
-                  key={stock.ticker}
-                  ticker={stock.ticker}
-                  name={stock.name}
-                  logoUrl={stock.logo_url}
-                  totalAmount={formatNum(stock.total_amount)}
-                  pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
-                  pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
-                  variant="compact"
-                  type="stock"
-                />
-              ))
+            ) : stockHoldings.length > 0 || cryptoHoldings.length > 0 ? (
+              <>
+                {stockHoldings.map((stock) => (
+                  <SecurityItem
+                    key={stock.ticker}
+                    ticker={stock.ticker}
+                    name={stock.name}
+                    logoUrl={stock.logo_url}
+                    totalAmount={formatNum(stock.total_amount)}
+                    pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
+                    pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
+                    variant="compact"
+                    type="stock"
+                  />
+                ))}
+                {cryptoHoldings.map((crypto) => (
+                  <SecurityItem
+                    key={crypto.ticker}
+                    ticker={crypto.ticker}
+                    name={crypto.name}
+                    logoUrl={crypto.logo_url}
+                    totalAmount={formatNum(crypto.total_amount)}
+                    quantity={formatNum(crypto.quantity, 2)}
+                    pnlPct={formatNum((crypto.total_amount / crypto.cost_basis - 1) * 100, 1)}
+                    pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
+                    variant="compact"
+                    type="crypto"
+                  />
+                ))}
+              </>
             ) : (
               <div className="text-center text-sm font-thin text-muted-foreground py-4">
-                No stock holdings found.
+                No holdings found.
               </div>
             )}
           </div>
@@ -68,7 +85,7 @@ function StockCardCompact({ stockHoldings }: StockCardCompactProps) {
   )
 }
 
-function StockCardCompactSkeleton() {
+function HoldingsCompactSkeleton() {
   return (
     <div className="px-6">
       <Card className="gap-0 pb-0">
@@ -90,6 +107,6 @@ function StockCardCompactSkeleton() {
 }
 
 export {
-  StockCardCompact,
-  StockCardCompactSkeleton
+  HoldingsCompact,
+  HoldingsCompactSkeleton
 }

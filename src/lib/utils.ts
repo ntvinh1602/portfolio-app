@@ -70,22 +70,6 @@ export function calculateSharpeRatio(monthlyReturns: number[], annualRiskFreeRat
   return sharpeRatio * Math.sqrt(12);
 }
 
-// Set personalized greetings based on time of day
-export function getGreeting(): string {
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const sgTime = new Date(utc + (3600000 * 8));
-  const hour = sgTime.getHours();
-
-  if (hour < 12) {
-    return "Morning";
-  } else if (hour < 18) {
-    return "Hello";
-  } else {
-    return "Hi";
-  }
-}
-
 // Format number with commas for display
 export function formatNumberWithCommas(value: string | number): string {
   if (value === "" || value === null || value === undefined) {

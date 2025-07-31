@@ -75,12 +75,12 @@ const TabsList = React.forwardRef<
   }, [updateIndicator]);
 
   return (
-    <div className="relative" ref={tabsListRef}>
+    <div className="relative flex-1" ref={tabsListRef}>
       <TabsPrimitive.List
         ref={ref}
         data-slot="tabs-list"
         className={cn(
-          "bg-card/40 border text-muted-foreground relative inline-flex h-10 w-fit items-center justify-center rounded-md p-[3px]",
+          "bg-card/40 border text-muted-foreground relative inline-flex h-10 items-center justify-center rounded-md p-[3px]",
           className
         )}
         {...props}

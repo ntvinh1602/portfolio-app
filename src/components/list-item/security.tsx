@@ -45,7 +45,7 @@ function SecurityItem({
   const isCompact = variant === 'compact';
 
   return (
-    <Card className={`border-0 text-card-foreground dark:bg-card/40 backdrop-blur-sm rounded-2xl ${isCompact ? 'py-2' : 'py-3'}`}>
+    <Card className={`border-0 text-card-foreground bg-muted/40 dark:bg-card/40 backdrop-blur-sm rounded-2xl ${isCompact ? 'py-2' : 'py-3'}`}>
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}

@@ -1,8 +1,6 @@
 "use client"
 
-import { supabase } from "@/lib/supabase/supabaseClient"
 import * as React from "react"
-import { getGreeting } from "@/lib/utils"
 import {
   PageMain,
   PageHeader,
@@ -18,15 +16,13 @@ import { EquityCard, EquityCardSkeleton } from "@/components/cards/equity"
 import { AssetCard, AssetCardSkeleton } from "@/components/cards/assets"
 import { PnLCard, PnLCardSkeleton } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard, BenchmarkCardSkeleton } from "@/components/cards/benchmark"
-import { StockCardCompact, StockCardCompactSkeleton } from "@/components/cards/stock-compact"
-import { CryptoCardCompact, CryptoCardCompactSkeleton } from "@/components/cards/crypto-compact"
+import { HoldingsCompact, HoldingsCompactSkeleton } from "@/components/cards/holdings"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { subDays } from "date-fns"
 
 
 export default function Page() {
-  const [userName, setUserName] = React.useState("...")
   const {
     equityData,
     twr,
@@ -45,25 +41,6 @@ export default function Page() {
   const startDate = React.useMemo(() => subDays(new Date(), 90), []);
   const endDate = React.useMemo(() => new Date(), []);
 
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", user.id)
-          .single()
-        setUserName(profile?.display_name || "Guest")
-      }
-    }
-
-    fetchUser()
-  }, [])
-
   if (error) {
     return (
       <PageMain>
@@ -80,7 +57,7 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title={`${getGreeting()}, ${userName}!`} />
+      <PageHeader title="Home" />
       <PageContent className="px-0 gap-4">
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
@@ -119,11 +96,11 @@ export default function Page() {
             <AssetCard assetSummaryData={assetSummaryData} />
           }
           <div className="flex flex-col gap-6">
-            {isLoading ? <StockCardCompactSkeleton /> :
-              <StockCardCompact stockHoldings={holdingsData.stockHoldings} />
-            }
-            {isLoading ? <CryptoCardCompactSkeleton /> :
-              <CryptoCardCompact cryptoHoldings={holdingsData.cryptoHoldings} />
+            {isLoading ? <HoldingsCompactSkeleton /> :
+              <HoldingsCompact
+                stockHoldings={holdingsData.stockHoldings}
+                cryptoHoldings={holdingsData.cryptoHoldings}
+              />
             }
           </div>
       </PageContent>
