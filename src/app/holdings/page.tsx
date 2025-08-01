@@ -41,7 +41,7 @@ export default function Page() {
     await fetch('/api/external/refresh-all-asset-prices', { method: 'POST' })
 
     // Re-fetch the holdings data
-    await mutate((key: any) => typeof key === 'string' && key.startsWith(`/api/gateway/${user.id}/dashboard`))
+    await mutate((key: string) => typeof key === 'string' && key.startsWith(`/api/gateway/${user.id}/dashboard`))
     setIsRefreshing(false)
   }
 
