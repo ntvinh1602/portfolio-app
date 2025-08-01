@@ -77,7 +77,7 @@ export function TwoMetric({
           </CardTitle>
         </div>
         <div className="h-12 px-6">
-          <Separator orientation="vertical" />
+          <Separator orientation="vertical" className="bg-muted-foreground/25"/>
         </div>
         <div className="flex flex-col w-full items-center">
           <CardDescription>{label2}</CardDescription>

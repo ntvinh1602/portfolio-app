@@ -47,7 +47,7 @@ export default function Page() {
       if (dateRange === "12m") {
         startDate = format(startOfMonth(sub(now, { months: 11 })), "yyyy-MM-dd")
       } else if (firstSnapshotDateData) {
-        startDate = firstSnapshotDateData.date
+        startDate = firstSnapshotDateData
       } else {
         return null
       }
@@ -91,6 +91,7 @@ export default function Page() {
           value1={formatNum(avgPnl)}
           label2="Return"
           value2={`${formatNum(100 * avgTwr, 2)}%`}
+          className="border-0 py-3"
         />
         {error && <p>Error loading data</p>}
         <PnLTable data={data ?? []} />
