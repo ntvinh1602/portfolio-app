@@ -66,13 +66,8 @@ export async function GET(
 
     const data = await response.json();
 
-    return NextResponse.json(data, {
-      headers: {
-        "Vary": "Authorization",
-        "Cache-Control": "public, max-age=900, stale-while-revalidate=180",
-        "x-vercel-cache-tags": `txn-driven-${userIdToUse}`,
-      },
-    });
+    return NextResponse.json(data);
+    
   } catch (error) {
     console.error("Error fetching expenses data:", error);
     return NextResponse.json(

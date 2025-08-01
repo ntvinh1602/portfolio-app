@@ -33,7 +33,18 @@ interface AssetSummaryData {
   totalEquity: number;
 }
 
-import { Holding, CryptoHolding } from "./useHoldings";
+export interface Holding {
+  ticker: string;
+  name: string;
+  logo_url: string;
+  quantity: number;
+  cost_basis: number;
+  latest_price: number;
+}
+
+export interface CryptoHolding extends Holding {
+  latest_usd_rate: number;
+}
 
 interface HoldingsData {
   stockHoldings: (Holding & { total_amount: number })[];

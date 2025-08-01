@@ -2,46 +2,46 @@ import { createClient } from "@/lib/supabase/supabaseServer"
 import { type NextRequest, NextResponse } from "next/server"
 
 // Route segment configuration
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const { userId: requestedUserId } = await params;
-  const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+  const { userId: requestedUserId } = await params
+  const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID
   if (!DEMO_USER_ID) {
-    throw new Error("DEMO_USER_ID is not set in environment variables");
+    throw new Error("DEMO_USER_ID is not set in environment variables")
   }
 
-  const { searchParams } = new URL(request.url);
-  const start_date = searchParams.get("start_date");
-  const end_date = searchParams.get("end_date");
+  const { searchParams } = new URL(request.url)
+  const start_date = searchParams.get("start_date")
+  const end_date = searchParams.get("end_date")
   if (!start_date || !end_date) {
-    console.error("API Route: Missing start_date or end_date");
+    console.error("API Route: Missing start_date or end_date")
     return NextResponse.json(
       { error: "start_date and end_date are required" },
       { status: 400 }
-    );
+    )
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = await createClient()
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (!user) {
-      console.error("API Route: Unauthorized access attempt.");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.error("API Route: Unauthorized access attempt.")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    const isAnonymous = !user.email;
-    const authenticatedUserId = isAnonymous ? DEMO_USER_ID : user.id;
+    const isAnonymous = !user.email
+    const authenticatedUserId = isAnonymous ? DEMO_USER_ID : user.id
 
     // Security check: Ensure the authenticated user is requesting their own data
     if (authenticatedUserId !== requestedUserId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const { data, error } = await supabase.rpc("calculate_twr", {
@@ -56,15 +56,8 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { twr: data },
-      {
-        headers: {
-          "Vary": "Authorization",
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=360",
-          "x-vercel-cache-tags": `price-driven-${requestedUserId}`,
-        },
-      }
-    );
+      { twr: data }
+    )
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage =

@@ -7,7 +7,7 @@ import {
   PageContent,
 } from "@/components/page-layout"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
-import { useHoldings } from "@/hooks/useHoldings"
+import { useDashboardData } from "@/hooks/useDashboardData"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AnonRestriction } from "@/components/anon-alert"
 import { RefreshCw } from "lucide-react"
@@ -23,9 +23,9 @@ import { mutate } from "swr"
 import { formatNum, compactNum } from "@/lib/utils"
 
 export default function Page() {
-  const { stockHoldings, cryptoHoldings } = useHoldings()
+  const { holdingsData, isLoading: loading } = useDashboardData()
+  const { stockHoldings, cryptoHoldings } = holdingsData
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const loading = !stockHoldings
   const [showAuthAlert, setShowAuthAlert] = useState(false)
 
   const handleRefresh = async () => {
@@ -41,7 +41,7 @@ export default function Page() {
     await fetch('/api/external/refresh-all-asset-prices', { method: 'POST' })
 
     // Re-fetch the holdings data
-    await mutate('/api/gateway/holdings')
+    await mutate((key: any) => typeof key === 'string' && key.startsWith(`/api/gateway/${user.id}/dashboard`))
     setIsRefreshing(false)
   }
 
@@ -95,9 +95,9 @@ export default function Page() {
               chartConfig={chartConfig}
               dataKey="allocation"
               nameKey="asset"
-              legend="bottom"
+              legend="right"
               label_pos={1.8}
-              className="h-[250px]"
+              className="h-[250px] w-full"
             />
             <div className="flex flex-col gap-1 text-muted-foreground font-thin">
               {loading ? (
@@ -116,7 +116,6 @@ export default function Page() {
                     pnlPct={stock.cost_basis > 0 ? formatNum(((stock.total_amount / stock.cost_basis) - 1) * 100, 1) : "0.0"}
                     pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
                     price={formatNum(stock.latest_price / 1000, 2)}
-                    priceStatus="success"
                     variant="full"
                     type="stock"
                   />
@@ -150,7 +149,6 @@ export default function Page() {
                     }
                     pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
                     price={formatNum(crypto.latest_price, 2)}
-                    priceStatus="success"
                     variant="full"
                     type="crypto"
                   />

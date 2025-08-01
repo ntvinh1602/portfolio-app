@@ -101,14 +101,7 @@ export async function GET(
         totalPnl: pnlData.pnl,
         totalReturn: twrData.twr,
         benchmarkChartData: benchmarkData,
-      },
-      {
-        headers: {
-          "Vary": "Authorization",
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=180",
-          "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
-        },
-      },
+      }
     )
   } catch (error) {
     console.error("Error fetching metrics data:", error);

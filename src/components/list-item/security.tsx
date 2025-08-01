@@ -24,7 +24,6 @@ interface SecurityItemProps {
   pnlNet: string;
   quantity?: string;
   price?: string;
-  priceStatus?: 'loading' | 'error' | 'success';
   variant?: 'full' | 'compact';
   type: 'stock' | 'crypto';
 }

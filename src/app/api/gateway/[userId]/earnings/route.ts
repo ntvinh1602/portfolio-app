@@ -89,13 +89,8 @@ export async function GET(
       };
     });
 
-    return NextResponse.json(combinedData, {
-      headers: {
-        "Vary": "Authorization",
-        "Cache-Control": "public, max-age=900, stale-while-revalidate=180",
-        "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
-      },
-    })
+    return NextResponse.json(combinedData)
+    
   } catch (error) {
     console.error("Error fetching earnings data:", error);
     return NextResponse.json(

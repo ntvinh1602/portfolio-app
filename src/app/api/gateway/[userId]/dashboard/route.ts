@@ -53,8 +53,6 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    
-
     const endDate = endDateParam ? new Date(endDateParam) : new Date()
     const startDate = startDateParam ? new Date(startDateParam) : subDays(endDate, 90)
     const monthlyPnlStartDate = startOfMonth(subMonths(endDate, 11))
@@ -62,7 +60,7 @@ export async function GET(
     const formattedStartDate = format(startDate, "yyyy-MM-dd")
     const formattedEndDate = format(endDate, "yyyy-MM-dd")
     const formattedMonthlyPnlStartDate = format(monthlyPnlStartDate, "yyyy-MM-dd")
-
+    
     const baseUrl = request.url.split("/api")[0]
 
     const fetchOptions = {
@@ -79,7 +77,8 @@ export async function GET(
       monthlyPnlResponse,
       benchmarkResponse,
       assetSummaryResponse,
-      holdingsResponse,
+      stockHoldingsResponse,
+      cryptoHoldingsResponse,
     ] = await Promise.all([
       fetch(
         `${baseUrl}/api/query/${userIdToUse}/equity-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`,
@@ -95,7 +94,8 @@ export async function GET(
         fetchOptions,
       ),
       fetch(`${baseUrl}/api/query/${userIdToUse}/asset-summary`, fetchOptions),
-      fetch(`${baseUrl}/api/gateway/${userIdToUse}/holdings`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${userIdToUse}/stock-holdings`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${userIdToUse}/crypto-holdings`, fetchOptions),
     ])
 
     for (const response of [
@@ -104,7 +104,8 @@ export async function GET(
       monthlyPnlResponse,
       benchmarkResponse,
       assetSummaryResponse,
-      holdingsResponse,
+      stockHoldingsResponse,
+      cryptoHoldingsResponse,
     ]) {
       if (!response.ok) {
         const errorText = await response.text()
@@ -119,22 +120,24 @@ export async function GET(
       monthlyPnlData,
       benchmarkData,
       assetSummaryData,
-      holdingsData,
+      stockHoldings,
+      cryptoHoldings,
     ] = await Promise.all([
       equityResponse.json(),
       twrResponse.json(),
       monthlyPnlResponse.json(),
       benchmarkResponse.json(),
       assetSummaryResponse.json(),
-      holdingsResponse.json(),
+      stockHoldingsResponse.json(),
+      cryptoHoldingsResponse.json(),
     ])
 
     const holdingsDataWithTotalAmount = {
-      stockHoldings: holdingsData.stockHoldings.map((holding: StockHolding) => ({
+      stockHoldings: stockHoldings.map((holding: StockHolding) => ({
         ...holding,
         total_amount: holding.quantity * holding.latest_price,
       })),
-      cryptoHoldings: holdingsData.cryptoHoldings.map((holding: CryptoHolding) => ({
+      cryptoHoldings: cryptoHoldings.map((holding: CryptoHolding) => ({
         ...holding,
         total_amount:
           holding.quantity * holding.latest_price * holding.latest_usd_rate,
@@ -149,14 +152,7 @@ export async function GET(
         benchmarkData,
         assetSummaryData,
         holdingsData: holdingsDataWithTotalAmount,
-      },
-      {
-        headers: {
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=180",
-          "Vary": "Authorization",
-          "x-vercel-cache-tags": `price-driven-${userIdToUse}`,
-        },
-      },
+      }
     )
 
   } catch (error) {

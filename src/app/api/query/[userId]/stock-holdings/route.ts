@@ -40,13 +40,8 @@ export async function GET(
       throw error
     }
 
-    return NextResponse.json(data, {
-      headers: {
-        "Vary": "Authorization",
-        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=360",
-        "x-vercel-cache-tags": `price-driven-${requestedUserId}`,
-      },
-    });
+    return NextResponse.json(data);
+    
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage = e instanceof Error ? e.message : "Internal Server Error"

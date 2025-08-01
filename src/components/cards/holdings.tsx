@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Holding, CryptoHolding } from "@/hooks/useHoldings"
+import { Holding, CryptoHolding } from "@/hooks/useDashboardData"
 
 interface HoldingsCompactProps {
   stockHoldings: (Holding & { total_amount: number })[]
@@ -38,7 +38,7 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             {loading ? (
               Array.from({ length: 3 }).map((_, index) => (
                 <SecuritySkeleton variant="compact" key={index} />

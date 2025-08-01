@@ -1,14 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { useAuth } from "@/hooks/useAuth";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   PageMain,
   PageHeader,
   PageContent,
 } from "@/components/page-layout"
-import { fetcher } from "@/lib/fetcher";
-import useSWR from "swr";
 import { formatNum } from "@/lib/utils";
 import {
   Card,
@@ -38,22 +36,8 @@ interface SummaryItem {
   totalAmount: number;
 }
 
-interface AssetSummaryData {
-  assets: SummaryItem[];
-  totalAssets: number;
-  liabilities: SummaryItem[];
-  totalLiabilities: number;
-  equity: SummaryItem[];
-  totalEquity: number;
-}
-
 export default function Page() {
-  const { userId } = useAuth();
-  const { data: summaryData, isLoading, error } = useSWR<AssetSummaryData>(
-    userId ? `/api/query/${userId}/asset-summary` : null,
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
+  const { assetSummaryData: summaryData, isLoading, error } = useDashboardData();
 
   if (error) {
     // You can render a more sophisticated error state here

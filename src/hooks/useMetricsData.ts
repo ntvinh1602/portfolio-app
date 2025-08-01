@@ -15,7 +15,7 @@ export function useMetricsData(dateRange: string) {
 
   React.useEffect(() => {
     if (firstSnapshotDateData) {
-      setFirstSnapshotDate(new Date(firstSnapshotDateData.date))
+      setFirstSnapshotDate(new Date(firstSnapshotDateData))
     }
   }, [firstSnapshotDateData])
 
