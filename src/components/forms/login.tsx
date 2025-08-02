@@ -18,7 +18,6 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isGuestLoading, setIsGuestLoading] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const router = useRouter()
 
@@ -42,28 +41,6 @@ export function LoginForm({
     setIsLoading(false)
   }
 
-  const handleAnonymousLogin = async () => {
-    if (!token) {
-      setError("Please complete the captcha.")
-      return
-    }
-    setError(null)
-    setIsGuestLoading(true)
-
-    const res = await fetch("/api/auth/anonymous", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    })
-
-    if (res.ok) {
-      router.push("/")
-    } else {
-      const { error } = await res.json()
-      setError(error)
-    }
-
-    setIsGuestLoading(false)
-  }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -90,7 +67,7 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading || isGuestLoading}
+                  disabled={isLoading}
                   className="rounded-full font-thin text-sm text-accent-foreground"
                 />
               </div>
@@ -112,7 +89,7 @@ export function LoginForm({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading || isGuestLoading}
+                  disabled={isLoading}
                   className="rounded-full text-accent-foreground"
                 />
               </div>
@@ -122,7 +99,7 @@ export function LoginForm({
               <Button
                 type="submit"
                 className="w-full rounded-full"
-                disabled={isLoading || isGuestLoading || !token}
+                disabled={isLoading || !token}
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
@@ -140,15 +117,6 @@ export function LoginForm({
                   <Separator />
                 </div>
               </div>
-              <Button
-                variant="outline"
-                type="button"
-                className="w-full rounded-full"
-                onClick={handleAnonymousLogin}
-                disabled={isLoading || isGuestLoading || !token}
-              >
-                {isGuestLoading ? "Logging in..." : "Login as a Guest"}
-              </Button>
             </div>
           </form>
         </CardContent>

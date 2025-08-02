@@ -29,14 +29,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    const isAnonymous = !user.email
-    const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID
-    if (!DEMO_USER_ID) {
-      throw new Error("DEMO_USER_ID is not set in environment variables")
-    }
-    const userIdToUse = isAnonymous ? DEMO_USER_ID : user.id
-
-    if (userIdToUse !== requestedUserId) {
+    if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -46,12 +39,12 @@ export async function GET(
       headers,
       next: {
         revalidate: 600,
-        tags: [`txn-driven-${userIdToUse}`],
+        tags: [`txn-driven-${requestedUserId}`],
       },
     }
 
     const response = await fetch(
-      `${baseUrl}/api/query/${userIdToUse}/monthly-expenses?start_date=${startDate}&end_date=${endDate}`,
+      `${baseUrl}/api/query/${requestedUserId}/monthly-expenses?start_date=${startDate}&end_date=${endDate}`,
       fetchOptions
     )
 

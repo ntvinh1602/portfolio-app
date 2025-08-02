@@ -27,12 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setIsLoading(false)
-      const isAnonymous = !session?.user?.email
-      setUserId(
-        isAnonymous
-          ? process.env.NEXT_PUBLIC_DEMO_USER_ID ?? null
-          : session?.user?.id ?? null,
-      )
+      setUserId(session?.user?.id ?? null)
     })
 
     return () => subscription.unsubscribe()

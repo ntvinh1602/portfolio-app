@@ -9,7 +9,6 @@ import {
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AnonRestriction } from "@/components/anon-alert"
 import { RefreshCw } from "lucide-react"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
@@ -30,18 +29,14 @@ export default function Page() {
 
   const handleRefresh = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    const isAnonymous = !user?.email
-
-    if (isAnonymous) {
-      setShowAuthAlert(true)
-      return
-    }
 
     setIsRefreshing(true)
     await fetch('/api/external/refresh-all-asset-prices', { method: 'POST' })
 
     // Re-fetch the holdings data
-    await mutate((key: string) => typeof key === 'string' && key.startsWith(`/api/gateway/${user.id}/dashboard`))
+    if (user) {
+      await mutate((key: string) => typeof key === 'string' && key.startsWith(`/api/gateway/${user.id}/dashboard`))
+    }
     setIsRefreshing(false)
   }
 
@@ -161,10 +156,6 @@ export default function Page() {
             </div>          
           </TabsContent>
         </Tabs>
-        <AnonRestriction
-          showAuthAlert={showAuthAlert}
-          setShowAuthAlert={setShowAuthAlert}
-        />
       </PageContent>
       <BottomNavBar />
     </PageMain>

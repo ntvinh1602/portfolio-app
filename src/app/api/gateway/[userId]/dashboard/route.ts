@@ -42,14 +42,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    const isAnonymous = !user.email
-    const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID
-    if (!DEMO_USER_ID) {
-      throw new Error("DEMO_USER_ID is not set in environment variables")
-    }
-    const userIdToUse = isAnonymous ? DEMO_USER_ID : user.id
-
-    if (userIdToUse !== requestedUserId) {
+    if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -67,7 +60,7 @@ export async function GET(
       headers,
       next: {
         revalidate: 600,
-        tags: [`price-driven-${userIdToUse}`],
+        tags: [`price-driven-${requestedUserId}`],
       },
     }
 
@@ -81,21 +74,21 @@ export async function GET(
       cryptoHoldingsResponse,
     ] = await Promise.all([
       fetch(
-        `${baseUrl}/api/query/${userIdToUse}/equity-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`,
+        `${baseUrl}/api/query/${requestedUserId}/equity-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`,
         fetchOptions,
       ),
-      fetch(`${baseUrl}/api/query/${userIdToUse}/twr?start_date=${formattedStartDate}&end_date=${formattedEndDate}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/twr?start_date=${formattedStartDate}&end_date=${formattedEndDate}`, fetchOptions),
       fetch(
-        `${baseUrl}/api/query/${userIdToUse}/monthly-pnl?start_date=${formattedMonthlyPnlStartDate}&end_date=${formattedEndDate}`,
+        `${baseUrl}/api/query/${requestedUserId}/monthly-pnl?start_date=${formattedMonthlyPnlStartDate}&end_date=${formattedEndDate}`,
         fetchOptions,
       ),
       fetch(
-        `${baseUrl}/api/query/${userIdToUse}/benchmark-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`,
+        `${baseUrl}/api/query/${requestedUserId}/benchmark-chart?start_date=${formattedStartDate}&end_date=${formattedEndDate}&threshold=200`,
         fetchOptions,
       ),
-      fetch(`${baseUrl}/api/query/${userIdToUse}/asset-summary`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${userIdToUse}/stock-holdings`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${userIdToUse}/crypto-holdings`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/asset-summary`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/stock-holdings`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/crypto-holdings`, fetchOptions),
     ])
 
     for (const response of [

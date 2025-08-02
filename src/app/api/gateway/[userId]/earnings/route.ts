@@ -40,16 +40,9 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    const isAnonymous = !user.email
-    const DEMO_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID
-    if (!DEMO_USER_ID) {
-      throw new Error("DEMO_USER_ID is not set in environment variables")
-    }
-    const userIdToUse = isAnonymous ? DEMO_USER_ID : user.id
-
-    if (userIdToUse !== requestedUserId) {
+    if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }    
+    }
 
     const baseUrl = request.url.split("/api")[0]
 
@@ -57,13 +50,13 @@ export async function GET(
       headers,
       next: {
         revalidate: 600,
-        tags: [`price-driven-${userIdToUse}`],
+        tags: [`price-driven-${requestedUserId}`],
       },
     }
 
     const [pnlResponse, twrResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/${userIdToUse}/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${userIdToUse}/monthly-twr?start_date=${startDate}&end_date=${endDate}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/monthly-pnl?start_date=${startDate}&end_date=${endDate}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${requestedUserId}/monthly-twr?start_date=${startDate}&end_date=${endDate}`, fetchOptions),
     ])
 
     for (const response of [pnlResponse, twrResponse]) {

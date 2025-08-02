@@ -57,7 +57,6 @@ export function TransactionForm({
   const router = useRouter()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [showAuthAlert, setShowAuthAlert] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
   const { accounts, assets, debts, loading } = useTransactionFormData(open)
@@ -180,15 +179,6 @@ export function TransactionForm({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    const isAnonymous = !user?.email
-
-    if (isAnonymous) {
-      setShowAuthAlert(true)
-      return
-    }
 
     if (!date) {
       toast.error("Please select a date.")
@@ -366,19 +356,6 @@ export function TransactionForm({
         </div>
       </DialogContent>
     </Dialog>
-      <Dialog open={showAuthAlert} onOpenChange={setShowAuthAlert}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{"You're not logged in"}</DialogTitle>
-            <DialogDescription>
-              As an anonymous user, you are not permitted to add transactions. Please sign up for an account to use this feature.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setShowAuthAlert(false)}>OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }
