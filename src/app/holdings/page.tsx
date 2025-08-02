@@ -140,7 +140,7 @@ export default function Page() {
                     ticker={crypto.ticker}
                     name={crypto.name}
                     logoUrl={crypto.logo_url}
-                    quantity={formatNum(crypto.quantity, 2)}
+                    quantity={formatNum(crypto.quantity, 6)}
                     totalAmount={formatNum(crypto.total_amount)}
                     pnlPct={
                       crypto.cost_basis > 0
@@ -148,7 +148,7 @@ export default function Page() {
                         : "0.0"
                     }
                     pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
-                    price={formatNum(crypto.latest_price, 2)}
+                    price={compactNum(crypto.latest_price)}
                     variant="full"
                     type="crypto"
                   />

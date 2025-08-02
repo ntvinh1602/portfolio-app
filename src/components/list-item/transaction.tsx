@@ -31,7 +31,13 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
         ? `${formatNum(quantity)} units`
         : formatNum(amount);
 
-  const secondaryValue = currencyCode !== 'VND' && formatNum(quantity, 0, currencyCode)
+  const secondaryValue =
+    currencyCode === 'VND'
+      ? undefined // If VND, secondaryValue is undefined (no value)
+      : currencyCode === 'BTC'
+        ? formatNum(quantity, 6, currencyCode) // If not VND, but BTC, format with 6 decimal places
+        : formatNum(quantity, 2, currencyCode); // If not VND and not BTC, format with 2 decimal places
+
 
   return (
     <Card className="bg-card/0 gap-1 py-0 border-none">

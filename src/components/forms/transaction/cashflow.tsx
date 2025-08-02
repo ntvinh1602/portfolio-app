@@ -88,7 +88,8 @@ export function CashFlowForm({
                 asset =>
                   asset.securities &&
                   (asset.securities.asset_class === "cash" ||
-                    asset.securities.asset_class === "epf"),
+                    asset.securities.asset_class === "epf" ||
+                    asset.securities.asset_class === "crypto"),
               )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>

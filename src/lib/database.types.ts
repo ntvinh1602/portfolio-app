@@ -94,6 +94,32 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_crypto_prices: {
+        Row: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Insert: {
+          date: string
+          price: number
+          security_id: string
+        }
+        Update: {
+          date?: string
+          price?: number
+          security_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_crypto_prices_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_exchange_rates: {
         Row: {
           currency_code: string
@@ -145,8 +171,6 @@ export type Database = {
           id: string
           net_cash_flow: number
           net_equity_value: number
-          total_assets_value: number
-          total_liabilities_value: number
           user_id: string
         }
         Insert: {
@@ -155,8 +179,6 @@ export type Database = {
           id?: string
           net_cash_flow: number
           net_equity_value: number
-          total_assets_value: number
-          total_liabilities_value: number
           user_id: string
         }
         Update: {
@@ -165,8 +187,6 @@ export type Database = {
           id?: string
           net_cash_flow?: number
           net_equity_value?: number
-          total_assets_value?: number
-          total_liabilities_value?: number
           user_id?: string
         }
         Relationships: [
@@ -291,18 +311,21 @@ export type Database = {
           display_currency: string
           display_name: string | null
           id: string
+          inception_date: string
           last_stock_fetching: string | null
         }
         Insert: {
           display_currency: string
           display_name?: string | null
           id: string
+          inception_date?: string
           last_stock_fetching?: string | null
         }
         Update: {
           display_currency?: string
           display_name?: string | null
           id?: string
+          inception_date?: string
           last_stock_fetching?: string | null
         }
         Relationships: [
@@ -498,6 +521,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          created_at: string | null
           description: string | null
           id: string
           related_debt_id: string | null
@@ -506,6 +530,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          created_at?: string | null
           description?: string | null
           id?: string
           related_debt_id?: string | null
@@ -514,6 +539,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          created_at?: string | null
           description?: string | null
           id?: string
           related_debt_id?: string | null
@@ -551,16 +577,33 @@ export type Database = {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: number
       }
+      demo_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_performance_snapshots: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: undefined
+      }
+      get_active_debts: {
+        Args: { p_user_id: string }
+        Returns: {
+          currency_code: string
+          id: string
+          interest_rate: number
+          lender_name: string
+          principal_amount: number
+          start_date: string
+          status: Database["public"]["Enums"]["debt_status"]
+          user_id: string
+        }[]
       }
       get_asset_balance: {
         Args: { p_asset_id: string; p_user_id: string }
         Returns: number
       }
       get_asset_summary: {
-        Args: Record<PropertyKey, never>
+        Args: { p_user_id: string }
         Returns: Json
       }
       get_benchmark_chart_data: {
@@ -576,6 +619,18 @@ export type Database = {
           vni_value: number
         }[]
       }
+      get_crypto_holdings: {
+        Args: { p_user_id: string }
+        Returns: {
+          ticker: string
+          name: string
+          logo_url: string
+          quantity: number
+          cost_basis: number
+          latest_price: number
+          latest_usd_rate: number
+        }[]
+      }
       get_equity_chart_data: {
         Args: {
           p_user_id: string
@@ -587,6 +642,14 @@ export type Database = {
           date: string
           net_equity_value: number
         }[]
+      }
+      get_first_snapshot_date: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
+      get_latest_crypto_price: {
+        Args: { p_security_id: string }
+        Returns: number
       }
       get_latest_exchange_rate: {
         Args: { p_currency_code: string }
@@ -620,7 +683,7 @@ export type Database = {
         }[]
       }
       get_stock_holdings: {
-        Args: Record<PropertyKey, never>
+        Args: { p_user_id: string }
         Returns: {
           ticker: string
           name: string
@@ -632,6 +695,7 @@ export type Database = {
       }
       get_transaction_feed: {
         Args: {
+          p_user_id: string
           page_size: number
           page_number: number
           start_date?: string
@@ -765,6 +829,14 @@ export type Database = {
           p_asset_id: string
         }
         Returns: Json
+      }
+      is_registered_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      upsert_daily_crypto_price: {
+        Args: { p_ticker: string; p_price: number }
+        Returns: undefined
       }
       upsert_daily_stock_price: {
         Args: { p_ticker: string; p_price: number }

@@ -20,7 +20,6 @@ interface HoldingsCompactProps {
 
 function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps) {
   const router = useRouter()
-  const loading = !stockHoldings
 
   const handleNavigation = () => {
     router.push("/holdings")
@@ -39,11 +38,7 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
         </CardHeader>
         <CardContent className="px-0">
           <div className="flex flex-col gap-1">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <SecuritySkeleton variant="compact" key={index} />
-              ))
-            ) : stockHoldings.length > 0 || cryptoHoldings.length > 0 ? (
+            {stockHoldings.length > 0 || cryptoHoldings.length > 0 ? (
               <>
                 {stockHoldings.map((stock) => (
                   <SecurityItem
@@ -88,14 +83,14 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
 function HoldingsCompactSkeleton() {
   return (
     <div className="px-6">
-      <Card className="gap-0 pb-0">
-        <CardHeader className="px-4">
+      <Card className="gap-1 py-0 border-0">
+        <CardHeader className="px-0">
           <CardDescription className="flex items-center gap-1 w-fit">
-            Stocks<ChevronRight className="size-4"/>
+            Holdings<ChevronRight className="size-4"/>
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-0 pb-2">
-          <div className="flex flex-col">
+        <CardContent className="px-0">
+          <div className="flex flex-col gap-1">
             {Array.from({ length: 3 }).map((_, index) => (
               <SecuritySkeleton variant="compact" key={index} />
             ))}

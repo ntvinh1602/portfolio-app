@@ -31,11 +31,10 @@ async function getExchangeRates(): Promise<ExchangeRates | null> {
   }
 }
 
-async function getFiatCurrencies(): Promise<string[]> {
+async function getCurrencies(): Promise<string[]> {
   const { data, error } = await supabase
     .from('currencies')
     .select('code')
-    .eq('type', 'fiat')
     .neq('code', 'VND');
 
   if (error) {
@@ -52,7 +51,7 @@ Deno.serve(async (_req: Request) => {
   try {
     const [rates, currenciesToFetch] = await Promise.all([
       getExchangeRates(),
-      getFiatCurrencies(),
+      getCurrencies(),
     ]);
 
     if (!rates || !rates.VND) {
@@ -60,7 +59,7 @@ Deno.serve(async (_req: Request) => {
     }
 
     if (currenciesToFetch.length === 0) {
-      throw new Error('No fiat currencies found to process.');
+      throw new Error('No currencies found to process.');
     }
 
     const vndRate = rates.VND;

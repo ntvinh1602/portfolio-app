@@ -13,9 +13,11 @@ export function formatNum(amount: number, fractionDigits = 0, currency?: string)
       currency,
     }).resolvedOptions()
 
+    const finalFractionDigits = fractionDigits > 0 ? fractionDigits : options.minimumFractionDigits;
+
     const formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: options.minimumFractionDigits,
-      maximumFractionDigits: options.maximumFractionDigits,
+      minimumFractionDigits: finalFractionDigits,
+      maximumFractionDigits: finalFractionDigits,
     })
 
     return `${formatter.format(amount)} ${currency}`

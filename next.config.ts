@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "www.kwsp.gov.my",
+        hostname: "is1-ssl.mzstatic.com",
       },
     ],
   },

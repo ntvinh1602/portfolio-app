@@ -150,7 +150,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
 
 export function AssetCardSkeleton() {
   return (
-    <Card className="bg-muted/0 pt-2 pb-1 border-none gap-2">
+    <Card className="bg-muted/0 py-0 border-none gap-2">
       <CardHeader>
         <CardDescription className="flex items-center gap-1 w-fit">
           Total assets<ChevronRight className="size-4" />
@@ -162,12 +162,12 @@ export function AssetCardSkeleton() {
           <CardDescription className="text-xs">
             Leverage
           </CardDescription>
-          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-5 w-12" />
         </CardAction>
       </CardHeader>
       <CardContent className="flex w-full justify-between gap-2">
-        <Skeleton className="h-[100px] w-full" />
-        <Skeleton className="h-[100px] w-full" />
+        <Skeleton className="h-[150px] w-full" />
+        <Skeleton className="h-[150px] w-full" />
       </CardContent>
     </Card>
   )
