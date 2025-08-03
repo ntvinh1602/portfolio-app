@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import {
   PageMain,
   PageHeader,
@@ -11,35 +10,25 @@ import {
   CarouselContent,
   CarouselItem
 } from "@/components/ui/carousel"
-
 import { EquityCard, EquityCardSkeleton } from "@/components/cards/equity"
 import { AssetCard, AssetCardSkeleton } from "@/components/cards/assets"
-import { PnLCard, PnLCardSkeleton } from "@/components/cards/monthly-pnl"
 import { BenchmarkCard, BenchmarkCardSkeleton } from "@/components/cards/benchmark"
 import { HoldingsCompact, HoldingsCompactSkeleton } from "@/components/cards/holdings"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
-import { subDays } from "date-fns"
-
 
 export default function Page() {
   const {
+    ytdReturnData,
+    lifetimeReturnData,
+    mtdPnLData,
     equityData,
-    twr,
-    monthlyPnlData,
-    benchmarkData,
+    last90DBenchmarkData,
     assetSummaryData,
     holdingsData,
     isLoading,
     error,
   } = useDashboardData();
-
-  const latestEquity = equityData.length > 0 ? equityData[equityData.length - 1].net_equity_value : null;
-  const mtdPnl = monthlyPnlData.length > 0 ? monthlyPnlData[monthlyPnlData.length - 1].pnl : null;
-  const avgPnl = monthlyPnlData.length > 0 ? monthlyPnlData.reduce((acc, item) => acc + item.pnl, 0) / monthlyPnlData.length : null;
-
-  const startDate = React.useMemo(() => subDays(new Date(), 90), []);
-  const endDate = React.useMemo(() => new Date(), []);
 
   if (error) {
     return (
@@ -64,29 +53,18 @@ export default function Page() {
             <CarouselItem className="basis-11/12 pl-8">
               {isLoading ? <EquityCardSkeleton /> :
                 <EquityCard
-                  latestEquity={latestEquity}
-                  twr={twr}
+                  latestEquity={assetSummaryData?.totalEquity}
+                  mtdPnL={mtdPnLData}
                   equityChartData={equityData}
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              }
-            </CarouselItem>
-            <CarouselItem className="basis-10/12 pl-1">
-              {isLoading ? <PnLCardSkeleton /> :
-                <PnLCard
-                  mtdPnl={mtdPnl}
-                  avgPnl={avgPnl}
-                  monthlyPnlData={monthlyPnlData}
                 />
               }
             </CarouselItem>
             <CarouselItem className="basis-11/12 pl-1 pr-6">
               {isLoading ? <BenchmarkCardSkeleton /> :
                 <BenchmarkCard
-                  benchmarkChartData={benchmarkData}
-                  startDate={startDate}
-                  endDate={endDate}
+                  lifetimeReturn={lifetimeReturnData}
+                  ytdReturn={ytdReturnData}
+                  benchmarkChartData={last90DBenchmarkData}
                 />
               }
             </CarouselItem>

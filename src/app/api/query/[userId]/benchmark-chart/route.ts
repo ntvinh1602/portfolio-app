@@ -12,9 +12,9 @@ export async function GET(
   const { userId: requestedUserId } = await params
 
   const { searchParams } = new URL(request.url)
-  const start_date = searchParams.get("start_date")
-  const end_date = searchParams.get("end_date")
-  const threshold = searchParams.get("threshold")
+  const start_date = searchParams.get("start")
+  const end_date = new Date()
+  const threshold = 200
 
   if (!start_date || !end_date || !threshold) {
     return NextResponse.json(
@@ -41,7 +41,7 @@ export async function GET(
       p_user_id: requestedUserId,
       p_start_date: start_date,
       p_end_date: end_date,
-      p_threshold: parseInt(threshold),
+      p_threshold: threshold,
     })
 
     if (error) {

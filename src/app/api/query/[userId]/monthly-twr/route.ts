@@ -1,9 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
 
-// Route segment configuration
 export const dynamic = "force-dynamic"
-
 
 export async function GET(
   request: NextRequest,
@@ -12,8 +10,8 @@ export async function GET(
   const { userId: requestedUserId } = await params
 
   const { searchParams } = new URL(request.url)
-  const startDate = searchParams.get("start_date")
-  const endDate = searchParams.get("end_date")
+  const startDate = searchParams.get("start")
+  const endDate = new Date()
 
   if (!startDate || !endDate) {
     return NextResponse.json(
@@ -31,7 +29,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    // Security check: Ensure the authenticated user is requesting their own data
+    
     if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -47,12 +45,7 @@ export async function GET(
       throw new Error("Could not fetch monthly TWR data.")
     }
 
-    const formattedData = data.map((item: { month: string }) => ({
-      ...item,
-      month: item.month,
-    }))
-
-    return NextResponse.json(formattedData)
+    return NextResponse.json(data)
     
   } catch (error) {
     const errorMessage =

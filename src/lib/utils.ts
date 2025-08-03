@@ -5,6 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// First snapshot date
+export const inceptionDate = '2021-11-09'
+
 // Format number based on currency and decimal places
 export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
   if (currency) {
@@ -13,7 +16,7 @@ export function formatNum(amount: number, fractionDigits = 0, currency?: string)
       currency,
     }).resolvedOptions()
 
-    const finalFractionDigits = fractionDigits > 0 ? fractionDigits : options.minimumFractionDigits;
+    const finalFractionDigits = fractionDigits > 0 ? fractionDigits : options.minimumFractionDigits
 
     const formatter = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: finalFractionDigits,
@@ -44,32 +47,32 @@ export function compactNum(amount: number) {
 // Calculate compounded annual growth rate
 export function calculateCAGR(beginningValue: number, endingValue: number, years: number): number {
   if (beginningValue <= 0 || endingValue <= 0 || years <= 0) {
-    return 0;
+    return 0
   }
-  return (Math.pow(endingValue / beginningValue, 1 / years) - 1) * 100;
+  return (Math.pow(endingValue / beginningValue, 1 / years) - 1) * 100
 }
 
 // Calculate Sharpe ratio
 export function calculateSharpeRatio(monthlyReturns: number[], annualRiskFreeRate: number): number {
-  const n = monthlyReturns.length;
+  const n = monthlyReturns.length
   if (n === 0) {
-    return 0;
+    return 0
   }
 
-  const meanReturn = monthlyReturns.reduce((acc, val) => acc + val, 0) / n;
-  const monthlyRiskFreeRate = Math.pow(1 + annualRiskFreeRate, 1 / 12) - 1;
+  const meanReturn = monthlyReturns.reduce((acc, val) => acc + val, 0) / n
+  const monthlyRiskFreeRate = Math.pow(1 + annualRiskFreeRate, 1 / 12) - 1
 
   // Population standard deviation of the monthly returns (like Excel's STDEVP)
-  const variance = monthlyReturns.reduce((acc, val) => acc + Math.pow(val - meanReturn, 2), 0) / n;
-  const stdDev = Math.sqrt(variance);
+  const variance = monthlyReturns.reduce((acc, val) => acc + Math.pow(val - meanReturn, 2), 0) / n
+  const stdDev = Math.sqrt(variance)
 
   if (stdDev === 0) {
-    return 0;
+    return 0
   }
 
   // Calculate the Sharpe Ratio and annualize it
-  const sharpeRatio = (meanReturn - monthlyRiskFreeRate) / stdDev;
-  return sharpeRatio * Math.sqrt(12);
+  const sharpeRatio = (meanReturn - monthlyRiskFreeRate) / stdDev
+  return sharpeRatio * Math.sqrt(12)
 }
 
 // Format number with commas for display

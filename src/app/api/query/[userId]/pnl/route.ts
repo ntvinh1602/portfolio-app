@@ -4,7 +4,6 @@ import { type NextRequest, NextResponse } from "next/server"
 // Route segment configuration
 export const dynamic = "force-dynamic"
 
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
@@ -12,8 +11,8 @@ export async function GET(
   const { userId: requestedUserId } = await params
 
   const { searchParams } = new URL(request.url)
-  const start_date = searchParams.get("start_date")
-  const end_date = searchParams.get("end_date")
+  const start_date = searchParams.get("start")
+  const end_date = new Date()
 
   if (!start_date || !end_date) {
     console.error("API Route: Missing start_date or end_date")
@@ -33,7 +32,7 @@ export async function GET(
       console.error("API Route: Unauthorized access attempt.")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    // Security check: Ensure the authenticated user is requesting their own data
+    
     if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -49,9 +48,8 @@ export async function GET(
       throw new Error("Internal Server Error")
     }
 
-    return NextResponse.json(
-      { pnl: data }
-    )
+    return NextResponse.json(data)
+
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage =

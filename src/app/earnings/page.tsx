@@ -10,12 +10,11 @@ import {
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
 import {
-  endOfMonth,
   format,
   startOfMonth,
   sub,
 } from "date-fns"
-import { formatNum } from "@/lib/utils"
+import { formatNum, inceptionDate } from "@/lib/utils"
 import { TwoMetric } from "@/components/cards/two-metric"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { fetcher } from "@/lib/fetcher"
@@ -30,29 +29,21 @@ type MonthlyData = {
 export default function Page() {
   const { userId } = useAuth()
   const [dateRange, setDateRange] = React.useState("12m")
-  const { data: firstSnapshotDateData } = useSWR(
-    userId ? `/api/query/${userId}/first-snapshot-date` : null,
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  )
 
   const { data, error } = useSWR<MonthlyData[]>(
     () => {
       if (!userId) return null
 
-      const now = new Date()
       let startDate
-      const endDate = format(endOfMonth(now), "yyyy-MM-dd")
-
       if (dateRange === "12m") {
-        startDate = format(startOfMonth(sub(now, { months: 11 })), "yyyy-MM-dd")
-      } else if (firstSnapshotDateData) {
-        startDate = firstSnapshotDateData
+        startDate = format(startOfMonth(sub(new Date(), { months: 11 })), "yyyy-MM-dd")
+      } else if (inceptionDate) {
+        startDate = inceptionDate
       } else {
         return null
       }
 
-      return `/api/gateway/${userId}/earnings?start_date=${startDate}&end_date=${endDate}`
+      return `/api/gateway/${userId}/earnings?start=${startDate}`
     },
     fetcher
   )

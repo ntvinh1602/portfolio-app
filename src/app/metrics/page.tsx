@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
-import { useMetricsData } from "@/hooks/useMetricsData"
+import { useDashboardData } from "@/hooks/useDashboardData"
 import { Linechart, LinechartSkeleton } from "@/components/charts/linechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { format as formatDate } from "date-fns"
@@ -54,14 +54,21 @@ export default function Page() {
   const {
     cagr,
     sharpeRatio,
-    totalPnl,
-    totalReturn,
-    chartStartDate,
-    xAxisDateFormat,
-    benchmarkChartData,
-    isBenchmarkChartLoading,
-    benchmarkChartError,
-  } = useMetricsData(dateRange)
+    ytdReturnData,
+    lifetimeReturnData,
+    lifetimePnLData,
+    ytdPnLData,
+    ytdBenchmarkData,
+    lifetimeBenchmarkData,
+    isLoading,
+    error,
+  } = useDashboardData()
+
+  const totalPnl = dateRange === "ytd" ? ytdPnLData : lifetimePnLData
+  const totalReturn = dateRange === "ytd" ? ytdReturnData : lifetimeReturnData
+
+  const xAxisDateFormat = "MMM ''yy"
+  const chartData = dateRange === "ytd" ? ytdBenchmarkData : lifetimeBenchmarkData
 
   return (
     <PageMain>
@@ -96,7 +103,6 @@ export default function Page() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mtd">This Month</SelectItem>
                     <SelectItem value="ytd">This Year</SelectItem>
                     <SelectItem value="all">All Time</SelectItem>
                   </SelectContent>
@@ -136,19 +142,19 @@ export default function Page() {
                 Visualized performance against VN-Index
               </CardDescription>
             </CardHeader>
-            {isBenchmarkChartLoading && (
+            {isLoading && (
               <div className="h-[250px] w-full">
                 <LinechartSkeleton />
               </div>
             )}
-            {benchmarkChartError && (
+            {error && (
               <div className="h-[250px] w-full flex items-center justify-center text-red-500">
-                {benchmarkChartError}
+                {error.message}
               </div>
             )}
-            {chartStartDate && !isBenchmarkChartLoading && !benchmarkChartError && (
+            {!isLoading && !error && (
               <Linechart
-                data={benchmarkChartData}
+                data={chartData}
                 chartConfig={benchmarkChartConfig}
                 className="h-[250px] w-full -ml-4"
                 xAxisDataKey="date"

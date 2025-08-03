@@ -12,8 +12,8 @@ export async function GET(
   const { userId: requestedUserId } = await params
 
   const { searchParams } = new URL(request.url)
-  const startDate = searchParams.get("start_date")
-  const endDate = searchParams.get("end_date")
+  const startDate = searchParams.get("start")
+  const endDate = new Date()
 
   if (!startDate || !endDate) {
     return NextResponse.json(

@@ -25,7 +25,6 @@ export default function Page() {
   const { holdingsData, isLoading: loading } = useDashboardData()
   const { stockHoldings, cryptoHoldings } = holdingsData
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [showAuthAlert, setShowAuthAlert] = useState(false)
 
   const handleRefresh = async () => {
     const { data: { user } } = await supabase.auth.getUser()

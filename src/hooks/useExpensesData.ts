@@ -1,25 +1,24 @@
-import useSWR from "swr";
-import { fetcher } from "@/lib/fetcher";
-import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { useAuth } from "@/hooks/useAuth";
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
+import { format, subMonths, startOfMonth } from "date-fns"
+import { inceptionDate } from "@/lib/utils"
+import { useAuth } from "@/hooks/useAuth"
 
 type MonthlyExpense = {
-  month: string;
-  trading_fees: number;
-  taxes: number;
-  interest: number;
-};
+  month: string
+  trading_fees: number
+  taxes: number
+  interest: number
+}
 
 export function useExpensesData() {
-  const { userId } = useAuth();
+  const { userId } = useAuth()
 
   // Fetch last 12 months of expenses for the bar chart
-  const monthlyEndDate = endOfMonth(new Date());
-  const monthlyStartDate = startOfMonth(subMonths(new Date(), 11));
+  const monthlyStartDate = startOfMonth(subMonths(new Date(), 11))
   const monthlyParams = new URLSearchParams({
-    start_date: format(monthlyStartDate, "yyyy-MM-dd"),
-    end_date: format(monthlyEndDate, "yyyy-MM-dd"),
-  });
+    start: format(monthlyStartDate, "yyyy-MM-dd")
+  })
 
   const {
     data: monthlyExpenses,
@@ -31,39 +30,30 @@ export function useExpensesData() {
       : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
+  )
 
   // Fetch all expenses for the pie chart structure
-  const { data: firstDateData } = useSWR<string>(
-    userId ? `/api/query/${userId}/first-snapshot-date` : null,
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
-
   const allTimeParams = new URLSearchParams({
-    start_date: firstDateData
-      ? format(new Date(firstDateData), "yyyy-MM-dd")
-      : format(new Date(), "yyyy-MM-dd"),
-    end_date: format(new Date(), "yyyy-MM-dd"),
-  });
+    start: inceptionDate
+  })
 
   const { data: allExpenses, isLoading: structureLoading } =
     useSWR<MonthlyExpense[]>(
-      userId && firstDateData
+      userId
         ? `/api/gateway/${userId}/expenses?${allTimeParams.toString()}`
         : null,
       fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
-    );
+    )
 
   const expenseStructure = allExpenses
     ? Object.entries(
         allExpenses.reduce(
           (acc, curr) => {
-            acc.trading_fees += curr.trading_fees;
-            acc.taxes += curr.taxes;
-            acc.interest += curr.interest;
-            return acc;
+            acc.trading_fees += curr.trading_fees
+            acc.taxes += curr.taxes
+            acc.interest += curr.interest
+            return acc
           },
           { trading_fees: 0, taxes: 0, interest: 0 }
         )
@@ -73,13 +63,13 @@ export function useExpensesData() {
           .replace(/\b\w/g, (l) => l.toUpperCase()),
         total_amount: value,
       }))
-    : [];
+    : []
 
   return {
     monthlyExpenses: monthlyExpenses ?? [],
     monthlyError,
     monthlyLoading,
     expenseStructure,
-    structureLoading: !firstDateData || structureLoading,
-  };
+    structureLoading,
+  }
 }

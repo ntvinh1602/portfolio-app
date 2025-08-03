@@ -1,4 +1,3 @@
-import { TrendingUp, TrendingDown } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
@@ -13,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react"
 import { compactNum } from "@/lib/utils"
 
 type EquityData = {
@@ -22,17 +21,15 @@ type EquityData = {
 }
 
 interface EquityCardProps {
-  latestEquity: number | null;
-  twr: number | null;
-  equityChartData: EquityData[];
-  startDate: Date;
-  endDate: Date;
+  latestEquity: number | undefined
+  mtdPnL: number | null
+  equityChartData: EquityData[]
 }
 
-function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
+function EquityCard({ latestEquity, mtdPnL, equityChartData }: EquityCardProps) {
   const router = useRouter()
   const handleNavigation = () => {
-    router.push("/analytics")
+    router.push("/earnings")
   }
 
   return (
@@ -47,16 +44,16 @@ function EquityCard({ latestEquity, twr, equityChartData }: EquityCardProps) {
         <CardTitle className="text-2xl">
           {latestEquity ? formatNum(latestEquity) : "Loading..."}
         </CardTitle>
-        <CardAction className="flex flex-col gap-1 items-end">
+        <CardAction className="flex flex-col gap-1 items-end self-center">
           <Badge variant="outline">
-            {twr !== null && twr < 0 ? (
+            {mtdPnL !== null && mtdPnL < 0 ? (
               <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
             ) : (
               <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
             )}
-            {twr !== null && `${(twr * 100).toFixed(2)}% `}
+            {mtdPnL !== null && `${formatNum(Math.abs(mtdPnL))}`}
           </Badge>
-          <CardDescription className="text-xs">Last 90 days</CardDescription>
+          <CardDescription className="text-xs">Profit MTD</CardDescription>
         </CardAction>
       </CardHeader>
       <CardFooter className="px-4">

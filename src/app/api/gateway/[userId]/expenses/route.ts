@@ -11,12 +11,11 @@ export async function GET(
     const { userId: requestedUserId } = await params
     const { searchParams } = new URL(request.url)
     const { headers } = request
-    const startDate = searchParams.get("start_date")
-    const endDate = searchParams.get("end_date")
+    const startDate = searchParams.get("start")
 
-    if (!startDate || !endDate) {
+    if (!startDate) {
       return NextResponse.json(
-        { error: "start_date and end_date are required" },
+        { error: "start date are required" },
         { status: 400 }
       )
     }
@@ -44,7 +43,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `${baseUrl}/api/query/${requestedUserId}/monthly-expenses?start_date=${startDate}&end_date=${endDate}`,
+      `${baseUrl}/api/query/${requestedUserId}/monthly-expenses?start=${startDate}`,
       fetchOptions
     )
 
