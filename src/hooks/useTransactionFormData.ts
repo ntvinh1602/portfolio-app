@@ -20,7 +20,7 @@ export function useTransactionFormData(enabled: boolean = true) {
   const userId = session?.user?.id
 
   const { data, error, isLoading } = useSWR<TransactionFormData>(
-    userId && enabled ? `/api/gateway/${userId}/transactions` : null,
+    userId && enabled ? `/api/gateway/${userId}/transaction-form` : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )

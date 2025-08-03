@@ -21,9 +21,7 @@ export async function GET(
     }
 
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -38,12 +36,12 @@ export async function GET(
       headers,
       next: {
         revalidate: 600,
-        tags: [`txn-driven-${requestedUserId}`],
+        tags: [`txn-driven-${user.id}`],
       },
     }
 
     const response = await fetch(
-      `${baseUrl}/api/query/${requestedUserId}/monthly-expenses?start=${startDate}`,
+      `${baseUrl}/api/query/${user.id}/monthly-expenses?start=${startDate}`,
       fetchOptions
     )
 

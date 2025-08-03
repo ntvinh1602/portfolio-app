@@ -4,7 +4,6 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import {
   PageMain,
   PageHeader,
@@ -43,9 +42,6 @@ export default function Page() {
   }
 
   const handleBackfill = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
 
     if (!startDate) {
       toast.error("Please select a start date.")

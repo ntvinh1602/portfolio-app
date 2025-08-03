@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/supabaseServer";
 
-// Route segment configuration
-export const dynamic = "force-dynamic" // Since we need user-specific data
+export const dynamic = "force-dynamic"
 
 type PnlData = {
   month: string
@@ -24,23 +23,19 @@ export async function GET(
     const { headers } = request
     const startDate = searchParams.get("start")
 
-    if (!startDate) {
-      return NextResponse.json(
-        { error: "start date are required" },
-        { status: 400 },
-      )
-    }
-
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
     if (user.id !== requestedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (!startDate) {
+      return NextResponse.json({ error: "Missing start date" }, { status: 400 })
     }
 
     const baseUrl = request.url.split("/api")[0]
@@ -49,13 +44,13 @@ export async function GET(
       headers,
       next: {
         revalidate: 600,
-        tags: [`price-driven-${requestedUserId}`],
+        tags: [`price-driven-${user.id}`],
       },
     }
 
     const [pnlResponse, twrResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/${requestedUserId}/monthly-pnl?start=${startDate}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/monthly-twr?start=${startDate}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${user.id}/monthly-pnl?start=${startDate}`, fetchOptions),
+      fetch(`${baseUrl}/api/query/${user.id}/monthly-twr?start=${startDate}`, fetchOptions),
     ])
 
     for (const response of [pnlResponse, twrResponse]) {
@@ -71,7 +66,7 @@ export async function GET(
       twrResponse.json(),
     ]);
 
-    const combinedData = pnlData.map((pnlItem: PnlData) => {
+    const earningsData = pnlData.map((pnlItem: PnlData) => {
       const twrItem = twrData.find(
         (t: TwrData) => t.month === pnlItem.month
       );
@@ -81,7 +76,7 @@ export async function GET(
       };
     });
 
-    return NextResponse.json(combinedData)
+    return NextResponse.json(earningsData)
     
   } catch (error) {
     console.error("Error fetching earnings data:", error);

@@ -1,7 +1,6 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import { format, subMonths, startOfMonth } from "date-fns"
-import { inceptionDate } from "@/lib/utils"
+import { lifetime, last12M } from "@/lib/start-dates"
 import { useAuth } from "@/hooks/useAuth"
 
 type MonthlyExpense = {
@@ -14,37 +13,29 @@ type MonthlyExpense = {
 export function useExpensesData() {
   const { userId } = useAuth()
 
-  // Fetch last 12 months of expenses for the bar chart
-  const monthlyStartDate = startOfMonth(subMonths(new Date(), 11))
-  const monthlyParams = new URLSearchParams({
-    start: format(monthlyStartDate, "yyyy-MM-dd")
-  })
-
+  // Fetch last 12 months expenses for the bar chart
   const {
     data: monthlyExpenses,
-    error: monthlyError,
     isLoading: monthlyLoading,
   } = useSWR<MonthlyExpense[]>(
     userId
-      ? `/api/gateway/${userId}/expenses?${monthlyParams.toString()}`
+      ? `/api/gateway/${userId}/expenses?start=${last12M}`
       : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
-  // Fetch all expenses for the pie chart structure
-  const allTimeParams = new URLSearchParams({
-    start: inceptionDate
-  })
-
-  const { data: allExpenses, isLoading: structureLoading } =
-    useSWR<MonthlyExpense[]>(
+  // Fetch lifetime expenses for the pie chart
+  const {
+    data: allExpenses,
+    isLoading: structureLoading
+  } = useSWR<MonthlyExpense[]>(
       userId
-        ? `/api/gateway/${userId}/expenses?${allTimeParams.toString()}`
+        ? `/api/gateway/${userId}/expenses?start=${lifetime}`
         : null,
       fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
-    )
+  )
 
   const expenseStructure = allExpenses
     ? Object.entries(
@@ -67,7 +58,6 @@ export function useExpensesData() {
 
   return {
     monthlyExpenses: monthlyExpenses ?? [],
-    monthlyError,
     monthlyLoading,
     expenseStructure,
     structureLoading,

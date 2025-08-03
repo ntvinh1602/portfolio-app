@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -25,7 +24,6 @@ import { Enums, Constants, Tables } from "@/lib/database.types"
 import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
 import { useTransactionFormData, AssetWithSecurity } from "@/hooks/useTransactionFormData"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
 import { useRouter } from "next/navigation"
 import { CashFlowForm } from "./cashflow"
 import { TradeForm } from "./buy-sell"

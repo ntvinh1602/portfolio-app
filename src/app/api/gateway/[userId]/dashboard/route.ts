@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { inceptionDate } from "@/lib/utils"
-import { format, subDays, startOfMonth, startOfYear } from "date-fns"
+import {
+  lifetime,
+  last90D,
+  thisMonth,
+  thisYear
+} from "@/lib/start-dates"
 
 interface StockHolding {
   ticker: string
@@ -31,16 +35,9 @@ export async function GET(
   try {
     const { userId: requestedUserId } = await params
     const { headers } = request
-    
-    const last90D = format(subDays(new Date(), 90), "yyyy-MM-dd")
-    const thisMonth = format(startOfMonth(new Date()), "yyyy-MM-dd")
-    const thisYear = format(startOfYear(new Date()), "yyyy-MM-dd")
-    const lifetime = inceptionDate
 
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -49,13 +46,13 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const baseUrl = request.url.split("/api")[0]
+    const baseURL = request.url.split("/api")[0]
 
     const fetchOptions = {
       headers,
       next: {
         revalidate: 600,
-        tags: [`price-driven-${requestedUserId}`],
+        tags: [`price-driven-${user.id}`],
       },
     }
 
@@ -74,19 +71,19 @@ export async function GET(
       stockHoldingsResponse,
       cryptoHoldingsResponse,
     ] = await Promise.all([
-      fetch(`${baseUrl}/api/query/${requestedUserId}/twr?start=${thisYear}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/twr?start=${lifetime}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/monthly-twr?start=${lifetime}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/pnl?start=${lifetime}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/pnl?start=${thisYear}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/pnl?start=${thisMonth}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/equity-chart?start=${last90D}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/benchmark-chart?start=${last90D}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/benchmark-chart?start=${thisYear}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/benchmark-chart?start=${lifetime}`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/asset-summary`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/stock-holdings`, fetchOptions),
-      fetch(`${baseUrl}/api/query/${requestedUserId}/crypto-holdings`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/twr?start=${thisYear}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/twr?start=${lifetime}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/monthly-twr?start=${lifetime}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${lifetime}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisYear}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisMonth}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/equity-chart?start=${last90D}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${last90D}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${thisYear}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${lifetime}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/asset-summary`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/stock-holdings`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/crypto-holdings`, fetchOptions),
     ])
 
     for (const response of [

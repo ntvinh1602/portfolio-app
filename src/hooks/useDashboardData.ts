@@ -4,8 +4,8 @@ import { useAuth } from "@/hooks/useAuth"
 import {
   calculateCAGR,
   calculateSharpeRatio,
-  inceptionDate
 } from "@/lib/utils"
+import { lifetime } from "@/lib/start-dates"
 
 type EquityData = {
   date: string
@@ -78,7 +78,7 @@ export function useDashboardData() {
   )
  
   const years =
-    (new Date().getTime() - new Date(inceptionDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    (new Date().getTime() - new Date(lifetime).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
  
   const cagr =
     data?.lifetimeReturnData !== null && data?.lifetimeReturnData !== undefined && years > 0

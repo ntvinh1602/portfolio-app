@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import useSWR from "swr"
 import {
   PageMain,
   PageHeader,
@@ -9,44 +8,14 @@ import {
 } from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
-import {
-  format,
-  startOfMonth,
-  sub,
-} from "date-fns"
-import { formatNum, inceptionDate } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
 import { TwoMetric } from "@/components/cards/two-metric"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
-import { fetcher } from "@/lib/fetcher"
-import { useAuth } from "@/hooks/useAuth"
-
-type MonthlyData = {
-  month: string
-  pnl: number
-  twr: number
-}
+import { useEarningsData } from "@/hooks/useEarningsData"
 
 export default function Page() {
-  const { userId } = useAuth()
-  const [dateRange, setDateRange] = React.useState("12m")
-
-  const { data, error } = useSWR<MonthlyData[]>(
-    () => {
-      if (!userId) return null
-
-      let startDate
-      if (dateRange === "12m") {
-        startDate = format(startOfMonth(sub(new Date(), { months: 11 })), "yyyy-MM-dd")
-      } else if (inceptionDate) {
-        startDate = inceptionDate
-      } else {
-        return null
-      }
-
-      return `/api/gateway/${userId}/earnings?start=${startDate}`
-    },
-    fetcher
-  )
+  const [dateRange, setDateRange] = React.useState("12M")
+  const { data, error } = useEarningsData(dateRange)
 
   const { avgPnl, avgTwr } = React.useMemo(() => {
     if (!data || data.length === 0) {
@@ -61,7 +30,7 @@ export default function Page() {
   }, [data])
 
   const tabOptions = [
-    { value: "12m", label: "Last 12 months" },
+    { value: "12M", label: "Last 12 months" },
     { value: "all", label: "All Time" },
   ]
 
@@ -73,7 +42,7 @@ export default function Page() {
           options={tabOptions}
           onValueChange={setDateRange}
           value={dateRange}
-          defaultValue="12m"
+          defaultValue="12M"
         />
         <TwoMetric
           title="Monthly Average"

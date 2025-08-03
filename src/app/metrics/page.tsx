@@ -66,7 +66,6 @@ export default function Page() {
 
   const totalPnl = dateRange === "ytd" ? ytdPnLData : lifetimePnLData
   const totalReturn = dateRange === "ytd" ? ytdReturnData : lifetimeReturnData
-
   const xAxisDateFormat = "MMM ''yy"
   const chartData = dateRange === "ytd" ? ytdBenchmarkData : lifetimeBenchmarkData
 

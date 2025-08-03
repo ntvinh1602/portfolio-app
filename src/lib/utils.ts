@@ -5,9 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// First snapshot date
-export const inceptionDate = '2021-11-09'
-
 // Format number based on currency and decimal places
 export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
   if (currency) {

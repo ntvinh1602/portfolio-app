@@ -1,12 +1,11 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase/supabaseClient";
-import { parse as parseCsv } from "papaparse";
+import * as React from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
+import { parse as parseCsv } from "papaparse"
 import {
   Dialog,
   DialogContent,
@@ -40,7 +39,7 @@ const REQUIRED_HEADERS = [
   "principal",
   "interest",
   "description",
-];
+]
 
 export function TransactionImportForm({
   children,
@@ -81,7 +80,7 @@ export function TransactionImportForm({
 }
 
 interface ImportFormProps {
-  className?: string;
+  className?: string
 }
 
 function ImportForm( { className }: ImportFormProps ) {
@@ -96,22 +95,22 @@ function ImportForm( { className }: ImportFormProps ) {
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault()
 
 
     if (!file) {
-      toast.error("Please select a file to upload.");
-      return;
+      toast.error("Please select a file to upload.")
+      return
     }
-    setIsUploading(true);
+    setIsUploading(true)
 
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onload = (e) => {
-      const csvText = e.target?.result as string;
+      const csvText = e.target?.result as string
       if (!csvText) {
-        toast.error("Could not read the file.");
-        setIsUploading(false);
-        return;
+        toast.error("Could not read the file.")
+        setIsUploading(false)
+        return
       }
 
       parseCsv<Record<string, string>>(csvText, {
@@ -119,57 +118,57 @@ function ImportForm( { className }: ImportFormProps ) {
         skipEmptyLines: true,
         complete: (results) => {
           (async () => {
-            const headers = results.meta.fields;
+            const headers = results.meta.fields
             const missingHeaders = REQUIRED_HEADERS.filter(
               (h) => !headers?.includes(h)
-            );
+            )
 
             if (missingHeaders.length > 0) {
               toast.error(
                 `CSV file is missing required headers: ${missingHeaders.join(
                   ", "
                 )}`
-              );
-              setIsUploading(false);
-              return;
+              )
+              setIsUploading(false)
+              return
             }
 
-            const formData = new FormData();
-            formData.append("file", file);
+            const formData = new FormData()
+            formData.append("file", file)
 
             try {
               const response = await fetch("/api/database/import", {
                 method: "POST",
                 body: formData,
-              });
-              const result = await response.json();
+              })
+              const result = await response.json()
               if (response.ok) {
-                toast.success("File imported successfully!");
-                router.push("/transactions");
+                toast.success("File imported successfully!")
+                router.push("/transactions")
               } else {
-                toast.error(result.error || "An unknown error occurred.");
+                toast.error(result.error || "An unknown error occurred.")
               }
             } catch (error) {
-              toast.error("Failed to upload file. Please try again.");
-              console.error("Import error:", error);
+              toast.error("Failed to upload file. Please try again.")
+              console.error("Import error:", error)
             } finally {
-              setIsUploading(false);
+              setIsUploading(false)
             }
-          })();
+          })()
         },
         error: (error: Error) => {
-          toast.error("Failed to parse CSV file.");
-          console.error("CSV parsing error:", error);
-          setIsUploading(false);
+          toast.error("Failed to parse CSV file.")
+          console.error("CSV parsing error:", error)
+          setIsUploading(false)
         },
-      });
-    };
+      })
+    }
     reader.onerror = () => {
-      toast.error("Failed to read file.");
-      setIsUploading(false);
-    };
-    reader.readAsText(file);
-  };
+      toast.error("Failed to read file.")
+      setIsUploading(false)
+    }
+    reader.readAsText(file)
+  }
 
   return (
     <>
