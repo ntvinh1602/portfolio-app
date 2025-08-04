@@ -96,6 +96,9 @@ export function LoginForm({
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
+              <div className="flex justify-center">
+                <TurnstileWidget onSuccess={setToken} />
+              </div>
               <Button
                 type="submit"
                 className="w-full rounded-full"
@@ -103,20 +106,6 @@ export function LoginForm({
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <div className="flex justify-center">
-                <TurnstileWidget onSuccess={setToken} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="w-full flex">
-                  <Separator />
-                </div>
-                <span className="bg-muted/0 text-nowrap font-thin text-muted-foreground text-sm px-2">
-                  No account yet?
-                </span>
-                <div className="w-full flex">
-                  <Separator />
-                </div>
-              </div>
             </div>
           </form>
         </CardContent>

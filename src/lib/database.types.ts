@@ -311,22 +311,16 @@ export type Database = {
           display_currency: string
           display_name: string | null
           id: string
-          inception_date: string
-          last_stock_fetching: string | null
         }
         Insert: {
           display_currency: string
           display_name?: string | null
           id: string
-          inception_date?: string
-          last_stock_fetching?: string | null
         }
         Update: {
           display_currency?: string
           display_name?: string | null
           id?: string
-          inception_date?: string
-          last_stock_fetching?: string | null
         }
         Relationships: [
           {
@@ -598,6 +592,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_asset_account_data: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       get_asset_balance: {
         Args: { p_asset_id: string; p_user_id: string }
         Returns: number
@@ -642,10 +640,6 @@ export type Database = {
           date: string
           net_equity_value: number
         }[]
-      }
-      get_first_snapshot_date: {
-        Args: { p_user_id: string }
-        Returns: string
       }
       get_latest_crypto_price: {
         Args: { p_security_id: string }
