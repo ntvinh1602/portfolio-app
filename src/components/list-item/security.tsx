@@ -10,7 +10,7 @@ import {
   TrendingUp,
   TrendingDown,
   Bitcoin,
-  Coins
+  Coins,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -81,17 +81,13 @@ function SecurityItem({
               {totalAmount}
             </CardTitle>
             <CardDescription className="flex items-center justify-end text-xs gap-1">
-              <>
-                {returnValue !== null && returnValue < 0 ? (
-                  <TrendingDown className="size-4 text-red-700 dark:text-red-400" />
-                ) : (
-                  <TrendingUp className="size-4 text-green-700 dark:text-green-400" />
-                )}
-                {pnlPct === "..."
-                  ? "... (...)"
-                  : `${pnlNet} (${pnlPct}%)`
+              <div className="[&_svg]:size-4 [&_svg]:stroke-1 flex gap-1">
+                {returnValue !== null && returnValue < 0
+                  ? <TrendingDown className="text-red-700 dark:text-red-400" />
+                  : <TrendingUp className="text-green-700 dark:text-green-400" />
                 }
-              </>
+                {`${pnlNet} (${pnlPct}%)`}
+              </div>
             </CardDescription>
           </div>
         </div>

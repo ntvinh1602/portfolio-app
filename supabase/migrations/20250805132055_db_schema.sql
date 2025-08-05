@@ -221,17 +221,6 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."demo_user_id"() RETURNS "uuid"
-    LANGUAGE "sql"
-    SET "search_path" TO 'public'
-    AS $$
-  select '519fcecb-2177-4978-a8d1-086a53b7ac23'::uuid
-$$;
-
-
-ALTER FUNCTION "public"."demo_user_id"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -408,6 +397,45 @@ $$;
 ALTER FUNCTION "public"."get_active_debts"("p_user_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    accounts_data jsonb;
+    assets_data jsonb;
+BEGIN
+    -- Fetch accounts data
+    SELECT jsonb_agg(accounts)
+    INTO accounts_data
+    FROM accounts
+    WHERE user_id = p_user_id AND type != 'conceptual';
+
+    -- Fetch assets data
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'id', a.id,
+            'user_id', a.user_id,
+            'security_id', a.security_id,
+            'securities', to_jsonb(s)
+        )
+    )
+    INTO assets_data
+    FROM assets a
+    JOIN securities s ON a.security_id = s.id
+    WHERE a.user_id = p_user_id AND s.asset_class NOT IN ('equity', 'liability');
+
+    RETURN jsonb_build_object(
+        'accounts', accounts_data,
+        'assets', assets_data
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -445,7 +473,6 @@ DECLARE
   
   -- Liability values
   loans_payable numeric;
-  margins_payable numeric;
   accrued_interest numeric;
   liability_total numeric;
   
@@ -470,6 +497,7 @@ BEGIN
       AND s.asset_class NOT IN ('equity', 'liability')
     GROUP BY s.asset_class
   ) as class_totals;
+
   -- Calculate market value totals by asset class
   SELECT COALESCE(jsonb_object_agg(market_totals.asset_class, market_totals.market_value), '{}'::jsonb)
   INTO asset_market_totals_by_class
@@ -495,6 +523,7 @@ BEGIN
       WHERE a.user_id = p_user_id AND s.asset_class NOT IN ('equity', 'liability')
       GROUP BY s.asset_class
   ) as market_totals;
+
   -- Calculate totals by ticker for equity/liability accounts
   SELECT COALESCE(jsonb_object_agg(ticker_totals.ticker, ticker_totals.total), '{}'::jsonb)
   INTO asset_totals_by_ticker
@@ -506,30 +535,35 @@ BEGIN
     WHERE a.user_id = p_user_id
     GROUP BY s.ticker
   ) as ticker_totals;
+
   -- Calculate total asset cost basis
   assets_total_cost := (coalesce((asset_totals_by_class->>'cash')::numeric, 0)) +
                      (coalesce((asset_totals_by_class->>'stock')::numeric, 0)) +
                      (coalesce((asset_totals_by_class->>'epf')::numeric, 0)) +
                      (coalesce((asset_totals_by_class->>'crypto')::numeric, 0));
+
   -- Calculate total asset market value
   total_assets_market_value := (coalesce((asset_market_totals_by_class->>'cash')::numeric, 0)) +
                                (coalesce((asset_market_totals_by_class->>'stock')::numeric, 0)) +
                                (coalesce((asset_market_totals_by_class->>'epf')::numeric, 0)) +
                                (coalesce((asset_market_totals_by_class->>'crypto')::numeric, 0));
+
   -- Calculate accrued interest using daily compounding
   SELECT COALESCE(SUM(d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)), 0)
   INTO accrued_interest
   FROM debts d
   WHERE d.user_id = p_user_id AND d.status = 'active';
+
   -- Calculate liability values
   loans_payable := (coalesce((asset_totals_by_ticker->>'LOANS_PAYABLE')::numeric, 0)) * -1;
-  margins_payable := CASE WHEN (coalesce((asset_market_totals_by_class->>'cash')::numeric, 0)) < 0 THEN abs((coalesce((asset_market_totals_by_class->>'cash')::numeric, 0))) ELSE 0 END;
-  liability_total := loans_payable + margins_payable + accrued_interest;
+  liability_total := loans_payable + accrued_interest;
+
   -- Calculate equity values
   capital_total := (coalesce((asset_totals_by_ticker->>'CAPITAL')::numeric, 0)) * -1;
   earnings_total := (coalesce((asset_totals_by_ticker->>'EARNINGS')::numeric, 0)) * -1;
   unrealized_pl := total_assets_market_value - assets_total_cost - accrued_interest;
   equity_total := capital_total + earnings_total + unrealized_pl;
+  
   -- Build the result JSON
   SELECT json_build_object(
     'assets', json_build_array(
@@ -541,7 +575,6 @@ BEGIN
     'totalAssets', total_assets_market_value,
     'liabilities', json_build_array(
       json_build_object('type', 'Loans Payable', 'totalAmount', loans_payable),
-      json_build_object('type', 'Margins Payable', 'totalAmount', margins_payable),
       json_build_object('type', 'Accrued Interest', 'totalAmount', accrued_interest)
     ),
     'totalLiabilities', liability_total,
@@ -803,21 +836,6 @@ $$;
 ALTER FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") RETURNS "date"
-    LANGUAGE "sql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-  select date
-  from daily_performance_snapshots
-  where user_id = p_user_id
-  order by date asc
-  limit 1;
-$$;
-
-
-ALTER FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -964,7 +982,7 @@ DECLARE
 BEGIN
     FOR v_month_start IN
         SELECT date_trunc('month', dd)::DATE
-        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
+        FROM generate_series(date_trunc('month', p_start_date)::date, p_end_date, '1 month'::interval) dd
     LOOP
         -- For the last month in the series, use the p_end_date
         IF date_trunc('month', v_month_start) = date_trunc('month', p_end_date) THEN
@@ -997,9 +1015,14 @@ DECLARE
 BEGIN
     FOR v_month_start IN
         SELECT date_trunc('month', dd)::DATE
-        FROM generate_series(p_start_date, p_end_date, '1 month'::interval) dd
+        FROM generate_series(date_trunc('month', p_start_date)::date, p_end_date, '1 month'::interval) dd
     LOOP
-        v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
+        -- For the last month in the series, use the p_end_date
+        IF date_trunc('month', v_month_start) = date_trunc('month', p_end_date) THEN
+            v_month_end := p_end_date;
+        ELSE
+            v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
+        END IF;
         -- Calculate TWR for the month
         SELECT public.calculate_twr(p_user_id, v_month_start, v_month_end) INTO v_twr;
         -- Return the result for the month
@@ -1094,7 +1117,7 @@ BEGIN
         (end_date IS NULL OR t.transaction_date <= end_date) AND
         (asset_class_filter IS NULL OR s.asset_class::text = asset_class_filter)
     ORDER BY
-        t.transaction_date DESC
+        t.created_at DESC
     LIMIT page_size
     OFFSET v_offset;
 END;
@@ -2169,18 +2192,6 @@ $$;
 ALTER FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."is_registered_user"() RETURNS boolean
-    LANGUAGE "sql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-  SELECT auth.uid() IS NOT NULL 
-  AND COALESCE((auth.jwt() ->> 'is_anonymous')::boolean, false) = false;
-$$;
-
-
-ALTER FUNCTION "public"."is_registered_user"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2314,7 +2325,7 @@ ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
     "sell_transaction_leg_id" "uuid" NOT NULL,
     "tax_lot_id" "uuid" NOT NULL,
-    "quantity_consumed" numeric(16,4) NOT NULL,
+    "quantity_consumed" numeric(20,8) NOT NULL,
     CONSTRAINT "lot_consumptions_quantity_consumed_check" CHECK ((("quantity_consumed")::numeric > (0)::numeric))
 );
 
@@ -2325,9 +2336,7 @@ ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "display_currency" character varying(10) NOT NULL,
-    "display_name" "text",
-    "last_stock_fetching" timestamp with time zone,
-    "inception_date" "date" DEFAULT '2020-01-01'::"date" NOT NULL
+    "display_name" "text"
 );
 
 
@@ -2354,9 +2363,9 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "creation_transaction_id" "uuid" NOT NULL,
     "origin" "public"."tax_lot_origin" NOT NULL,
     "creation_date" "date" NOT NULL,
-    "original_quantity" numeric(16,4) NOT NULL,
+    "original_quantity" numeric(20,8) NOT NULL,
     "cost_basis" numeric(16,4) DEFAULT 0 NOT NULL,
-    "remaining_quantity" numeric(16,4) NOT NULL,
+    "remaining_quantity" numeric(20,8) NOT NULL,
     CONSTRAINT "tax_lots_cost_basis_check" CHECK ((("cost_basis")::numeric >= (0)::numeric)),
     CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
     CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
@@ -2382,7 +2391,7 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "transaction_id" "uuid" NOT NULL,
     "account_id" "uuid" NOT NULL,
     "asset_id" "uuid" NOT NULL,
-    "quantity" numeric(16,4) NOT NULL,
+    "quantity" numeric(20,8) NOT NULL,
     "amount" numeric(16,4) NOT NULL,
     "currency_code" character varying(10) NOT NULL
 );
@@ -2397,7 +2406,8 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "transaction_date" "date" NOT NULL,
     "type" "public"."transaction_type" NOT NULL,
     "description" "text",
-    "related_debt_id" "uuid"
+    "related_debt_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"()
 );
 
 
@@ -2699,14 +2709,6 @@ CREATE POLICY "Authenticated users can access crypto prices" ON "public"."daily_
 
 
 
-CREATE POLICY "Authenticated users can access details for their own or demo tr" ON "public"."transaction_details" TO "authenticated" USING ((((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_details"."transaction_id"))) AND "public"."is_registered_user"()) OR (("public"."demo_user_id"() = ( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_details"."transaction_id"))) AND ("public"."is_registered_user"() IS FALSE))));
-
-
-
 CREATE POLICY "Authenticated users can access exchange rates" ON "public"."daily_exchange_rates" TO "authenticated" USING (true);
 
 
@@ -2715,51 +2717,7 @@ CREATE POLICY "Authenticated users can access market indices" ON "public"."daily
 
 
 
-CREATE POLICY "Authenticated users can access own accounts or demo accounts" ON "public"."accounts" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
-CREATE POLICY "Authenticated users can access own assets or demo assets" ON "public"."assets" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
 CREATE POLICY "Authenticated users can access stock prices" ON "public"."daily_stock_prices" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo debts" ON "public"."debts" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo lot consumptio" ON "public"."lot_consumptions" TO "authenticated" USING ((((( SELECT "auth"."uid"() AS "uid") = ( SELECT "tax_lots"."user_id"
-   FROM "public"."tax_lots"
-  WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id"))) AND "public"."is_registered_user"()) OR (("public"."demo_user_id"() = ( SELECT "tax_lots"."user_id"
-   FROM "public"."tax_lots"
-  WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id"))) AND ("public"."is_registered_user"() IS FALSE))));
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo performance sn" ON "public"."daily_performance_snapshots" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo tax lots" ON "public"."tax_lots" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo transaction_le" ON "public"."transaction_legs" TO "authenticated" USING ((((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_legs"."transaction_id"))) AND "public"."is_registered_user"()) OR (("public"."demo_user_id"() = ( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_legs"."transaction_id"))) AND ("public"."is_registered_user"() IS FALSE))));
-
-
-
-CREATE POLICY "Authenticated users can access their own or demo transactions" ON "public"."transactions" TO "authenticated" USING (((("public"."demo_user_id"() = "user_id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_registered_user"())));
-
-
-
-CREATE POLICY "Authenticated users can access their own profile or demo profil" ON "public"."profiles" TO "authenticated" USING (((("public"."demo_user_id"() = "id") AND ("public"."is_registered_user"() IS FALSE)) OR ((( SELECT "auth"."uid"() AS "uid") = "id") AND "public"."is_registered_user"())));
 
 
 
@@ -2768,6 +2726,52 @@ CREATE POLICY "Authenticated users including anonymous can read currencies" ON "
 
 
 CREATE POLICY "Authenticated users including anonymous can read securities" ON "public"."securities" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Users can access their accounts" ON "public"."accounts" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Users can access their assets" ON "public"."assets" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Users can access their debts" ON "public"."debts" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Users can access their lot consumptions" ON "public"."lot_consumptions" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "tax_lots"."user_id"
+   FROM "public"."tax_lots"
+  WHERE ("tax_lots"."id" = "lot_consumptions"."tax_lot_id"))));
+
+
+
+CREATE POLICY "Users can access their performance snapshots" ON "public"."daily_performance_snapshots" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Users can access their profiles" ON "public"."profiles" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "id"));
+
+
+
+CREATE POLICY "Users can access their tax lots" ON "public"."tax_lots" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Users can access their transaction details" ON "public"."transaction_details" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_details"."transaction_id"))));
+
+
+
+CREATE POLICY "Users can access their transaction legs" ON "public"."transaction_legs" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = ( SELECT "transactions"."user_id"
+   FROM "public"."transactions"
+  WHERE ("transactions"."id" = "transaction_legs"."transaction_id"))));
+
+
+
+CREATE POLICY "Users can access their transactions" ON "public"."transactions" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
 
 
@@ -3026,12 +3030,6 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date
 
 
 
-GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "anon";
-GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."demo_user_id"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
@@ -3047,6 +3045,12 @@ GRANT ALL ON TABLE "public"."debts" TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "service_role";
 
 
 
@@ -3077,12 +3081,6 @@ GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "ser
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_first_snapshot_date"("p_user_id" "uuid") TO "service_role";
 
 
 
@@ -3209,12 +3207,6 @@ GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p
 GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."is_registered_user"() TO "service_role";
 
 
 

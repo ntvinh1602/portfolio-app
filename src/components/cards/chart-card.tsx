@@ -14,7 +14,7 @@ import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import React from "react"
 
-interface ChartCardProps<TData extends Record<string, any>> {
+interface ChartCardProps<TData extends Record<string, unknown>> {
   cardClassName?: string
   description: string
   descriptionLink: string
@@ -23,7 +23,7 @@ interface ChartCardProps<TData extends Record<string, any>> {
   changeValue: number | null
   changeValueFormatter: (value: number) => string
   changePeriod: string
-  chartComponent: React.ElementType<any>
+  chartComponent: React.ElementType
   chartData: TData[]
   chartConfig: ChartConfig
   chartClassName?: string
@@ -31,11 +31,11 @@ interface ChartCardProps<TData extends Record<string, any>> {
   lineDataKeys: string[]
   grid?: boolean
   legend?: boolean
-  xAxisTickFormatter?: (value: any) => string
-  yAxisTickFormatter?: (value: any) => string
+  xAxisTickFormatter?: (value: string | number) => string
+  yAxisTickFormatter?: (value: string | number) => string
 }
 
-function ChartCard<TData extends Record<string, any>>({
+function ChartCard<TData extends Record<string, unknown>>({
   cardClassName,
   description,
   descriptionLink,

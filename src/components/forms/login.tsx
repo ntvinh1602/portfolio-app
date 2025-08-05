@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "../ui/separator"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { TurnstileWidget } from "../turnstile"
 

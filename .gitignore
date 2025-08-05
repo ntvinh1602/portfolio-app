@@ -43,5 +43,5 @@ next-env.d.ts
 # deno
 /.vscode/
 
-# roo
-/.roo/
+# docs
+/docs/

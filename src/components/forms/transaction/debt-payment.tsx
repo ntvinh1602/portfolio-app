@@ -78,7 +78,7 @@ export function DebtPaymentForm({
           value={formState.asset}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select cash asset..." />
+            <SelectValue placeholder="Select asset..." />
           </SelectTrigger>
           <SelectContent>
             {assets

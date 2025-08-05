@@ -108,7 +108,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
           className="flex items-center gap-1 w-fit"
           onClick={handleNavigation}
         >
-          Total assets<ChevronRight className="size-4"/>
+          Total Assets<ChevronRight className="size-4"/>
         </CardDescription>
         <CardTitle className="text-2xl">
             {assetsTotalAmount ? assetsTotalAmount : "Loading..."}
