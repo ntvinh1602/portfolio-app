@@ -14,7 +14,6 @@ export async function handleBuy(
     cash_asset_id,
     quantity,
     price,
-    fees,
     description,
   } = data
 
@@ -53,7 +52,6 @@ export async function handleBuy(
     p_cash_asset_id: cash_asset_id,
     p_quantity: quantity,
     p_price: price,
-    p_fees: fees,
     p_description: finalDescription,
   })
 

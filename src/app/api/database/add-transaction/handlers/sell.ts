@@ -14,8 +14,6 @@ export async function handleSell(
     cash_asset_id,
     quantity,
     price,
-    fees,
-    taxes,
     description,
   } = data
 
@@ -51,8 +49,6 @@ export async function handleSell(
     p_asset_id: asset,
     p_quantity_to_sell: quantity,
     p_price: price,
-    p_fees: fees,
-    p_taxes: taxes,
     p_transaction_date: transaction_date,
     p_cash_account_id: account,
     p_cash_asset_id: cash_asset_id,

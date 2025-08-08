@@ -518,6 +518,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          price: number | null
           related_debt_id: string | null
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -527,6 +528,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          price?: number | null
           related_debt_id?: string | null
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
@@ -536,6 +538,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          price?: number | null
           related_debt_id?: string | null
           transaction_date?: string
           type?: Database["public"]["Enums"]["transaction_type"]
@@ -570,10 +573,6 @@ export type Database = {
       calculate_twr: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: number
-      }
-      demo_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
       generate_performance_snapshots: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
@@ -736,7 +735,6 @@ export type Database = {
           p_cash_asset_id: string
           p_quantity: number
           p_price: number
-          p_fees: number
           p_description: string
         }
         Returns: string
@@ -794,8 +792,6 @@ export type Database = {
           p_asset_id: string
           p_quantity_to_sell: number
           p_price: number
-          p_fees: number
-          p_taxes: number
           p_transaction_date: string
           p_cash_account_id: string
           p_cash_asset_id: string
@@ -823,10 +819,6 @@ export type Database = {
           p_asset_id: string
         }
         Returns: Json
-      }
-      is_registered_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
       }
       upsert_daily_crypto_price: {
         Args: { p_ticker: string; p_price: number }

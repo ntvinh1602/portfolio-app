@@ -26,7 +26,6 @@ export const buySchema = z.object({
   cash_asset_id: z.string().uuid(),
   quantity: z.number().positive(),
   price: z.number().nonnegative(),
-  fees: z.number().nonnegative().optional().default(0),
   description: z.string().optional(),
 })
 
@@ -38,8 +37,6 @@ export const sellSchema = z.object({
   cash_asset_id: z.string().uuid(),
   quantity: z.number().positive(),
   price: z.number().nonnegative(),
-  fees: z.number().nonnegative().optional().default(0),
-  taxes: z.number().nonnegative().optional().default(0),
   description: z.string().optional(),
 })
 

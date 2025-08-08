@@ -32,8 +32,6 @@ const REQUIRED_HEADERS = [
   "cash_asset_ticker",
   "quantity",
   "price",
-  "fees",
-  "taxes",
   "counterparty",
   "interest_rate",
   "principal",
