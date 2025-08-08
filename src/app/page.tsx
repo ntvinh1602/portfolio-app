@@ -1,5 +1,7 @@
 "use client"
 
+import MarketDataFeed from '@/components/market-data-feed';
+
 import {
   PageMain,
   PageHeader,
@@ -126,6 +128,7 @@ export default function Page() {
               />
             }
           </div>
+          <MarketDataFeed />
       </PageContent>
       <BottomNavBar />
     </PageMain>
