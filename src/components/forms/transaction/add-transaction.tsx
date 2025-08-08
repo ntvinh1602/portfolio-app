@@ -69,8 +69,6 @@ export function TransactionForm({
       const numericFields = [
         "quantity",
         "price",
-        "fees",
-        "taxes",
         "principal",
         "interest_rate",
         "principal_payment",
@@ -135,10 +133,6 @@ export function TransactionForm({
           cash_asset_id: formState.cash_asset_id,
           quantity: parseFloat(formState.quantity),
           price: parseFloat(formState.price),
-          fees: parseFloat(formState.fees),
-          ...(transactionType === "sell" && {
-            taxes: parseFloat(formState.taxes),
-          }),
         }
 
       case "borrow":
@@ -294,7 +288,10 @@ export function TransactionForm({
    return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-       <DialogContent className="flex flex-col max-h-[95vh]">
+       <DialogContent
+          className="flex flex-col max-h-[95vh]"
+          showCloseButton={false}
+       >
          <DialogHeader>
            <DialogTitle>Add Transaction</DialogTitle>
          </DialogHeader>
@@ -343,10 +340,18 @@ export function TransactionForm({
                )}
              </div>
             <DialogFooter className="sticky bottom-0 bg-card/0">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              <Button 
+                variant="outline"
+                type="button"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" form="transaction-form" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                form="transaction-form"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
