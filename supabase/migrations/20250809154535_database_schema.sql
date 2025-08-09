@@ -1566,8 +1566,10 @@ BEGIN
     -- Create transaction legs
     INSERT INTO public.transaction_legs (transaction_id, account_id, asset_id, quantity, amount, currency_code)
     VALUES
+        -- Debit cash
         (v_transaction_id, p_account_id, p_asset_id, p_quantity, v_calculated_amount, v_asset_currency_code),
-        (v_transaction_id, v_equity_account_id, v_capital_asset_id, p_quantity * -1, v_calculated_amount * -1, v_asset_currency_code);
+        -- Credit paid-in equity
+        (v_transaction_id, v_equity_account_id, v_capital_asset_id, v_calculated_amount * -1, v_calculated_amount * -1, 'VND');
     -- Create tax lot for non-VND cash assets
     IF (v_asset_class = 'cash' or v_asset_class = 'epf') AND v_asset_currency_code != 'VND' THEN
         INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
@@ -2210,6 +2212,40 @@ $$;
 ALTER FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."update_assets_after_transaction"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- Update all assets linked to the inserted transaction
+  UPDATE public.assets a
+  SET current_quantity = CASE
+      WHEN s.ticker = 'INTERESTS' THEN COALESCE((
+          SELECT SUM(
+            d.principal_amount *
+            (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
+          )
+          FROM public.debts d
+          WHERE d.user_id = a.user_id
+            AND d.status = 'active'
+      ), 0)
+      ELSE COALESCE((
+          SELECT SUM(quantity)
+          FROM public.transaction_legs tl
+          WHERE tl.asset_id = a.id
+      ), 0)
+  END
+  FROM public.securities s
+  WHERE a.security_id = s.id;
+
+  RETURN NULL;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_assets_after_transaction"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2270,7 +2306,8 @@ ALTER TABLE "public"."accounts" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
-    "security_id" "uuid"
+    "security_id" "uuid",
+    "current_quantity" numeric(20,8) DEFAULT 0 NOT NULL
 );
 
 
@@ -2338,6 +2375,31 @@ CREATE TABLE IF NOT EXISTS "public"."daily_stock_prices" (
 
 
 ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."live_securities_data" (
+    "symbol" "text" NOT NULL,
+    "price" numeric NOT NULL,
+    "trade_time" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "asset" "public"."asset_class" NOT NULL
+);
+
+
+ALTER TABLE "public"."live_securities_data" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."live_stock_prices" (
+    "symbol" "text" NOT NULL,
+    "match_price" real NOT NULL,
+    "match_quantity" bigint NOT NULL,
+    "side" "text",
+    "sending_time" timestamp with time zone
+);
+
+ALTER TABLE ONLY "public"."live_stock_prices" REPLICA IDENTITY FULL;
+
+
+ALTER TABLE "public"."live_stock_prices" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
@@ -2467,6 +2529,16 @@ ALTER TABLE ONLY "public"."daily_exchange_rates"
 
 
 
+ALTER TABLE ONLY "public"."live_securities_data"
+    ADD CONSTRAINT "live_securities_data_pkey" PRIMARY KEY ("symbol", "asset");
+
+
+
+ALTER TABLE ONLY "public"."live_stock_prices"
+    ADD CONSTRAINT "live_stock_prices_pkey" PRIMARY KEY ("symbol");
+
+
+
 ALTER TABLE ONLY "public"."lot_consumptions"
     ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
 
@@ -2588,6 +2660,10 @@ CREATE OR REPLACE TRIGGER "snapshot_after_new_transaction" AFTER INSERT ON "publ
 
 
 
+CREATE OR REPLACE TRIGGER "update_assets_on_new_transaction" AFTER INSERT ON "public"."transactions" FOR EACH ROW EXECUTE FUNCTION "public"."update_assets_after_transaction"();
+
+
+
 ALTER TABLE ONLY "public"."accounts"
     ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
@@ -2625,6 +2701,11 @@ ALTER TABLE ONLY "public"."debts"
 
 ALTER TABLE ONLY "public"."daily_exchange_rates"
     ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."live_securities_data"
+    ADD CONSTRAINT "live_securities_data_symbol_fkey" FOREIGN KEY ("symbol") REFERENCES "public"."securities"("ticker") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
@@ -2700,6 +2781,14 @@ ALTER TABLE ONLY "public"."transactions"
 
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+CREATE POLICY "Allow public read access" ON "public"."live_securities_data" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Allow public read access to live prices" ON "public"."live_stock_prices" FOR SELECT USING (true);
 
 
 
@@ -2794,6 +2883,12 @@ ALTER TABLE "public"."daily_stock_prices" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."live_securities_data" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."live_stock_prices" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2815,6 +2910,14 @@ ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."live_securities_data";
+
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."live_stock_prices";
+
 
 
 
@@ -3199,6 +3302,12 @@ GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid",
 
 
 
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "anon";
 GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
@@ -3277,6 +3386,18 @@ GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 GRANT ALL ON TABLE "public"."daily_stock_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_stock_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."live_securities_data" TO "anon";
+GRANT ALL ON TABLE "public"."live_securities_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."live_securities_data" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."live_stock_prices" TO "anon";
+GRANT ALL ON TABLE "public"."live_stock_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."live_stock_prices" TO "service_role";
 
 
 

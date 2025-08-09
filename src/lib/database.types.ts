@@ -273,6 +273,59 @@ export type Database = {
           },
         ]
       }
+      live_securities_data: {
+        Row: {
+          asset: Database["public"]["Enums"]["asset_class"]
+          price: number
+          symbol: string
+          trade_time: string
+        }
+        Insert: {
+          asset: Database["public"]["Enums"]["asset_class"]
+          price: number
+          symbol: string
+          trade_time?: string
+        }
+        Update: {
+          asset?: Database["public"]["Enums"]["asset_class"]
+          price?: number
+          symbol?: string
+          trade_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_securities_data_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "securities"
+            referencedColumns: ["ticker"]
+          },
+        ]
+      }
+      live_stock_prices: {
+        Row: {
+          match_price: number
+          match_quantity: number
+          sending_time: string | null
+          side: string | null
+          symbol: string
+        }
+        Insert: {
+          match_price: number
+          match_quantity: number
+          sending_time?: string | null
+          side?: string | null
+          symbol: string
+        }
+        Update: {
+          match_price?: number
+          match_quantity?: number
+          sending_time?: string | null
+          side?: string | null
+          symbol?: string
+        }
+        Relationships: []
+      }
       lot_consumptions: {
         Row: {
           quantity_consumed: number
@@ -421,35 +474,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      transaction_details: {
-        Row: {
-          fees: number
-          price: number
-          taxes: number
-          transaction_id: string
-        }
-        Insert: {
-          fees?: number
-          price: number
-          taxes?: number
-          transaction_id: string
-        }
-        Update: {
-          fees?: number
-          price?: number
-          taxes?: number
-          transaction_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transaction_details_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: true
-            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -706,7 +730,6 @@ export type Database = {
           quantity: number
           amount: number
           currency_code: string
-          net_sold: number
         }[]
       }
       handle_borrow_transaction: {
@@ -719,11 +742,16 @@ export type Database = {
           p_deposit_account_id: string
           p_cash_asset_id: string
           p_description: string
+          p_created_at?: string
         }
         Returns: undefined
       }
       handle_bulk_transaction_import: {
-        Args: { p_user_id: string; p_transactions_data: Json }
+        Args: {
+          p_user_id: string
+          p_transactions_data: Json
+          p_start_date: string
+        }
         Returns: undefined
       }
       handle_buy_transaction: {
@@ -736,6 +764,7 @@ export type Database = {
           p_quantity: number
           p_price: number
           p_description: string
+          p_created_at?: string
         }
         Returns: string
       }
@@ -749,6 +778,7 @@ export type Database = {
           p_from_account_id: string
           p_cash_asset_id: string
           p_description: string
+          p_created_at?: string
         }
         Returns: undefined
       }
@@ -760,6 +790,7 @@ export type Database = {
           p_quantity: number
           p_description: string
           p_asset_id: string
+          p_created_at?: string
         }
         Returns: Json
       }
@@ -771,6 +802,7 @@ export type Database = {
           p_quantity: number
           p_description: string
           p_asset_id: string
+          p_created_at?: string
         }
         Returns: undefined
       }
@@ -783,6 +815,7 @@ export type Database = {
           p_description: string
           p_asset_id: string
           p_transaction_type: string
+          p_created_at?: string
         }
         Returns: undefined
       }
@@ -796,6 +829,7 @@ export type Database = {
           p_cash_account_id: string
           p_cash_asset_id: string
           p_description: string
+          p_created_at?: string
         }
         Returns: string
       }
@@ -806,6 +840,7 @@ export type Database = {
           p_quantity: number
           p_transaction_date: string
           p_description: string
+          p_created_at?: string
         }
         Returns: undefined
       }
@@ -817,6 +852,7 @@ export type Database = {
           p_quantity: number
           p_description: string
           p_asset_id: string
+          p_created_at?: string
         }
         Returns: Json
       }

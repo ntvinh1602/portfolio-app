@@ -1,7 +1,7 @@
 "use client"
 
-import MarketDataFeed from '@/components/market-data-feed';
-
+import MarketDataFeed from '@/components/market-data-feed'
+import BitcoinPriceFeed from '@/components/BitcoinPriceFeed'
 import {
   PageMain,
   PageHeader,
@@ -128,7 +128,9 @@ export default function Page() {
               />
             }
           </div>
-          <MarketDataFeed />
+        <div className="flex flex-col items-center justify-center h-full">
+          <BitcoinPriceFeed />
+        </div>
       </PageContent>
       <BottomNavBar />
     </PageMain>
