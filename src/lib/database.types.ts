@@ -45,16 +45,19 @@ export type Database = {
       }
       assets: {
         Row: {
+          current_quantity: number
           id: string
           security_id: string | null
           user_id: string
         }
         Insert: {
+          current_quantity?: number
           id?: string
           security_id?: string | null
           user_id: string
         }
         Update: {
+          current_quantity?: number
           id?: string
           security_id?: string | null
           user_id?: string

@@ -1,6 +1,5 @@
 "use client"
 
-import MarketDataFeed from '@/components/market-data-feed'
 import BitcoinPriceFeed from '@/components/BitcoinPriceFeed'
 import {
   PageMain,

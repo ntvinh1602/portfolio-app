@@ -6,7 +6,7 @@ import { Database } from '@/lib/database.types';
 
 type LiveCryptoPrice = Database['public']['Tables']['live_securities_data']['Row'];
 
-function isLiveCryptoPrice(obj: any): obj is LiveCryptoPrice {
+function isLiveCryptoPrice(obj: LiveCryptoPrice) {
     return obj && typeof obj.symbol === 'string' && typeof obj.price === 'number' && typeof obj.trade_time === 'string';
 }
 
