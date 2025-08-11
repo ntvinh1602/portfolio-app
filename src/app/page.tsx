@@ -1,6 +1,5 @@
 "use client"
 
-import BitcoinPriceFeed from '@/components/BitcoinPriceFeed'
 import {
   PageMain,
   PageHeader,
@@ -116,19 +115,16 @@ export default function Page() {
             </CarouselItem>
           </CarouselContent>
         </Carousel>
-          {isLoading ? <AssetCardSkeleton /> :
-            <AssetCard assetSummaryData={assetSummaryData} />
+        {isLoading ? <AssetCardSkeleton /> :
+          <AssetCard assetSummaryData={assetSummaryData} />
+        }
+        <div className="flex flex-col gap-6">
+          {isLoading ? <HoldingsCompactSkeleton /> :
+            <HoldingsCompact
+              stockHoldings={holdingsData.stockHoldings}
+              cryptoHoldings={holdingsData.cryptoHoldings}
+            />
           }
-          <div className="flex flex-col gap-6">
-            {isLoading ? <HoldingsCompactSkeleton /> :
-              <HoldingsCompact
-                stockHoldings={holdingsData.stockHoldings}
-                cryptoHoldings={holdingsData.cryptoHoldings}
-              />
-            }
-          </div>
-        <div className="flex flex-col items-center justify-center h-full">
-          <BitcoinPriceFeed />
         </div>
       </PageContent>
       <BottomNavBar />
