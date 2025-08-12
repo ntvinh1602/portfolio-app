@@ -1,1 +1,0 @@
-GRANT SELECT ON vault.decrypted_secrets TO authenticated;

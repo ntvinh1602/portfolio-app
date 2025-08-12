@@ -1,3 +1,5 @@
+
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -8,14 +10,61 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
+
+
+
+
+
+
 COMMENT ON SCHEMA "public" IS 'standard public schema';
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+
+
+
+
+
+
 CREATE TYPE "public"."account_type" AS ENUM (
     'brokerage',
     'crypto_exchange',
@@ -24,6 +73,11 @@ CREATE TYPE "public"."account_type" AS ENUM (
     'wallet',
     'conceptual'
 );
+
+
+ALTER TYPE "public"."account_type" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."asset_class" AS ENUM (
     'cash',
     'stock',
@@ -32,19 +86,39 @@ CREATE TYPE "public"."asset_class" AS ENUM (
     'equity',
     'liability'
 );
+
+
+ALTER TYPE "public"."asset_class" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."currency_type" AS ENUM (
     'fiat',
     'crypto'
 );
+
+
+ALTER TYPE "public"."currency_type" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."debt_status" AS ENUM (
     'active',
     'paid_off'
 );
+
+
+ALTER TYPE "public"."debt_status" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."tax_lot_origin" AS ENUM (
     'purchase',
     'split',
     'deposit'
 );
+
+
+ALTER TYPE "public"."tax_lot_origin" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."transaction_type" AS ENUM (
     'buy',
     'sell',
@@ -57,6 +131,11 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
     'split',
     'borrow'
 );
+
+
+ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -97,6 +176,11 @@ BEGIN
     RETURN v_pnl;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -132,26 +216,38 @@ BEGIN
     RETURN v_twr;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."call_vercel_revalidate"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'vault', 'extensions'
     AS $$
-declare
+DECLARE
   token text;
-begin
-  -- Get the token from Vault
-  token := vault.get_secret('vercel_revalidate_token');
-  -- Call the Supabase HTTP function
-  perform supabase_functions.http_request(
+BEGIN
+  -- Retrieve the secret directly from vault.decrypted_secrets
+  SELECT decrypted_secret
+  INTO token
+  FROM vault.decrypted_secrets
+  WHERE name = 'vercel_revalidate_token';
+
+  -- Call Vercel revalidate API
+  PERFORM net.http_post(
     'https://portapp-vinh.vercel.app/api/revalidate',
-    'POST',
-    format('{"x-secret-token":"%s"}', token),
-    '{}',
-    '5000'
+    jsonb_build_object('x-secret-token', token)
   );
-  return new;
-end;
+
+  RETURN NEW;
+END;
 $$;
+
+
+ALTER FUNCTION "public"."call_vercel_revalidate"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -293,8 +389,15 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
 SET default_tablespace = '';
+
 SET default_table_access_method = "heap";
+
+
 CREATE TABLE IF NOT EXISTS "public"."debts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -305,6 +408,11 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
     "start_date" "date" NOT NULL,
     "status" "public"."debt_status" NOT NULL
 );
+
+
+ALTER TABLE "public"."debts" OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_active_debts"("p_user_id" "uuid") RETURNS SETOF "public"."debts"
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -313,6 +421,11 @@ CREATE OR REPLACE FUNCTION "public"."get_active_debts"("p_user_id" "uuid") RETUR
   from debts
   where status = 'active' and user_id = p_user_id;
 $$;
+
+
+ALTER FUNCTION "public"."get_active_debts"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -345,6 +458,11 @@ BEGIN
     );
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -360,6 +478,11 @@ BEGIN
     RETURN v_balance;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") RETURNS json
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -465,6 +588,11 @@ BEGIN
   RETURN result;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -584,6 +712,11 @@ BEGIN
     DROP TABLE result_data_temp;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -612,6 +745,11 @@ BEGIN
         SUM(tl.quantity) > 0;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -693,6 +831,11 @@ BEGIN
     DROP TABLE result_data_temp;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -709,6 +852,11 @@ BEGIN
   RETURN latest_price;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -725,6 +873,11 @@ BEGIN
   RETURN latest_rate;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -741,6 +894,11 @@ BEGIN
   RETURN latest_price;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -811,6 +969,11 @@ BEGIN
     ORDER BY ms.month;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "pnl" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -839,6 +1002,11 @@ BEGIN
     END LOOP;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "twr" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -867,6 +1035,11 @@ BEGIN
     END LOOP;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -894,6 +1067,11 @@ BEGIN
         SUM(tl.quantity) > 0;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date" DEFAULT NULL::"date", "end_date" "date" DEFAULT NULL::"date", "asset_class_filter" "text" DEFAULT NULL::"text") RETURNS TABLE("transaction_id" "uuid", "transaction_date" "date", "type" "text", "description" "text", "ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "amount" numeric, "currency_code" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -939,6 +1117,11 @@ BEGIN
     OFFSET v_offset;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -998,6 +1181,11 @@ BEGIN
   );
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1078,6 +1266,11 @@ BEGIN
     PERFORM public.generate_performance_snapshots(p_user_id, p_start_date, CURRENT_DATE);
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1211,6 +1404,11 @@ BEGIN
   RETURN v_transaction_id;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1277,6 +1475,11 @@ BEGIN
   UPDATE debts SET status = 'paid_off' WHERE id = p_debt_id;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1345,6 +1548,11 @@ EXCEPTION WHEN OTHERS THEN
     RAISE;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1464,6 +1672,11 @@ BEGIN
   );
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1524,6 +1737,11 @@ BEGIN
   END IF;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_exchange_rate"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1543,6 +1761,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_new_exchange_rate"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_stock_price"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1561,6 +1784,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_new_stock_price"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1580,6 +1808,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_new_transaction"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1718,6 +1951,11 @@ BEGIN
   RETURN v_transaction_id;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1750,6 +1988,11 @@ BEGIN
     INSERT INTO tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (p_user_id, p_asset_id, v_transaction_id, 'split', p_transaction_date, p_quantity, p_quantity, 0);
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1889,6 +2132,11 @@ BEGIN
   END IF;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_assets_after_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1917,6 +2165,11 @@ BEGIN
   RETURN NULL;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."update_assets_after_transaction"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1935,6 +2188,11 @@ BEGIN
   END IF;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1953,38 +2211,73 @@ BEGIN
   END IF;
 END;
 $$;
+
+
+ALTER FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."accounts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
     "name" "text" NOT NULL,
     "type" "public"."account_type" NOT NULL
 );
+
+
+ALTER TABLE "public"."accounts" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
     "security_id" "uuid",
     "current_quantity" numeric(20,8) DEFAULT 0 NOT NULL
 );
+
+
+ALTER TABLE "public"."assets" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" character varying(10) NOT NULL,
     "name" "text" NOT NULL,
     "type" "public"."currency_type" NOT NULL
 );
+
+
+ALTER TABLE "public"."currencies" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_crypto_prices" (
     "security_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
+
+
+ALTER TABLE "public"."daily_crypto_prices" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
     "currency_code" character varying(10) NOT NULL,
     "date" "date" NOT NULL,
     "rate" numeric(14,2) NOT NULL
 );
+
+
+ALTER TABLE "public"."daily_exchange_rates" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
     "date" "date" NOT NULL,
     "symbol" "text" NOT NULL,
     "close" numeric
 );
+
+
+ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1993,28 +2286,53 @@ CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
     "net_cash_flow" numeric(16,4) NOT NULL,
     "equity_index" numeric(8,2)
 );
+
+
+ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_stock_prices" (
     "security_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
+
+
+ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."live_securities_data" (
     "symbol" "text" NOT NULL,
     "price" numeric NOT NULL,
     "trade_time" timestamp with time zone DEFAULT "now"() NOT NULL,
     "asset" "public"."asset_class" NOT NULL
 );
+
+
+ALTER TABLE "public"."live_securities_data" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
     "sell_transaction_leg_id" "uuid" NOT NULL,
     "tax_lot_id" "uuid" NOT NULL,
     "quantity_consumed" numeric(20,8) NOT NULL,
     CONSTRAINT "lot_consumptions_quantity_consumed_check" CHECK ((("quantity_consumed")::numeric > (0)::numeric))
 );
+
+
+ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "display_currency" character varying(10) NOT NULL,
     "display_name" "text"
 );
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."securities" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "asset_class" "public"."asset_class" NOT NULL,
@@ -2023,6 +2341,11 @@ CREATE TABLE IF NOT EXISTS "public"."securities" (
     "currency_code" character varying(10),
     "logo_url" "text"
 );
+
+
+ALTER TABLE "public"."securities" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2037,6 +2360,11 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
     CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
 );
+
+
+ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "transaction_id" "uuid" NOT NULL,
@@ -2046,6 +2374,11 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "amount" numeric(16,4) NOT NULL,
     "currency_code" character varying(10) NOT NULL
 );
+
+
+ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2056,7 +2389,600 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "price" numeric(16,4)
 );
+
+
+ALTER TABLE "public"."transactions" OWNER TO "postgres";
+
+
+
+
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+
+
+
+
+
+
+GRANT USAGE ON SCHEMA "public" TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "anon";
+GRANT USAGE ON SCHEMA "public" TO "authenticated";
+GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "anon";
+GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."debts" TO "anon";
+GRANT ALL ON TABLE "public"."debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."debts" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_active_debts"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_account_data"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_expenses"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_pnl"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_transaction_feed"("p_user_id" "uuid", "page_size" integer, "page_number" integer, "start_date" "date", "end_date" "date", "asset_class_filter" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_borrow_transaction"("p_user_id" "uuid", "p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_deposit_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_bulk_transaction_import"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_debt_payment_transaction"("p_user_id" "uuid", "p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_from_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_deposit_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_expense_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_income_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_exchange_rate"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_stock_price"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_transaction"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_sell_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_account_id" "uuid", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_split_transaction"("p_user_id" "uuid", "p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_withdraw_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_account_id" "uuid", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" numeric) TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON TABLE "public"."accounts" TO "anon";
+GRANT ALL ON TABLE "public"."accounts" TO "authenticated";
+GRANT ALL ON TABLE "public"."accounts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."assets" TO "anon";
+GRANT ALL ON TABLE "public"."assets" TO "authenticated";
+GRANT ALL ON TABLE "public"."assets" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."currencies" TO "anon";
+GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
+GRANT ALL ON TABLE "public"."currencies" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."live_securities_data" TO "anon";
+GRANT ALL ON TABLE "public"."live_securities_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."live_securities_data" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."profiles" TO "anon";
+GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."securities" TO "anon";
+GRANT ALL ON TABLE "public"."securities" TO "authenticated";
+GRANT ALL ON TABLE "public"."securities" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
+GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
+GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."transactions" TO "anon";
+GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
+GRANT ALL ON TABLE "public"."transactions" TO "service_role";
+
+
+
+SET SESSION AUTHORIZATION "postgres";
+RESET SESSION AUTHORIZATION;
+
+
+
+SET SESSION AUTHORIZATION "postgres";
+RESET SESSION AUTHORIZATION;
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 RESET ALL;
+
 --
 -- Dumped schema changes for auth and storage
 --
+
