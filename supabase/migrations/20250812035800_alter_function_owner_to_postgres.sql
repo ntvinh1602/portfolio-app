@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_vercel_revalidate_token() OWNER TO postgres;
