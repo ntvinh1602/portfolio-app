@@ -24,7 +24,7 @@ export function DebtPaymentForm({
   handleInputChange,
   handleSelectChange,
 }: DebtPaymentFormProps) {
-  const { accounts, assets, debts, loading } = useTransactionFormData()
+  const { assets, debts, loading } = useTransactionFormData()
 
   if (loading) {
     return <div>Loading...</div>
@@ -46,25 +46,6 @@ export function DebtPaymentForm({
             {debts.map(debt => (
               <SelectItem key={debt.id} value={debt.id}>
                 {debt.lender_name} - {formatNum(debt.principal_amount)} VND
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="from_account_id">From Account</Label>
-        <Select
-          name="from_account_id"
-          onValueChange={handleSelectChange("from_account_id")}
-          value={formState.from_account_id}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select account..." />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map(account => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
               </SelectItem>
             ))}
           </SelectContent>

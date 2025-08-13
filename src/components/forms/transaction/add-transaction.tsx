@@ -57,7 +57,7 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
-  const { accounts, assets, debts, loading } = useTransactionFormData(open)
+  const { assets, debts, loading } = useTransactionFormData(open)
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))
@@ -116,7 +116,6 @@ export function TransactionForm({
       case "dividend":
         return {
           ...baseBody,
-          account: formState.account,
           quantity: parseFloat(formState.quantity),
           asset: formState.asset,
           ...(transactionType === "dividend" && {
@@ -128,7 +127,6 @@ export function TransactionForm({
       case "sell":
         return {
           ...baseBody,
-          account: formState.account,
           asset: formState.asset,
           cash_asset_id: formState.cash_asset_id,
           quantity: parseFloat(formState.quantity),
@@ -141,7 +139,6 @@ export function TransactionForm({
           lender: formState.lender,
           principal: parseFloat(formState.principal),
           interest_rate: parseFloat(formState.interest_rate),
-          deposit_account_id: formState.deposit_account_id,
           asset: formState.asset,
         }
 
@@ -149,7 +146,6 @@ export function TransactionForm({
         return {
           ...baseBody,
           debt: formState.debt,
-          from_account_id: formState.from_account_id,
           principal_payment: parseFloat(formState.principal_payment),
           interest_payment: parseFloat(formState.interest_payment),
           asset: formState.asset,
@@ -246,7 +242,6 @@ export function TransactionForm({
     type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
  
    const placeholder = React.useMemo(() => {
-     const getAccountName = (id: string) => accounts.find((a: Tables<'accounts'>) => a.id === id)?.name || "..."
      const getAssetName = (id: string) => {
        const asset = assets.find((a: AssetWithSecurity) => a.id === id)
        return asset?.securities?.ticker || asset?.securities?.name || "..."
@@ -262,18 +257,14 @@ export function TransactionForm({
          return `Sell ${formState.quantity || "..."} ${getAssetName(
          formState.asset || "..."
        )} at ${formState.price || "..."}`
-       case "deposit":
-         return `Deposit to ${getAccountName(formState.account || "...")}`
-       case "withdraw":
-         return `Withdrawal from ${getAccountName(formState.account || "...")}`
        case "dividend":
          return `Dividend from ${getAssetName(
          formState.dividend_asset || "..."
-       )} to ${getAccountName(formState.account || "...")}`
+       )}`
        case "debt_payment":
          return `Debt payment to ${getDebtName(
          formState.debt || "..."
-       )} from ${getAccountName(formState.from_account_id || "...")}`
+       )}`
        case "split":
          return `Stock split for ${getAssetName(formState.asset || "...")}`
        case "borrow":
@@ -283,7 +274,7 @@ export function TransactionForm({
        default:
          return "Enter a description..."
      }
-   }, [transactionType, formState, accounts, assets, debts])
+   }, [transactionType, formState, assets, debts])
  
    return (
     <>

@@ -10,7 +10,6 @@ export type AssetWithSecurity = Tables<"assets"> & {
 }
 
 interface TransactionFormData {
-  accounts: Tables<"accounts">[]
   assets: AssetWithSecurity[]
   debts: Tables<"debts">[]
 }
@@ -26,7 +25,6 @@ export function useTransactionFormData(enabled: boolean = true) {
   )
 
   return {
-    accounts: data?.accounts ?? [],
     assets: data?.assets ?? [],
     debts: data?.debts ?? [],
     loading: isLoading,

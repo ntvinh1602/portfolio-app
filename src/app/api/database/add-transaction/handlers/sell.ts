@@ -9,7 +9,6 @@ export async function handleSell(
 ) {
   const {
     transaction_date,
-    account,
     asset,
     cash_asset_id,
     quantity,
@@ -44,19 +43,18 @@ export async function handleSell(
   const finalDescription =
     description || `Sell ${quantity} ${assetData.ticker} at ${price}`
 
-  const { error } = await supabase.rpc("handle_sell_transaction", {
+  const { error } = await supabase.rpc("add_sell_transaction", {
     p_user_id: userId,
     p_asset_id: asset,
     p_quantity_to_sell: quantity,
     p_price: price,
     p_transaction_date: transaction_date,
-    p_cash_account_id: account,
     p_cash_asset_id: cash_asset_id,
     p_description: finalDescription,
   })
 
   if (error) {
-    console.error("Error calling handle_sell_transaction:", error)
+    console.error("Error calling add_sell_transaction:", error)
     throw new Error(`Failed to execute sell transaction: ${error.message}`)
   }
 

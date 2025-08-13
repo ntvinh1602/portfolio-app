@@ -7,29 +7,15 @@ export async function handleWithdraw(
   userId: string,
   data: z.infer<typeof withdrawSchema>
 ) {
-  const { transaction_date, account, quantity, description, asset } = data
-
-  const { data: accountData, error: accountError } = await supabase
-    .from("accounts")
-    .select("name")
-    .eq("id", account)
-    .single()
-
-  if (accountError) {
-    console.error("Error fetching account name:", accountError)
-    throw new Error(`Failed to fetch account details: ${accountError.message}`)
-  }
-
-  const finalDescription = description || `Withdrawal from ${accountData.name}`
+  const { transaction_date, quantity, description, asset } = data
 
   const { error, data: result } = await supabase.rpc(
     "handle_withdraw_transaction",
     {
       p_user_id: userId,
       p_transaction_date: transaction_date,
-      p_account_id: account,
       p_quantity: quantity,
-      p_description: finalDescription,
+      p_description: description,
       p_asset_id: asset,
     },
   )

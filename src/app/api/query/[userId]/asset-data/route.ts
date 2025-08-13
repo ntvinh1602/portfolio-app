@@ -8,8 +8,7 @@ type AssetWithSecurity = Tables<"assets"> & {
   securities: Tables<"securities">
 }
 
-type AssetAccountData = {
-  accounts: Tables<"accounts">[]
+type AssetData = {
   assets: AssetWithSecurity[]
 }
 
@@ -31,15 +30,15 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data: assetAccountData, error: assetAccountError } = await supabase
+    const { data: assetData, error: assetError } = await supabase
       .rpc("get_asset_account_data", { p_user_id: user.id })
       .single()
 
-    if (assetAccountError) {
-      throw assetAccountError
+    if (assetError) {
+      throw assetError
     }
 
-    return NextResponse.json(assetAccountData as AssetAccountData)
+    return NextResponse.json(assetData as AssetData)
 
   } catch (e) {
     console.error("Unexpected error fetching asset account data:", e)

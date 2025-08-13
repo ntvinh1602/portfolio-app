@@ -29,7 +29,7 @@ export function TradeForm({
   handleSelectChange,
   handlePickerChange,
 }: TradeFormProps) {
-  const { accounts, assets, loading } = useTransactionFormData()
+  const { assets, loading } = useTransactionFormData()
  
    if (loading) {
      return <div>Loading...</div>
@@ -37,25 +37,6 @@ export function TradeForm({
 
   return (
     <>
-      <div className="grid gap-3">
-        <Label htmlFor="account">Account</Label>
-        <Select
-          name="account"
-          onValueChange={handleSelectChange("account")}
-          value={formState.account}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select account..." />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map(account => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="grid gap-3">
         <Label htmlFor="cash_asset_id">Cash</Label>
         <Select

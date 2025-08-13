@@ -23,7 +23,7 @@ export function BorrowForm({
   handleInputChange,
   handleSelectChange,
 }: BorrowFormProps) {
-  const { accounts, assets, loading } = useTransactionFormData()
+  const { assets, loading } = useTransactionFormData()
 
   if (loading) {
     return <div>Loading...</div>
@@ -64,24 +64,6 @@ export function BorrowForm({
           value={formState.interest_rate || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="deposit_account_id">Deposit Account</Label>
-        <Select
-          name="deposit_account_id"
-          onValueChange={handleSelectChange("deposit_account_id")}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select account..." />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map(account => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       <div className="grid gap-3">
         <Label htmlFor="asset">Cash Asset</Label>

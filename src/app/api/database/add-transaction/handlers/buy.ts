@@ -9,7 +9,6 @@ export async function handleBuy(
 ) {
   const {
     transaction_date,
-    account,
     asset,
     cash_asset_id,
     quantity,
@@ -44,10 +43,9 @@ export async function handleBuy(
   const finalDescription =
     description || `Buy ${quantity} ${assetData.ticker} at ${price}`
 
-  const { error } = await supabase.rpc("handle_buy_transaction", {
+  const { error } = await supabase.rpc("add_buy_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
-    p_account_id: account,
     p_asset_id: asset,
     p_cash_asset_id: cash_asset_id,
     p_quantity: quantity,
@@ -56,7 +54,7 @@ export async function handleBuy(
   })
 
   if (error) {
-    console.error("Error calling handle_buy_transaction:", error)
+    console.error("Error calling add_buy_transaction:", error)
     throw new Error(`Failed to execute buy transaction: ${error.message}`)
   }
 

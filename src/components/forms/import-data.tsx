@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils"
 const REQUIRED_HEADERS = [
   "date",
   "type",
-  "account",
   "asset_ticker",
   "cash_asset_ticker",
   "quantity",

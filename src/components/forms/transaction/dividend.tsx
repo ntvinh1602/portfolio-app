@@ -26,7 +26,7 @@ export function DividendForm({
   handleSelectChange,
   handlePickerChange,
 }: DividendFormProps) {
-  const { accounts, assets, loading } = useTransactionFormData()
+  const { assets, loading } = useTransactionFormData()
 
   if (loading) {
     return <div>Loading...</div>
@@ -34,25 +34,6 @@ export function DividendForm({
 
   return (
     <>
-      <div className="grid gap-3">
-        <Label htmlFor="account">To Account</Label>
-        <Select
-          name="account"
-          onValueChange={handleSelectChange("account")}
-          value={formState.account}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select account..." />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map(account => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="grid gap-3">
         <Label htmlFor="quantity">Quantity</Label>
         <Input

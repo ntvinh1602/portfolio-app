@@ -9,22 +9,10 @@ export async function handleIncome(
 ) {
   const {
     transaction_date,
-    account,
     description,
     asset,
     transaction_type,
   } = data
-
-  const { data: accountData, error: accountError } = await supabase
-    .from("accounts")
-    .select("name")
-    .eq("id", account)
-    .single()
-
-  if (accountError) {
-    console.error("Error fetching account name:", accountError)
-    throw new Error(`Failed to fetch account details: ${accountError.message}`)
-  }
 
   let finalDescription = description
   if (!finalDescription) {
@@ -54,18 +42,17 @@ export async function handleIncome(
         console.error("Error fetching asset ticker:", assetError)
         throw new Error(`Failed to fetch asset details: ${assetError.message}`)
       }
-      finalDescription = `Dividend from ${assetData.ticker} to ${accountData.name}`
+      finalDescription = `Dividend from ${assetData.ticker}`
     } else {
-      finalDescription = `Income to ${accountData.name}`
+      finalDescription = description
     }
   }
 
   const quantity = "quantity" in data ? data.quantity : 0
 
-  const { error } = await supabase.rpc("handle_income_transaction", {
+  const { error } = await supabase.rpc("add_income_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
-    p_account_id: account,
     p_quantity: quantity,
     p_description: finalDescription,
     p_asset_id: asset,
@@ -74,7 +61,7 @@ export async function handleIncome(
 
   if (error) {
     console.error(
-      `Error calling handle_income_transaction:`, error)
+      `Error calling add_income_transaction:`, error)
     throw new Error(
       `Failed to execute ${transaction_type} transaction: ${error.message}`,
     )

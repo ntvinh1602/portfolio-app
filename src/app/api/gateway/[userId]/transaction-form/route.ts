@@ -37,18 +37,18 @@ export async function GET(
       },
     }
 
-    const assetAccountDataResponse = await fetch(
-      `${baseUrl}/api/query/${user.id}/asset-account-data`,
+    const assetDataResponse = await fetch(
+      `${baseUrl}/api/query/${user.id}/asset-data`,
       fetchOptions,
     )
 
-    if (!assetAccountDataResponse.ok) {
-      const errorText = await assetAccountDataResponse.text();
-      console.error(`Error fetching asset account data: ${assetAccountDataResponse.url} - ${assetAccountDataResponse.status} ${assetAccountDataResponse.statusText}`, errorText);
-      throw new Error(`Failed to fetch from ${assetAccountDataResponse.url}`);
+    if (!assetDataResponse.ok) {
+      const errorText = await assetDataResponse.text();
+      console.error(`Error fetching asset account data: ${assetDataResponse.url} - ${assetDataResponse.status} ${assetDataResponse.statusText}`, errorText);
+      throw new Error(`Failed to fetch from ${assetDataResponse.url}`);
     }
 
-    const { accounts, assets } = await assetAccountDataResponse.json()
+    const { assets } = await assetDataResponse.json()
 
     const debtsResponse = await fetch(
       `${baseUrl}/api/query/${user.id}/debts`,
@@ -64,7 +64,6 @@ export async function GET(
     const debts = await debtsResponse.json()
 
     return NextResponse.json({
-      accounts: accounts || [],
       assets: (assets as AssetWithSecurity[]) || [],
       debts: debts || [],
     })
