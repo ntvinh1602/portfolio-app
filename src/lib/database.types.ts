@@ -14,35 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      accounts: {
-        Row: {
-          id: string
-          name: string
-          type: Database["public"]["Enums"]["account_type"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          type: Database["public"]["Enums"]["account_type"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          type?: Database["public"]["Enums"]["account_type"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "accounts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       assets: {
         Row: {
           current_quantity: number
@@ -305,30 +276,6 @@ export type Database = {
           },
         ]
       }
-      live_stock_prices: {
-        Row: {
-          match_price: number
-          match_quantity: number
-          sending_time: string | null
-          side: string | null
-          symbol: string
-        }
-        Insert: {
-          match_price: number
-          match_quantity: number
-          sending_time?: string | null
-          side?: string | null
-          symbol: string
-        }
-        Update: {
-          match_price?: number
-          match_quantity?: number
-          sending_time?: string | null
-          side?: string | null
-          symbol?: string
-        }
-        Relationships: []
-      }
       lot_consumptions: {
         Row: {
           quantity_consumed: number
@@ -483,7 +430,6 @@ export type Database = {
       }
       transaction_legs: {
         Row: {
-          account_id: string
           amount: number
           asset_id: string
           currency_code: string
@@ -492,7 +438,6 @@ export type Database = {
           transaction_id: string
         }
         Insert: {
-          account_id: string
           amount: number
           asset_id: string
           currency_code: string
@@ -501,7 +446,6 @@ export type Database = {
           transaction_id: string
         }
         Update: {
-          account_id?: string
           amount?: number
           asset_id?: string
           currency_code?: string
@@ -510,13 +454,6 @@ export type Database = {
           transaction_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "transaction_legs_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "transaction_legs_asset_id_fkey"
             columns: ["asset_id"]
@@ -593,6 +530,114 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_borrow_transaction: {
+        Args: {
+          p_user_id: string
+          p_lender_name: string
+          p_principal_amount: number
+          p_interest_rate: number
+          p_transaction_date: string
+          p_cash_asset_id: string
+          p_description: string
+          p_created_at?: string
+        }
+        Returns: undefined
+      }
+      add_buy_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_asset_id: string
+          p_cash_asset_id: string
+          p_quantity: number
+          p_price: number
+          p_description: string
+          p_created_at?: string
+        }
+        Returns: string
+      }
+      add_debt_payment_transaction: {
+        Args: {
+          p_user_id: string
+          p_debt_id: string
+          p_principal_payment: number
+          p_interest_payment: number
+          p_transaction_date: string
+          p_cash_asset_id: string
+          p_description: string
+          p_created_at?: string
+        }
+        Returns: undefined
+      }
+      add_deposit_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+          p_created_at?: string
+        }
+        Returns: Json
+      }
+      add_expense_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+          p_created_at?: string
+        }
+        Returns: undefined
+      }
+      add_income_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+          p_transaction_type: string
+          p_created_at?: string
+        }
+        Returns: undefined
+      }
+      add_sell_transaction: {
+        Args: {
+          p_user_id: string
+          p_asset_id: string
+          p_quantity_to_sell: number
+          p_price: number
+          p_transaction_date: string
+          p_cash_asset_id: string
+          p_description: string
+          p_created_at?: string
+        }
+        Returns: string
+      }
+      add_split_transaction: {
+        Args: {
+          p_user_id: string
+          p_asset_id: string
+          p_quantity: number
+          p_transaction_date: string
+          p_description: string
+          p_created_at?: string
+        }
+        Returns: undefined
+      }
+      add_withdraw_transaction: {
+        Args: {
+          p_user_id: string
+          p_transaction_date: string
+          p_quantity: number
+          p_description: string
+          p_asset_id: string
+          p_created_at?: string
+        }
+        Returns: Json
+      }
       calculate_pnl: {
         Args: { p_user_id: string; p_start_date: string; p_end_date: string }
         Returns: number
@@ -618,13 +663,21 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_asset_account_data: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
       get_asset_balance: {
         Args: { p_asset_id: string; p_user_id: string }
         Returns: number
+      }
+      get_asset_currency: {
+        Args: { p_user_id: string; p_asset_id: string }
+        Returns: string
+      }
+      get_asset_data: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_asset_id_from_ticker: {
+        Args: { p_user_id: string; p_ticker: string }
+        Returns: string
       }
       get_asset_summary: {
         Args: { p_user_id: string }
@@ -735,129 +788,13 @@ export type Database = {
           currency_code: string
         }[]
       }
-      handle_borrow_transaction: {
-        Args: {
-          p_user_id: string
-          p_lender_name: string
-          p_principal_amount: number
-          p_interest_rate: number
-          p_transaction_date: string
-          p_deposit_account_id: string
-          p_cash_asset_id: string
-          p_description: string
-          p_created_at?: string
-        }
-        Returns: undefined
-      }
-      handle_bulk_transaction_import: {
+      import_transactions: {
         Args: {
           p_user_id: string
           p_transactions_data: Json
           p_start_date: string
         }
         Returns: undefined
-      }
-      handle_buy_transaction: {
-        Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_account_id: string
-          p_asset_id: string
-          p_cash_asset_id: string
-          p_quantity: number
-          p_price: number
-          p_description: string
-          p_created_at?: string
-        }
-        Returns: string
-      }
-      handle_debt_payment_transaction: {
-        Args: {
-          p_user_id: string
-          p_debt_id: string
-          p_principal_payment: number
-          p_interest_payment: number
-          p_transaction_date: string
-          p_from_account_id: string
-          p_cash_asset_id: string
-          p_description: string
-          p_created_at?: string
-        }
-        Returns: undefined
-      }
-      handle_deposit_transaction: {
-        Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_account_id: string
-          p_quantity: number
-          p_description: string
-          p_asset_id: string
-          p_created_at?: string
-        }
-        Returns: Json
-      }
-      handle_expense_transaction: {
-        Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_account_id: string
-          p_quantity: number
-          p_description: string
-          p_asset_id: string
-          p_created_at?: string
-        }
-        Returns: undefined
-      }
-      handle_income_transaction: {
-        Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_account_id: string
-          p_quantity: number
-          p_description: string
-          p_asset_id: string
-          p_transaction_type: string
-          p_created_at?: string
-        }
-        Returns: undefined
-      }
-      handle_sell_transaction: {
-        Args: {
-          p_user_id: string
-          p_asset_id: string
-          p_quantity_to_sell: number
-          p_price: number
-          p_transaction_date: string
-          p_cash_account_id: string
-          p_cash_asset_id: string
-          p_description: string
-          p_created_at?: string
-        }
-        Returns: string
-      }
-      handle_split_transaction: {
-        Args: {
-          p_user_id: string
-          p_asset_id: string
-          p_quantity: number
-          p_transaction_date: string
-          p_description: string
-          p_created_at?: string
-        }
-        Returns: undefined
-      }
-      handle_withdraw_transaction: {
-        Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_account_id: string
-          p_quantity: number
-          p_description: string
-          p_asset_id: string
-          p_created_at?: string
-        }
-        Returns: Json
       }
       upsert_daily_crypto_price: {
         Args: { p_ticker: string; p_price: number }
@@ -869,13 +806,6 @@ export type Database = {
       }
     }
     Enums: {
-      account_type:
-        | "brokerage"
-        | "crypto_exchange"
-        | "epf"
-        | "bank"
-        | "wallet"
-        | "conceptual"
       asset_class: "cash" | "stock" | "crypto" | "epf" | "equity" | "liability"
       currency_type: "fiat" | "crypto"
       debt_status: "active" | "paid_off"
@@ -1018,14 +948,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_type: [
-        "brokerage",
-        "crypto_exchange",
-        "epf",
-        "bank",
-        "wallet",
-        "conceptual",
-      ],
       asset_class: ["cash", "stock", "crypto", "epf", "equity", "liability"],
       currency_type: ["fiat", "crypto"],
       debt_status: ["active", "paid_off"],

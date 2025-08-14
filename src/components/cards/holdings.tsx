@@ -40,32 +40,36 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
           <div className="flex flex-col gap-1">
             {stockHoldings.length > 0 || cryptoHoldings.length > 0 ? (
               <>
-                {stockHoldings.map((stock) => (
-                  <SecurityItem
-                    key={stock.ticker}
-                    ticker={stock.ticker}
-                    name={stock.name}
-                    logoUrl={stock.logo_url}
-                    totalAmount={formatNum(stock.total_amount)}
-                    pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
-                    pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
-                    variant="compact"
-                    type="stock"
-                  />
+                {stockHoldings
+                  .sort((a, b) => b.total_amount - a.total_amount)
+                  .map((stock) => (
+                    <SecurityItem
+                      key={stock.ticker}
+                      ticker={stock.ticker}
+                      name={stock.name}
+                      logoUrl={stock.logo_url}
+                      totalAmount={formatNum(stock.total_amount)}
+                      pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
+                      pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
+                      variant="compact"
+                      type="stock"
+                    />
                 ))}
-                {cryptoHoldings.map((crypto) => (
-                  <SecurityItem
-                    key={crypto.ticker}
-                    ticker={crypto.ticker}
-                    name={crypto.name}
-                    logoUrl={crypto.logo_url}
-                    totalAmount={formatNum(crypto.total_amount)}
-                    quantity={formatNum(crypto.quantity, 2)}
-                    pnlPct={formatNum((crypto.total_amount / crypto.cost_basis - 1) * 100, 1)}
-                    pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
-                    variant="compact"
-                    type="crypto"
-                  />
+                {cryptoHoldings
+                  .sort((a, b) => b.total_amount - a.total_amount)
+                  .map((crypto) => (
+                    <SecurityItem
+                      key={crypto.ticker}
+                      ticker={crypto.ticker}
+                      name={crypto.name}
+                      logoUrl={crypto.logo_url}
+                      totalAmount={formatNum(crypto.total_amount)}
+                      quantity={formatNum(crypto.quantity, 2)}
+                      pnlPct={formatNum((crypto.total_amount / crypto.cost_basis - 1) * 100, 1)}
+                      pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
+                      variant="compact"
+                      type="crypto"
+                    />
                 ))}
               </>
             ) : (

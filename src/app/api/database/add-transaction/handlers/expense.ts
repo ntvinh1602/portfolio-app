@@ -9,7 +9,7 @@ export async function handleExpense(
 ) {
   const { transaction_date, quantity, description, asset } = data
 
-  const { error } = await supabase.rpc("handle_expense_transaction", {
+  const { error } = await supabase.rpc("add_expense_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
     p_quantity: quantity,
@@ -18,7 +18,7 @@ export async function handleExpense(
   })
 
   if (error) {
-    console.error("Error calling handle_expense_transaction:", error)
+    console.error("Error calling add_expense_transaction:", error)
     throw new Error(`Failed to execute expense transaction: ${error.message}`)
   }
 

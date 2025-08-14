@@ -23,7 +23,9 @@ import { formatNum, compactNum } from "@/lib/utils"
 
 export default function Page() {
   const { holdingsData, isLoading: loading } = useDashboardData()
-  const { stockHoldings, cryptoHoldings } = holdingsData
+  let { stockHoldings, cryptoHoldings } = holdingsData
+  stockHoldings = stockHoldings.sort((a, b) => b.total_amount - a.total_amount);
+  cryptoHoldings = cryptoHoldings.sort((a, b) => b.total_amount - a.total_amount);
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
