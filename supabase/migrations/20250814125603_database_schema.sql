@@ -2445,30 +2445,14 @@ ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
     "id" bigint NOT NULL,
     "side" "text" NOT NULL,
-    "account_no" "text" NOT NULL,
-    "investor_id" "text" NOT NULL,
     "symbol" "text" NOT NULL,
-    "price" numeric,
-    "quantity" numeric,
     "order_type" "text",
     "order_status" "text",
     "fill_quantity" numeric,
-    "last_quantity" numeric,
-    "last_price" numeric,
     "average_price" numeric,
-    "trans_date" timestamp with time zone,
-    "created_date" timestamp with time zone DEFAULT "now"(),
     "modified_date" timestamp with time zone DEFAULT "now"(),
     "tax" numeric(12,0),
-    "fee" numeric,
-    "leave_quantity" numeric,
-    "canceled_quantity" numeric,
-    "price_secure" numeric,
-    "custody" "text",
-    "channel" "text",
-    "loan_package_id" bigint,
-    "initial_rate" numeric,
-    "error" "text"
+    "fee" numeric
 );
 
 

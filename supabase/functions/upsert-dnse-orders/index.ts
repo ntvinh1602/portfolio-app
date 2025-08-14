@@ -5,7 +5,6 @@ interface Order {
   id: number;
   side: string;
   symbol: string;
-  quantity: number;
   orderStatus: string;
   fillQuantity: number;
   averagePrice: number;
@@ -73,20 +72,19 @@ serve(async (_req: Request) => {
       .from('dnse_orders')
       .upsert(
         dnseOrders
-        .filter(order => order.id != null) // Add filter to prevent null IDs
+        .filter(order => order.orderStatus == 'Filled') // Only get filled orders
         .map((order) => ({
           id: order.id,
           side: order.side,
           symbol: order.symbol,
-          quantity: order.quantity,
           order_status: order.orderStatus,
           fill_quantity: order.fillQuantity,
           average_price: order.averagePrice,
           modified_date: order.modifiedDate,
-          tax_rate: order.taxRate * order.fillQuantity * order.averagePrice,
-          fee_rate: order.feeRate * order.fillQuantity * order.averagePrice,
+          tax: order.taxRate * order.fillQuantity * order.averagePrice,
+          fee: order.feeRate * order.fillQuantity * order.averagePrice,
         })),
-        { onConflict: 'id' }
+        { onConflict: 'id', ignoreDuplicates: true }
       );
 
     if (error) {
