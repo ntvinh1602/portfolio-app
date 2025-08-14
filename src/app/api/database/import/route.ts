@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }, {} as Record<string, string | null>)
   })
 
-  const { error } = await supabase.rpc('handle_bulk_transaction_import', {
+  const { error } = await supabase.rpc('import_transactions', {
     p_user_id: user.id,
     p_transactions_data: transactions,
     p_start_date: lifetime
