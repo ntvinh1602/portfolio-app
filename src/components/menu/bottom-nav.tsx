@@ -7,7 +7,7 @@ import {
   TvMinimal,
   Plus,
   Sprout,
-  Gauge,
+  Coins,
   TableOfContents
 } from "lucide-react"
 import { AddTransactionMenu } from "@/components/menu/add-transaction"
@@ -35,7 +35,7 @@ export function BottomNavBar() {
     <div className="fixed bottom-0 w-full px-2 flex h-[70px] justify-around items-center bg-muted/40 dark:bg-card/25 backdrop-blur-sm max-w-4xl mx-auto text-muted-foreground text-xs font-thin [&_svg]:size-5 [&_svg]:stroke-[1]">
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent dark:text-accent-foreground": pathname === "/",
+          "text-primary": pathname === "/",
         })}
         onClick={() => handleNavigation("/")}
       >
@@ -43,32 +43,32 @@ export function BottomNavBar() {
       </div>
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent dark:text-accent-foreground": pathname === "/assets",
+          "text-primary": pathname === "/assets",
         })}
         onClick={() => handleNavigation("/assets")}
       >
         <Sprout />Assets
       </div>
       <AddTransactionMenu onMenuItemClick={handleMenuItemClick}>
-        <div className="flex flex-col items-center border bg-secondary dark:bg-primary/50 border-accent/40 text-accent-foreground rounded-full p-3 -m-2">
-          <Plus />
+        <div className="flex flex-col items-center border bg-primary border-accent/40 text-accent-foreground rounded-full p-3 -m-2">
+          <Plus className="text-primary-foreground"/>
         </div>
       </AddTransactionMenu>
       <div
         className={cn("flex flex-col items-center gap-1", {
-          "text-accent dark:text-accent-foreground": pathname === "/metrics",
+          "text-primary": pathname === "/transactions",
         })}
-        onClick={() => handleNavigation("/metrics")}
+        onClick={() => handleNavigation("/transactions")}
       >
-        <Gauge />Metrics
+        <Coins />Trades
       </div>
       <OtherPagesMenu onMenuItemClick={handleNavigation}>
         <div
           className={cn("flex flex-col items-center gap-1", {
-            "text-accent dark:text-accent-foreground": [
+            "text-primary": [
               "/holdings",
               "/debts",
-              "/transactions",
+              "/metrics",
               "/earnings",
               "/expenses",
             ].includes(pathname),

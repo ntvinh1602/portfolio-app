@@ -118,7 +118,9 @@ export default function Page() {
             </CardHeader>
             <CardContent className="flex flex-col">
               <TransactionImportForm>
-                <Button>Import</Button>
+                <Button variant="outline">
+                  Import
+                </Button>
               </TransactionImportForm>
             </CardContent>
           </div>
@@ -131,7 +133,9 @@ export default function Page() {
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <DatePicker mode="single" selected={startDate} onSelect={setStartDate} />
-              <Button onClick={handleBackfill}>Generate</Button>
+              <Button variant="outline" onClick={handleBackfill}>
+                Generate
+              </Button>
             </CardContent>
           </div>
         </Card>

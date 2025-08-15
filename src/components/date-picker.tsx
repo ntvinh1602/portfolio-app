@@ -54,7 +54,7 @@ export default function DatePicker(props: DatePickerProps) {
     <Button
       variant="outline"
       id="dates"
-      className="w-full justify-between"
+      className="w-full justify-between h-10"
     >
       <CalendarIcon className="size-4 stroke-[1]" />
       <span className="flex-1 text-left">{buttonText}</span>

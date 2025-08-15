@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Coins,
+  Gauge,
   HandCoins,
   TrendingDown,
   TrendingUp,
@@ -24,7 +24,7 @@ interface OtherPagesMenuProps {
 const menuItems = [
   { icon: Boxes, label: "Active Holdings", path: "/holdings" },
   { icon: HandCoins, label: "Active Debts", path: "/debts" },
-  { icon: Coins, label: "Transaction Log", path: "/transactions" },
+  { icon: Gauge, label: "Performance", path: "/metrics" },
   { icon: TrendingUp, label: "Monthly Earnings", path: "/earnings" },
   { icon: TrendingDown, label: "Expenses Analysis", path: "/expenses" },
 ]
@@ -47,12 +47,12 @@ export function OtherPagesMenu({
             key={item.label}
             onClick={() => onMenuItemClick(item.path)}
             className={`gap-2 justify-end ${
-              pathname === item.path ? "text-accent dark:text-accent-foreground" : ""
+              pathname === item.path ? "text-primary" : ""
             }`}
           >
-            <span>{item.label}</span>
+            <span>{item.label}</span> 
             <item.icon className={`stroke-[1] ${
-              pathname === item.path ? "text-accent dark:text-accent-foreground" : ""
+              pathname === item.path ? "text-primary" : ""
             }`} />
           </DropdownMenuItem>
         ))}

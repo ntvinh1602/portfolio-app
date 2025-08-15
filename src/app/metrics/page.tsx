@@ -71,7 +71,7 @@ export default function Page() {
 
   return (
     <PageMain>
-      <PageHeader title="Key Metrics" />
+      <PageHeader title="Performance" />
       <PageContent className="gap-6">
         <TwoMetric
           title="Metrics"
@@ -87,7 +87,7 @@ export default function Page() {
         />
         <div className="flex flex-col gap-6 rounded-2xl px-0">
           <Card className="border-0 py-0">
-            <CardHeader className="px-0">
+            <CardHeader>
               <div
                 className="flex items-center"
                 onClick={handleNavigation}
@@ -134,8 +134,8 @@ export default function Page() {
               </div>
             </CardContent>
           </Card>
-          <Card className="gap-6 border-0 py-0">
-            <CardHeader className="px-0">
+          <Card className="gap-6">
+            <CardHeader>
               <CardTitle>Benchmark</CardTitle>
               <CardDescription>
                 Visualized performance against VN-Index

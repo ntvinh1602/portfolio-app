@@ -105,7 +105,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
     <Card className="bg-muted/0 py-0 border-none gap-0">
       <CardHeader>
         <CardDescription
-          className="flex items-center gap-1 w-fit"
+          className="flex items-center w-fit"
           onClick={handleNavigation}
         >
           Total Assets<ChevronRight className="size-4"/>

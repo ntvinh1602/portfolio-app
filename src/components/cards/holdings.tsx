@@ -30,7 +30,7 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
       <Card className="gap-1 py-0 border-0">
         <CardHeader className="px-0">
           <CardDescription
-            className="flex items-center gap-1 w-fit"
+            className="flex items-center w-fit"
             onClick={handleNavigation}
           >
             Holdings<ChevronRight className="size-4"/>
