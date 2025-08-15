@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -246,6 +246,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dnse_orders: {
+        Row: {
+          average_price: number | null
+          fee: number | null
+          fill_quantity: number | null
+          id: number
+          modified_date: string | null
+          order_status: string | null
+          side: string
+          symbol: string
+          tax: number | null
+          txn_created: boolean | null
+        }
+        Insert: {
+          average_price?: number | null
+          fee?: number | null
+          fill_quantity?: number | null
+          id: number
+          modified_date?: string | null
+          order_status?: string | null
+          side: string
+          symbol: string
+          tax?: number | null
+          txn_created?: boolean | null
+        }
+        Update: {
+          average_price?: number | null
+          fee?: number | null
+          fill_quantity?: number | null
+          id?: number
+          modified_date?: string | null
+          order_status?: string | null
+          side?: string
+          symbol?: string
+          tax?: number | null
+          txn_created?: boolean | null
+        }
+        Relationships: []
       }
       live_securities_data: {
         Row: {
@@ -532,122 +571,122 @@ export type Database = {
     Functions: {
       add_borrow_transaction: {
         Args: {
-          p_user_id: string
+          p_cash_asset_id: string
+          p_created_at?: string
+          p_description: string
+          p_interest_rate: number
           p_lender_name: string
           p_principal_amount: number
-          p_interest_rate: number
           p_transaction_date: string
-          p_cash_asset_id: string
-          p_description: string
-          p_created_at?: string
+          p_user_id: string
         }
         Returns: undefined
       }
       add_buy_transaction: {
         Args: {
-          p_user_id: string
-          p_transaction_date: string
           p_asset_id: string
           p_cash_asset_id: string
-          p_quantity: number
-          p_price: number
-          p_description: string
           p_created_at?: string
+          p_description: string
+          p_price: number
+          p_quantity: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: string
       }
       add_debt_payment_transaction: {
         Args: {
-          p_user_id: string
-          p_debt_id: string
-          p_principal_payment: number
-          p_interest_payment: number
-          p_transaction_date: string
           p_cash_asset_id: string
-          p_description: string
           p_created_at?: string
+          p_debt_id: string
+          p_description: string
+          p_interest_payment: number
+          p_principal_payment: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: undefined
       }
       add_deposit_transaction: {
         Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_quantity: number
-          p_description: string
           p_asset_id: string
           p_created_at?: string
+          p_description: string
+          p_quantity: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: Json
       }
       add_expense_transaction: {
         Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_quantity: number
-          p_description: string
           p_asset_id: string
           p_created_at?: string
+          p_description: string
+          p_quantity: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: undefined
       }
       add_income_transaction: {
         Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_quantity: number
-          p_description: string
           p_asset_id: string
-          p_transaction_type: string
           p_created_at?: string
+          p_description: string
+          p_quantity: number
+          p_transaction_date: string
+          p_transaction_type: string
+          p_user_id: string
         }
         Returns: undefined
       }
       add_sell_transaction: {
         Args: {
-          p_user_id: string
           p_asset_id: string
-          p_quantity_to_sell: number
-          p_price: number
-          p_transaction_date: string
           p_cash_asset_id: string
-          p_description: string
           p_created_at?: string
+          p_description: string
+          p_price: number
+          p_quantity_to_sell: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: string
       }
       add_split_transaction: {
         Args: {
-          p_user_id: string
           p_asset_id: string
+          p_created_at?: string
+          p_description: string
           p_quantity: number
           p_transaction_date: string
-          p_description: string
-          p_created_at?: string
+          p_user_id: string
         }
         Returns: undefined
       }
       add_withdraw_transaction: {
         Args: {
-          p_user_id: string
-          p_transaction_date: string
-          p_quantity: number
-          p_description: string
           p_asset_id: string
           p_created_at?: string
+          p_description: string
+          p_quantity: number
+          p_transaction_date: string
+          p_user_id: string
         }
         Returns: Json
       }
       calculate_pnl: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: number
       }
       calculate_twr: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: number
       }
       generate_performance_snapshots: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: undefined
       }
       get_active_debts: {
@@ -668,7 +707,7 @@ export type Database = {
         Returns: number
       }
       get_asset_currency: {
-        Args: { p_user_id: string; p_asset_id: string }
+        Args: { p_asset_id: string; p_user_id: string }
         Returns: string
       }
       get_asset_data: {
@@ -676,7 +715,7 @@ export type Database = {
         Returns: Json
       }
       get_asset_id_from_ticker: {
-        Args: { p_user_id: string; p_ticker: string }
+        Args: { p_ticker: string; p_user_id: string }
         Returns: string
       }
       get_asset_summary: {
@@ -685,10 +724,10 @@ export type Database = {
       }
       get_benchmark_chart_data: {
         Args: {
-          p_user_id: string
-          p_start_date: string
           p_end_date: string
+          p_start_date: string
           p_threshold: number
+          p_user_id: string
         }
         Returns: {
           date: string
@@ -699,21 +738,21 @@ export type Database = {
       get_crypto_holdings: {
         Args: { p_user_id: string }
         Returns: {
-          ticker: string
-          name: string
-          logo_url: string
-          quantity: number
           cost_basis: number
           latest_price: number
           latest_usd_rate: number
+          logo_url: string
+          name: string
+          quantity: number
+          ticker: string
         }[]
       }
       get_equity_chart_data: {
         Args: {
-          p_user_id: string
-          p_start_date: string
           p_end_date: string
+          p_start_date: string
           p_threshold: number
+          p_user_id: string
         }
         Returns: {
           date: string
@@ -733,23 +772,23 @@ export type Database = {
         Returns: number
       }
       get_monthly_expenses: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: {
-          month: string
-          trading_fees: number
-          taxes: number
           interest: number
+          month: string
+          taxes: number
+          trading_fees: number
         }[]
       }
       get_monthly_pnl: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: {
           month: string
           pnl: number
         }[]
       }
       get_monthly_twr: {
-        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
         Returns: {
           month: string
           twr: number
@@ -758,50 +797,54 @@ export type Database = {
       get_stock_holdings: {
         Args: { p_user_id: string }
         Returns: {
-          ticker: string
-          name: string
-          logo_url: string
-          quantity: number
           cost_basis: number
           latest_price: number
+          logo_url: string
+          name: string
+          quantity: number
+          ticker: string
         }[]
       }
       get_transaction_feed: {
         Args: {
-          p_user_id: string
-          page_size: number
-          page_number: number
-          start_date?: string
-          end_date?: string
           asset_class_filter?: string
+          end_date?: string
+          p_user_id: string
+          page_number: number
+          page_size: number
+          start_date?: string
         }
         Returns: {
-          transaction_id: string
-          transaction_date: string
-          type: string
-          description: string
-          ticker: string
-          name: string
-          logo_url: string
-          quantity: number
           amount: number
           currency_code: string
+          description: string
+          logo_url: string
+          name: string
+          quantity: number
+          ticker: string
+          transaction_date: string
+          transaction_id: string
+          type: string
         }[]
       }
       import_transactions: {
         Args: {
-          p_user_id: string
-          p_transactions_data: Json
           p_start_date: string
+          p_transactions_data: Json
+          p_user_id: string
         }
         Returns: undefined
       }
+      process_dnse_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       upsert_daily_crypto_price: {
-        Args: { p_ticker: string; p_price: number }
+        Args: { p_price: number; p_ticker: string }
         Returns: undefined
       }
       upsert_daily_stock_price: {
-        Args: { p_ticker: string; p_price: number }
+        Args: { p_price: number; p_ticker: string }
         Returns: undefined
       }
     }
