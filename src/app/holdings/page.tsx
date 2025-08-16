@@ -19,7 +19,6 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useState } from "react"
 import { mutate } from "swr"
-import { formatNum, compactNum } from "@/lib/utils"
 
 export default function Page() {
   const { holdingsData, isLoading: loading } = useDashboardData()
@@ -107,11 +106,15 @@ export default function Page() {
                     ticker={stock.ticker}
                     name={stock.name}
                     logoUrl={stock.logo_url}
-                    quantity={formatNum(stock.quantity)}
-                    totalAmount={formatNum(stock.total_amount)}
-                    pnlPct={stock.cost_basis > 0 ? formatNum(((stock.total_amount / stock.cost_basis) - 1) * 100, 1) : "0.0"}
-                    pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
-                    price={formatNum(stock.latest_price / 1000, 2)}
+                    quantity={stock.quantity}
+                    totalAmount={stock.total_amount}
+                    pnlPct={
+                      stock.cost_basis > 0
+                        ? (stock.total_amount / stock.cost_basis - 1) * 100
+                        : 0
+                    }
+                    pnlNet={stock.total_amount - stock.cost_basis}
+                    price={stock.latest_price / 1000}
                     variant="full"
                     type="stock"
                   />
@@ -136,15 +139,15 @@ export default function Page() {
                     ticker={crypto.ticker}
                     name={crypto.name}
                     logoUrl={crypto.logo_url}
-                    quantity={formatNum(crypto.quantity, 6)}
-                    totalAmount={formatNum(crypto.total_amount)}
+                    quantity={crypto.quantity}
+                    totalAmount={crypto.total_amount}
                     pnlPct={
                       crypto.cost_basis > 0
-                        ? formatNum(((crypto.total_amount / crypto.cost_basis) - 1) * 100, 1)
-                        : "0.0"
+                        ? (crypto.total_amount / crypto.cost_basis - 1) * 100
+                        : 0
                     }
-                    pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
-                    price={compactNum(crypto.latest_price)}
+                    pnlNet={crypto.total_amount - crypto.cost_basis}
+                    price={crypto.latest_price}
                     variant="full"
                     type="crypto"
                   />

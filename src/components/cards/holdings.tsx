@@ -2,7 +2,6 @@ import {
   SecurityItem,
   SecuritySkeleton
 } from "@/components/list-item/security"
-import { formatNum, compactNum } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -48,9 +47,9 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
                       ticker={stock.ticker}
                       name={stock.name}
                       logoUrl={stock.logo_url}
-                      totalAmount={formatNum(stock.total_amount)}
-                      pnlPct={formatNum((stock.total_amount / stock.cost_basis - 1) * 100, 1)}
-                      pnlNet={compactNum(stock.total_amount - stock.cost_basis)}
+                      totalAmount={stock.total_amount}
+                      pnlPct={(stock.total_amount / stock.cost_basis - 1) * 100}
+                      pnlNet={stock.total_amount - stock.cost_basis}
                       variant="compact"
                       type="stock"
                     />
@@ -63,10 +62,10 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
                       ticker={crypto.ticker}
                       name={crypto.name}
                       logoUrl={crypto.logo_url}
-                      totalAmount={formatNum(crypto.total_amount)}
-                      quantity={formatNum(crypto.quantity, 2)}
-                      pnlPct={formatNum((crypto.total_amount / crypto.cost_basis - 1) * 100, 1)}
-                      pnlNet={compactNum(crypto.total_amount - crypto.cost_basis)}
+                      totalAmount={crypto.total_amount}
+                      quantity={crypto.quantity}
+                      pnlPct={(crypto.total_amount / crypto.cost_basis - 1) * 100}
+                      pnlNet={crypto.total_amount - crypto.cost_basis}
                       variant="compact"
                       type="crypto"
                     />

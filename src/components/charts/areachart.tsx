@@ -41,12 +41,12 @@ export function Areachart({
               <stop
                 offset="0%"
                 stopColor={`var(--color-${key})`}
-                stopOpacity={0.4}
+                stopOpacity={0.8}
               />
               <stop
                 offset="80%"
                 stopColor={`var(--color-${key})`}
-                stopOpacity={0.1}
+                stopOpacity={0.2}
               />
             </linearGradient>
           ))}

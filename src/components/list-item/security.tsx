@@ -14,16 +14,17 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatNum, compactNum } from "@/lib/utils"
 
 interface SecurityItemProps {
   ticker: string;
   name: string;
   logoUrl: string;
-  totalAmount: string;
-  pnlPct: string;
-  pnlNet: string;
-  quantity?: string;
-  price?: string;
+  totalAmount: number;
+  pnlPct: number;
+  pnlNet: number;
+  quantity?: number;
+  price?: number;
   variant?: 'full' | 'compact';
   type: 'stock' | 'crypto';
 }
@@ -40,7 +41,6 @@ function SecurityItem({
   variant = 'full',
   type
 }: SecurityItemProps) {
-  const returnValue = pnlPct !== "..." ? parseFloat(pnlPct) : NaN;
   const isCompact = variant === 'compact';
 
   return (
@@ -65,28 +65,40 @@ function SecurityItem({
                   variant="outline"
                   className="rounded-full gap-0.5 text-muted-foreground"
                 >
-                  {type === 'stock' ? <Leaf /> : <Bitcoin />}{quantity}
+                  {quantity 
+                    ? type === 'stock'
+                      ? <><Leaf />{formatNum(quantity)}</>
+                      : <><Bitcoin />{formatNum(quantity, 5)}</>
+                    : 0
+                  }
                 </Badge>
                 <Badge
                   variant="outline"
                   className="rounded-full gap-1 text-muted-foreground"
                 >
-                  <Coins />{price}
+                  <Coins />
+                  {price
+                    ? type === 'stock'
+                      ? formatNum(price, 2)
+                      : compactNum(price)
+                    : 0
+                  }
                 </Badge>
               </CardDescription>
             )}
           </div>
           <div className="flex flex-col justify-end pr-2">
             <CardTitle className="text-right text-sm">
-              {totalAmount}
+              {formatNum(totalAmount)}
             </CardTitle>
             <CardDescription className="flex items-center justify-end text-xs gap-1">
-              <div className="[&_svg]:size-4 [&_svg]:stroke-1 flex gap-1">
-                {returnValue !== null && returnValue < 0
+              <div className="[&_svg]:size-4 [&_svg]:stroke-2 flex gap-1">
+                {pnlNet !== null && pnlNet < 0
                   ? <TrendingDown className="text-red-700 dark:text-red-400" />
                   : <TrendingUp className="text-green-700 dark:text-green-400" />
                 }
-                {`${pnlNet} (${pnlPct}%)`}
+                {compactNum(Math.abs(pnlNet))}
+                {` (${formatNum(Math.abs(pnlPct), 1)}%)`}
               </div>
             </CardDescription>
           </div>
