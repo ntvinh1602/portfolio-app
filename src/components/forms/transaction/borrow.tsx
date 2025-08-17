@@ -41,6 +41,29 @@ export function BorrowForm({
           onChange={handleInputChange}
         />
       </div>
+      <div className="grid gap-3 col-span-2">
+        <Label htmlFor="asset">Cash Asset</Label>
+        <Select
+          name="asset"
+          onValueChange={handleSelectChange("asset")}
+          value={formState.asset}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select cash asset..." />
+          </SelectTrigger>
+          <SelectContent>
+            {assets
+              .filter(
+                asset => asset.securities && asset.securities.asset_class === "cash",
+              )
+              .map(asset => (
+                <SelectItem key={asset.id} value={asset.id}>
+                  {asset.securities?.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid gap-3">
         <Label htmlFor="principal">Principal Amount</Label>
         <Input
@@ -64,29 +87,6 @@ export function BorrowForm({
           value={formState.interest_rate || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="asset">Cash Asset</Label>
-        <Select
-          name="asset"
-          onValueChange={handleSelectChange("asset")}
-          value={formState.asset}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select cash asset..." />
-          </SelectTrigger>
-          <SelectContent>
-            {assets
-              .filter(
-                asset => asset.securities && asset.securities.asset_class === "cash",
-              )
-              .map(asset => (
-                <SelectItem key={asset.id} value={asset.id}>
-                  {asset.securities?.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
       </div>
     </>
   )

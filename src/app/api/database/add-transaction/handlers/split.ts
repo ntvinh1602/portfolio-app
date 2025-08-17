@@ -37,14 +37,12 @@ export async function handleSplit(
     throw new Error(`Failed to fetch asset details: ${assetError.message}`)
   }
 
-  const finalDescription = `Stock split for ${assetData.ticker}`
-
   const { error } = await supabase.rpc("handle_split_transaction", {
     p_user_id: userId,
     p_asset_id: asset_id,
     p_quantity: quantity,
     p_transaction_date: transaction_date,
-    p_description: finalDescription,
+    p_description: `Stock split for ${assetData.ticker}`,
   })
 
   if (error) {

@@ -1,25 +1,26 @@
 import { createClient } from "@/lib/supabase/middleware"
 import { z } from "zod"
-import { sellSchema } from "@/lib/schemas/transactions"
+import { dividendSchema } from "@/lib/schemas/transactions"
 
-export async function handleSell(
+export async function handleDividend(
   supabase: ReturnType<typeof createClient>["supabase"],
   userId: string,
-  data: z.infer<typeof sellSchema>
+  data: z.infer<typeof dividendSchema>,
 ) {
   const {
     transaction_date,
-    asset,
-    cash_asset_id,
+    transaction_type,
     quantity,
-    price,
+    dividend_asset,
+    asset
   } = data
 
-  const { data: assetSecurity, error: assetSecurityError } = await supabase
-    .from("assets")
-    .select("security_id")
-    .eq("id", asset)
-    .single()
+  const { data: assetSecurity, error: assetSecurityError } =
+    await supabase
+      .from("assets")
+      .select("security_id")
+      .eq("id", dividend_asset)
+      .single()
 
   if (assetSecurityError) {
     console.error("Error fetching asset security id:", assetSecurityError)
@@ -39,19 +40,21 @@ export async function handleSell(
     throw new Error(`Failed to fetch asset details: ${assetError.message}`)
   }
 
-  const { error } = await supabase.rpc("add_sell_transaction", {
+  const { error } = await supabase.rpc("add_income_transaction", {
     p_user_id: userId,
-    p_asset_id: asset,
-    p_quantity_to_sell: quantity,
-    p_price: price,
     p_transaction_date: transaction_date,
-    p_cash_asset_id: cash_asset_id,
-    p_description: `Sell ${quantity} ${assetData.ticker} at ${price}`,
+    p_quantity: quantity,
+    p_description: `Dividend from ${assetData.ticker}`,
+    p_asset_id: asset,
+    p_transaction_type: transaction_type,
   })
 
   if (error) {
-    console.error("Error calling add_sell_transaction:", error)
-    throw new Error(`Failed to execute sell transaction: ${error.message}`)
+    console.error(
+      `Error calling add_income_transaction:`, error)
+    throw new Error(
+      `Failed to execute ${transaction_type} transaction: ${error.message}`,
+    )
   }
 
   return { response: { success: true }, status: 200 }

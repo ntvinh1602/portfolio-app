@@ -8,6 +8,7 @@ import {
   handleDeposit,
   handleExpense,
   handleIncome,
+  handleDividend,
   handleSell,
   handleSplit,
   handleWithdraw,
@@ -48,8 +49,10 @@ export async function POST(request: NextRequest) {
         result = await handleSell(supabase, user.id, transactionData)
         break
       case "income":
-      case "dividend":
         result = await handleIncome(supabase, user.id, transactionData)
+        break
+      case "dividend":
+        result = await handleDividend(supabase, user.id, transactionData)
         break
       case "expense":
         result = await handleExpense(supabase, user.id, transactionData)

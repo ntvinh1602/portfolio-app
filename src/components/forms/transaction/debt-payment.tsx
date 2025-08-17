@@ -51,7 +51,7 @@ export function DebtPaymentForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-3 col-span-2">
         <Label htmlFor="asset">Cash Asset</Label>
         <Select
           name="asset"

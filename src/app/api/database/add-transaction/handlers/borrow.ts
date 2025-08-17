@@ -12,12 +12,8 @@ export async function handleBorrow(
     lender,
     principal,
     interest_rate,
-    description,
     asset: cash_asset_id,
   } = data
-
-  const finalDescription =
-    description || `Loan from ${lender} at ${interest_rate}% p.a`
 
   const { error } = await supabase.rpc("add_borrow_transaction", {
     p_user_id: userId,
@@ -26,7 +22,7 @@ export async function handleBorrow(
     p_interest_rate: interest_rate,
     p_transaction_date: transaction_date,
     p_cash_asset_id: cash_asset_id,
-    p_description: finalDescription,
+    p_description: `Loan from ${lender} at ${interest_rate}% p.a`,
   })
 
   if (error) {

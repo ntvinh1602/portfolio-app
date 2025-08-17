@@ -12,7 +12,6 @@ export async function handleDebtPayment(
     debt: debt_id,
     principal_payment,
     interest_payment,
-    description,
     asset: cash_asset_id,
   } = data
 
@@ -27,8 +26,6 @@ export async function handleDebtPayment(
     throw new Error(`Failed to fetch debt details: ${debtError.message}`)
   }
 
-  const finalDescription = description || `Debt payment to ${debtData.lender_name}`
-
   const { error } = await supabase.rpc("add_debt_payment_transaction", {
     p_user_id: userId,
     p_debt_id: debt_id,
@@ -36,7 +33,7 @@ export async function handleDebtPayment(
     p_interest_payment: interest_payment,
     p_transaction_date: transaction_date,
     p_cash_asset_id: cash_asset_id,
-    p_description: finalDescription,
+    p_description: `Debt payment to ${debtData.lender_name}`,
   })
 
   if (error) {

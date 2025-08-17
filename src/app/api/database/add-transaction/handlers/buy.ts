@@ -12,8 +12,7 @@ export async function handleBuy(
     asset,
     cash_asset_id,
     quantity,
-    price,
-    description,
+    price
   } = data
 
   const { data: assetSecurity, error: assetSecurityError } = await supabase
@@ -40,9 +39,6 @@ export async function handleBuy(
     throw new Error(`Failed to fetch asset details: ${assetError.message}`)
   }
 
-  const finalDescription =
-    description || `Buy ${quantity} ${assetData.ticker} at ${price}`
-
   const { error } = await supabase.rpc("add_buy_transaction", {
     p_user_id: userId,
     p_transaction_date: transaction_date,
@@ -50,7 +46,7 @@ export async function handleBuy(
     p_cash_asset_id: cash_asset_id,
     p_quantity: quantity,
     p_price: price,
-    p_description: finalDescription,
+    p_description: `Buy ${quantity} ${assetData.ticker} at ${price}`,
   })
 
   if (error) {

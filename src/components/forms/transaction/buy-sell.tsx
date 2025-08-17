@@ -37,7 +37,7 @@ export function TradeForm({
 
   return (
     <>
-      <div className="grid gap-3">
+      <div className="grid gap-3 col-span-2">
         <Label htmlFor="cash_asset_id">Cash</Label>
         <Select
           name="cash_asset_id"

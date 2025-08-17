@@ -34,7 +34,7 @@ export function DividendForm({
 
   return (
     <>
-      <div className="grid gap-3">
+      <div className="grid gap-3 col-span-2">
         <Label htmlFor="quantity">Quantity</Label>
         <Input
           id="quantity"

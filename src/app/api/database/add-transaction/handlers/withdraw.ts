@@ -7,7 +7,31 @@ export async function handleWithdraw(
   userId: string,
   data: z.infer<typeof withdrawSchema>
 ) {
-  const { transaction_date, quantity, description, asset } = data
+  const { transaction_date, quantity, asset } = data
+
+  const { data: assetSecurity, error: assetSecurityError } = await supabase
+    .from("assets")
+    .select("security_id")
+    .eq("id", asset)
+    .single()
+
+  if (assetSecurityError) {
+    console.error("Error fetching asset security id:", assetSecurityError)
+    throw new Error(
+      `Failed to fetch asset security details: ${assetSecurityError.message}`,
+    )
+  }
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("securities")
+    .select("ticker")
+    .eq("id", assetSecurity.security_id)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
 
   const { error, data: result } = await supabase.rpc(
     "handle_withdraw_transaction",
@@ -15,7 +39,7 @@ export async function handleWithdraw(
       p_user_id: userId,
       p_transaction_date: transaction_date,
       p_quantity: quantity,
-      p_description: description,
+      p_description: `${assetData.ticker} withdrawal`,
       p_asset_id: asset,
     },
   )

@@ -7,7 +7,35 @@ export async function handleDeposit(
   userId: string,
   data: z.infer<typeof depositSchema>
 ) {
-  const { transaction_date, quantity, description, asset } = data
+  const { transaction_date, quantity, asset } = data
+
+  const { data: assetSecurity, error: assetSecurityError } = await supabase
+    .from("assets")
+    .select("security_id")
+    .eq("id", asset)
+    .single()
+
+  if (assetSecurityError) {
+    console.error("Error fetching asset security id:", assetSecurityError)
+    throw new Error(
+      `Failed to fetch asset security details: ${assetSecurityError.message}`,
+    )
+  }
+
+  const { data: assetData, error: assetError } = await supabase
+    .from("securities")
+    .select("ticker")
+    .eq("id", assetSecurity.security_id)
+    .single()
+
+  if (assetError) {
+    console.error("Error fetching asset ticker:", assetError)
+    throw new Error(`Failed to fetch asset details: ${assetError.message}`)
+  }
+
+  const description = assetData.ticker === 'EPF'
+    ? `${assetData.ticker} monthly contribution`
+    : `${assetData.ticker} deposit`
 
   const { error, data: result } = await supabase.rpc(
     "add_deposit_transaction",

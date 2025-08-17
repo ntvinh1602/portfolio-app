@@ -4,7 +4,6 @@ import * as React from "react"
 import { formatISO } from "date-fns"
 import DatePicker from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -20,9 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Enums, Constants, Tables } from "@/lib/database.types"
+import { Enums, Constants } from "@/lib/database.types"
 import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
-import { useTransactionFormData, AssetWithSecurity } from "@/hooks/useTransactionFormData"
+import { useTransactionFormData } from "@/hooks/useTransactionFormData"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { CashFlowForm } from "./cashflow"
@@ -57,7 +56,7 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
   const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
-  const { assets, debts, loading } = useTransactionFormData(open)
+  const { loading } = useTransactionFormData(open)
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))
@@ -95,14 +94,13 @@ export function TransactionForm({
 
   React.useEffect(() => {
     setTransactionType(initialTransactionType)
-    setFormState({})
+    setFormState({ asset: "" })
   }, [initialTransactionType])
 
   const buildRequestBody = React.useCallback(() => {
     const baseBody = {
       transaction_date: formatISO(date!, { representation: "date" }),
       transaction_type: transactionType,
-      description: formState.description,
     }
 
     const parseFloat = (value: string | undefined): number =>
@@ -111,24 +109,33 @@ export function TransactionForm({
     switch (transactionType) {
       case "deposit":
       case "withdraw":
+        return {
+          ...baseBody,
+          quantity: parseFloat(formState.quantity),
+          asset: formState.asset
+        }
       case "income":
       case "expense":
+        return {
+          ...baseBody,
+          description: formState.description,
+          quantity: parseFloat(formState.quantity),
+          asset: formState.asset
+        }
       case "dividend":
         return {
           ...baseBody,
           quantity: parseFloat(formState.quantity),
           asset: formState.asset,
-          ...(transactionType === "dividend" && {
-            dividend_asset: formState.dividend_asset,
-          }),
+          dividend_asset: formState.dividend_asset
         }
 
       case "buy":
       case "sell":
         return {
           ...baseBody,
-          asset: formState.asset,
           cash_asset_id: formState.cash_asset_id,
+          asset: formState.asset,
           quantity: parseFloat(formState.quantity),
           price: parseFloat(formState.price),
         }
@@ -137,24 +144,23 @@ export function TransactionForm({
         return {
           ...baseBody,
           lender: formState.lender,
+          asset: formState.asset,
           principal: parseFloat(formState.principal),
           interest_rate: parseFloat(formState.interest_rate),
-          asset: formState.asset,
         }
 
       case "debt_payment":
         return {
           ...baseBody,
           debt: formState.debt,
+          asset: formState.asset,
           principal_payment: parseFloat(formState.principal_payment),
           interest_payment: parseFloat(formState.interest_payment),
-          asset: formState.asset,
         }
 
       case "split":
         return {
-          transaction_date: formatISO(date!, { representation: "date" }),
-          transaction_type: "split",
+          ...baseBody,
           asset: formState.asset,
           split_quantity: parseFloat(formState.split_quantity),
         }
@@ -166,7 +172,6 @@ export function TransactionForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
 
     if (!date) {
       toast.error("Please select a date.")
@@ -241,41 +246,6 @@ export function TransactionForm({
   const formatTransactionType = (type: string) =>
     type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
  
-   const placeholder = React.useMemo(() => {
-     const getAssetName = (id: string) => {
-       const asset = assets.find((a: AssetWithSecurity) => a.id === id)
-       return asset?.securities?.ticker || asset?.securities?.name || "..."
-     }
-     const getDebtName = (id: string) => debts.find((d: Tables<'debts'>) => d.id === id)?.lender_name || "..."
- 
-     switch (transactionType) {
-       case "buy":
-         return `Buy ${formState.quantity || "..."} ${getAssetName(
-         formState.asset || "..."
-       )} at ${formState.price || "..."}`
-       case "sell":
-         return `Sell ${formState.quantity || "..."} ${getAssetName(
-         formState.asset || "..."
-       )} at ${formState.price || "..."}`
-       case "dividend":
-         return `Dividend from ${getAssetName(
-         formState.dividend_asset || "..."
-       )}`
-       case "debt_payment":
-         return `Debt payment to ${getDebtName(
-         formState.debt || "..."
-       )}`
-       case "split":
-         return `Stock split for ${getAssetName(formState.asset || "...")}`
-       case "borrow":
-         return `Loan from ${formState.lender || "..."} at ${
-         formState.interest_rate || "..."
-       }% p.a`
-       default:
-         return "Enter a description..."
-     }
-   }, [transactionType, formState, assets, debts])
- 
    return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -310,17 +280,6 @@ export function TransactionForm({
                      ))}
                    </SelectContent>
                  </Select>
-               </div>
-               <div className="grid col-span-2 gap-3">
-                 <Label htmlFor="description">Description</Label>
-                 <Input
-                   id="description"
-                   name="description"
-                   type="text"
-                   placeholder={placeholder}
-                   value={formState.description || ""}
-                   onChange={handleInputChange}
-                 />
                </div>
                {loading ? (
                  <div className="col-span-2 flex justify-center items-center h-24">
