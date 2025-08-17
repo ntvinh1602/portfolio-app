@@ -41,7 +41,7 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
 
   return (
     <Card className="bg-card/0 gap-1 py-0 border-none">
-      <CardTitle className="text-sm font-thin">
+      <CardTitle className="text-sm text-muted-foreground font-thin">
         {format(new Date(date), "EEEE, dd MMMM yyyy")}
       </CardTitle>
       <CardContent className="flex items-center text-sm font-thin border-t py-2 px-0 gap-2">
@@ -55,11 +55,11 @@ function TransactionCard( { date, type, description, ticker, name, logoUrl, quan
           />
         ) : (
           <div className="h-9 w-9 flex-shrink-0 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-xs text-primary-foreground">{ticker}</span>
+            <span className="text-xs">{ticker}</span>
           </div>
         )}
         <div className="flex flex-col w-full min-w-0 gap-1 pl-2">
-          <div className="flex flex-1 text-foreground justify-between min-w-0">
+          <div className="flex flex-1 justify-between min-w-0">
             <span className=" truncate min-w-0 ">
               {description}
             </span>

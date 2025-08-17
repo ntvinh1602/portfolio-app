@@ -63,7 +63,7 @@ function SecurityItem({
               <CardDescription className="flex items-center gap-1 truncate pt-1">
                 <Badge
                   variant="outline"
-                  className="rounded-full gap-0.5 text-muted-foreground"
+                  className="rounded-full gap-0.5 text-muted-foreground bg-muted"
                 >
                   {quantity 
                     ? type === 'stock'
@@ -74,7 +74,7 @@ function SecurityItem({
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-full gap-1 text-muted-foreground"
+                  className="rounded-full gap-1 text-muted-foreground bg-muted"
                 >
                   <Coins />
                   {price
