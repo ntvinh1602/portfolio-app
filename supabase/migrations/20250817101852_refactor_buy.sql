@@ -1,4 +1,4 @@
-drop function if exists "public"."add_buy_transaction"("uuid", "date", "uuid", "uuid", numeric, numeric, "text", timestamp with time zone)
+drop function if exists "public"."add_buy_transaction"("uuid", "date", "uuid", "uuid", numeric, numeric, "text", timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION "public"."add_buy_transaction"("p_user_id" "uuid", "p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
     LANGUAGE "plpgsql"
