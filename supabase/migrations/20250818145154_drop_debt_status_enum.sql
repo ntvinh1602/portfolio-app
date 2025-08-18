@@ -1,0 +1,1 @@
+drop type debt_status;

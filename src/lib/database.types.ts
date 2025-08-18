@@ -204,30 +204,30 @@ export type Database = {
           currency_code: string
           id: string
           interest_rate: number
+          is_active: boolean
           lender_name: string
           principal_amount: number
           start_date: string
-          status: Database["public"]["Enums"]["debt_status"]
           user_id: string
         }
         Insert: {
           currency_code: string
           id?: string
           interest_rate?: number
+          is_active?: boolean
           lender_name: string
           principal_amount: number
           start_date: string
-          status: Database["public"]["Enums"]["debt_status"]
           user_id: string
         }
         Update: {
           currency_code?: string
           id?: string
           interest_rate?: number
+          is_active?: boolean
           lender_name?: string
           principal_amount?: number
           start_date?: string
-          status?: Database["public"]["Enums"]["debt_status"]
           user_id?: string
         }
         Relationships: [
@@ -285,35 +285,6 @@ export type Database = {
           txn_created?: boolean | null
         }
         Relationships: []
-      }
-      live_securities_data: {
-        Row: {
-          asset: Database["public"]["Enums"]["asset_class"]
-          price: number
-          symbol: string
-          trade_time: string
-        }
-        Insert: {
-          asset: Database["public"]["Enums"]["asset_class"]
-          price: number
-          symbol: string
-          trade_time?: string
-        }
-        Update: {
-          asset?: Database["public"]["Enums"]["asset_class"]
-          price?: number
-          symbol?: string
-          trade_time?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "live_securities_data_symbol_fkey"
-            columns: ["symbol"]
-            isOneToOne: false
-            referencedRelation: "securities"
-            referencedColumns: ["ticker"]
-          },
-        ]
       }
       lot_consumptions: {
         Row: {
@@ -416,7 +387,6 @@ export type Database = {
           creation_date: string
           creation_transaction_id: string
           id: string
-          origin: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity: number
           remaining_quantity: number
           user_id: string
@@ -427,7 +397,6 @@ export type Database = {
           creation_date: string
           creation_transaction_id: string
           id?: string
-          origin: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity: number
           remaining_quantity: number
           user_id: string
@@ -438,7 +407,6 @@ export type Database = {
           creation_date?: string
           creation_transaction_id?: string
           id?: string
-          origin?: Database["public"]["Enums"]["tax_lot_origin"]
           original_quantity?: number
           remaining_quantity?: number
           user_id?: string
@@ -695,10 +663,10 @@ export type Database = {
           currency_code: string
           id: string
           interest_rate: number
+          is_active: boolean
           lender_name: string
           principal_amount: number
           start_date: string
-          status: Database["public"]["Enums"]["debt_status"]
           user_id: string
         }[]
       }
@@ -851,8 +819,6 @@ export type Database = {
     Enums: {
       asset_class: "cash" | "stock" | "crypto" | "epf" | "equity" | "liability"
       currency_type: "fiat" | "crypto"
-      debt_status: "active" | "paid_off"
-      tax_lot_origin: "purchase" | "split" | "deposit"
       transaction_type:
         | "buy"
         | "sell"
@@ -993,8 +959,6 @@ export const Constants = {
     Enums: {
       asset_class: ["cash", "stock", "crypto", "epf", "equity", "liability"],
       currency_type: ["fiat", "crypto"],
-      debt_status: ["active", "paid_off"],
-      tax_lot_origin: ["purchase", "split", "deposit"],
       transaction_type: [
         "buy",
         "sell",
