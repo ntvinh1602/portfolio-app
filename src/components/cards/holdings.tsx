@@ -25,7 +25,7 @@ function HoldingsCompact({ stockHoldings, cryptoHoldings }: HoldingsCompactProps
   }
 
   return (
-    <div className="px-6">
+    <div className="px-6 md:pl-2">
       <Card className="gap-1 py-0 border-0">
         <CardHeader className="px-0">
           <CardDescription

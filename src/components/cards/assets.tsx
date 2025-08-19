@@ -103,7 +103,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
 
   return (
     <Card className="bg-muted/0 py-0 border-none gap-0">
-      <CardHeader>
+      <CardHeader className="md:pr-2">
         <CardDescription
           className="flex items-center w-fit"
           onClick={handleNavigation}
@@ -120,7 +120,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
           </Badge>
         </CardAction>
       </CardHeader>
-      <CardContent className="flex w-full justify-between">
+      <CardContent className="flex w-full justify-between md:pr-2">
         <Piechart
           data={assetChartData}
           chartConfig={assetChartCfg}

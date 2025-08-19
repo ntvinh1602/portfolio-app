@@ -53,7 +53,7 @@ export default function Page() {
       <PageContent className="px-0 gap-4">
         <Carousel opts={{ align: "center" }} className="w-full">
           <CarouselContent className="-ml-2 h-[300px]">
-            <CarouselItem className="basis-11/12 pl-8">
+            <CarouselItem className="basis-11/12 md:basis-1/2 pl-8">
               {isLoading ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-[180px]" /> :
                 <ChartCard
                   description="Total Equity"
@@ -80,7 +80,7 @@ export default function Page() {
                 />
               }
             </CarouselItem>
-            <CarouselItem className="basis-11/12 pl-1 pr-6">
+            <CarouselItem className="basis-11/12 md:basis-1/2 pl-1 pr-6">
               {isLoading ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-[210px]" /> :
                 <ChartCard
                   cardClassName="gap-2 h-full"
@@ -115,16 +115,22 @@ export default function Page() {
             </CarouselItem>
           </CarouselContent>
         </Carousel>
-        {isLoading ? <AssetCardSkeleton /> :
-          <AssetCard assetSummaryData={assetSummaryData} />
-        }
-        <div className="flex flex-col gap-6">
-          {isLoading ? <HoldingsCompactSkeleton /> :
-            <HoldingsCompact
-              stockHoldings={holdingsData.stockHoldings}
-              cryptoHoldings={holdingsData.cryptoHoldings}
-            />
-          }
+        <div className="grid grid-cols-2">
+          <div className="col-span-2 md:col-span-1 h-[180px]">
+            {isLoading
+              ? <AssetCardSkeleton />
+              : <AssetCard assetSummaryData={assetSummaryData} />
+            }
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            {isLoading
+              ? <HoldingsCompactSkeleton />
+              : <HoldingsCompact
+                  stockHoldings={holdingsData.stockHoldings}
+                  cryptoHoldings={holdingsData.cryptoHoldings}
+                />
+            }
+          </div>
         </div>
       </PageContent>
       <BottomNavBar />
