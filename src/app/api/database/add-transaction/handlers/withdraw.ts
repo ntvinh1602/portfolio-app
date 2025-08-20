@@ -34,7 +34,7 @@ export async function handleWithdraw(
   }
 
   const { error, data: result } = await supabase.rpc(
-    "handle_withdraw_transaction",
+    "add_withdraw_transaction",
     {
       p_user_id: userId,
       p_transaction_date: transaction_date,
