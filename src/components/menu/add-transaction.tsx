@@ -10,11 +10,12 @@ import {
 import { Enums } from "@/lib/database.types"
 
 type AddTransactionMenuProps = {
+  align?: "center" | "end"
   onMenuItemClick: (type: Enums<"transaction_type">) => void
   children: React.ReactNode
 }
 
-export function AddTransactionMenu({ onMenuItemClick, children }: AddTransactionMenuProps) {
+export function AddTransactionMenu({ align = "center", onMenuItemClick, children }: AddTransactionMenuProps) {
   const transactionTypes: Enums<"transaction_type">[] = [
     "buy", "sell", "deposit", "withdraw", "income", "expense",
     "borrow", "debt_payment", "dividend", "split"
@@ -26,7 +27,7 @@ export function AddTransactionMenu({ onMenuItemClick, children }: AddTransaction
         {children}
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="center"
+        align={align}
         className="rounded-2xl bg-card/25 backdrop-blur-sm mb-4"
       >
         {transactionTypes.map(type => (

@@ -32,7 +32,7 @@ export function BottomNavBar() {
   }
 
   return (
-    <div className="fixed bottom-0 w-full px-2 flex h-[70px] justify-around items-center bg-muted/40 dark:bg-card/25 backdrop-blur-sm max-w-4xl mx-auto text-muted-foreground text-xs font-thin [&_svg]:size-5 [&_svg]:stroke-[1]">
+    <div className="fixed bottom-0 w-full px-2 flex h-[70px] justify-around items-center bg-muted/40 dark:bg-card/25 backdrop-blur-sm max-w-6xl mx-auto text-muted-foreground text-xs font-thin [&_svg]:size-5 [&_svg]:stroke-[1]">
       <div
         className={cn("flex flex-col items-center gap-1", {
           "text-primary": pathname === "/",
