@@ -39,14 +39,6 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Assets Summary",
-          url: "/assets",
-        },
-        {
-          title: "Holdings",
-          url: "/holdings",
-        },
-        {
           title: "Debts",
           url: "/debts",
         },

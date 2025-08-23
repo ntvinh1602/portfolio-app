@@ -3,6 +3,12 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+  Card,
+  CardHeader,
+  CardAction,
+  CardTitle,
+} from "@/components/ui/card"
 
 interface SummaryCardProps {
   header?: boolean
@@ -28,26 +34,21 @@ function SummaryCard({
   }
 
   return (
-    <Button
-      variant={header ? "secondary" : "ghost"}
-      className={cn(
-        "flex rounded-md h-10 px-3 w-full justify-between font-thin text-foreground",
-        header && "bg-secondary dark:bg-primary-foreground border-primary/50 mt-2",
-      )}
-    >
-      {
-        link
-          ? <div
-              className="flex items-center gap-1"
-              onClick={handleNavigation}
-            >
-              <span>{label}</span>
-              <ChevronRight className="size-4" />
-            </div>
-          : <span>{label}</span>
-      }
-      <span>{value}</span>
-    </Button>
+    <Card className={`border-0 py-3 rounded-md ${header && "bg-muted dark:bg-muted/50"}`}>
+      <CardHeader className="flex items-center justify-between">
+        {link ? 
+          <CardTitle
+            className="flex items-center gap-1 font-thin text-sm"
+            onClick={handleNavigation}
+          >
+            <span>{label}</span>
+            <ChevronRight className="size-4 stroke-1" />
+          </CardTitle> :
+          <span className="font-thin text-sm">{label}</span>
+        }
+        <CardAction className="font-thin text-sm">{value}</CardAction>
+      </CardHeader>
+    </Card>
   )
 }
 

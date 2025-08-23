@@ -120,7 +120,7 @@ export function AssetCard({ assetSummaryData }: AssetCardProps) {
           </Badge>
         </CardAction>
       </CardHeader>
-      <CardContent className="flex md:flex-col w-full justify-between md:px-0">
+      <CardContent className="flex w-full justify-between md:px-0">
         <Piechart
           data={assetChartData}
           chartConfig={assetChartCfg}
