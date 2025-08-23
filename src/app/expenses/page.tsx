@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { format } from "date-fns"
-import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import {
   ChartBarStacked,
   BarStackedSkeleton,
@@ -21,6 +20,13 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { ChartConfig } from "@/components/ui/chart"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const monthlyChartConfig = {
   trading_fees: {
@@ -53,6 +59,7 @@ const structureChartConfig = {
 } satisfies ChartConfig
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const {
     monthlyExpenses,
     monthlyLoading,
@@ -79,9 +86,10 @@ export default function Page() {
   }))
 
   return (
-    <PageMain>
-      <PageHeader title="Expenses" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Expenses"/>
         <Card className="py-0 border-0">
           <CardHeader className="px-0">
             <CardTitle>Monthly Expenses</CardTitle>
@@ -127,8 +135,8 @@ export default function Page() {
             </div>
           </div>
         </Card>
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-
+import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import {
@@ -17,24 +17,25 @@ import {
   FileQuestion,
   LogOut,
   UserRound,
+  Moon
 } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Toggle } from "@/components/ui/toggle"
 
 type HeaderProps = {
   title: string;
 }
    
 export function Header(param: HeaderProps) {
+  const { resolvedTheme, setTheme } = useTheme()
   const isMobile = useIsMobile()
   const [user, setUser] = React.useState({
     name: "Anonymous",
     email: "",
     avatar: "",
   })
-
   const router = useRouter()
 
   const secondaryMenuItems = [
@@ -75,57 +76,73 @@ export function Header(param: HeaderProps) {
     fetchUser()
   }, [])
 
-  return (
-    <div>
-      {isMobile ? 
-        <header className="flex items-center p-6 w-full justify-between">
-          <h1 className="text-3xl font-regular">{param.title}</h1>
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <UserRound className="size-6 stroke-[1]"/>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="rounded-2xl bg-card/40 backdrop-blur-sm w-56"
-            >
-              <DropdownMenuLabel className="p-0 flex items-center gap-3 px-2 py-1.5">
-                <UserRound className="stroke-[1]"/>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-light">{user.name}</span>
-                  <span className="text-muted-foreground font-thin truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {secondaryMenuItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.label}
-                  onClick={() => handleNavigation(item.path)}
-                >
-                  <item.icon className="text-foreground stroke-[1]"/>{item.label}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
+  function MobileHeader() {
+    return ( 
+      <header className="flex items-center p-6 w-full justify-between">
+        <h1 className="text-3xl font-regular">{param.title}</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <UserRound className="size-6 stroke-[1]"/>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="rounded-2xl bg-card/40 backdrop-blur-sm w-56"
+          >
+            <DropdownMenuLabel className="p-0 flex items-center gap-3 px-2 py-1.5">
+              <UserRound className="stroke-[1]"/>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-light">{user.name}</span>
+                <span className="text-muted-foreground font-thin truncate text-xs">
+                  {user.email}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {secondaryMenuItems.map((item) => (
               <DropdownMenuItem
-                data-variant="destructive"
-                onClick={handleSignOut}
+                key={item.label}
+                onClick={() => handleNavigation(item.path)}
               >
-                <LogOut />Logout
+                <item.icon className="text-foreground stroke-[1]"/>{item.label}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header> : 
-        <header className="flex items-center py-2 w-full border-b mb-4">
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              data-variant="destructive"
+              onClick={handleSignOut}
+            >
+              <LogOut />Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
+    )
+  }
+
+  function DesktopHeader() {
+    return (
+      <header className="flex items-center py-2 w-full border-b mb-4 justify-between">
+        <div className="flex items-center gap-2">
           <SidebarTrigger/>
           <Separator
             orientation="vertical"
-            className="data-[orientation=vertical]:h-4"
+            className="data-[orientation=vertical]:h-4 -ml-2"
           />
-          <h1 className="text-xl px-2">{param.title}</h1>
-        </header>
-      }
-    </div>
+          <h1 className="text-xl">{param.title}</h1>
+        </div>
+        <Toggle
+          pressed={resolvedTheme === "dark"}
+          onPressedChange={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="font-thin"
+        >
+          <Moon className="stroke-1"/>Theme
+        </Toggle>
+      </header>
+    )
+  }
+
+  return (
+    <div>{isMobile ? <MobileHeader/> : <DesktopHeader/>}</div>
   )
 }
   

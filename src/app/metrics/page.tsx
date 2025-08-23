@@ -1,11 +1,6 @@
 "use client"
 
 import * as React from "react"
-import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
 import { TwoMetric } from "@/components/cards/two-metric"
 import {
   Card,
@@ -31,6 +26,13 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 
 const benchmarkChartConfig = {
@@ -45,6 +47,7 @@ const benchmarkChartConfig = {
 } satisfies ChartConfig
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const router = useRouter()
   const handleNavigation = () => {
       router.push("/earnings")
@@ -70,9 +73,10 @@ export default function Page() {
   const chartData = dateRange === "ytd" ? ytdBenchmarkData : lifetimeBenchmarkData
 
   return (
-    <PageMain>
-      <PageHeader title="Performance" />
-      <PageContent className="gap-6">
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Metrics"/>
         <TwoMetric
           title="Metrics"
           subtitle="Key indicators of investment efficiency"
@@ -166,8 +170,8 @@ export default function Page() {
             )}
           </Card>
         </div>
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

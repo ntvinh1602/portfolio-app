@@ -32,7 +32,7 @@ function HoldingsCompact({ variant, stockHoldings, cryptoHoldings }: HoldingsCom
           className="flex items-center w-fit"
           onClick={handleNavigation}
         >
-          Holdings<ChevronRight className="size-4"/>
+          Current Holdings<ChevronRight className="size-4"/>
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 md:px-0">

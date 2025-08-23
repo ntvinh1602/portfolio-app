@@ -46,29 +46,29 @@ export default function Page() {
     mtdPnLData,
     equityData,
     last90DBenchmarkData,
-    assetSummaryData: summaryData,
+    assetSummaryData,
     holdingsData,
     isLoading,
     error,
   } = useDashboardData()
   
-    const assetsItems = (summaryData?.assets || []).map((item: SummaryItem) => ({
+    const assetsItems = (assetSummaryData?.assets || []).map((item: SummaryItem) => ({
       ...item,
       totalAmount: formatNum(item.totalAmount),
     }))
-    const assetsTotalAmount = formatNum(summaryData?.totalAssets || 0)
+    const assetsTotalAmount = formatNum(assetSummaryData?.totalAssets || 0)
   
-    const liabilitiesItems = (summaryData?.liabilities || []).map((item: SummaryItem) => ({
+    const liabilitiesItems = (assetSummaryData?.liabilities || []).map((item: SummaryItem) => ({
       ...item,
       totalAmount: formatNum(item.totalAmount),
     }))
-    const liabilitiesTotalAmount = formatNum(summaryData?.totalLiabilities || 0)
+    const liabilitiesTotalAmount = formatNum(assetSummaryData?.totalLiabilities || 0)
   
-    const equityItems = (summaryData?.equity || []).map((item: SummaryItem) => ({
+    const equityItems = (assetSummaryData?.equity || []).map((item: SummaryItem) => ({
       ...item,
       totalAmount: formatNum(item.totalAmount),
     }))
-    const equityTotalAmount = formatNum(summaryData?.totalEquity || 0)
+    const equityTotalAmount = formatNum(assetSummaryData?.totalEquity || 0)
 
 
   function EquityChart() {
@@ -78,7 +78,7 @@ export default function Page() {
           <ChartCard
             description="Total Equity"
             descriptionLink="/earnings"
-            titleValue={summaryData?.totalEquity}
+            titleValue={assetSummaryData?.totalEquity}
             titleValueFormatter={(value) => formatNum(value)}
             changeValue={mtdPnLData}
             changeValueFormatter={(value) => `${compactNum(Math.abs(value))}`}
@@ -109,7 +109,7 @@ export default function Page() {
         {isLoading ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-[210px]" /> :
           <ChartCard
             cardClassName="gap-2 h-full"
-            description="Lifetime Return"
+            description="Total Return"
             descriptionLink="/metrics"
             titleValue={lifetimeReturnData}
             titleValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
@@ -143,10 +143,10 @@ export default function Page() {
 
   function AssetSummary() {
     return (
-      <Card className="px-4">
+      <Card className="px-4 h-fit">
         <div className="flex flex-col gap-2">
           <CardHeader className="px-0">
-            <CardTitle className="font-thin text-muted-foreground text-sm">
+            <CardTitle className="font-light text-muted-foreground text-sm">
               Balance Sheet
             </CardTitle>
           </CardHeader>
@@ -230,51 +230,40 @@ export default function Page() {
   return (
     <SidebarProvider>
       {!isMobile && <AppSidebar />}
-      <SidebarInset>
-        <div className="md:w-3/4 md:mx-auto">
-          <Header title="Home"/>
-          <div className="grid grid-cols-3 px-0 gap-4">
-            <div className="flex flex-col gap-4 col-span-3 md:col-span-1">
-              {isMobile ?
-                <Carousel
-                  opts={{ align: "center" }}
-                  className="w-full col-span-3 md:col-span-2"
-                >
-                  <CarouselContent className="-ml-2 h-[300px]">
-                    <CarouselItem className="basis-11/12 md:basis-1/2 pl-8">
-                      <EquityChart />
-                    </CarouselItem>
-                    <CarouselItem className="basis-11/12 md:basis-1/2 pl-1 pr-6">
-                      <Benchmarkchart />
-                    </CarouselItem>
-                  </CarouselContent>
-                </Carousel> :
-                <div className="flex flex-col gap-1">
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title={isMobile ? "Home" : "Dashboard"}/>
+        <div className="grid grid-cols-3 px-0 gap-4">
+          {isMobile ?
+            <Carousel opts={{ align: "center" }} className="w-full col-span-3">
+              <CarouselContent className="-ml-2 h-[300px]">
+                <CarouselItem className="basis-11/12 pl-8">
                   <EquityChart />
+                </CarouselItem>
+                <CarouselItem className="basis-11/12 pl-1 pr-6">
                   <Benchmarkchart />
-                </div>
-              }
+                </CarouselItem>
+              </CarouselContent>
+            </Carousel> :
+            <div className="flex flex-col col-span-1 gap-2">
+              <EquityChart />
+              <Benchmarkchart />
             </div>
-            <div className="flex flex-col col-span-3 md:col-span-1 gap-4 md:gap-8">
-              <div className="h-[180px] -mb-5">
-                {isLoading
-                  ? <AssetCardSkeleton />
-                  : <AssetCard assetSummaryData={summaryData} />
-                }
-              </div>
-              {isLoading
-                ? <HoldingsCompactSkeleton />
-                : <HoldingsCompact
-                    variant={isMobile ? "compact" : "full"}
-                    stockHoldings={holdingsData.stockHoldings}
-                    cryptoHoldings={holdingsData.cryptoHoldings}
-                  />
-              }
-            </div>
-            <div className="col-span-3 md:col-span-1 px-6 md:px-0">
-              {!isMobile && <AssetSummary />}
-            </div>
+          }
+          <div className="flex flex-col col-span-3 md:col-span-1">
+            {isLoading
+              ? <AssetCardSkeleton />
+              : <AssetCard assetSummaryData={assetSummaryData} />
+            }
+            {isLoading
+              ? <HoldingsCompactSkeleton />
+              : <HoldingsCompact
+                  variant={isMobile ? "compact" : "full"}
+                  stockHoldings={holdingsData.stockHoldings}
+                  cryptoHoldings={holdingsData.cryptoHoldings}
+                />
+            }
           </div>
+          {!isMobile && <AssetSummary />}
         </div>
       </SidebarInset>
       {isMobile && <BottomNavBar />}

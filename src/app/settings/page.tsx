@@ -4,11 +4,6 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import {
   Card,
@@ -26,8 +21,16 @@ import { Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import DatePicker from "@/components/date-picker"
 import { Toaster } from "@/components/ui/sonner"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -74,10 +77,11 @@ export default function Page() {
   }
 
   return (
-    <PageMain>
-      <Toaster />
-      <PageHeader title="Settings" />
-      <PageContent>
+    <SidebarProvider>
+      <Toaster/>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Settings"/>
         <Card className="gap-4">
           <CardHeader>
             <CardTitle>Theme</CardTitle>
@@ -139,8 +143,8 @@ export default function Page() {
             </CardContent>
           </div>
         </Card>
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

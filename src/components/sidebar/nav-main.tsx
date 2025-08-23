@@ -60,7 +60,7 @@ export function NavMain({
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
                             <a href={subItem.url}>
-                              <span className="font-thin text-muted-foreground">{subItem.title}</span>
+                              <span className="font-light text-muted-foreground">{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

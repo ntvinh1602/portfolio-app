@@ -2,11 +2,6 @@
 
 import * as React from "react"
 import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
-import {
   TransactionCard,
   TransactionSkeleton
 } from "@/components/list-item/transaction"
@@ -18,6 +13,13 @@ import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWRInfinite from "swr/infinite"
 import { fetcher } from "@/lib/fetcher"
 import { useAuth } from "@/hooks/useAuth"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type TransactionFeed = {
   transaction_id: string
@@ -36,6 +38,7 @@ type TransactionFeed = {
 const PAGE_SIZE = 6
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const { userId } = useAuth()
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [assetType, setAssetType] = React.useState("stock")
@@ -75,9 +78,10 @@ export default function Page() {
   ]
 
   return (
-    <PageMain>
-      <PageHeader title="Transactions" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Transactions"/>
         <div className="flex items-center justify-between">
           <DatePicker mode="range" selected={date} onSelect={setDate} />
         </div>
@@ -121,8 +125,8 @@ export default function Page() {
             </Button>
           )}
         </div>
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

@@ -1,11 +1,6 @@
 "use client"
 
 import * as React from "react"
-import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,8 +14,16 @@ import {
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { useState } from "react"
 import { mutate } from "swr"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const { holdingsData, isLoading: loading } = useDashboardData()
   let { stockHoldings, cryptoHoldings } = holdingsData
   stockHoldings = stockHoldings.sort((a, b) => b.total_amount - a.total_amount);
@@ -67,9 +70,10 @@ export default function Page() {
   }, [stockHoldings])
 
   return (
-    <PageMain>
-      <PageHeader title="Holdings" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Holdings"/>
         <Tabs defaultValue="stocks">
           <div className="flex gap-6 items-center">
             <TabsList className="w-full">
@@ -160,8 +164,8 @@ export default function Page() {
             </div>          
           </TabsContent>
         </Tabs>
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

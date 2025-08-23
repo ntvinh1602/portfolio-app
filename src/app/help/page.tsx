@@ -1,20 +1,26 @@
-import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
+"use client"
+
 import { HelpAccordion } from "@/components/help-accordion"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function Page() {
+  const isMobile = useIsMobile()
 
   return (
-    <PageMain>
-      <PageHeader title="Help" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Help"/>
         <HelpAccordion />
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

@@ -1,15 +1,22 @@
 "use client"
 
 import { DebtItem, DebtItemSkeleton } from "@/components/list-item/debt"
-import { PageContent, PageHeader, PageMain } from "@/components/page-layout"
 import { Tables } from "@/lib/database.types"
 import { format } from "date-fns"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { useAuth } from "@/hooks/useAuth"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const { userId } = useAuth()
   const { data: debts, error } = useSWR<Tables<"debts">[]>(
     userId ? `/api/query/${userId}/debts` : null,
@@ -39,9 +46,10 @@ export default function Page() {
   }
 
   return (
-    <PageMain>
-      <PageHeader title="Debts" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Debts"/>
         {error && <p>Error loading debts.</p>}
         {!debts && !error &&
         <>
@@ -61,8 +69,8 @@ export default function Page() {
             accruedInterest={calculateAccruedInterest(debt)}
           />
         ))}
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }

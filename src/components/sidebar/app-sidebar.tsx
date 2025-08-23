@@ -29,6 +29,7 @@ import { Button } from "../ui/button"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { TransactionForm } from "@/components/forms/transaction/add-transaction"
+import Link from "next/link"
 
 const data = {
   navMain: [
@@ -105,15 +106,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="/">
+              <Link href="/">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <TrendingUp className="size-4"/>
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight font-thin truncate">
+                <div className="grid flex-1 text-left text-sm leading-tight font-light truncate">
                   <span >Portfolio Tracker</span>
                   <span className="text-xs">To the Moon!</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -1,19 +1,22 @@
 "use client"
 
 import * as React from "react"
-import {
-  PageMain,
-  PageHeader,
-  PageContent,
-} from "@/components/page-layout"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
 import { formatNum } from "@/lib/utils"
 import { TwoMetric } from "@/components/cards/two-metric"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useEarningsData } from "@/hooks/useEarningsData"
+import {
+  SidebarInset,
+  SidebarProvider
+} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { Header } from "@/components/header"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function Page() {
+  const isMobile = useIsMobile()
   const [dateRange, setDateRange] = React.useState("12M")
   const { data, error } = useEarningsData(dateRange)
 
@@ -35,9 +38,10 @@ export default function Page() {
   ]
 
   return (
-    <PageMain>
-      <PageHeader title="Earnings" />
-      <PageContent>
+    <SidebarProvider>
+      {!isMobile && <AppSidebar />}
+      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+        <Header title="Earnings"/>
         <TabSwitcher
           options={tabOptions}
           onValueChange={setDateRange}
@@ -55,8 +59,8 @@ export default function Page() {
         />
         {error && <p>Error loading data</p>}
         <PnLTable data={data ?? []} />
-      </PageContent>
-      <BottomNavBar />
-    </PageMain>
+      </SidebarInset>
+      {isMobile && <BottomNavBar />}
+    </SidebarProvider>
   )
 }
