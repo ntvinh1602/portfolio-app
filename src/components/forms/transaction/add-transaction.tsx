@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Enums, Constants } from "@/lib/database.types"
+import { Enums, Constants } from "@/types/database.types"
 import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
 import { useTransactionFormData } from "@/hooks/useTransactionFormData"
 import { toast } from "sonner"

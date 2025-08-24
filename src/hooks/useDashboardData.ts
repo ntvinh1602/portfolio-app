@@ -6,6 +6,8 @@ import {
   calculateSharpeRatio,
 } from "@/lib/utils"
 import { lifetime } from "@/lib/start-dates"
+import { AssetSummaryData } from "@/types/assets"
+import { StockHolding, CryptoHolding } from "@/types/holdings"
 
 type EquityData = {
   date: string
@@ -18,35 +20,9 @@ type BenchmarkData = {
   vni_value: number
 }
 
-interface SummaryItem {
-  type: string
-  totalAmount: number
-}
-
-interface AssetSummaryData {
-  assets: SummaryItem[]
-  totalAssets: number
-  liabilities: SummaryItem[]
-  totalLiabilities: number
-  equity: SummaryItem[]
-  totalEquity: number
-}
-
-export interface Holding {
-  ticker: string
-  name: string
-  logo_url: string
-  quantity: number
-  cost_basis: number
-  latest_price: number
-}
-
-export interface CryptoHolding extends Holding {
-  latest_usd_rate: number
-}
 
 interface HoldingsData {
-  stockHoldings: (Holding & { total_amount: number })[]
+  stockHoldings: (StockHolding & { total_amount: number })[]
   cryptoHoldings: (CryptoHolding & { total_amount: number })[]
 }
 
@@ -101,7 +77,7 @@ export function useDashboardData() {
     ytdBenchmarkData: data?.ytdBenchmarkData ?? [],
     lifetimeBenchmarkData: data?.lifetimeBenchmarkData ?? [],
     assetSummaryData: data?.assetSummaryData ?? null,
-    holdingsData: data?.holdingsData ?? { stockHoldings: [], cryptoHoldings: [] },
+    holdingsData: data?.holdingsData ?? null,
     cagr,
     sharpeRatio,
     isLoading,

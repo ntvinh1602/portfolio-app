@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Enums } from "@/lib/database.types"
+import { Enums } from "@/types/database.types"
 
 type AddTransactionMenuProps = {
   align?: "center" | "end"

@@ -1,7 +1,7 @@
 "use client"
 
 import { DebtItem, DebtItemSkeleton } from "@/components/list-item/debt"
-import { Tables } from "@/lib/database.types"
+import { Tables } from "@/types/database.types"
 import { format } from "date-fns"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWR from "swr"

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useTransactionFormData } from "@/hooks/useTransactionFormData"
-import { Enums } from "@/lib/database.types"
+import { Enums } from "@/types/database.types"
 
 type CashFlowFormProps = {
   transactionType: Enums<"transaction_type">

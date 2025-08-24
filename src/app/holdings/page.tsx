@@ -53,7 +53,7 @@ export default function Page() {
     activeHoldings.forEach((item, index) => {
       config[item.ticker] = {
         label: item.ticker,
-        color: `var(--chart-${(index % 5) + 1})`,
+        color: `var(--chart-${index + 1})`,
       }
     })
     return config

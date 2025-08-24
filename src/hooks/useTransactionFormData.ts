@@ -3,7 +3,7 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { useAuth } from "@/hooks/useAuth"
-import { Tables } from "@/lib/database.types"
+import { Tables } from "@/types/database.types"
 
 export type AssetWithSecurity = Tables<"assets"> & {
   securities: Tables<"securities">

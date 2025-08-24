@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useTransactionFormData } from "@/hooks/useTransactionFormData"
 import { Combobox } from "@/components/combobox"
-import { Enums } from "@/lib/database.types"
+import { Enums } from "@/types/database.types"
 
 type TradeFormProps = {
   transactionType: Enums<"transaction_type">

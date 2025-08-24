@@ -31,6 +31,7 @@ type HeaderProps = {
 export function Header(param: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const isMobile = useIsMobile()
+  const [mounted, setMounted] = React.useState(false)
   const [user, setUser] = React.useState({
     name: "Anonymous",
     email: "",
@@ -53,6 +54,7 @@ export function Header(param: HeaderProps) {
   }
 
   React.useEffect(() => {
+    setMounted(true)
     const fetchUser = async () => {
       const {
         data: { user },
@@ -130,13 +132,16 @@ export function Header(param: HeaderProps) {
           />
           <h1 className="text-xl">{param.title}</h1>
         </div>
-        <Toggle
-          pressed={resolvedTheme === "dark"}
-          onPressedChange={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          className="font-thin"
-        >
-          <Moon className="stroke-1"/>Theme
-        </Toggle>
+        {mounted && (
+          <Toggle
+            pressed={resolvedTheme === "dark"}
+            onPressedChange={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="font-thin"
+          >
+            <Moon className="stroke-1" />
+            Theme
+          </Toggle>
+        )}
       </header>
     )
   }

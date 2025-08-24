@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Holding, CryptoHolding } from "@/hooks/useDashboardData"
+import { StockHolding, CryptoHolding } from "@/hooks/useDashboardData"
 
 interface HoldingsCompactProps {
   variant: "full" | "compact"
-  stockHoldings: (Holding & { total_amount: number })[]
+  stockHoldings: (StockHolding & { total_amount: number })[]
   cryptoHoldings: (CryptoHolding & { total_amount: number })[]
 }
 

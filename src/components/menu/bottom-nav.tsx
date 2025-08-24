@@ -13,7 +13,7 @@ import {
 import { AddTransactionMenu } from "@/components/menu/add-transaction"
 import { OtherPagesMenu } from "@/components/menu/other-pages"
 import { TransactionForm } from "@/components/forms/transaction/add-transaction"
-import { Enums } from "@/lib/database.types"
+import { Enums } from "@/types/database.types"
 
 export function BottomNavBar() {
   const router = useRouter()
