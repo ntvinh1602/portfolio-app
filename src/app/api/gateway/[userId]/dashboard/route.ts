@@ -7,25 +7,6 @@ import {
   thisYear
 } from "@/lib/start-dates"
 
-interface StockHolding {
-  ticker: string
-  name: string
-  logo_url: string
-  quantity: number
-  cost_basis: number
-  latest_price: number
-}
-
-interface CryptoHolding {
-  ticker: string
-  name: string
-  logo_url: string
-  quantity: number
-  cost_basis: number
-  latest_price: number
-  latest_usd_rate: number
-}
-
 export const dynamic = "force-dynamic"
 
 export async function GET(
@@ -120,8 +101,8 @@ export async function GET(
       ytdBenchmarkData,
       lifetimeBenchmarkData,
       assetSummaryData,
-      stockHoldings,
-      cryptoHoldings,
+      stockData,
+      cryptoData,
     ] = await Promise.all([
       ytdReturnResponse.json(),
       lifetimeReturnResponse.json(),
@@ -138,17 +119,6 @@ export async function GET(
       cryptoHoldingsResponse.json(),
     ])
 
-    const holdingsData = {
-      stockHoldings: stockHoldings.map((holding: StockHolding) => ({
-        ...holding,
-        total_amount: holding.quantity * holding.latest_price,
-      })),
-      cryptoHoldings: cryptoHoldings.map((holding: CryptoHolding) => ({
-        ...holding,
-        total_amount: holding.quantity * holding.latest_price * holding.latest_usd_rate,
-      })),
-    }
-
     const monthlyReturnData = monthlyReturns.map((item: { twr: number }) => item.twr)
 
     return NextResponse.json(
@@ -164,7 +134,8 @@ export async function GET(
         ytdBenchmarkData,
         lifetimeBenchmarkData,
         assetSummaryData,
-        holdingsData,
+        stockData,
+        cryptoData
       }
     )
 

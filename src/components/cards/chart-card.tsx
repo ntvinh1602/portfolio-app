@@ -61,7 +61,7 @@ function ChartCard<TData extends Record<string, unknown>>({
   }
 
   return (
-    <Card className={`gap-4 h-full ${cardClassName}`}>
+    <Card className={`flex flex-col gap-4 h-full ${cardClassName}`}>
       <CardHeader className="px-4">
         <CardDescription
           className="flex items-center w-fit"
@@ -83,7 +83,7 @@ function ChartCard<TData extends Record<string, unknown>>({
           <CardDescription className="text-xs">{changePeriod}</CardDescription>
         </CardAction>
       </CardHeader>
-      <CardFooter className="px-4">
+      <CardFooter className="px-4 flex-grow">
         <ChartComponent
           data={chartData}
           chartConfig={chartConfig}

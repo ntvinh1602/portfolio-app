@@ -6,25 +6,13 @@ import {
   calculateSharpeRatio,
 } from "@/lib/utils"
 import { lifetime } from "@/lib/start-dates"
-import { AssetSummaryData } from "@/types/assets"
-import { StockHolding, CryptoHolding } from "@/types/holdings"
-
-type EquityData = {
-  date: string
-  net_equity_value: number
-}
-
-type BenchmarkData = {
-  date: string
-  portfolio_value: number
-  vni_value: number
-}
-
-
-interface HoldingsData {
-  stockHoldings: (StockHolding & { total_amount: number })[]
-  cryptoHoldings: (CryptoHolding & { total_amount: number })[]
-}
+import {
+  AssetSummaryData,
+  EquityChartData,
+  BenchmarkChartData,
+  StockData,
+  CryptoData
+} from "@/types/api-response"
 
 interface DashboardApiResponse {
   ytdReturnData: number | null
@@ -33,12 +21,13 @@ interface DashboardApiResponse {
   lifetimePnLData: number | null
   ytdPnLData: number | null
   mtdPnLData: number | null
-  equityData: EquityData[]
-  last90DBenchmarkData: BenchmarkData[]
-  ytdBenchmarkData: BenchmarkData[]
-  lifetimeBenchmarkData: BenchmarkData[]
+  equityData: EquityChartData[]
+  last90DBenchmarkData: BenchmarkChartData[]
+  ytdBenchmarkData: BenchmarkChartData[]
+  lifetimeBenchmarkData: BenchmarkChartData[]
   assetSummaryData: AssetSummaryData | null
-  holdingsData: HoldingsData
+  stockData: StockData[]
+  cryptoData: CryptoData[]
 }
 
 export function useDashboardData() {
@@ -77,7 +66,8 @@ export function useDashboardData() {
     ytdBenchmarkData: data?.ytdBenchmarkData ?? [],
     lifetimeBenchmarkData: data?.lifetimeBenchmarkData ?? [],
     assetSummaryData: data?.assetSummaryData ?? null,
-    holdingsData: data?.holdingsData ?? null,
+    stockData: data?.stockData ?? null,
+    cryptoData: data?.cryptoData ?? null,
     cagr,
     sharpeRatio,
     isLoading,

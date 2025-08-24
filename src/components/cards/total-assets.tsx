@@ -16,7 +16,7 @@ import { formatNum } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { AssetSummaryData } from "@/types/assets"
+import { AssetSummaryData } from "@/types/api-response"
 
 interface AssetCardProps {
   data: AssetSummaryData | null;

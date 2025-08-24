@@ -1,12 +1,12 @@
 import * as React from "react"
 import { Piechart } from "@/components/charts/piechart"
 import { SecurityItem, SecuritySkeleton } from "@/components/list-item/security"
-import { StockHolding } from "@/types/holdings"
+import { StockData } from "@/types/api-response"
 import { ChartConfig } from "@/components/ui/chart"
 
 interface StockHoldingsProps {
   variant?: "compact" | "full"
-  data: (StockHolding & {total_amount: number})[] | null
+  data: StockData[] | null
 }
 
 export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
@@ -16,12 +16,12 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
         label: "Allocation",
       },
     }
-    data?.filter(item => item.total_amount > 0).forEach((item, index) => {
-      config[item.ticker] = {
-        label: item.ticker,
-        color: `var(--chart-${index + 1})`,
-      }
-    })
+    data?.sort((a, b) => b.total_amount - a.total_amount)
+      .filter(item => item.total_amount > 0).forEach((item, index) => {
+        config[item.ticker] = {
+          label: item.ticker,
+          color: `var(--chart-${index + 1})`,
+    }})
     return config
   }, [data])
 
@@ -34,7 +34,7 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
   }, [data])
 
   return (
-    <div>
+    <div className="text-muted-foreground">
       {variant === "full" && 
         <Piechart 
           data={chartData}
@@ -46,7 +46,8 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
           className="max-h-[250px] w-full"
         />
       }
-      <div className="flex flex-col gap-1 text-muted-foreground font-thin">
+      {variant === "full" && <span className="text-sm px-2">Stocks</span>}
+      <div className="flex flex-col gap-1 font-thin">
         {!data ? 
           Array.from({ length: 2 }).map((_, index) => (
             <SecuritySkeleton key={index} />

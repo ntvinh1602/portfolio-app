@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { ChevronRight } from "lucide-react"
-import { SummaryItem, AssetSummaryData } from "@/types/assets"
+import { SummaryItem, AssetSummaryData } from "@/types/api-response"
 
 interface AssetItemProps {
   header?: boolean

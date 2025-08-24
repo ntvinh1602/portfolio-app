@@ -22,8 +22,94 @@ import {
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { StockHoldings } from "@/components/cards/stock-holdings"
-import { Separator } from "@/components/ui/separator"
 import { CryptoHoldings } from "@/components/cards/crypto-holdings"
+import {
+  AssetSummaryData,
+  EquityChartData,
+  BenchmarkChartData
+} from "@/types/api-response"
+
+interface EquityChartProps {
+  assetSummaryData: AssetSummaryData | null
+  mtdPnLData: number | null
+  equityData: EquityChartData[] | null
+}
+
+interface BenchmarkchartProps {
+  lifetimeReturnData: number | null
+  ytdReturnData: number | null
+  last90DBenchmarkData: BenchmarkChartData[] | null
+}
+
+function EquityChart({ assetSummaryData, mtdPnLData, equityData }: EquityChartProps) {
+  return (
+    <>
+      {!assetSummaryData ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" /> :
+        <ChartCard
+          description="Total Equity"
+          descriptionLink="/earnings"
+          titleValue={assetSummaryData?.totalEquity}
+          titleValueFormatter={(value) => formatNum(value)}
+          changeValue={mtdPnLData}
+          changeValueFormatter={(value) => `${compactNum(Math.abs(value))}`}
+          changePeriod="this month"
+          chartComponent={Areachart}
+          chartData={equityData ?? []}
+          chartConfig={{
+            net_equity_value: {
+              label: "Equity",
+              color: "var(--chart-1)",
+            },
+          }}
+          chartClassName="h-full w-full -ml-4"
+          xAxisDataKey="date"
+          lineDataKeys={["net_equity_value"]}
+          grid={true}
+          xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
+          yAxisTickFormatter={(value) => compactNum(Number(value))}
+        />
+      }
+    </>
+  )
+}
+
+function Benchmarkchart({ lifetimeReturnData, ytdReturnData, last90DBenchmarkData }: BenchmarkchartProps) {
+  return (
+    <>
+      {!lifetimeReturnData ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" /> :
+        <ChartCard
+          cardClassName="gap-2 h-full"
+          description="Total Return"
+          descriptionLink="/metrics"
+          titleValue={lifetimeReturnData}
+          titleValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+          changeValue={ytdReturnData}
+          changeValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+          changePeriod="this year"
+          chartComponent={Linechart}
+          chartData={last90DBenchmarkData ?? []}
+          chartConfig={{
+            portfolio_value: {
+              label: "Equity",
+              color: "var(--chart-1)",
+            },
+            vni_value: {
+              label: "VN-Index",
+              color: "var(--chart-2)",
+            },
+          }}
+          chartClassName="h-full w-full -ml-4"
+          xAxisDataKey="date"
+          lineDataKeys={["portfolio_value", "vni_value"]}
+          grid={true}
+          legend={true}
+          xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
+          yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
+        />
+      }
+    </>
+  )
+}
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -34,78 +120,9 @@ export default function Page() {
     equityData,
     last90DBenchmarkData,
     assetSummaryData,
-    holdingsData,
+    stockData,
+    cryptoData
   } = useDashboardData()
-  
-  function EquityChart() {
-    return (
-      <>
-        {!assetSummaryData ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-[180px]" /> :
-          <ChartCard
-            description="Total Equity"
-            descriptionLink="/earnings"
-            titleValue={assetSummaryData?.totalEquity}
-            titleValueFormatter={(value) => formatNum(value)}
-            changeValue={mtdPnLData}
-            changeValueFormatter={(value) => `${compactNum(Math.abs(value))}`}
-            changePeriod="this month"
-            chartComponent={Areachart}
-            chartData={equityData}
-            chartConfig={{
-              net_equity_value: {
-                label: "Equity",
-                color: "var(--chart-1)",
-              },
-            }}
-            chartClassName="h-full w-full -ml-4"
-            xAxisDataKey="date"
-            lineDataKeys={["net_equity_value"]}
-            grid={true}
-            xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
-            yAxisTickFormatter={(value) => compactNum(Number(value))}
-          />
-        }
-      </>
-    )
-  }
-
-  function Benchmarkchart() {
-    return (
-      <>
-        {!lifetimeReturnData ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-[210px]" /> :
-          <ChartCard
-            cardClassName="gap-2 h-full"
-            description="Total Return"
-            descriptionLink="/metrics"
-            titleValue={lifetimeReturnData}
-            titleValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
-            changeValue={ytdReturnData}
-            changeValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
-            changePeriod="this year"
-            chartComponent={Linechart}
-            chartData={last90DBenchmarkData}
-            chartConfig={{
-              portfolio_value: {
-                label: "Equity",
-                color: "var(--chart-1)",
-              },
-              vni_value: {
-                label: "VN-Index",
-                color: "var(--chart-2)",
-              },
-            }}
-            chartClassName="h-full w-full -ml-4"
-            xAxisDataKey="date"
-            lineDataKeys={["portfolio_value", "vni_value"]}
-            grid={true}
-            legend={true}
-            xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
-            yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
-          />
-        }
-      </>
-    )
-  }
 
   return (
     <SidebarProvider>
@@ -117,35 +134,52 @@ export default function Page() {
             <Carousel opts={{ align: "center" }} className="w-full col-span-3">
               <CarouselContent className="-ml-2 h-[300px]">
                 <CarouselItem className="basis-11/12 pl-8">
-                  <EquityChart />
+                  <EquityChart
+                    assetSummaryData={assetSummaryData}
+                    mtdPnLData={mtdPnLData}
+                    equityData={equityData}
+                  />
                 </CarouselItem>
                 <CarouselItem className="basis-11/12 pl-1 pr-6">
-                  <Benchmarkchart />
+                  <Benchmarkchart
+                    lifetimeReturnData={lifetimeReturnData}
+                    ytdReturnData={ytdReturnData}
+                    last90DBenchmarkData={last90DBenchmarkData}
+                  />
                 </CarouselItem>
               </CarouselContent>
             </Carousel> :
             <div className="flex flex-col col-span-1 gap-2">
-              <EquityChart />
-              <Benchmarkchart />
+              <EquityChart
+                assetSummaryData={assetSummaryData}
+                mtdPnLData={mtdPnLData}
+                equityData={equityData}
+              />
+              <Benchmarkchart
+                lifetimeReturnData={lifetimeReturnData}
+                ytdReturnData={ytdReturnData}
+                last90DBenchmarkData={last90DBenchmarkData}
+              />
             </div>
           }
           <div className="flex flex-col gap-4 col-span-3 md:col-span-1 px-6 md:px-0">
-            <AssetCard data={assetSummaryData} />
-            <Separator />
-            <div className="flex flex-col gap-2">
-              <span className="text-sm text-muted-foreground">Stock Holdings</span>
+            {isMobile && <AssetCard data={assetSummaryData} />}
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+              <span className="md:text-foreground md:text-md">Current Holdings</span>
               <StockHoldings
                 variant={isMobile ? "compact" : "full"}
-                data={holdingsData?.stockHoldings ?? null}
+                data={stockData}
               />
-              <span className="text-sm text-muted-foreground">Crypto Holdings</span>
               <CryptoHoldings
                 variant={isMobile ? "compact" : "full"}
-                data={holdingsData?.cryptoHoldings ?? null}
+                data={cryptoData}
               />
             </div>
           </div>
-          {!isMobile && <AssetSummary title={true} data={assetSummaryData} />}
+          <div className="flex flex-col gap-4 col-span-3 md:col-span-1 px-6 md:px-0">
+            {!isMobile && <AssetCard data={assetSummaryData} />}
+            {!isMobile && <AssetSummary title={true} data={assetSummaryData} />}
+          </div>
         </div>
       </SidebarInset>
       {isMobile && <BottomNavBar />}
