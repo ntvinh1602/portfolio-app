@@ -12,7 +12,7 @@ import {
   BenchmarkChartData,
   StockData,
   CryptoData
-} from "@/types/api-response"
+} from "@/types/dashboard-data"
 
 interface DashboardApiResponse {
   ytdReturnData: number | null

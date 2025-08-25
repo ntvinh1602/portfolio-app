@@ -14,16 +14,16 @@ export async function POST(request: Request) {
     const { data: securitiesData, error: securitiesError } = await supabase
       .from("securities")
       .select("ticker, asset_class")
-      .in("asset_class", ["stock", "crypto"]);
+      .in("asset_class", ["stock", "crypto"])
 
     if (securitiesError) {
-      throw securitiesError;
+      throw securitiesError
     }
 
     const allHoldings = (securitiesData || []).map((s: { ticker: string, asset_class: string }) => ({
       ticker: s.ticker,
       type: s.asset_class,
-    }));
+    }))
 
     const baseUrl = request.url.split('/api')[0]
 
@@ -31,12 +31,12 @@ export async function POST(request: Request) {
     const refreshPromises = allHoldings.map(async (holding: { ticker: string, type: string }) => {
       try {
         // 2a. Fetch the latest price
-        const priceResponse = await fetch(`${baseUrl}/api/external/fetch-asset-data?ticker=${holding.ticker}&type=${holding.type}`);
+        const priceResponse = await fetch(`${baseUrl}/api/external/fetch-asset-data?ticker=${holding.ticker}&type=${holding.type}`)
         if (!priceResponse.ok) {
-            console.error(`Failed to fetch price for ${holding.ticker}`);
-            return; // Skip this one
+            console.error(`Failed to fetch price for ${holding.ticker}`)
+            return // Skip this one
         }
-        const priceData = await priceResponse.json();
+        const priceData = await priceResponse.json()
 
         // 2b. Save the new price
         await fetch(`${baseUrl}/api/database/save-asset-price`, {
@@ -47,13 +47,13 @@ export async function POST(request: Request) {
             price: priceData.price,
             type: holding.type,
           }),
-        });
+        })
       } catch (e) {
         console.error(`Error processing refresh for ${holding.ticker}`, e)
       }
-    });
+    })
 
-    await Promise.all(refreshPromises);
+    await Promise.all(refreshPromises)
 
     return NextResponse.json({ message: "Asset prices refreshed successfully." })
   } catch (error) {

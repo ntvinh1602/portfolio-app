@@ -1,5 +1,5 @@
 import { SecurityItem, SecuritySkeleton } from "@/components/list-item/security"
-import { CryptoData } from "@/types/api-response"
+import { CryptoData } from "@/types/dashboard-data"
 
 interface CryptoHoldingsProps {
   variant?: "compact" | "full"
@@ -10,7 +10,7 @@ export function CryptoHoldings({ variant = "full", data }: CryptoHoldingsProps) 
 
   return (
     <div className="flex flex-col gap-1 text-muted-foreground">
-      {variant === "full" && <span className="text-sm px-2">Crypto</span>}
+      {variant === "full" && <span className="text-sm px-2 font-light">Crypto</span>}
       {!data ? 
         Array.from({ length: 2 }).map((_, index) => (
           <SecuritySkeleton key={index} />

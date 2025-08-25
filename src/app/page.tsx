@@ -27,7 +27,8 @@ import {
   AssetSummaryData,
   EquityChartData,
   BenchmarkChartData
-} from "@/types/api-response"
+} from "@/types/dashboard-data"
+import { Card, CardContent, CardDescription } from "@/components/ui/card"
 
 interface EquityChartProps {
   assetSummaryData: AssetSummaryData | null
@@ -162,19 +163,21 @@ export default function Page() {
               />
             </div>
           }
-          <div className="flex flex-col gap-4 col-span-3 md:col-span-1 px-6 md:px-0">
+          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
             {isMobile && <AssetCard data={assetSummaryData} />}
-            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-              <span className="md:text-foreground md:text-md">Current Holdings</span>
-              <StockHoldings
-                variant={isMobile ? "compact" : "full"}
-                data={stockData}
-              />
-              <CryptoHoldings
-                variant={isMobile ? "compact" : "full"}
-                data={cryptoData}
-              />
-            </div>
+            <Card className="border-0 py-0 gap-2">
+              {isMobile && <CardDescription>Current Holdings</CardDescription>}
+              <CardContent className="flex flex-col px-0 gap-1 md:gap-2">
+                <StockHoldings
+                  variant={isMobile ? "compact" : "full"}
+                  data={stockData}
+                />
+                <CryptoHoldings
+                  variant={isMobile ? "compact" : "full"}
+                  data={cryptoData}
+                />
+              </CardContent>
+            </Card>
           </div>
           <div className="flex flex-col gap-4 col-span-3 md:col-span-1 px-6 md:px-0">
             {!isMobile && <AssetCard data={assetSummaryData} />}

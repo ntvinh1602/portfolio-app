@@ -2,10 +2,7 @@
 
 import * as React from "react"
 import { useDashboardData } from "@/hooks/useDashboardData"
-import {
-  SidebarInset,
-  SidebarProvider
-} from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"

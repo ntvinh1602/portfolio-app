@@ -1,8 +1,9 @@
 import * as React from "react"
 import { Piechart } from "@/components/charts/piechart"
 import { SecurityItem, SecuritySkeleton } from "@/components/list-item/security"
-import { StockData } from "@/types/api-response"
+import { StockData } from "@/types/dashboard-data"
 import { ChartConfig } from "@/components/ui/chart"
+import { Card, CardTitle } from "../ui/card"
 
 interface StockHoldingsProps {
   variant?: "compact" | "full"
@@ -34,20 +35,23 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
   }, [data])
 
   return (
-    <div className="text-muted-foreground">
-      {variant === "full" && 
-        <Piechart 
-          data={chartData}
-          chartConfig={chartConfig}
-          dataKey="allocation"
-          nameKey="asset"
-          legend="right"
-          label_pos={1.5}
-          className="max-h-[250px] w-full"
-        />
+    <div className="flex flex-col gap-3 text-muted-foreground">
+      {variant === "full" &&
+        <Card>
+          <CardTitle className="px-4">Stock Allocation</CardTitle>
+          <Piechart 
+            data={chartData}
+            chartConfig={chartConfig}
+            dataKey="allocation"
+            nameKey="asset"
+            legend="right"
+            label_pos={1.5}
+            className="max-h-[250px] w-full"
+          />
+        </Card> 
       }
-      {variant === "full" && <span className="text-sm px-2">Stocks</span>}
       <div className="flex flex-col gap-1 font-thin">
+        {variant === "full" && <span className="text-sm px-2 font-light">Stocks</span>}
         {!data ? 
           Array.from({ length: 2 }).map((_, index) => (
             <SecuritySkeleton key={index} />

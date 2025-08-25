@@ -17,16 +17,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatNum, compactNum } from "@/lib/utils"
 
 interface SecurityItemProps {
-  ticker: string;
-  name: string;
-  logoUrl: string;
-  totalAmount: number;
-  pnlPct: number;
-  pnlNet: number;
-  quantity?: number;
-  price?: number;
-  variant?: 'full' | 'compact';
-  type: 'stock' | 'crypto';
+  ticker: string
+  name: string
+  logoUrl: string
+  totalAmount: number
+  pnlPct: number
+  pnlNet: number
+  quantity?: number
+  price?: number
+  variant?: 'full' | 'compact'
+  type: 'stock' | 'crypto'
 }
 
 function SecurityItem({
@@ -41,10 +41,10 @@ function SecurityItem({
   variant = 'full',
   type
 }: SecurityItemProps) {
-  const isCompact = variant === 'compact';
+  const isCompact = variant === 'compact'
 
   return (
-    <Card className={`border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-2xl ${isCompact ? 'py-2' : 'py-3'}`}>
+    <Card className={`border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl ${isCompact ? 'py-2' : 'py-3'}`}>
       <CardContent className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
@@ -61,10 +61,7 @@ function SecurityItem({
             </CardDescription>
             {!isCompact && (
               <CardDescription className="flex items-center gap-1 truncate pt-1">
-                <Badge
-                  variant="outline"
-                  className="rounded-full gap-0.5 text-muted-foreground bg-muted"
-                >
+                <Badge variant="outline" className="font-thin">
                   {quantity 
                     ? type === 'stock'
                       ? <><Leaf />{formatNum(quantity)}</>
@@ -72,10 +69,7 @@ function SecurityItem({
                     : 0
                   }
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className="rounded-full gap-1 text-muted-foreground bg-muted"
-                >
+                <Badge variant="outline" className="font-thin">
                   <Coins />
                   {price
                     ? type === 'stock'
@@ -109,11 +103,11 @@ function SecurityItem({
 }
 
 interface SecuritySkeletonProps {
-  variant?: 'full' | 'compact';
+  variant?: 'full' | 'compact'
 }
 
 function SecuritySkeleton({ variant = 'full' }: SecuritySkeletonProps) {
-  const isCompact = variant === 'compact';
+  const isCompact = variant === 'compact'
 
   return (
     <Card className={`rounded-full border-0 text-card-foreground ${isCompact ? 'py-2' : 'py-3'}`}>
