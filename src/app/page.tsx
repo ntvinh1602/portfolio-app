@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import {
   Carousel,
   CarouselContent,
@@ -9,8 +10,9 @@ import { ChartCard, ChartCardSkeleton } from "@/components/cards/chart-card"
 import { AssetCard } from "@/components/cards/total-assets"
 import { Areachart } from "@/components/charts/areachart"
 import { Linechart } from "@/components/charts/linechart"
+import TabSwitcher from "@/components/tab-switcher"
 import { formatNum, compactNum } from "@/lib/utils"
-import { format } from "date-fns"
+import { parseISO, format } from "date-fns"
 import { AssetSummary } from "@/components/cards/asset-summary"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
@@ -34,7 +36,12 @@ import { Card, CardContent, CardDescription } from "@/components/ui/card"
 interface EquityChartProps {
   assetSummaryData: AssetSummaryData | null
   mtdPnLData: number | null
-  equityData: EquityChartData[] | null
+  equityData: {
+    all_time: EquityChartData[]
+    "1y": EquityChartData[]
+    "6m": EquityChartData[]
+    "3m": EquityChartData[]
+  }
 }
 
 interface BenchmarkchartProps {
@@ -44,6 +51,41 @@ interface BenchmarkchartProps {
 }
 
 function EquityChart({ assetSummaryData, mtdPnLData, equityData }: EquityChartProps) {
+  const [dateRange, setDateRange] = React.useState("all_time")
+  const chartData = equityData[dateRange as keyof typeof equityData]
+
+  const getTicks = (data: EquityChartData[], maxTicks: number) => {
+    if (data.length <= maxTicks) {
+      return data.map(d => d.snapshot_date);
+    }
+    const ticks = [data[0].snapshot_date];
+    const step = (data.length - 1) / (maxTicks - 1);
+    for (let i = 1; i < maxTicks - 1; i++) {
+      const index = Math.round(i * step);
+      if (index < data.length -1) {
+        ticks.push(data[index].snapshot_date);
+      }
+    }
+    ticks.push(data[data.length - 1].snapshot_date);
+    return ticks;
+  };
+
+  const ticks = getTicks(chartData, 5);
+
+  const xAxisTickFormatter = (value: string | number) => {
+    if (typeof value !== 'string') {
+      return value.toString();
+    }
+    const date = parseISO(value)
+    switch (dateRange) {
+      case "1y":
+      case "all_time":
+        return format(date, "MMM yy")
+      default:
+        return format(date, "dd MMM")
+    }
+  }
+
   return (
     <>
       {!assetSummaryData ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" /> :
@@ -56,20 +98,32 @@ function EquityChart({ assetSummaryData, mtdPnLData, equityData }: EquityChartPr
           changeValueFormatter={(value) => `${compactNum(Math.abs(value))}`}
           changePeriod="this month"
           chartComponent={Areachart}
-          chartData={equityData ?? []}
+          chartData={chartData}
           chartConfig={{
             net_equity_value: {
               label: "Equity",
               color: "var(--chart-1)",
             },
           }}
-          chartClassName="h-full w-full -ml-4"
-          xAxisDataKey="date"
+          chartClassName="h--full w-full"
+          xAxisDataKey="snapshot_date"
           lineDataKeys={["net_equity_value"]}
           grid={true}
-          xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
+          xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={(value) => compactNum(Number(value))}
-        />
+          ticks={ticks}
+        >
+          <TabSwitcher
+            value={dateRange}
+            onValueChange={setDateRange}
+            options={[
+              { label: "3M", value: "3m" },
+              { label: "6M", value: "6m" },
+              { label: "1Y", value: "1y" },
+              { label: "All Time", value: "all_time" },
+            ]}
+          />
+        </ChartCard>
       }
     </>
   )
@@ -136,7 +190,7 @@ export default function Page() {
         <div className="grid grid-cols-3 px-0 gap-4">
           {isMobile ?
             <Carousel opts={{ align: "center" }} className="w-full col-span-3">
-              <CarouselContent className="-ml-2 h-[300px]">
+              <CarouselContent className="-ml-2">
                 <CarouselItem className="basis-11/12 pl-8">
                   <EquityChart
                     assetSummaryData={assetSummaryData}

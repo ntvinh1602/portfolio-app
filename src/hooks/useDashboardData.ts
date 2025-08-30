@@ -21,7 +21,12 @@ interface DashboardApiResponse {
   lifetimePnLData: number | null
   ytdPnLData: number | null
   mtdPnLData: number | null
-  equityData: EquityChartData[]
+  equityData: {
+    all_time: EquityChartData[]
+    "1y": EquityChartData[]
+    "6m": EquityChartData[]
+    "3m": EquityChartData[]
+  }
   last90DBenchmarkData: BenchmarkChartData[]
   ytdBenchmarkData: BenchmarkChartData[]
   lifetimeBenchmarkData: BenchmarkChartData[]
@@ -61,7 +66,7 @@ export function useDashboardData() {
     lifetimePnLData: data?.lifetimePnLData ?? null,
     ytdPnLData: data?.ytdPnLData ?? null,
     mtdPnLData: data?.mtdPnLData ?? null,
-    equityData: data?.equityData ?? [],
+    equityData: data?.equityData ?? { all_time: [], "1y": [], "6m": [], "3m": [] },
     last90DBenchmarkData: data?.last90DBenchmarkData ?? [],
     ytdBenchmarkData: data?.ytdBenchmarkData ?? [],
     lifetimeBenchmarkData: data?.lifetimeBenchmarkData ?? [],

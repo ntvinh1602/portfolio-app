@@ -58,7 +58,7 @@ export async function GET(
       fetch(`${baseURL}/api/query/${user.id}/pnl?start=${lifetime}`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisYear}`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisMonth}`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/equity-chart?start=${last90D}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/equity-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${last90D}`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${thisYear}`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/benchmark-chart?start=${lifetime}`, fetchOptions),

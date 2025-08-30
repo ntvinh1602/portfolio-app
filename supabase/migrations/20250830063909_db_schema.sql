@@ -87,25 +87,6 @@ CREATE TYPE "public"."currency_type" AS ENUM (
 ALTER TYPE "public"."currency_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."debt_status" AS ENUM (
-    'active',
-    'paid_off'
-);
-
-
-ALTER TYPE "public"."debt_status" OWNER TO "postgres";
-
-
-CREATE TYPE "public"."tax_lot_origin" AS ENUM (
-    'purchase',
-    'split',
-    'deposit'
-);
-
-
-ALTER TYPE "public"."tax_lot_origin" OWNER TO "postgres";
-
-
 CREATE TYPE "public"."transaction_type" AS ENUM (
     'buy',
     'sell',
@@ -136,7 +117,7 @@ BEGIN
   v_debts_asset_id := public.get_asset_id_from_ticker(p_user_id, 'DEBTS');
   
   -- 2. Create the debt record
-  INSERT INTO public.debts (user_id, lender_name, principal_amount, currency_code, interest_rate, start_date, status)
+  INSERT INTO public.debts (user_id, lender_name, principal_amount, currency_code, interest_rate, start_date, is_active)
   VALUES (
     p_user_id,
     p_lender_name,
@@ -144,7 +125,7 @@ BEGIN
     'VND',
     p_interest_rate,
     p_transaction_date,
-    'active'
+    true
   ) RETURNING id INTO v_debt_id;
 
   -- 3. Create the transaction
@@ -316,12 +297,11 @@ BEGIN
   END IF;
   
   -- 5. Create tax lot for the purchased asset
-  INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
+  INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
   VALUES (
     p_user_id,
     p_asset_id,
     v_transaction_id,
-    'purchase',
     p_transaction_date,
     p_quantity,
     p_quantity,
@@ -385,7 +365,7 @@ VALUES
   'VND');
 
   -- 5. Mark the debt as paid
-  UPDATE debts SET status = 'paid_off' WHERE id = p_debt_id;
+  UPDATE public.debts SET is_active = false WHERE id = p_debt_id;
 END;
 $$;
 
@@ -454,12 +434,11 @@ BEGIN
 
   -- 5. Create tax lot for non-VND cash assets
   IF v_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
+    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
     VALUES (
       p_user_id,
       p_asset_id,
       v_transaction_id,
-      'deposit',
       p_transaction_date,
       p_quantity,
       p_quantity,
@@ -667,12 +646,11 @@ BEGIN
 
   -- 5. Create tax lot for non-VND cash assets
   IF v_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
+    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
     VALUES (
       p_user_id,
       p_asset_id,
       v_transaction_id,
-      'deposit',
       p_transaction_date,
       p_quantity,
       p_quantity,
@@ -808,12 +786,11 @@ BEGIN
 
   -- 8. Create a new tax lot for the received cash asset if it's not in VND
   IF v_cash_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis)
+    INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
     VALUES (
       p_user_id,
       p_cash_asset_id,
       v_transaction_id,
-      'purchase',
       p_transaction_date,
       v_net_proceeds_native_currency,
       v_net_proceeds_native_currency,
@@ -868,11 +845,10 @@ BEGIN
     'VND');
 
   -- 4. Create tax lots
-  INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, origin, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (
+  INSERT INTO public.tax_lots (user_id, asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (
     p_user_id,
     p_asset_id,
     v_transaction_id,
-    'split',
     p_transaction_date,
     p_quantity,
     p_quantity,
@@ -1297,7 +1273,7 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
     "currency_code" character varying(10) NOT NULL,
     "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
     "start_date" "date" NOT NULL,
-    "status" "public"."debt_status" NOT NULL
+    "is_active" boolean DEFAULT true NOT NULL
 );
 
 
@@ -1308,9 +1284,7 @@ CREATE OR REPLACE FUNCTION "public"."get_active_debts"("p_user_id" "uuid") RETUR
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-  select *
-  from debts
-  where status = 'active' and user_id = p_user_id;
+SELECT * FROM public.debts WHERE is_active AND user_id = p_user_id;
 $$;
 
 
@@ -1483,7 +1457,7 @@ BEGIN
   SELECT COALESCE(SUM(d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)), 0)
   INTO accrued_interest
   FROM debts d
-  WHERE d.user_id = p_user_id AND d.status = 'active';
+  WHERE d.user_id = p_user_id AND d.is_active;
   liability_total := debts_principal + accrued_interest;
   -- Calculate equity values
   SELECT a.current_quantity * -1 INTO owner_capital
@@ -1645,32 +1619,36 @@ $$;
 ALTER FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric, "total_amount" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 BEGIN
-    RETURN QUERY
+  RETURN QUERY
+  WITH latest_data AS (
     SELECT
-        s.ticker,
-        s.name,
-        s.logo_url AS logo_url,
-        SUM(tl.quantity) AS quantity,
-        SUM(tl.amount) AS cost_basis,
-        public.get_latest_crypto_price(s.id) AS latest_price,
-        public.get_latest_exchange_rate('USD') AS latest_usd_rate
-    FROM
-        public.assets a
-    JOIN
-        public.securities s ON a.security_id = s.id
-    JOIN
-        public.transaction_legs tl ON a.id = tl.asset_id
-    WHERE
-        s.asset_class = 'crypto' AND a.user_id = p_user_id
-    GROUP BY
-        a.id, s.id, s.ticker, s.name, s.logo_url
-    HAVING
-        SUM(tl.quantity) > 0;
+      s.id AS security_id,
+      public.get_latest_crypto_price(s.id) AS latest_price,
+      public.get_latest_exchange_rate('USD') AS latest_usd_rate
+    FROM public.securities s
+    WHERE s.asset_class = 'crypto'
+  )
+  SELECT
+    s.ticker,
+    s.name,
+    s.logo_url AS logo_url,
+    SUM(tl.quantity) AS quantity,
+    SUM(tl.amount) AS cost_basis,
+    ld.latest_price,
+    ld.latest_usd_rate,
+    SUM(tl.quantity) * ld.latest_price * ld.latest_usd_rate AS total_amount
+  FROM public.assets a
+  JOIN public.securities s ON a.security_id = s.id
+  JOIN public.transaction_legs tl ON a.id = tl.asset_id
+  JOIN latest_data ld ON ld.security_id = s.id
+  WHERE s.asset_class = 'crypto' AND a.user_id = p_user_id
+  GROUP BY a.id, s.id, s.ticker, s.name, s.logo_url, ld.latest_price, ld.latest_usd_rate
+  HAVING SUM(tl.quantity) > 0;
 END;
 $$;
 
@@ -1968,31 +1946,33 @@ $$;
 ALTER FUNCTION "public"."get_monthly_twr"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "total_amount" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 BEGIN
-    RETURN QUERY
-    SELECT
-        s.ticker,
-        s.name,
-        s.logo_url AS logo_url,
-        SUM(tl.quantity) AS quantity,
-        SUM(tl.amount) AS cost_basis,
-        public.get_latest_stock_price(s.id) AS latest_price
-    FROM
-        public.assets a
-    JOIN
-        public.securities s ON a.security_id = s.id
-    JOIN
-        public.transaction_legs tl ON a.id = tl.asset_id
-    WHERE
-        s.asset_class = 'stock' AND a.user_id = p_user_id
-    GROUP BY
-        a.id, s.id, s.ticker, s.name, s.logo_url
-    HAVING
-        SUM(tl.quantity) > 0;
+  RETURN QUERY
+  WITH latest_prices AS (
+    SELECT 
+      s.id AS security_id, 
+      public.get_latest_stock_price(s.id) AS latest_price
+    FROM public.securities s
+  )
+  SELECT
+    s.ticker,
+    s.name,
+    s.logo_url,
+    SUM(tl.quantity) AS quantity,
+    SUM(tl.amount) AS cost_basis,
+    lp.latest_price,
+    SUM(tl.quantity) * lp.latest_price AS total_amount
+  FROM public.assets a
+  JOIN public.securities s ON a.security_id = s.id
+  JOIN public.transaction_legs tl ON a.id = tl.asset_id
+  JOIN latest_prices lp ON lp.security_id = s.id
+  WHERE s.asset_class = 'stock' AND a.user_id = p_user_id
+  GROUP BY a.id, s.id, s.ticker, s.name, s.logo_url, lp.latest_price
+  HAVING SUM(tl.quantity) > 0;
 END;
 $$;
 
@@ -2200,7 +2180,7 @@ BEGIN
         FROM public.debts
         WHERE lender_name = v_lender_name
           AND user_id = p_user_id
-          AND status = 'active';
+          AND is_active;
         IF v_debt_id IS NULL THEN
           RAISE EXCEPTION 'Active debt for lender % not found.', v_lender_name;
         END IF;
@@ -2289,6 +2269,91 @@ $$;
 ALTER FUNCTION "public"."import_transactions"("p_user_id" "uuid", "p_transactions_data" "jsonb", "p_start_date" "date") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."process_dnse_orders"() RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  unprocessed_order RECORD;
+  v_asset_id uuid;
+  v_cash_asset_id uuid;
+  v_user_id uuid;
+BEGIN
+  -- Since we don't have a user_id in dnse_orders, we'll need to get it from the profiles table.
+  -- This assumes there is only one user. If there are multiple users, this logic will need to be adjusted.
+  SELECT id INTO v_user_id FROM public.profiles LIMIT 1;
+
+  -- Get the VND cash asset ID for the user. This is used for all transactions.
+  v_cash_asset_id := public.get_asset_id_from_ticker(v_user_id, 'VND');
+
+  FOR unprocessed_order IN
+    SELECT * FROM public.dnse_orders WHERE txn_created = false
+  LOOP
+    -- Get the asset_id for the security being traded
+    v_asset_id := public.get_asset_id_from_ticker(v_user_id, unprocessed_order.symbol);
+
+    -- Create a buy or sell transaction
+    IF unprocessed_order.side = 'NB' THEN
+      PERFORM public.add_buy_transaction(
+        v_user_id,
+        unprocessed_order.modified_date::date,
+        v_asset_id,
+        v_cash_asset_id,
+        unprocessed_order.fill_quantity,
+        unprocessed_order.average_price,
+        'Buy ' || unprocessed_order.fill_quantity || ' ' || unprocessed_order.symbol || ' at ' || unprocessed_order.average_price,
+        unprocessed_order.modified_date
+      );
+    ELSIF unprocessed_order.side = 'NS' THEN
+      PERFORM public.add_sell_transaction(
+        v_user_id,
+        v_asset_id,
+        unprocessed_order.fill_quantity,
+        unprocessed_order.average_price,
+        unprocessed_order.modified_date::date,
+        v_cash_asset_id,
+        'Sell ' || unprocessed_order.fill_quantity || ' ' || unprocessed_order.symbol || ' at ' || unprocessed_order.average_price,
+        unprocessed_order.modified_date
+      );
+    END IF;
+
+    -- Create an expense transaction for the tax, if applicable
+    IF unprocessed_order.tax > 0 THEN
+      PERFORM public.add_expense_transaction(
+        v_user_id,
+        unprocessed_order.modified_date::date,
+        unprocessed_order.tax,
+        'Income tax',
+        v_cash_asset_id,
+        unprocessed_order.modified_date
+      );
+    END IF;
+
+    -- Create an expense transaction for the fee, if applicable
+    IF unprocessed_order.fee > 0 THEN
+      PERFORM public.add_expense_transaction(
+        v_user_id,
+        unprocessed_order.modified_date::date,
+        unprocessed_order.fee,
+        'Transaction fee',
+        v_cash_asset_id,
+        unprocessed_order.modified_date
+      );
+    END IF;
+
+    -- Mark the order as processed
+    UPDATE public.dnse_orders
+    SET txn_created = true
+    WHERE id = unprocessed_order.id;
+
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."process_dnse_orders"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_assets_after_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2303,8 +2368,7 @@ BEGIN
             (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
           )
           FROM public.debts d
-          WHERE d.user_id = a.user_id
-            AND d.status = 'active'
+          WHERE d.user_id = a.user_id AND d.is_active
       ), 0)
       ELSE COALESCE((
           SELECT SUM(quantity)
@@ -2452,22 +2516,12 @@ CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
     "average_price" numeric,
     "modified_date" timestamp with time zone DEFAULT "now"(),
     "tax" numeric(12,0),
-    "fee" numeric
+    "fee" numeric,
+    "txn_created" boolean DEFAULT false
 );
 
 
 ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."live_securities_data" (
-    "symbol" "text" NOT NULL,
-    "price" numeric NOT NULL,
-    "trade_time" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "asset" "public"."asset_class" NOT NULL
-);
-
-
-ALTER TABLE "public"."live_securities_data" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
@@ -2509,7 +2563,6 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
     "user_id" "uuid" NOT NULL,
     "asset_id" "uuid" NOT NULL,
     "creation_transaction_id" "uuid" NOT NULL,
-    "origin" "public"."tax_lot_origin" NOT NULL,
     "creation_date" "date" NOT NULL,
     "original_quantity" numeric(20,8) NOT NULL,
     "cost_basis" numeric(16,4) DEFAULT 0 NOT NULL,
@@ -2965,6 +3018,12 @@ GRANT ALL ON FUNCTION "public"."import_transactions"("p_user_id" "uuid", "p_tran
 
 
 
+GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "anon";
+GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "service_role";
@@ -3049,12 +3108,6 @@ GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."live_securities_data" TO "anon";
-GRANT ALL ON TABLE "public"."live_securities_data" TO "authenticated";
-GRANT ALL ON TABLE "public"."live_securities_data" TO "service_role";
 
 
 

@@ -29,7 +29,7 @@ export default function TabSwitcher({
       onValueChange={onValueChange}
       value={value}
     >
-      <TabsList className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
         {options.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}

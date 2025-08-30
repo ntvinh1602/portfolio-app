@@ -1,1 +1,0 @@
-drop function if exists "public"."add_buy_transaction"("uuid", "date", "uuid", "uuid", numeric, numeric, timestamp with time zone)

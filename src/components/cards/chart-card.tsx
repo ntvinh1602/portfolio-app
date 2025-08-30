@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Card,
   CardAction,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -33,6 +34,8 @@ interface ChartCardProps<TData extends Record<string, unknown>> {
   legend?: boolean
   xAxisTickFormatter?: (value: string | number) => string
   yAxisTickFormatter?: (value: string | number) => string
+  children?: React.ReactNode
+  ticks?: (string | number)[]
 }
 
 function ChartCard<TData extends Record<string, unknown>>({
@@ -54,6 +57,8 @@ function ChartCard<TData extends Record<string, unknown>>({
   legend,
   xAxisTickFormatter,
   yAxisTickFormatter,
+  children,
+  ticks,
 }: ChartCardProps<TData>) {
   const router = useRouter()
   const handleNavigation = () => {
@@ -61,7 +66,7 @@ function ChartCard<TData extends Record<string, unknown>>({
   }
 
   return (
-    <Card className={`flex flex-col gap-4 h-full ${cardClassName}`}>
+    <Card className={`flex flex-col gap-2 h-full ${cardClassName}`}>
       <CardHeader className="px-4">
         <CardDescription
           className="flex items-center w-fit"
@@ -83,7 +88,8 @@ function ChartCard<TData extends Record<string, unknown>>({
           <CardDescription className="text-xs">{changePeriod}</CardDescription>
         </CardAction>
       </CardHeader>
-      <CardFooter className="px-4 flex-grow">
+      <CardContent className="px-4 flex flex-col gap-2 h-full">
+        {children}
         <ChartComponent
           data={chartData}
           chartConfig={chartConfig}
@@ -94,8 +100,9 @@ function ChartCard<TData extends Record<string, unknown>>({
           legend={legend}
           xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={yAxisTickFormatter}
+          ticks={ticks}
         />
-      </CardFooter>
+      </CardContent>
     </Card>
   )
 }
