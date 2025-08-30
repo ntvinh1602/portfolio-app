@@ -54,7 +54,7 @@ function SecurityItem({
           className="rounded-full bg-background"
         />
         <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col gap-1 max-w-[160px]">
+          <div className="flex flex-col gap-1 max-w-[180px]">
             <CardTitle>{ticker}</CardTitle>
             <CardDescription className="text-xs truncate">
               {name}
@@ -65,7 +65,7 @@ function SecurityItem({
                   {quantity 
                     ? type === 'stock'
                       ? <><Leaf />{formatNum(quantity)}</>
-                      : <><Bitcoin />{formatNum(quantity, 5)}</>
+                      : <><Bitcoin />{formatNum(quantity, 6)}</>
                     : 0
                   }
                 </Badge>
@@ -74,7 +74,7 @@ function SecurityItem({
                   {price
                     ? type === 'stock'
                       ? formatNum(price, 2)
-                      : compactNum(price)
+                      : formatNum(price)
                     : 0
                   }
                 </Badge>

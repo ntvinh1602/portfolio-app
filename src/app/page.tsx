@@ -15,6 +15,7 @@ import { AssetSummary } from "@/components/cards/asset-summary"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useBTCUSDTPrice } from "@/hooks/use-btcusdt-price"
 import {
   SidebarInset,
   SidebarProvider
@@ -125,6 +126,8 @@ export default function Page() {
     cryptoData
   } = useDashboardData()
 
+  const { price: liveBtcPrice } = useBTCUSDTPrice()
+
   return (
     <SidebarProvider>
       {!isMobile && <AppSidebar />}
@@ -175,6 +178,7 @@ export default function Page() {
                 <CryptoHoldings
                   variant={isMobile ? "compact" : "full"}
                   data={cryptoData}
+                  liveBtcPrice={liveBtcPrice}
                 />
               </CardContent>
             </Card>
