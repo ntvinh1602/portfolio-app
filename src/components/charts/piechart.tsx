@@ -6,27 +6,31 @@ import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type PieChartData = {
-  fill: string;
-  [key: string]: unknown;
+  fill: string
+  [key: string]: unknown
 }
 
 interface PiechartProps {
-  data: PieChartData[] | undefined;
-  chartConfig: ChartConfig;
-  dataKey: string;
-  nameKey: string;
-  className?: string;
-  innerRadius?: number;
-  legend?: string;
-  label?: boolean;
-  centerText?: string;
-  margin_tb?: number;
-  label_pos?: number;
+  data: PieChartData[] | undefined
+  chartConfig: ChartConfig
+  dataKey: string
+  nameKey: string
+  className?: string
+  innerRadius?: number
+  legend?: string
+  label?: boolean
+  centerText?: string
+  centerValue?: string
+  margin_tb?: number
+  label_pos?: number
+  valueFormatter?: (value: number) => string
 }
 
 function Piechart({
@@ -39,20 +43,22 @@ function Piechart({
   legend,
   label,
   centerText,
+  centerValue,
   margin_tb = 10,
-  label_pos = 1.5
+  label_pos = 1.5,
+  valueFormatter
 }: PiechartProps) {
-  const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0;
+  const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0
 
-  const RADIAN = Math.PI / 180;
+  const RADIAN = Math.PI / 180
 
 interface RenderLabelProps {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  payload: PieChartData;
+  cx: number
+  cy: number
+  midAngle: number
+  innerRadius: number
+  outerRadius: number
+  payload: PieChartData
 }
 
   const renderLabel = ({
@@ -63,11 +69,11 @@ interface RenderLabelProps {
     outerRadius,
     payload
   }: RenderLabelProps) => {
-    const radius = innerRadius + (outerRadius - innerRadius) * label_pos;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const value = Number(payload[dataKey]) || 0;
-    const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : 0;
+    const radius = innerRadius + (outerRadius - innerRadius) * label_pos
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+    const value = Number(payload[dataKey]) || 0
+    const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : 0
 
     return (
       <text
@@ -80,8 +86,8 @@ interface RenderLabelProps {
       >
         {`${percentage}%`}
       </text>
-    );
-  };
+    )
+  }
 
   return (
     <ChartContainer
@@ -102,10 +108,15 @@ interface RenderLabelProps {
             layout="vertical"
             align="right"
             verticalAlign="middle"
-            className="flex-col items-start w-15 gap-1"
+            className="flex-col items-start w-15 gap-1 text-muted-foreground"
           />
         )}
-
+        <ChartTooltip
+          cursor={true}
+          content={
+            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
+          }
+        />
         <Pie
           data={data}
           dataKey={dataKey}
@@ -134,19 +145,19 @@ interface RenderLabelProps {
                       <tspan
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        className="fill-foreground text-xl font-light"
+                        className="fill-foreground text-lg md:text-xl font-light"
                       >
-                        {compactNum(totalValue)}
+                        {centerValue}
                       </tspan>
                       <tspan
                         x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 20}
-                        className="fill-muted-foreground font-thin"
+                        y={(viewBox.cy || 0) + 15}
+                        className="fill-muted-foreground font-light"
                       >
                         {centerText}
                       </tspan>
                     </text>
-                  );
+                  )
                 }
               }}
             />
@@ -154,7 +165,7 @@ interface RenderLabelProps {
         </Pie>
       </PieChart>
     </ChartContainer>
-  );
+  )
 }
 
 function PiechartSkeleton() {
@@ -167,7 +178,7 @@ function PiechartSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 export {

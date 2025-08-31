@@ -7,7 +7,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
-import { AssetSummary } from "@/components/cards/asset-summary"
+import { BalanceSheet } from "@/components/cards/balance-sheet"
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -18,7 +18,7 @@ return (
       {!isMobile && <AppSidebar />}
       <SidebarInset>
         <Header title="Assets"/>
-        <AssetSummary data={assetSummaryData}/>
+        <BalanceSheet data={assetSummaryData}/>
         {isMobile && <BottomNavBar />}
       </SidebarInset>
     </SidebarProvider>

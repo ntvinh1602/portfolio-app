@@ -10,7 +10,7 @@ import { ChartCard, ChartCardSkeleton } from "@/components/cards/chart-card"
 import { AssetCard } from "@/components/cards/total-assets"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum, compactNum } from "@/lib/utils"
-import { AssetSummary } from "@/components/cards/asset-summary"
+import { BalanceSheet } from "@/components/cards/balance-sheet"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -24,17 +24,19 @@ import { Header } from "@/components/header"
 import { StockHoldings } from "@/components/cards/stock-holdings"
 import { CryptoHoldings } from "@/components/cards/crypto-holdings"
 import {
-  AssetSummaryData,
+  BalanceSheetData,
   EquityChartData,
   BenchmarkChartData,
   PnLData,
   TWRData
 } from "@/types/dashboard-data"
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import TradingView from "@/components/cards/trading-view"
+import { Wallet } from "lucide-react"
 
 interface EquityChartProps {
-  assetSummaryData: AssetSummaryData | null
+  balanceSheetData: BalanceSheetData | null
   pnlData: PnLData | null
   equityData: {
     all_time: EquityChartData[]
@@ -55,17 +57,16 @@ interface BenchmarkchartProps {
   }
 }
 
-function EquityChart({ assetSummaryData, pnlData, equityData }: EquityChartProps) {
+function EquityChart({ balanceSheetData, pnlData, equityData }: EquityChartProps) {
   const [dateRange, setDateRange] = React.useState("1y")
   const chartData = equityData[dateRange as keyof typeof equityData]
 
   return (
     <>
-      {!assetSummaryData ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" /> :
+      {!balanceSheetData ? <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" /> :
         <ChartCard
           description="Total Equity"
-          descriptionLink="/earnings"
-          majorValue={assetSummaryData?.totalEquity}
+          majorValue={balanceSheetData?.totalEquity}
           majorValueFormatter={(value) => formatNum(value)}
           minorValue1={pnlData?.mtd ?? null}
           minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
@@ -84,8 +85,8 @@ function EquityChart({ assetSummaryData, pnlData, equityData }: EquityChartProps
           chartClassName="h-full w-full"
           xAxisDataKey="snapshot_date"
           lineDataKeys={["net_equity_value"]}
-          grid={true}
           yAxisTickFormatter={(value) => compactNum(Number(value))}
+          tooltipValueFormatter={(value) => formatNum(value)}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />
@@ -102,36 +103,35 @@ function Benchmarkchart({ twrData, cagr, benchmarkData }: BenchmarkchartProps) {
      <>
        {!twrData ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" /> :
          <ChartCard
-           description="Total Return"
-           descriptionLink="/metrics"
-           majorValue={twrData?.all_time}
-           majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
-           minorValue1={twrData?.ytd}
-           minorValue1Formatter={(value) => `${formatNum(value * 100, 1)}%`}
-           minorText1="this year"
-           minorValue2={cagr}
-           minorValue2Formatter={(value) => `${formatNum(value, 1)}%`}
-           minorText2="annualized"
-           chartComponent={Areachart}
-           chartData={chartData}
-           chartConfig={{
-             portfolio_value: {
-               label: "Equity",
-               color: "var(--chart-1)",
-             },
-             vni_value: {
-               label: "VN-Index",
-               color: "var(--chart-2)",
-             },
-           }}
-           chartClassName="h-full w-full"
-           xAxisDataKey="snapshot_date"
-           lineDataKeys={["portfolio_value", "vni_value"]}
-           grid={true}
-           legend={true}
-           yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
-           dateRange={dateRange}
-           onDateRangeChange={setDateRange}
+          description="Total Return"
+          majorValue={twrData?.all_time}
+          majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+          minorValue1={twrData?.ytd}
+          minorValue1Formatter={(value) => `${formatNum(value * 100, 1)}%`}
+          minorText1="this year"
+          minorValue2={cagr}
+          minorValue2Formatter={(value) => `${formatNum(value, 1)}%`}
+          minorText2="annualized"
+          chartComponent={Areachart}
+          chartData={chartData}
+          chartConfig={{
+            portfolio_value: {
+              label: "Equity",
+              color: "var(--chart-1)",
+            },
+            vni_value: {
+              label: "VN-Index",
+              color: "var(--chart-2)",
+            },
+          }}
+          chartClassName="h-full w-full"
+          xAxisDataKey="snapshot_date"
+          lineDataKeys={["portfolio_value", "vni_value"]}
+          legend={true}
+          yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
+          tooltipValueFormatter={(value) => formatNum(value, 1)}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
          />
       }
     </>
@@ -145,7 +145,7 @@ export default function Page() {
     pnlData,
     equityData,
     benchmarkData,
-    assetSummaryData,
+    balanceSheetData,
     stockData,
     cryptoData,
     cagr
@@ -158,13 +158,13 @@ export default function Page() {
       {!isMobile && <AppSidebar />}
       <SidebarInset className={!isMobile ? "px-6" : undefined}>
         <Header title={isMobile ? "Home" : "Dashboard"}/>
-        <div className="grid grid-cols-3 px-0 gap-4">
+        <div className="grid grid-cols-3 px-0 gap-2">
           {isMobile ?
             <Carousel opts={{ align: "center" }} className="w-full col-span-3">
               <CarouselContent className="-ml-2">
                 <CarouselItem className="basis-11/12 pl-8">
                   <EquityChart
-                    assetSummaryData={assetSummaryData}
+                    balanceSheetData={balanceSheetData}
                     pnlData={pnlData}
                     equityData={equityData}
                   />
@@ -180,7 +180,7 @@ export default function Page() {
             </Carousel> :
             <div className="flex flex-col col-span-1 gap-2">
               <EquityChart
-                assetSummaryData={assetSummaryData}
+                balanceSheetData={balanceSheetData}
                 pnlData={pnlData}
                 equityData={equityData}
               />
@@ -191,20 +191,25 @@ export default function Page() {
               />
             </div>
           }
-          <div className="flex flex-col gap-4 col-span-3 md:col-span-1 px-6 md:px-0">
-            <AssetCard data={assetSummaryData} />
-            {!isMobile && <AssetSummary title={true} data={assetSummaryData} />}
+          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
+            <AssetCard data={balanceSheetData} />
+            {!isMobile && <BalanceSheet title={true} data={balanceSheetData} />}
           </div>
           <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
-            <Card className="border-0 py-0 gap-2">
-              <CardTitle>Current Holdings</CardTitle>
-              {isMobile && <CardDescription>Current Holdings</CardDescription>}
-              <CardContent className="flex flex-col px-0 gap-1 md:gap-2">
+            {!isMobile && <div className="h-[400px]"><TradingView /></div>}
+            <Card className="gap-2">
+              <CardHeader className="flex items-center justify-between gap-2">
+                <CardTitle className="text-xl">Portfolio</CardTitle>
+                <Wallet className="stroke-1 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1 md:gap-2">
+                <CardDescription>Stocks</CardDescription>
                 <StockHoldings
                   variant={isMobile ? "compact" : "full"}
                   data={stockData}
                 />
                 <Separator className="my-4"/>
+                <CardDescription>Crypto</CardDescription>
                 <CryptoHoldings
                   variant={isMobile ? "compact" : "full"}
                   data={cryptoData}

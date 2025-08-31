@@ -5,7 +5,9 @@ import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
+  ChartLegendContent, 
+  ChartTooltip,
+  ChartTooltipContent,
 } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
@@ -15,11 +17,11 @@ interface LinechartProps {
   className?: string
   xAxisDataKey: string
   lineDataKeys: string[]
-  grid?: boolean
   legend?: boolean
   xAxisTickFormatter?: (value: string | number) => string
   yAxisTickFormatter?: (value: string | number) => string
   ticks?: (string | number)[]
+  valueFormatter?: (value: number) => string
 }
 
 export function Areachart({
@@ -28,11 +30,11 @@ export function Areachart({
   className,
   xAxisDataKey,
   lineDataKeys: areaDataKeys,
-  grid = false,
   legend = false,
   xAxisTickFormatter,
   yAxisTickFormatter,
   ticks,
+  valueFormatter,
 }: LinechartProps) {
   return (
     <ChartContainer config={chartConfig} className={cn(className)}>
@@ -53,14 +55,14 @@ export function Areachart({
             </linearGradient>
           ))}
         </defs>
-        <CartesianGrid horizontal={grid} vertical={false} />
+        <CartesianGrid horizontal={true} vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
           tickLine={true}
           axisLine={false}
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
-          className="font-thin"
+          className="font-light"
           interval="preserveStartEnd"
           ticks={ticks}
         />
@@ -74,7 +76,13 @@ export function Areachart({
             (dataMax: number) => Number(dataMax) * 1.01,
           ]}
           allowDataOverflow={true}
-          className="font-thin"
+          className="font-light"
+        />
+        <ChartTooltip
+          cursor={true}
+          content={
+            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
+          }
         />
         {areaDataKeys.map((key) => (
           <Area

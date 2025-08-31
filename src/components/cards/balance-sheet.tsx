@@ -10,22 +10,22 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { ChevronRight } from "lucide-react"
-import { SummaryItem, AssetSummaryData } from "@/types/dashboard-data"
+import { ChevronRight, BookCheck } from "lucide-react"
+import { AssetItem, BalanceSheetData } from "@/types/dashboard-data"
 
-interface AssetItemProps {
+interface BSItemProps {
   header?: boolean
   label: string
   value?: string
   link?: string
 }
 
-interface AssetSummaryProps {
+interface BalanceSheetProps {
   title?: boolean
-  data: AssetSummaryData | null
+  data: BalanceSheetData | null
 }
 
-function AssetItem({ header = false, label, value, link }: AssetItemProps) {
+function BSItem({ header = false, label, value, link }: BSItemProps) {
   const router = useRouter()
   const handleNavigation = () => {
     if (link) router.push(link)
@@ -47,7 +47,7 @@ function AssetItem({ header = false, label, value, link }: AssetItemProps) {
   )
 }
 
-function AssetSkeleton({ header = false, label }: AssetItemProps) {
+function BSSkeleton({ header = false, label }: BSItemProps) {
   return (
     <Card className={`border-0 py-3 rounded-md ${header && "bg-muted"}`}>
       <CardHeader className="flex px-4 justify-between">
@@ -60,73 +60,77 @@ function AssetSkeleton({ header = false, label }: AssetItemProps) {
   )
 }
 
-export function AssetSummary({ title = false, data }: AssetSummaryProps) {
+export function BalanceSheet({ title = false, data }: BalanceSheetProps) {
   return (
-    <Card className={`px-4 h-fit gap-3 ${!title && "border-0 px-6 py-0"}`}>
-      {title && <CardTitle>Balance Sheet</CardTitle>}
-      <CardContent className="px-0">
-        <CardDescription className="pb-2">Total Assets</CardDescription>
+    <Card className={`h-fit gap-3 ${!title && "border-0 px-6 py-0"}`}>
+      {title && 
+        <CardHeader className="flex items-center justify-between gap-2">
+          <CardTitle className="text-xl">Balance Sheet</CardTitle>
+          <BookCheck className="stroke-1 text-muted-foreground" />
+        </CardHeader>
+      }
+      <CardContent className="flex flex-col gap-2">
+        <CardDescription>Total Assets</CardDescription>
         {!data ? 
-          <>
-            <AssetSkeleton header={true} label="Assets"/>
+          <div className="flex flex-col">
+            <BSSkeleton header={true} label="Assets"/>
             {Array.from(["Cash","Stocks","EPF","Crypto"]).map((label) => (
-              <AssetSkeleton key={label} label={label}/>
+              <BSSkeleton key={label} label={label}/>
             ))}
-          </> : 
-          <>
-            <AssetItem
+          </div> : 
+          <div className="flex flex-col">
+            <BSItem
               header={true}
               label="Assets"
               value={formatNum(data.totalAssets)}
-              link="/holdings"
             />
-            {data.assets.map((item: SummaryItem) => (
-              <AssetItem
+            {data.assets.map((item: AssetItem) => (
+              <BSItem
                 key={item.type}
                 label={item.type}
                 value={formatNum(item.totalAmount)}
               />
             ))}
-          </>
+          </div>
         }
         <Separator className="mt-2 mb-4"/>
-        <CardDescription className="pb-2">Total Liabilities</CardDescription>
+        <CardDescription>Total Liabilities</CardDescription>
         {!data ? 
-          <>
-            <AssetSkeleton header={true} label="Liabilities"/>
-            <AssetSkeleton label="Debts Principal"/>
-            <AssetSkeleton label="Accrued Interest"/>
-            <AssetSkeleton header={true} label="Equities"/>
-            <AssetSkeleton label="Owner Capital"/>
-            <AssetSkeleton label="Unrealized P/L"/>
-          </> : 
-          <>
-            <AssetItem
+          <div className="flex flex-col">
+            <BSSkeleton header={true} label="Liabilities"/>
+            <BSSkeleton label="Debts Principal"/>
+            <BSSkeleton label="Accrued Interest"/>
+            <BSSkeleton header={true} label="Equities"/>
+            <BSSkeleton label="Owner Capital"/>
+            <BSSkeleton label="Unrealized P/L"/>
+          </div> : 
+          <div className="flex flex-col">
+            <BSItem
               header={true}
               label="Liabilities"
               value={formatNum(data.totalLiabilities)}
               link="/debts"
             />
-            {data.liabilities.map((item: SummaryItem) => (
-              <AssetItem
+            {data.liabilities.map((item: AssetItem) => (
+              <BSItem
                 key={item.type}
                 label={item.type}
                 value={formatNum(item.totalAmount)}
               />
             ))}
-            <AssetItem
+            <BSItem
               header={true}
               label="Equities"
               value={formatNum(data.totalEquity)}
             />
-            {data.equity.map((item: SummaryItem) => (
-              <AssetItem
+            {data.equity.map((item: AssetItem) => (
+              <BSItem
                 key={item.type}
                 label={item.type}
                 value={formatNum(item.totalAmount)}
               />
             ))}
-          </>
+          </div>
         }
       </CardContent>
     </Card>

@@ -10,8 +10,7 @@ interface CryptoHoldingsProps {
 export function CryptoHoldings({ variant = "full", data, liveBtcPrice }: CryptoHoldingsProps) {
 
   return (
-    <div className="flex flex-col gap-1 text-muted-foreground">
-      {variant === "full" && <span className="text-sm px-2 font-light">Crypto</span>}
+    <div className="flex flex-col gap-1 text-muted-foreground"> 
       {!data ? (
         Array.from({ length: 2 }).map((_, index) => (
           <SecuritySkeleton key={index} />

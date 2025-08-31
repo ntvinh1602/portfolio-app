@@ -82,48 +82,53 @@ export default function Page() {
       {!isMobile && <AppSidebar />}
       <SidebarInset className={!isMobile ? "px-6" : undefined}>
         <Header title="Transactions"/>
-        <div className="flex items-center justify-between">
-          <DatePicker mode="range" selected={date} onSelect={setDate} />
-        </div>
-        <TabSwitcher
-          options={tabOptions}
-          onValueChange={setAssetType}
-          value={assetType}
-          defaultValue="stock"
-        />
-        <div className="flex flex-col pt-2 gap-2">
-          {isLoading && !data &&
-            Array.from({ length: PAGE_SIZE }).map((_, index) => (
-              <TransactionSkeleton key={index} />
-            ))}
-          {transactions.map(tx => (
-            <TransactionCard
-              key={tx.transaction_id}
-              ticker={tx.ticker}
-              name={tx.name}
-              logoUrl={tx.logo_url || ""}
-              amount={tx.amount}
-              quantity={tx.quantity}
-              type={tx.type}
-              description={tx.description || ""}
-              currencyCode={tx.currency_code}
-              date={tx.transaction_date}
+        <div className="grid grid-cols-3 px-4 md:px-0 gap-2">
+          <div className="col-span-3 md:col-span-1 md:col-start-2 flex flex-col gap-2">
+            <DatePicker mode="range" selected={date} onSelect={setDate} />
+            <TabSwitcher
+              options={tabOptions}
+              onValueChange={setAssetType}
+              value={assetType}
+              defaultValue="stock"
+              border={false}
             />
-          ))}
-          {isLoadingMore &&
-            Array.from({ length: 3 }).map((_, index) => (
-              <TransactionSkeleton key={`loading-${index}`} />
+            {isLoading && !data &&
+              Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <TransactionSkeleton key={index} />
+              ))}
+            {transactions.map(tx => (
+              <TransactionCard
+                key={tx.transaction_id}
+                ticker={tx.ticker}
+                name={tx.name}
+                logoUrl={tx.logo_url || ""}
+                amount={tx.amount}
+                quantity={tx.quantity}
+                type={tx.type}
+                description={tx.description || ""}
+                currencyCode={tx.currency_code}
+                date={tx.transaction_date}
+              />
             ))}
-          {isEmpty && <p className="mx-auto font-thin py-10">No transactions found</p>}
-          {hasMore && !isLoadingMore && (
-            <Button
-              onClick={() => setSize(size + 1)}
-              variant="outline"
-              className="mx-auto mb-20"
-            >
-              Load more...
-            </Button>
-          )}
+            {isLoadingMore &&
+              Array.from({ length: 3 }).map((_, index) => (
+                <TransactionSkeleton key={`loading-${index}`} />
+              ))}
+            {isEmpty &&
+              <p className="mx-auto font-thin py-10">
+                No transactions found
+              </p>
+            }
+            {hasMore && !isLoadingMore && (
+              <Button
+                onClick={() => setSize(size + 1)}
+                variant="outline"
+                className="mx-auto mb-20"
+              >
+                Load more...
+              </Button>
+            )}
+          </div>
         </div>
       </SidebarInset>
       {isMobile && <BottomNavBar />}

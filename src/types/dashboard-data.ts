@@ -1,14 +1,14 @@
-export interface SummaryItem {
+export interface AssetItem {
   type: string
   totalAmount: number
 }
 
-export interface AssetSummaryData {
-  assets: SummaryItem[]
+export interface BalanceSheetData {
+  assets: AssetItem[]
   totalAssets: number
-  liabilities: SummaryItem[]
+  liabilities: AssetItem[]
   totalLiabilities: number
-  equity: SummaryItem[]
+  equity: AssetItem[]
   totalEquity: number
 }
 

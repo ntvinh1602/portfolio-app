@@ -3,7 +3,6 @@
 import * as React from "react"
 import {
   Wrench,
-  FileQuestion,
   TrendingUp,
   Sprout,
   Coins,
@@ -86,12 +85,7 @@ const data = {
       title: "Settings",
       url: "/settings",
       icon: Wrench,
-    },
-    {
-      title: "Help",
-      url: "/help",
-      icon: FileQuestion,
-    },
+    }
   ],
 }
 

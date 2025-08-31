@@ -42,7 +42,7 @@ export async function GET(
       pnlResponse,
       equityResponse,
       benchmarkResponse,
-      assetSummaryResponse,
+      balanceSheetResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
     ] = await Promise.all([
@@ -51,7 +51,7 @@ export async function GET(
       fetch(`${baseURL}/api/query/${user.id}/pnl`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/equity-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/benchmark-chart`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/asset-summary`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/balance-sheet`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/crypto-holdings`, fetchOptions),
     ])
@@ -62,7 +62,7 @@ export async function GET(
       pnlResponse,
       equityResponse,
       benchmarkResponse,
-      assetSummaryResponse,
+      balanceSheetResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
     ]) {
@@ -79,7 +79,7 @@ export async function GET(
       pnlData,
       equityData,
       benchmarkData,
-      assetSummaryData,
+      balanceSheetData,
       stockData,
       cryptoData,
     ] = await Promise.all([
@@ -88,7 +88,7 @@ export async function GET(
       pnlResponse.json(),
       equityResponse.json(),
       benchmarkResponse.json(),
-      assetSummaryResponse.json(),
+      balanceSheetResponse.json(),
       stockHoldingsResponse.json(),
       cryptoHoldingsResponse.json(),
     ])
@@ -102,7 +102,7 @@ export async function GET(
         pnlData,
         equityData,
         benchmarkData,
-        assetSummaryData,
+        balanceSheetData,
         stockData,
         cryptoData
       }

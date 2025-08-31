@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Wrench,
-  FileQuestion,
   LogOut,
   UserRound,
   Moon
@@ -40,8 +39,7 @@ export function Header(param: HeaderProps) {
   const router = useRouter()
 
   const secondaryMenuItems = [
-    { icon: Wrench, label: "Settings", path: "/settings" },
-    { icon: FileQuestion, label: "Help", path: "/help" },
+    { icon: Wrench, label: "Settings", path: "/settings" }
   ]
 
   const handleNavigation = (path: string) => {
@@ -138,8 +136,7 @@ export function Header(param: HeaderProps) {
             onPressedChange={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="font-thin"
           >
-            <Moon className="stroke-1" />
-            Theme
+            <Moon className="stroke-1" />Night Mode
           </Toggle>
         )}
       </header>

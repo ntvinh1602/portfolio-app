@@ -7,7 +7,7 @@ import {
 } from "@/lib/utils"
 import { lifetime } from "@/lib/start-dates"
 import {
-  AssetSummaryData,
+  BalanceSheetData,
   EquityChartData,
   BenchmarkChartData,
   StockData,
@@ -32,7 +32,7 @@ interface DashboardApiResponse {
     "6m": BenchmarkChartData[]
     "3m": BenchmarkChartData[]
   }
-  assetSummaryData: AssetSummaryData | null
+  balanceSheetData: BalanceSheetData | null
   stockData: StockData[]
   cryptoData: CryptoData[]
 }
@@ -65,7 +65,7 @@ export function useDashboardData() {
     pnlData: data?.pnlData ?? null,
     equityData: data?.equityData ?? { all_time: [], "1y": [], "6m": [], "3m": [] },
     benchmarkData: data?.benchmarkData ?? { all_time: [], "1y": [], "6m": [], "3m": [] },
-    assetSummaryData: data?.assetSummaryData ?? null,
+    balanceSheetData: data?.balanceSheetData ?? null,
     stockData: data?.stockData ?? null,
     cryptoData: data?.cryptoData ?? null,
     cagr,

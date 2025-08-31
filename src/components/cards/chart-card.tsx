@@ -10,10 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { useRouter } from "next/navigation"
-import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
-import React from "react"
 import { useChartTicks } from "@/hooks/use-chart-ticks"
 import TabSwitcher from "@/components/tab-switcher"
 import { Separator } from "../ui/separator"
@@ -23,7 +21,6 @@ interface ChartCardProps<
 > {
   cardClassName?: string
   description: string
-  descriptionLink: string
   majorValue: number | null
   majorValueFormatter: (value: number) => string
   minorValue1: number | null
@@ -38,9 +35,9 @@ interface ChartCardProps<
   chartClassName?: string
   xAxisDataKey: string
   lineDataKeys: string[]
-  grid?: boolean
   legend?: boolean
   yAxisTickFormatter?: (value: string | number) => string
+  tooltipValueFormatter?: (value: number) => string
   children?: React.ReactNode
   dateRange: string
   onDateRangeChange: (value: string) => void
@@ -50,7 +47,6 @@ function ChartCard<
   TData extends { snapshot_date: string; [key: string]: number | string }
 >({
   description,
-  descriptionLink,
   majorValue,
   majorValueFormatter,
   minorValue1,
@@ -65,27 +61,18 @@ function ChartCard<
   chartClassName,
   xAxisDataKey,
   lineDataKeys,
-  grid,
   legend,
   yAxisTickFormatter,
+  tooltipValueFormatter,
   dateRange,
   onDateRangeChange,
 }: ChartCardProps<TData>) {
-  const router = useRouter()
   const { ticks, xAxisTickFormatter } = useChartTicks(chartData, dateRange)
-  const handleNavigation = () => {
-    router.push(descriptionLink)
-  }
 
   return (
     <Card className="flex flex-col gap-0 h-full">
       <CardHeader className="px-4 items-center">
-        <CardDescription
-          className="flex items-center w-fit"
-          onClick={handleNavigation}
-        >
-          {description}<ChevronRight className="size-4"/>
-        </CardDescription>
+        <CardDescription>{description}</CardDescription>
         <CardTitle className="text-2xl">
           {majorValue && majorValueFormatter(majorValue)}
         </CardTitle>
@@ -127,7 +114,7 @@ function ChartCard<
             { label: "All", value: "all_time" },
           ]}
           border={false}
-          tabClassName="w-fit ml-auto"
+          tabClassName="ml-auto"
           triggerClassName="w-[50px]"
         />
         <ChartComponent
@@ -136,11 +123,11 @@ function ChartCard<
           className={chartClassName}
           xAxisDataKey={xAxisDataKey}
           lineDataKeys={lineDataKeys}
-          grid={grid}
           legend={legend}
           xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={yAxisTickFormatter}
           ticks={ticks}
+          valueFormatter={tooltipValueFormatter}
         />
       </CardContent>
     </Card>
@@ -153,7 +140,6 @@ function ChartCardSkeleton({ cardClassName, chartHeight }: { cardClassName?: str
       <CardHeader className="px-4">
         <CardDescription className="flex items-center w-fit">
           <Skeleton className="h-4 w-24" />
-          <ChevronRight className="size-4"/>
         </CardDescription>
         <CardTitle className="text-2xl">
           <Skeleton className="h-8 w-32" />

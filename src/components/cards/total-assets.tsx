@@ -12,21 +12,15 @@ import {
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { formatNum } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { AssetSummaryData } from "@/types/dashboard-data"
+import { compactNum, formatNum } from "@/lib/utils"
+import { BalanceSheetData } from "@/types/dashboard-data"
+import { DollarSign } from "lucide-react"
 
 interface AssetCardProps {
-  data: AssetSummaryData | null;
+  data: BalanceSheetData | null;
 }
 
 export function AssetCard({ data }: AssetCardProps) {
-  const router = useRouter()
-  const handleNavigation = () => {
-    router.push("/assets")
-  }
 
   const assetChartCfg = {
     allocation: {
@@ -83,28 +77,21 @@ export function AssetCard({ data }: AssetCardProps) {
     },
   ].filter((d) => d.allocation > 0)
 
+  const leverage = data && data?.totalEquity !== 0
+    ? (data.totalLiabilities / data.totalEquity).toFixed(2)
+    : "Infinite"
+
   return (
     <>
       {data ?
-        <Card className="bg-muted/0 py-0 border-none gap-0">
-          <CardHeader className="px-0">
-            <CardDescription
-              className="flex items-center w-fit"
-              onClick={handleNavigation}
-            >
-              Total Assets<ChevronRight className="size-4"/>
-            </CardDescription>
+        <Card className="gap-0">
+          <CardHeader>
+            <CardDescription>Total Assets</CardDescription>
             <CardTitle className="text-2xl">
               {formatNum(data.totalAssets)}
             </CardTitle>
-            <CardAction className="flex flex-col gap-1 items-end">
-              <CardDescription className="text-xs">Leverage</CardDescription>
-              <Badge variant="outline">
-                {(data.totalEquity !== 0)
-                  ? (data.totalLiabilities / data.totalEquity).toFixed(2)
-                  : "Infinite"
-                }
-              </Badge>
+            <CardAction>
+              <DollarSign className="stroke-1 text-muted-foreground"/>
             </CardAction>
           </CardHeader>
           <CardContent className="px-0 flex w-full justify-between">
@@ -114,21 +101,30 @@ export function AssetCard({ data }: AssetCardProps) {
               dataKey="allocation"
               nameKey="asset"
               className="h-fit w-full"
-              innerRadius={50}
+              innerRadius={70}
               legend="right"
               label={false}
               margin_tb={0}
+              centerText="Liquid Eqty."
+              centerValue={
+                compactNum(data.totalEquity - (data.assets.find(a => a.type === "EPF")?.totalAmount ?? 0
+              ))}
+              valueFormatter={(value) => formatNum(value)}
             />
             <Piechart
               data={liabilityChartData}
               chartConfig={liabilityChartCfg}
-              dataKey="allocation"
+              dataKey={"allocation"}
               nameKey="liability"
               className="h-fit w-full"
-              innerRadius={50}
+              innerRadius={70}
               legend="right"
               label={false}
               margin_tb={0}
+              centerText="Leverage"
+              centerValue={leverage}
+              valueFormatter={(value) => formatNum(value)}
+
             />
           </CardContent>
         </Card> : /* Skeleton */
