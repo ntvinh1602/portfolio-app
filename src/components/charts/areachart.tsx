@@ -88,7 +88,10 @@ export function Areachart({
             dot={false}
           />
         ))}
-        {legend && <ChartLegend content={<ChartLegendContent />} className="font-thin"/>}
+        {legend && <ChartLegend 
+          content={<ChartLegendContent />}
+          className="gap-4 justify-center pt-3 text-muted-foreground"
+        />}
       </AreaChart>
     </ChartContainer>
   )

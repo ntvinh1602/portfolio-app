@@ -9,10 +9,7 @@ import {
 import { ChartCard, ChartCardSkeleton } from "@/components/cards/chart-card"
 import { AssetCard } from "@/components/cards/total-assets"
 import { Areachart } from "@/components/charts/areachart"
-import { Linechart } from "@/components/charts/linechart"
-import TabSwitcher from "@/components/tab-switcher"
 import { formatNum, compactNum } from "@/lib/utils"
-import { parseISO, format } from "date-fns"
 import { AssetSummary } from "@/components/cards/asset-summary"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
@@ -47,44 +44,17 @@ interface EquityChartProps {
 interface BenchmarkchartProps {
   lifetimeReturnData: number | null
   ytdReturnData: number | null
-  last90DBenchmarkData: BenchmarkChartData[] | null
+  benchmarkData: {
+    all_time: BenchmarkChartData[]
+    "1y": BenchmarkChartData[]
+    "6m": BenchmarkChartData[]
+    "3m": BenchmarkChartData[]
+  }
 }
 
 function EquityChart({ assetSummaryData, mtdPnLData, equityData }: EquityChartProps) {
-  const [dateRange, setDateRange] = React.useState("all_time")
+  const [dateRange, setDateRange] = React.useState("1y")
   const chartData = equityData[dateRange as keyof typeof equityData]
-
-  const getTicks = (data: EquityChartData[], maxTicks: number) => {
-    if (data.length <= maxTicks) {
-      return data.map(d => d.snapshot_date);
-    }
-    const ticks = [data[0].snapshot_date];
-    const step = (data.length - 1) / (maxTicks - 1);
-    for (let i = 1; i < maxTicks - 1; i++) {
-      const index = Math.round(i * step);
-      if (index < data.length -1) {
-        ticks.push(data[index].snapshot_date);
-      }
-    }
-    ticks.push(data[data.length - 1].snapshot_date);
-    return ticks;
-  };
-
-  const ticks = getTicks(chartData, 5);
-
-  const xAxisTickFormatter = (value: string | number) => {
-    if (typeof value !== 'string') {
-      return value.toString();
-    }
-    const date = parseISO(value)
-    switch (dateRange) {
-      case "1y":
-      case "all_time":
-        return format(date, "MMM yy")
-      default:
-        return format(date, "dd MMM")
-    }
-  }
 
   return (
     <>
@@ -105,63 +75,55 @@ function EquityChart({ assetSummaryData, mtdPnLData, equityData }: EquityChartPr
               color: "var(--chart-1)",
             },
           }}
-          chartClassName="h--full w-full"
+          chartClassName="h-full w-full"
           xAxisDataKey="snapshot_date"
           lineDataKeys={["net_equity_value"]}
           grid={true}
-          xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={(value) => compactNum(Number(value))}
-          ticks={ticks}
-        >
-          <TabSwitcher
-            value={dateRange}
-            onValueChange={setDateRange}
-            options={[
-              { label: "3M", value: "3m" },
-              { label: "6M", value: "6m" },
-              { label: "1Y", value: "1y" },
-              { label: "All Time", value: "all_time" },
-            ]}
-          />
-        </ChartCard>
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
       }
     </>
   )
 }
 
-function Benchmarkchart({ lifetimeReturnData, ytdReturnData, last90DBenchmarkData }: BenchmarkchartProps) {
-  return (
-    <>
-      {!lifetimeReturnData ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" /> :
-        <ChartCard
-          cardClassName="gap-2 h-full"
-          description="Total Return"
-          descriptionLink="/metrics"
-          titleValue={lifetimeReturnData}
-          titleValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
-          changeValue={ytdReturnData}
-          changeValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
-          changePeriod="this year"
-          chartComponent={Linechart}
-          chartData={last90DBenchmarkData ?? []}
-          chartConfig={{
-            portfolio_value: {
-              label: "Equity",
-              color: "var(--chart-1)",
-            },
-            vni_value: {
-              label: "VN-Index",
-              color: "var(--chart-2)",
-            },
-          }}
-          chartClassName="h-full w-full -ml-4"
-          xAxisDataKey="date"
-          lineDataKeys={["portfolio_value", "vni_value"]}
-          grid={true}
-          legend={true}
-          xAxisTickFormatter={(value) => format(new Date(value), "MMM dd")}
-          yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
-        />
+function Benchmarkchart({ lifetimeReturnData, ytdReturnData, benchmarkData }: BenchmarkchartProps) {
+  const [dateRange, setDateRange] = React.useState("1y")
+  const chartData = benchmarkData[dateRange as keyof typeof benchmarkData]
+
+   return (
+     <>
+       {!lifetimeReturnData ? <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" /> :
+         <ChartCard
+           description="Total Return"
+           descriptionLink="/metrics"
+           titleValue={lifetimeReturnData}
+           titleValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+           changeValue={ytdReturnData}
+           changeValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+           changePeriod="this year"
+           chartComponent={Areachart}
+           chartData={chartData}
+           chartConfig={{
+             portfolio_value: {
+               label: "Equity",
+               color: "var(--chart-1)",
+             },
+             vni_value: {
+               label: "VN-Index",
+               color: "var(--chart-2)",
+             },
+           }}
+           chartClassName="h-full w-full"
+           xAxisDataKey="snapshot_date"
+           lineDataKeys={["portfolio_value", "vni_value"]}
+           grid={true}
+           legend={true}
+           yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
+           dateRange={dateRange}
+           onDateRangeChange={setDateRange}
+         />
       }
     </>
   )
@@ -174,7 +136,7 @@ export default function Page() {
     lifetimeReturnData,
     mtdPnLData,
     equityData,
-    last90DBenchmarkData,
+    benchmarkData,
     assetSummaryData,
     stockData,
     cryptoData
@@ -202,7 +164,7 @@ export default function Page() {
                   <Benchmarkchart
                     lifetimeReturnData={lifetimeReturnData}
                     ytdReturnData={ytdReturnData}
-                    last90DBenchmarkData={last90DBenchmarkData}
+                    benchmarkData={benchmarkData}
                   />
                 </CarouselItem>
               </CarouselContent>
@@ -216,7 +178,7 @@ export default function Page() {
               <Benchmarkchart
                 lifetimeReturnData={lifetimeReturnData}
                 ytdReturnData={ytdReturnData}
-                last90DBenchmarkData={last90DBenchmarkData}
+                benchmarkData={benchmarkData}
               />
             </div>
           }

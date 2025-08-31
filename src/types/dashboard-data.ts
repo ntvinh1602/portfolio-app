@@ -32,7 +32,7 @@ export type EquityChartData = {
 }
 
 export type BenchmarkChartData = {
-  date: string
+  snapshot_date: string
   portfolio_value: number
   vni_value: number
 }

@@ -4,24 +4,13 @@ import { type NextRequest, NextResponse } from "next/server"
 // Route segment configuration
 export const dynamic = "force-dynamic"
 
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId: requestedUserId } = await params
 
-  const { searchParams } = new URL(request.url)
-  const start_date = searchParams.get("start")
-  const end_date = new Date()
   const threshold = 200
-
-  if (!start_date || !end_date || !threshold) {
-    return NextResponse.json(
-      { error: "start_date, end_date and threshold are required" },
-      { status: 400 }
-    )
-  }
 
   try {
     const supabase = await createClient()
@@ -39,8 +28,6 @@ export async function GET(
 
     const { data, error } = await supabase.rpc("get_benchmark_chart_data", {
       p_user_id: requestedUserId,
-      p_start_date: start_date,
-      p_end_date: end_date,
       p_threshold: threshold,
     })
 
@@ -49,7 +36,35 @@ export async function GET(
       throw new Error("Internal Server Error")
     }
 
-    return NextResponse.json(data)
+    // Group data by range_label
+    const groupedData = data.reduce(
+      (
+        acc: {
+          [key: string]: Array<{
+            range_label: string
+            snapshot_date: string
+            portfolio_value: number
+            vni_value: number
+          }>
+        },
+        item: {
+          range_label: string
+          snapshot_date: string
+          portfolio_value: number
+          vni_value: number
+        }
+      ) => {
+        const { range_label } = item
+        if (!acc[range_label]) {
+          acc[range_label] = []
+        }
+        acc[range_label].push(item)
+        return acc
+      },
+      {}
+    )
+
+    return NextResponse.json(groupedData)
     
   } catch (e) {
     console.error("Unexpected error:", e)

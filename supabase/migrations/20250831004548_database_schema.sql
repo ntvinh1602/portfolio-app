@@ -1495,128 +1495,42 @@ $$;
 ALTER FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "text", "portfolio_value" numeric, "vni_value" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-    v_first_portfolio_value numeric;
-    v_first_vni_value numeric;
-    data_count INT;
-    -- LTTB implementation variables
-    data RECORD;
-    result_data RECORD;
-    avg_x NUMERIC;
-    avg_y NUMERIC;
-    range_start INT;
-    range_end INT;
-    point_area NUMERIC;
-    max_area NUMERIC;
-    point_to_add RECORD;
-    every NUMERIC;
-    i INT;
-    a INT := 0;
+  ranges CONSTANT text[] := ARRAY['all_time', '1y', '6m', '3m'];
+  start_date date;
+  end_date date := CURRENT_DATE;
+  label text;
 BEGIN
-    -- Step 1: Find the first available values on or after the start date for normalization
-    SELECT dps.equity_index INTO v_first_portfolio_value
-    FROM daily_performance_snapshots dps
-    WHERE dps.user_id = p_user_id AND dps.date >= p_start_date
-    ORDER BY dps.date
-    LIMIT 1;
-    SELECT md.close INTO v_first_vni_value
-    FROM daily_market_indices md
-    WHERE md.symbol = '^VNINDEX' AND md.date >= p_start_date
-    ORDER BY md.date
-    LIMIT 1;
-    -- Create a temporary table to hold the raw, joined, and normalized data
-    CREATE TEMP TABLE raw_data AS
-    WITH date_series AS (
-        SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date as day
-    ),
-    portfolio_data AS (
-        SELECT
-            dps.date,
-            dps.equity_index
-        FROM daily_performance_snapshots dps
-        WHERE dps.user_id = p_user_id AND dps.date BETWEEN p_start_date AND p_end_date
-    ),
-    vni_data AS (
-        SELECT
-            md.date,
-            md.close
-        FROM daily_market_indices md
-        WHERE md.symbol = '^VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
-    )
+  FOREACH label IN ARRAY ranges LOOP
+    -- determine range start
+    CASE label
+      WHEN 'all_time' THEN
+        SELECT MIN(date) INTO start_date
+        FROM public.daily_performance_snapshots
+        WHERE user_id = p_user_id;
+      WHEN '1y' THEN start_date := end_date - INTERVAL '1 year';
+      WHEN '6m' THEN start_date := end_date - INTERVAL '6 months';
+      WHEN '3m' THEN start_date := end_date - INTERVAL '3 months';
+    END CASE;
+
+    -- Call the single-range function and attach the label
+    RETURN QUERY
     SELECT
-        ds.day as date,
-        (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
-        (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
-        ROW_NUMBER() OVER (ORDER BY ds.day) as rn
-    FROM date_series ds
-    LEFT JOIN portfolio_data pd ON ds.day = pd.date
-    LEFT JOIN vni_data vni ON ds.day = vni.date
-    WHERE pd.equity_index IS NOT NULL OR vni.close IS NOT NULL
-    ORDER BY ds.day;
-    SELECT COUNT(*) INTO data_count FROM raw_data;
-    -- If the data count is below the threshold, return all points
-    IF data_count <= p_threshold THEN
-        RETURN QUERY SELECT to_char(rd.date, 'YYYY-MM-DD'), rd.portfolio_value, rd.vni_value FROM raw_data rd;
-        DROP TABLE raw_data;
-        RETURN;
-    END IF;
-    -- LTTB Downsampling
-    CREATE TEMP TABLE result_data_temp (
-        date DATE,
-        portfolio_value NUMERIC,
-        vni_value NUMERIC
-    );
-    -- Always add the first point
-    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
-    every := (data_count - 2.0) / (p_threshold - 2.0);
-    FOR i IN 0..p_threshold - 3 LOOP
-        -- Calculate average for the next bucket
-        range_start := floor(a * every) + 2;
-        range_end := floor((a + 1) * every) + 1;
-        -- Ensure range_end does not exceed data_count
-        IF range_end > data_count THEN
-            range_end := data_count;
-        END IF;
-        
-        -- Ensure range_start is not greater than range_end
-        IF range_start > range_end THEN
-            CONTINUE;
-        END IF;
-        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        SELECT AVG(rd.portfolio_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        -- Find the point with the largest triangle area based on portfolio_value
-        max_area := -1;
-        -- Get the last point added to the results
-        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
-        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
-            point_area := abs(
-                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
-                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.portfolio_value)
-            ) * 0.5;
-            IF point_area > max_area THEN
-                max_area := point_area;
-                point_to_add := data;
-            END IF;
-        END LOOP;
-        -- Add the selected point to the results
-        INSERT INTO result_data_temp (date, portfolio_value, vni_value)
-        VALUES (point_to_add.date, point_to_add.portfolio_value, point_to_add.vni_value);
-        a := a + 1;
-    END LOOP;
-    -- Always add the last point
-    INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
-    RETURN QUERY SELECT to_char(r.date, 'YYYY-MM-DD'), r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.date;
-    DROP TABLE raw_data;
-    DROP TABLE result_data_temp;
+      label,
+      s.date::date AS snapshot_date,
+      s.portfolio_value,
+      s.vni_value
+    FROM public.sampling_benchmark_data(p_user_id, start_date, end_date, p_threshold) s;
+  END LOOP;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_threshold" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric, "total_amount" numeric)
@@ -1656,90 +1570,41 @@ $$;
 ALTER FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "net_equity_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-    data_count INT;
-    -- LTTB implementation variables
-    data RECORD;
-    result_data RECORD;
-    avg_x NUMERIC;
-    avg_y NUMERIC;
-    range_start INT;
-    range_end INT;
-    point_area NUMERIC;
-    max_area NUMERIC;
-    point_to_add RECORD;
-    every NUMERIC;
-    i INT;
-    a INT := 0;
+  ranges CONSTANT text[] := ARRAY['all_time', '1y', '6m', '3m'];
+  start_date date;
+  end_date date := CURRENT_DATE;
+  label text;
 BEGIN
-    -- Create a temporary table to hold the raw data, casting the value to numeric
-    CREATE TEMP TABLE raw_data AS
+  FOREACH label IN ARRAY ranges LOOP
+    -- determine range start
+    CASE label
+      WHEN 'all_time' THEN
+        SELECT MIN(date) INTO start_date
+        FROM public.daily_performance_snapshots
+        WHERE user_id = p_user_id;
+      WHEN '1y' THEN start_date := end_date - INTERVAL '1 year';
+      WHEN '6m' THEN start_date := end_date - INTERVAL '6 months';
+      WHEN '3m' THEN start_date := end_date - INTERVAL '3 months';
+    END CASE;
+
+    -- Call the single-range function and attach the label
+    RETURN QUERY
     SELECT
-        dps.date,
-        dps.net_equity_value::numeric as net_equity_value,
-        ROW_NUMBER() OVER (ORDER BY dps.date) as rn
-    FROM
-        daily_performance_snapshots dps
-    WHERE
-        dps.user_id = p_user_id
-        AND dps.date >= p_start_date
-        AND dps.date <= p_end_date
-    ORDER BY
-        dps.date;
-    SELECT COUNT(*) INTO data_count FROM raw_data;
-    -- If the data count is below the threshold, return all points
-    IF data_count <= p_threshold THEN
-        RETURN QUERY SELECT rd.date, rd.net_equity_value FROM raw_data rd;
-        DROP TABLE raw_data;
-        RETURN;
-    END IF;
-    -- LTTB Downsampling
-    CREATE TEMP TABLE result_data_temp (
-        date DATE,
-        net_equity_value NUMERIC
-    );
-    -- Always add the first point
-    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = 1;
-    every := (data_count - 2.0) / (p_threshold - 2.0);
-    FOR i IN 0..p_threshold - 3 LOOP
-        -- Calculate average for the next bucket
-        range_start := floor(a * every) + 2;
-        range_end := floor((a + 1) * every) + 1;
-        SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        SELECT AVG(rd.net_equity_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
-        -- Find the point with the largest triangle area
-        max_area := -1;
-        -- Get the last point added to the results
-        SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
-        FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
-            point_area := abs(
-                (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
-                (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
-            ) * 0.5;
-            IF point_area > max_area THEN
-                max_area := point_area;
-                point_to_add := data;
-            END IF;
-        END LOOP;
-        -- Add the selected point to the results
-        INSERT INTO result_data_temp (date, net_equity_value)
-        VALUES (point_to_add.date, point_to_add.net_equity_value);
-        a := a + 1;
-    END LOOP;
-    -- Always add the last point
-    INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = data_count;
-    RETURN QUERY SELECT * FROM result_data_temp ORDER BY date;
-    DROP TABLE raw_data;
-    DROP TABLE result_data_temp;
+      label,
+      s.date AS snapshot_date,
+      s.net_equity_value
+    FROM public.sampling_equity_data(p_user_id, start_date, end_date, p_threshold) s;
+  END LOOP;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_threshold" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") RETURNS numeric
@@ -2354,6 +2219,211 @@ $$;
 ALTER FUNCTION "public"."process_dnse_orders"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "portfolio_value" numeric, "vni_value" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_first_portfolio_value numeric;
+  v_first_vni_value numeric;
+  data_count INT;
+  -- LTTB implementation variables
+  data RECORD;
+  result_data RECORD;
+  avg_x NUMERIC;
+  avg_y NUMERIC;
+  range_start INT;
+  range_end INT;
+  point_area NUMERIC;
+  max_area NUMERIC;
+  point_to_add RECORD;
+  every NUMERIC;
+  i INT;
+  a INT := 0;
+BEGIN
+  -- Step 1: Find the first available values on or after the start date for normalization
+  SELECT dps.equity_index INTO v_first_portfolio_value
+  FROM daily_performance_snapshots dps
+  WHERE dps.user_id = p_user_id AND dps.date >= p_start_date
+  ORDER BY dps.date
+  LIMIT 1;
+  SELECT md.close INTO v_first_vni_value
+  FROM daily_market_indices md
+  WHERE md.symbol = '^VNINDEX' AND md.date >= p_start_date
+  ORDER BY md.date
+  LIMIT 1;
+  -- Create a temporary table to hold the raw, joined, and normalized data
+  CREATE TEMP TABLE raw_data AS
+  WITH date_series AS (
+    SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date as day
+  ),
+  portfolio_data AS (
+    SELECT
+        dps.date,
+        dps.equity_index
+    FROM daily_performance_snapshots dps
+    WHERE dps.user_id = p_user_id AND dps.date BETWEEN p_start_date AND p_end_date
+  ),
+  vni_data AS (
+    SELECT
+        md.date,
+        md.close
+    FROM daily_market_indices md
+    WHERE md.symbol = '^VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
+  )
+  SELECT
+    ds.day as date,
+    (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
+    (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
+    ROW_NUMBER() OVER (ORDER BY ds.day) as rn
+  FROM date_series ds
+  LEFT JOIN portfolio_data pd ON ds.day = pd.date
+  LEFT JOIN vni_data vni ON ds.day = vni.date
+  WHERE pd.equity_index IS NOT NULL OR vni.close IS NOT NULL
+  ORDER BY ds.day;
+  SELECT COUNT(*) INTO data_count FROM raw_data;
+  -- If the data count is below the threshold, return all points
+  IF data_count <= p_threshold THEN
+    RETURN QUERY SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd;
+    DROP TABLE raw_data;
+    RETURN;
+  END IF;
+  -- LTTB Downsampling
+  CREATE TEMP TABLE result_data_temp (
+    date DATE,
+    portfolio_value NUMERIC,
+    vni_value NUMERIC
+  );
+  -- Always add the first point
+  INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
+  every := (data_count - 2.0) / (p_threshold - 2.0);
+  FOR i IN 0..p_threshold - 3 LOOP
+    -- Calculate average for the next bucket
+    range_start := floor(a * every) + 2;
+    range_end := floor((a + 1) * every) + 1;
+    -- Ensure range_end does not exceed data_count
+    IF range_end > data_count THEN range_end := data_count;
+    END IF;
+    
+    -- Ensure range_start is not greater than range_end
+    IF range_start > range_end THEN CONTINUE;
+    END IF;
+    SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+    SELECT AVG(rd.portfolio_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+    -- Find the point with the largest triangle area based on portfolio_value
+    max_area := -1;
+    -- Get the last point added to the results
+    SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
+    FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
+      point_area := abs(
+          (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
+          (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.portfolio_value)
+      ) * 0.5;
+      IF point_area > max_area THEN
+        max_area := point_area;
+        point_to_add := data;
+      END IF;
+    END LOOP;
+    -- Add the selected point to the results
+    INSERT INTO result_data_temp (date, portfolio_value, vni_value)
+    VALUES (point_to_add.date, point_to_add.portfolio_value, point_to_add.vni_value);
+    a := a + 1;
+  END LOOP;
+  -- Always add the last point
+  INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
+  RETURN QUERY SELECT r.date, r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.date;
+  DROP TABLE raw_data;
+  DROP TABLE result_data_temp;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."sampling_benchmark_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  data_count INT;
+  -- LTTB implementation variables
+  data RECORD;
+  result_data RECORD;
+  avg_x NUMERIC;
+  avg_y NUMERIC;
+  range_start INT;
+  range_end INT;
+  point_area NUMERIC;
+  max_area NUMERIC;
+  point_to_add RECORD;
+  every NUMERIC;
+  i INT;
+  a INT := 0;
+BEGIN
+  -- Create a temporary table to hold the raw data, casting the value to numeric
+  CREATE TEMP TABLE raw_data AS
+  SELECT
+    dps.date,
+    dps.net_equity_value::numeric as net_equity_value,
+    ROW_NUMBER() OVER (ORDER BY dps.date) as rn
+  FROM daily_performance_snapshots dps
+  WHERE dps.user_id = p_user_id
+    AND dps.date >= p_start_date
+    AND dps.date <= p_end_date
+  ORDER BY dps.date;
+  SELECT COUNT(*) INTO data_count FROM raw_data;
+  -- If the data count is below the threshold, return all points
+  IF data_count <= p_threshold THEN
+    RETURN QUERY SELECT rd.date, rd.net_equity_value FROM raw_data rd;
+    DROP TABLE raw_data;
+    RETURN;
+  END IF;
+  -- LTTB Downsampling
+  CREATE TEMP TABLE result_data_temp (
+    date DATE,
+    net_equity_value NUMERIC
+  );
+  -- Always add the first point
+  INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = 1;
+  every := (data_count - 2.0) / (p_threshold - 2.0);
+  FOR i IN 0..p_threshold - 3 LOOP
+    -- Calculate average for the next bucket
+    range_start := floor(a * every) + 2;
+    range_end := floor((a + 1) * every) + 1;
+    SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+    SELECT AVG(rd.net_equity_value) INTO avg_y FROM raw_data rd WHERE rn >= range_start AND rn <= range_end;
+    -- Find the point with the largest triangle area
+    max_area := -1;
+    -- Get the last point added to the results
+    SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
+    FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
+      point_area := abs(
+        (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
+        (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
+      ) * 0.5;
+      IF point_area > max_area THEN
+        max_area := point_area;
+        point_to_add := data;
+      END IF;
+    END LOOP;
+    -- Add the selected point to the results
+    INSERT INTO result_data_temp (date, net_equity_value)
+    VALUES (point_to_add.date, point_to_add.net_equity_value);
+    a := a + 1;
+  END LOOP;
+  -- Always add the last point
+  INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = data_count;
+  RETURN QUERY SELECT * FROM result_data_temp ORDER BY date;
+  DROP TABLE raw_data;
+  DROP TABLE result_data_temp;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."sampling_equity_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_assets_after_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2928,9 +2998,9 @@ GRANT ALL ON FUNCTION "public"."get_asset_summary"("p_user_id" "uuid") TO "servi
 
 
 
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "service_role";
 
 
 
@@ -2940,9 +3010,9 @@ GRANT ALL ON FUNCTION "public"."get_crypto_holdings"("p_user_id" "uuid") TO "ser
 
 
 
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_user_id" "uuid", "p_threshold" integer) TO "service_role";
 
 
 
@@ -3021,6 +3091,18 @@ GRANT ALL ON FUNCTION "public"."import_transactions"("p_user_id" "uuid", "p_tran
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "anon";
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_user_id" "uuid", "p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 
 
 
