@@ -11,16 +11,15 @@ import {
   EquityChartData,
   BenchmarkChartData,
   StockData,
-  CryptoData
+  CryptoData,
+  PnLData,
+  TWRData
 } from "@/types/dashboard-data"
 
 interface DashboardApiResponse {
-  ytdReturnData: number | null
-  lifetimeReturnData: number | null
+  twrData: TWRData
   monthlyReturnData: number[]
-  lifetimePnLData: number | null
-  ytdPnLData: number | null
-  mtdPnLData: number | null
+  pnlData: PnLData
   equityData: {
     all_time: EquityChartData[]
     "1y": EquityChartData[]
@@ -49,26 +48,21 @@ export function useDashboardData() {
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
- 
+
   const years =
     (new Date().getTime() - new Date(lifetime).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
  
-  const cagr =
-    data?.lifetimeReturnData !== null && data?.lifetimeReturnData !== undefined && years > 0
-      ? calculateCAGR(1, 1 + data.lifetimeReturnData, years)
-      : null
+  const cagr = data && years > 0
+    ? calculateCAGR(1, 1 + data.twrData.all_time, years)
+    : null
  
-  const sharpeRatio =
-    data?.monthlyReturnData && data.monthlyReturnData.length > 0
-      ? calculateSharpeRatio(data.monthlyReturnData, 0.055)
-      : null
+  const sharpeRatio = data
+    ? calculateSharpeRatio(data.monthlyReturnData, 0.055)
+    : null
  
   return {
-    ytdReturnData: data?.ytdReturnData ?? null,
-    lifetimeReturnData: data?.lifetimeReturnData ?? null,
-    lifetimePnLData: data?.lifetimePnLData ?? null,
-    ytdPnLData: data?.ytdPnLData ?? null,
-    mtdPnLData: data?.mtdPnLData ?? null,
+    twrData: data?.twrData ?? null,
+    pnlData: data?.pnlData ?? null,
     equityData: data?.equityData ?? { all_time: [], "1y": [], "6m": [], "3m": [] },
     benchmarkData: data?.benchmarkData ?? { all_time: [], "1y": [], "6m": [], "3m": [] },
     assetSummaryData: data?.assetSummaryData ?? null,

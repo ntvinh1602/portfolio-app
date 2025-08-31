@@ -36,3 +36,14 @@ export type BenchmarkChartData = {
   portfolio_value: number
   vni_value: number
 }
+
+export type PnLData = {
+  all_time: number
+  ytd: number
+  mtd: number
+}
+
+export type TWRData = {
+  all_time: number
+  ytd: number
+}

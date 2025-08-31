@@ -15,7 +15,8 @@ type TabSwitcherProps = {
   value: string
   defaultValue?: string
   border?: boolean
-  className?: string
+  tabClassName?: string
+  triggerClassName?: string
 }
 
 export default function TabSwitcher({
@@ -24,18 +25,23 @@ export default function TabSwitcher({
   value,
   defaultValue,
   border = true,
-  className
+  tabClassName,
+  triggerClassName
 }: TabSwitcherProps) {
   return (
     <Tabs
-      className={className}
+      className={tabClassName}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
       value={value}
     >
       <TabsList className={`flex ${!border && `border-0`}`}>
         {options.map((option) => (
-          <TabsTrigger key={option.value} value={option.value}>
+          <TabsTrigger
+            key={option.value}
+            value={option.value}
+            className={triggerClassName}
+          >
             {option.label}
           </TabsTrigger>
         ))}

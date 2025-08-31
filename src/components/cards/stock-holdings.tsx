@@ -37,29 +37,28 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
   return (
     <div className="flex flex-col gap-3 text-muted-foreground">
       {variant === "full" && (
-        !data ? <PiechartSkeleton />
-          : data.length > 0 &&
-            <Card>
-              <CardTitle className="px-4">Stock Allocation</CardTitle>
-              <Piechart 
-                data={chartData}
-                chartConfig={chartConfig}
-                dataKey="allocation"
-                nameKey="asset"
-                legend="right"
-                label_pos={1.5}
-                className="max-h-[250px] w-full"
-              />
-            </Card>
+        !data ? <PiechartSkeleton /> : data.length > 0 &&
+          <Card>
+            <CardTitle className="px-4">Stock Allocation</CardTitle>
+            <Piechart 
+              data={chartData}
+              chartConfig={chartConfig}
+              dataKey="allocation"
+              nameKey="asset"
+              legend="right"
+              label_pos={1.5}
+              className="max-h-[250px] w-full"
+            />
+          </Card>
       )}
       <div className="flex flex-col gap-1 font-thin">
-        {variant === "full" && data && data.length > 0 &&
+        {variant === "full" &&
           <span className="text-sm px-2 font-light">Stocks</span>
         }
         {!data ? 
           Array.from({ length: 2 }).map((_, index) => (
             <SecuritySkeleton key={index} />
-          )) : data.length > 0 &&
+          )) : data.length > 0 ?
             data.map((stock) => (
               <SecurityItem
                 key={stock.ticker}
@@ -77,7 +76,7 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
                 variant={variant}
                 type="stock"
               />
-            ))
+            )) : <span className="text-center">No stock holdings.</span>
         }
       </div>
     </div>

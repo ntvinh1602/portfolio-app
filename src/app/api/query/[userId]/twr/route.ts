@@ -9,17 +9,6 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId: requestedUserId } = await params
-  const { searchParams } = new URL(request.url)
-  const start_date = searchParams.get("start")
-  const end_date = new Date()
-  
-  if (!start_date || !end_date) {
-    console.error("API Route: Missing start_date or end_date")
-    return NextResponse.json(
-      { error: "start_date and end_date are required" },
-      { status: 400 }
-    )
-  }
 
   try {
     const supabase = await createClient()
@@ -36,10 +25,8 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data, error } = await supabase.rpc("calculate_twr", {
+    const { data, error } = await supabase.rpc("get_twr", {
       p_user_id: requestedUserId,
-      p_start_date: start_date,
-      p_end_date: end_date,
     })
 
     if (error) {
@@ -47,7 +34,12 @@ export async function GET(
       throw new Error("Internal Server Error")
     }
 
-    return NextResponse.json(data)
+    const transformedData = data.reduce((acc: Record<string, number>, item: { range_label: string; twr: number }) => {
+      acc[item.range_label] = item.twr
+      return acc
+    }, {})
+
+    return NextResponse.json(transformedData)
     
   } catch (e) {
     console.error("Unexpected error:", e)

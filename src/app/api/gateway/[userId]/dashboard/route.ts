@@ -37,24 +37,18 @@ export async function GET(
     }
 
     const [
-      ytdReturnResponse,
-      lifetimeReturnResponse,
+      twrResponse,
       monthlyReturnResponse,
-      lifetimePnLResponse,
-      ytdPnLResponse,
-      mtdPnlResponse,
+      pnlResponse,
       equityResponse,
       benchmarkResponse,
       assetSummaryResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
     ] = await Promise.all([
-      fetch(`${baseURL}/api/query/${user.id}/twr?start=${thisYear}`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/twr?start=${lifetime}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/twr`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/monthly-twr?start=${lifetime}`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${lifetime}`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisYear}`, fetchOptions),
-      fetch(`${baseURL}/api/query/${user.id}/pnl?start=${thisMonth}`, fetchOptions),
+      fetch(`${baseURL}/api/query/${user.id}/pnl`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/equity-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/benchmark-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/${user.id}/asset-summary`, fetchOptions),
@@ -63,12 +57,9 @@ export async function GET(
     ])
 
     for (const response of [
-      ytdReturnResponse,
-      lifetimeReturnResponse,
+      twrResponse,
       monthlyReturnResponse,
-      lifetimePnLResponse,
-      ytdPnLResponse,
-      mtdPnlResponse,
+      pnlResponse,
       equityResponse,
       benchmarkResponse,
       assetSummaryResponse,
@@ -83,24 +74,18 @@ export async function GET(
     }
 
     const [
-      ytdReturnData,
-      lifetimeReturnData,
+      twrData,
       monthlyReturns,
-      lifetimePnLData,
-      ytdPnLData,
-      mtdPnLData,
+      pnlData,
       equityData,
       benchmarkData,
       assetSummaryData,
       stockData,
       cryptoData,
     ] = await Promise.all([
-      ytdReturnResponse.json(),
-      lifetimeReturnResponse.json(),
+      twrResponse.json(),
       monthlyReturnResponse.json(),
-      lifetimePnLResponse.json(),
-      ytdPnLResponse.json(),
-      mtdPnlResponse.json(),
+      pnlResponse.json(),
       equityResponse.json(),
       benchmarkResponse.json(),
       assetSummaryResponse.json(),
@@ -112,12 +97,9 @@ export async function GET(
 
     return NextResponse.json(
       {
-        ytdReturnData,
-        lifetimeReturnData,
+        twrData,
         monthlyReturnData,
-        lifetimePnLData,
-        ytdPnLData,
-        mtdPnLData,
+        pnlData,
         equityData,
         benchmarkData,
         assetSummaryData,

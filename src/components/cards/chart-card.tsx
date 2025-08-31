@@ -16,6 +16,7 @@ import { ChartConfig } from "@/components/ui/chart"
 import React from "react"
 import { useChartTicks } from "@/hooks/use-chart-ticks"
 import TabSwitcher from "@/components/tab-switcher"
+import { Separator } from "../ui/separator"
 
 interface ChartCardProps<
   TData extends { snapshot_date: string; [key: string]: number | string }
@@ -23,11 +24,14 @@ interface ChartCardProps<
   cardClassName?: string
   description: string
   descriptionLink: string
-  titleValue: number | null | undefined
-  titleValueFormatter: (value: number) => string
-  changeValue: number | null
-  changeValueFormatter: (value: number) => string
-  changePeriod: string
+  majorValue: number | null
+  majorValueFormatter: (value: number) => string
+  minorValue1: number | null
+  minorValue1Formatter: (value: number) => string
+  minorText1: string
+  minorValue2: number | null
+  minorValue2Formatter: (value: number) => string
+  minorText2: string
   chartComponent: React.ElementType
   chartData: TData[]
   chartConfig: ChartConfig
@@ -47,11 +51,14 @@ function ChartCard<
 >({
   description,
   descriptionLink,
-  titleValue,
-  titleValueFormatter,
-  changeValue,
-  changeValueFormatter,
-  changePeriod,
+  majorValue,
+  majorValueFormatter,
+  minorValue1,
+  minorValue1Formatter,
+  minorText1,
+  minorValue2,
+  minorValue2Formatter,
+  minorText2,
   chartComponent: ChartComponent,
   chartData,
   chartConfig,
@@ -72,7 +79,7 @@ function ChartCard<
 
   return (
     <Card className="flex flex-col gap-0 h-full">
-      <CardHeader className="px-4">
+      <CardHeader className="px-4 items-center">
         <CardDescription
           className="flex items-center w-fit"
           onClick={handleNavigation}
@@ -80,17 +87,33 @@ function ChartCard<
           {description}<ChevronRight className="size-4"/>
         </CardDescription>
         <CardTitle className="text-2xl">
-          {titleValue && titleValueFormatter(titleValue)}
+          {majorValue && majorValueFormatter(majorValue)}
         </CardTitle>
-        <CardAction className="flex flex-col items-end self-center">
-          <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-            {changeValue !== null && changeValue < 0
-              ? <TrendingDown className="text-red-700 dark:text-red-400" />
-              : <TrendingUp className="text-green-700 dark:text-green-400" />
-            }
-            {changeValue !== null && changeValueFormatter(Math.abs(changeValue))}
+        <CardAction className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+              {minorValue1 !== null && minorValue1 < 0
+                ? <TrendingDown className="text-red-700 dark:text-red-400" />
+                : <TrendingUp className="text-green-700 dark:text-green-400" />
+              }
+              {minorValue1 !== null && minorValue1Formatter(Math.abs(minorValue1))}
+            </div>
+            <CardDescription className="text-xs">{minorText1}</CardDescription>
           </div>
-          <CardDescription className="text-xs">{changePeriod}</CardDescription>
+          <Separator
+            orientation="vertical"
+            className="data-[orientation=vertical]:h-8 -mr-1"
+          />
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+              {minorValue2 !== null && minorValue2 < 0
+                ? <TrendingDown className="text-red-700 dark:text-red-400" />
+                : <TrendingUp className="text-green-700 dark:text-green-400" />
+              }
+              {minorValue2 !== null && minorValue2Formatter(Math.abs(minorValue2))}
+            </div>
+            <CardDescription className="text-xs">{minorText2}</CardDescription>
+          </div>
         </CardAction>
       </CardHeader>
       <CardContent className="px-4 flex flex-col gap-1 h-full">
@@ -98,13 +121,14 @@ function ChartCard<
           value={dateRange}
           onValueChange={onDateRangeChange}
           options={[
-            { label: "3 month", value: "3m" },
-            { label: "6 month", value: "6m" },
-            { label: "1 year", value: "1y" },
-            { label: "All time", value: "all_time" },
+            { label: "3M", value: "3m" },
+            { label: "6M", value: "6m" },
+            { label: "1Y", value: "1y" },
+            { label: "All", value: "all_time" },
           ]}
           border={false}
-          className="w-full md:w-3/4 ml-auto"
+          tabClassName="w-fit ml-auto"
+          triggerClassName="w-[50px]"
         />
         <ChartComponent
           data={chartData}
