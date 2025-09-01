@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
 import {
-  lifetime,
-  thisMonth,
-  thisYear
+  lifetime
 } from "@/lib/start-dates"
 
 export const dynamic = "force-dynamic"

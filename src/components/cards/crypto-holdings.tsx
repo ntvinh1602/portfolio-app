@@ -4,7 +4,7 @@ import { CryptoData } from "@/types/dashboard-data"
 interface CryptoHoldingsProps {
   variant?: "compact" | "full"
   data: CryptoData[] | null
-  liveBtcPrice: string | null
+  liveBtcPrice?: string | null
 }
 
 export function CryptoHoldings({ variant = "full", data, liveBtcPrice }: CryptoHoldingsProps) {

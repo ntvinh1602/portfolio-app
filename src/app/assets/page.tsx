@@ -11,14 +11,14 @@ import { BalanceSheet } from "@/components/cards/balance-sheet"
 
 export default function Page() {
   const isMobile = useIsMobile()
-  const { assetSummaryData } = useDashboardData()
+  const { balanceSheetData } = useDashboardData()
 
 return (
     <SidebarProvider>
       {!isMobile && <AppSidebar />}
       <SidebarInset>
         <Header title="Assets"/>
-        <BalanceSheet data={assetSummaryData}/>
+        <BalanceSheet data={balanceSheetData}/>
         {isMobile && <BottomNavBar />}
       </SidebarInset>
     </SidebarProvider>

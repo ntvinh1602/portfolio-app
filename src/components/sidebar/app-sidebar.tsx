@@ -36,18 +36,6 @@ import Link from "next/link"
 const data = {
   navMain: [
     {
-      title: "Assets",
-      url: "#",
-      icon: Sprout,
-      isActive: true,
-      items: [
-        {
-          title: "Debts",
-          url: "/debts",
-        },
-      ],
-    },
-    {
       title: "History",
       url: "#",
       icon: Coins,
@@ -65,10 +53,6 @@ const data = {
       icon: Gauge,
       isActive: true,
       items: [
-        {
-          title: "Key Metrics",
-          url: "/metrics",
-        },
         {
           title: "Monthly Earnings",
           url: "/earnings",

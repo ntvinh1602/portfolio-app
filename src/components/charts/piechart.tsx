@@ -1,7 +1,7 @@
 "use client"
 
 import { Pie, PieChart, Cell, Label } from "recharts"
-import { cn, compactNum } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import {
   ChartConfig,
   ChartContainer,

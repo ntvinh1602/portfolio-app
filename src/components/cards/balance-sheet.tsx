@@ -6,18 +6,23 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
+import {
+  Sheet,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Debts } from "@/components/debts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"
-import { useRouter } from "next/navigation"
 import { ChevronRight, BookCheck } from "lucide-react"
 import { AssetItem, BalanceSheetData } from "@/types/dashboard-data"
 
-interface BSItemProps {
+interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: boolean
   label: string
   value?: string
-  link?: string
+  clickable?: boolean
+  className?: string
 }
 
 interface BalanceSheetProps {
@@ -25,16 +30,12 @@ interface BalanceSheetProps {
   data: BalanceSheetData | null
 }
 
-function BSItem({ header = false, label, value, link }: BSItemProps) {
-  const router = useRouter()
-  const handleNavigation = () => {
-    if (link) router.push(link)
-  }
+function BSItem({ header = false, label, value, clickable=false, className, ...props }: BSItemProps) {
 
   return (
-    <Card className={`border-0 py-3 rounded-md ${header && "bg-muted"}`}>
-      <CardHeader className="flex px-4 justify-between" onClick={handleNavigation}>
-        {link ? 
+    <Card className={`border-0 py-3 rounded-md ${header && "bg-muted"} ${className}`} {...props}>
+      <CardHeader className="flex px-4 justify-between">
+        {clickable ? 
           <CardTitle className="flex items-center gap-1">
             <span className="text-sm font-thin">{label}</span>
             <ChevronRight className="size-4 stroke-1" />
@@ -105,12 +106,17 @@ export function BalanceSheet({ title = false, data }: BalanceSheetProps) {
             <BSSkeleton label="Unrealized P/L"/>
           </div> : 
           <div className="flex flex-col">
-            <BSItem
-              header={true}
-              label="Liabilities"
-              value={formatNum(data.totalLiabilities)}
-              link="/debts"
-            />
+            <Sheet>
+              <SheetTrigger asChild>
+                <BSItem
+                  header={true}
+                  label="Liabilities"
+                  value={formatNum(data.totalLiabilities)}
+                  clickable={true}
+                />
+              </SheetTrigger>
+              <Debts />
+            </Sheet>
             {data.liabilities.map((item: AssetItem) => (
               <BSItem
                 key={item.type}
