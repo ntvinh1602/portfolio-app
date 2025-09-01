@@ -25,12 +25,10 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data, error } = await supabase.rpc("get_asset_summary", {
-      p_user_id: requestedUserId,
-    })
+    const { data, error } = await supabase.rpc("get_balance_sheet")
 
     if (error) {
-      console.error("Error calling get_asset_summary function:", error)
+      console.error("Error calling get_balance_sheet function:", error)
       throw new Error("Internal Server Error")
     }
 

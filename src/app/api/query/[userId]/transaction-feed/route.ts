@@ -33,7 +33,6 @@ export async function GET(
     const assetClassFilter = searchParams.get("asset_class_filter")
 
     const { data, error } = await supabase.rpc("get_transaction_feed", {
-      p_user_id: user.id,
       page_size: pageSize ? parseInt(pageSize) : 10,
       page_number: pageNumber ? parseInt(pageNumber) : 1,
       start_date: startDate,

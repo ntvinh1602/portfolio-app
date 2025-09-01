@@ -4,7 +4,6 @@ import { borrowSchema } from "@/lib/schemas/transactions"
 
 export async function handleBorrow(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof borrowSchema>
 ) {
   const {
@@ -16,7 +15,6 @@ export async function handleBorrow(
   } = data
 
   const { error } = await supabase.rpc("add_borrow_transaction", {
-    p_user_id: userId,
     p_lender_name: lender,
     p_principal_amount: principal,
     p_interest_rate: interest_rate,

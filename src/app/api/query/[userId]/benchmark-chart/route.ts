@@ -27,7 +27,6 @@ export async function GET(
     }
 
     const { data, error } = await supabase.rpc("get_benchmark_chart_data", {
-      p_user_id: requestedUserId,
       p_threshold: threshold,
     })
 

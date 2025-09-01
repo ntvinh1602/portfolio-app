@@ -4,7 +4,6 @@ import { dividendSchema } from "@/lib/schemas/transactions"
 
 export async function handleDividend(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof dividendSchema>,
 ) {
   const {
@@ -41,7 +40,6 @@ export async function handleDividend(
   }
 
   const { error } = await supabase.rpc("add_income_transaction", {
-    p_user_id: userId,
     p_transaction_date: transaction_date,
     p_quantity: quantity,
     p_description: `Dividend from ${assetData.ticker}`,

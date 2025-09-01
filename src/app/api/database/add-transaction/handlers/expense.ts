@@ -4,13 +4,11 @@ import { expenseSchema } from "@/lib/schemas/transactions"
 
 export async function handleExpense(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof expenseSchema>
 ) {
   const { transaction_date, quantity, description, asset } = data
 
   const { error } = await supabase.rpc("add_expense_transaction", {
-    p_user_id: userId,
     p_transaction_date: transaction_date,
     p_quantity: quantity,
     p_description: description,

@@ -25,9 +25,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data, error } = await supabase.rpc("get_twr", {
-      p_user_id: requestedUserId,
-    })
+    const { data, error } = await supabase.rpc("get_twr")
 
     if (error) {
       console.error("Error calling calculate_twr function:", error)

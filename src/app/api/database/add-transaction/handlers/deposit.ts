@@ -4,7 +4,6 @@ import { depositSchema } from "@/lib/schemas/transactions"
 
 export async function handleDeposit(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof depositSchema>
 ) {
   const { transaction_date, quantity, asset } = data
@@ -38,9 +37,7 @@ export async function handleDeposit(
     : `${assetData.ticker} deposit`
 
   const { error, data: result } = await supabase.rpc(
-    "add_deposit_transaction",
-    {
-      p_user_id: userId,
+    "add_deposit_transaction", {
       p_transaction_date: transaction_date,
       p_quantity: quantity,
       p_description: description,

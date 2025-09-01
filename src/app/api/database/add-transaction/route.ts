@@ -37,34 +37,34 @@ export async function POST(request: NextRequest) {
     let result
     switch (transactionData.transaction_type) {
       case "deposit":
-        result = await handleDeposit(supabase, user.id, transactionData)
+        result = await handleDeposit(supabase, transactionData)
         break
       case "withdraw":
-        result = await handleWithdraw(supabase, user.id, transactionData)
+        result = await handleWithdraw(supabase, transactionData)
         break
       case "buy":
-        result = await handleBuy(supabase, user.id, transactionData)
+        result = await handleBuy(supabase, transactionData)
         break
       case "sell":
-        result = await handleSell(supabase, user.id, transactionData)
+        result = await handleSell(supabase, transactionData)
         break
       case "income":
-        result = await handleIncome(supabase, user.id, transactionData)
+        result = await handleIncome(supabase, transactionData)
         break
       case "dividend":
-        result = await handleDividend(supabase, user.id, transactionData)
+        result = await handleDividend(supabase, transactionData)
         break
       case "expense":
-        result = await handleExpense(supabase, user.id, transactionData)
+        result = await handleExpense(supabase, transactionData)
         break
       case "borrow":
-        result = await handleBorrow(supabase, user.id, transactionData)
+        result = await handleBorrow(supabase, transactionData)
         break
       case "debt_payment":
-        result = await handleDebtPayment(supabase, user.id, transactionData)
+        result = await handleDebtPayment(supabase, transactionData)
         break
       case "split":
-        result = await handleSplit(supabase, user.id, transactionData)
+        result = await handleSplit(supabase, transactionData)
         break
       default:
         return NextResponse.json({ error: "Invalid transaction type" }, { status: 400 })

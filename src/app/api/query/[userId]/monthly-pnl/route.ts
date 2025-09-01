@@ -37,7 +37,6 @@ export async function GET(
     }
 
     const { data, error } = await supabase.rpc("get_monthly_pnl", {
-      p_user_id: requestedUserId,
       p_start_date: startDate,
       p_end_date: endDate,
     })

@@ -4,7 +4,6 @@ import { sellSchema } from "@/lib/schemas/transactions"
 
 export async function handleSell(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof sellSchema>
 ) {
   const {
@@ -40,7 +39,6 @@ export async function handleSell(
   }
 
   const { error } = await supabase.rpc("add_sell_transaction", {
-    p_user_id: userId,
     p_asset_id: asset,
     p_quantity_to_sell: quantity,
     p_price: price,

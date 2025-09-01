@@ -4,7 +4,6 @@ import { splitSchema } from "@/lib/schemas/transactions"
 
 export async function handleSplit(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof splitSchema>
 ) {
   const {
@@ -38,7 +37,6 @@ export async function handleSplit(
   }
 
   const { error } = await supabase.rpc("add_split_transaction", {
-    p_user_id: userId,
     p_asset_id: asset_id,
     p_quantity: quantity,
     p_transaction_date: transaction_date,

@@ -31,7 +31,7 @@ export async function GET(
     }
 
     const { data: assetData, error: assetError } = await supabase
-      .rpc("get_asset_data", { p_user_id: user.id })
+      .rpc("get_asset_data")
       .single()
 
     if (assetError) {

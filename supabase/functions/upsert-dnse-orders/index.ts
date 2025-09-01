@@ -82,7 +82,8 @@ serve(async (_req: Request) => {
           average_price: order.averagePrice,
           modified_date: order.modifiedDate,
           tax: order.taxRate * order.fillQuantity * order.averagePrice,
-          fee: order.feeRate * order.fillQuantity * order.averagePrice,
+          fee: order.feeRate * order.fillQuantity * order.averagePrice
+            + (order.side === 'NS' ? order.fillQuantity * 0.3 : 0),
         })),
         { onConflict: 'id', ignoreDuplicates: true }
       );

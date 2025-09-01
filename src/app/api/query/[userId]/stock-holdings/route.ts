@@ -2,38 +2,36 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
 
 // Route segment configuration
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  const { userId: requestedUserId } = await params;
+  const { userId: requestedUserId } = await params
 
   try {
-    const supabase = await createClient();
+    const supabase = await createClient()
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     // Security check: Ensure the authenticated user is requesting their own data
     if (user.id !== requestedUserId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data, error } = await supabase.rpc("get_stock_holdings", {
-      p_user_id: requestedUserId,
-    });
+    const { data, error } = await supabase.rpc("get_stock_holdings")
 
     if (error) {
       throw error
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data)
     
   } catch (e) {
     console.error("Unexpected error:", e)

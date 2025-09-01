@@ -4,7 +4,6 @@ import { debtPaymentSchema } from "@/lib/schemas/transactions"
 
 export async function handleDebtPayment(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof debtPaymentSchema>
 ) {
   const {
@@ -27,7 +26,6 @@ export async function handleDebtPayment(
   }
 
   const { error } = await supabase.rpc("add_debt_payment_transaction", {
-    p_user_id: userId,
     p_debt_id: debt_id,
     p_principal_payment: principal_payment,
     p_interest_payment: interest_payment,

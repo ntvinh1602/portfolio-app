@@ -4,7 +4,6 @@ import { withdrawSchema } from "@/lib/schemas/transactions"
 
 export async function handleWithdraw(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof withdrawSchema>
 ) {
   const { transaction_date, quantity, asset } = data
@@ -34,9 +33,7 @@ export async function handleWithdraw(
   }
 
   const { error, data: result } = await supabase.rpc(
-    "add_withdraw_transaction",
-    {
-      p_user_id: userId,
+    "add_withdraw_transaction", {
       p_transaction_date: transaction_date,
       p_quantity: quantity,
       p_description: `${assetData.ticker} withdrawal`,

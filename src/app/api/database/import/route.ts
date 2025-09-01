@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
   })
 
   const { error } = await supabase.rpc('import_transactions', {
-    p_user_id: user.id,
     p_transactions_data: transactions,
     p_start_date: lifetime
   })

@@ -25,9 +25,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data, error } = await supabase.rpc("get_pnl", {
-      p_user_id: requestedUserId,
-    })
+    const { data, error } = await supabase.rpc("get_pnl")
 
     if (error) {
       console.error("Error calling get_pnl function:", error)

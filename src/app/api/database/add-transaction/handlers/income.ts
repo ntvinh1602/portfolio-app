@@ -4,7 +4,6 @@ import { incomeSchema } from "@/lib/schemas/transactions"
 
 export async function handleIncome(
   supabase: ReturnType<typeof createClient>["supabase"],
-  userId: string,
   data: z.infer<typeof incomeSchema>,
 ) {
   const {
@@ -16,7 +15,6 @@ export async function handleIncome(
   } = data
 
   const { error } = await supabase.rpc("add_income_transaction", {
-    p_user_id: userId,
     p_transaction_date: transaction_date,
     p_quantity: quantity,
     p_description: description,
