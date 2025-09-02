@@ -1,6 +1,5 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import { useAuth } from "@/hooks/useAuth"
 import {
   calculateCAGR,
   calculateSharpeRatio,
@@ -38,13 +37,8 @@ interface DashboardApiResponse {
 }
 
 export function useDashboardData() {
-  const { userId } = useAuth()
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
-    () => {
-      if (!userId) return null
- 
-      return `/api/gateway/${userId}/dashboard`
-    },
+    "/api/gateway/dashboard",
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )

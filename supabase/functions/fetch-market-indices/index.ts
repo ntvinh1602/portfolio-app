@@ -47,7 +47,7 @@ Deno.serve(async (_req: Request) => {
       const { error: upsertError } = await supabase
         .from('daily_market_indices')
         .upsert(dataToUpsert, {
-            onConflict: 'symbol,date' // Ensure upsert works correctly
+          onConflict: 'symbol,date' // Ensure upsert works correctly
         });
 
       if (upsertError) {

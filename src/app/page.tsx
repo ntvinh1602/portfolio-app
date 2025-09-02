@@ -10,7 +10,6 @@ import { ChartCard, ChartCardSkeleton } from "@/components/cards/chart-card"
 import { AssetCard } from "@/components/cards/total-assets"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum, compactNum } from "@/lib/utils"
-import { BalanceSheet } from "@/components/cards/balance-sheet"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -30,7 +29,13 @@ import {
   PnLData,
   TWRData
 } from "@/types/dashboard-data"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import TradingView from "@/components/cards/trading-view"
 import { Wallet } from "lucide-react"
@@ -192,12 +197,11 @@ export default function Page() {
             </div>
           }
           <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
-            <AssetCard data={balanceSheetData} />
-            {!isMobile && <BalanceSheet title={true} data={balanceSheetData} />}
-          </div>
-          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
-            {!isMobile && <div className="h-[400px]"><TradingView /></div>}
-            <Card className="gap-2">
+            <AssetCard
+              sheetSide={isMobile ? "bottom" : "right"}
+              data={balanceSheetData}
+            />
+            <Card className="gap-2 md:min-h-[700px]">
               <CardHeader className="flex items-center justify-between gap-2">
                 <CardTitle className="text-xl">Portfolio</CardTitle>
                 <Wallet className="stroke-1 text-muted-foreground" />
@@ -217,6 +221,9 @@ export default function Page() {
                 />
               </CardContent>
             </Card>
+          </div>
+          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
+            {!isMobile && <div className="h-[400px]"><TradingView /></div>}
           </div>
         </div>
       </SidebarInset>

@@ -14,13 +14,14 @@ import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum, formatNum } from "@/lib/utils"
 import { BalanceSheetData } from "@/types/dashboard-data"
-import { DollarSign } from "lucide-react"
+import { BSSheet } from "../sheets/balance-sheet"
 
 interface AssetCardProps {
+  sheetSide: "right" | "bottom"
   data: BalanceSheetData | null;
 }
 
-export function AssetCard({ data }: AssetCardProps) {
+export function AssetCard({ sheetSide, data }: AssetCardProps) {
 
   const assetChartCfg = {
     allocation: {
@@ -91,7 +92,7 @@ export function AssetCard({ data }: AssetCardProps) {
               {formatNum(data.totalAssets)}
             </CardTitle>
             <CardAction>
-              <DollarSign className="stroke-1 text-muted-foreground"/>
+              <BSSheet side={sheetSide} data={data}/>
             </CardAction>
           </CardHeader>
           <CardContent className="px-0 flex w-full justify-between">

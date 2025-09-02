@@ -1,7 +1,6 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { lifetime, last12M } from "@/lib/start-dates"
-import { useAuth } from "@/hooks/useAuth"
 
 type MonthlyExpense = {
   month: string
@@ -11,16 +10,13 @@ type MonthlyExpense = {
 }
 
 export function useExpensesData() {
-  const { userId } = useAuth()
 
   // Fetch last 12 months expenses for the bar chart
   const {
     data: monthlyExpenses,
     isLoading: monthlyLoading,
   } = useSWR<MonthlyExpense[]>(
-    userId
-      ? `/api/gateway/${userId}/expenses?start=${last12M}`
-      : null,
+    `/api/gateway/expenses?start=${last12M}`,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
@@ -30,10 +26,8 @@ export function useExpensesData() {
     data: allExpenses,
     isLoading: structureLoading
   } = useSWR<MonthlyExpense[]>(
-      userId
-        ? `/api/gateway/${userId}/expenses?start=${lifetime}`
-        : null,
-      fetcher,
+    `/api/gateway/expenses?start=${lifetime}`,
+    fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 

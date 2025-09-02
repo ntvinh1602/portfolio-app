@@ -11,7 +11,7 @@ const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
 
 interface SuccessfulFetch {
-  security_id: number;
+  security_id: string;
   date: string;
   price: number;
 }

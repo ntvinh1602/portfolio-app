@@ -2,7 +2,6 @@
 
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import { useAuth } from "@/hooks/useAuth"
 import { Tables } from "@/types/database.types"
 
 export type AssetWithSecurity = Tables<"assets"> & {
@@ -15,11 +14,9 @@ interface TransactionFormData {
 }
 
 export function useTransactionFormData(enabled: boolean = true) {
-  const { session } = useAuth()
-  const userId = session?.user?.id
 
   const { data, error, isLoading } = useSWR<TransactionFormData>(
-    userId && enabled ? `/api/gateway/${userId}/transaction-form` : null,
+    enabled ? `/api/gateway/transaction-form` : null,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )

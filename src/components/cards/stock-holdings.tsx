@@ -32,7 +32,7 @@ export function StockHoldings({ variant = "full", data }: StockHoldingsProps) {
                 variant={variant}
                 type="stock"
               />
-            )) : <span className="text-center">No stock holdings.</span>
+            )) : <span className="text-center min-h-[100px] flex items-center justify-center">No stock holdings.</span>
         }
       </div>
     </div>

@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import useSWRInfinite from "swr/infinite"
 import { fetcher } from "@/lib/fetcher"
-import { useAuth } from "@/hooks/useAuth"
 import {
   SidebarInset,
   SidebarProvider
@@ -39,12 +38,10 @@ const PAGE_SIZE = 6
 
 export default function Page() {
   const isMobile = useIsMobile()
-  const { userId } = useAuth()
   const [date, setDate] = React.useState<DateRange | undefined>(undefined)
   const [assetType, setAssetType] = React.useState("stock")
 
   const getKey = (pageIndex: number, previousPageData: TransactionFeed[] | null) => {
-    if (!userId) return null
     if (previousPageData && !previousPageData.length) return null // reached the end
     
     const params = new URLSearchParams({
@@ -56,7 +53,7 @@ export default function Page() {
     if (date?.from) params.append("start_date", date.from.toISOString());
     if (date?.to) params.append("end_date", date.to.toISOString());
 
-    return `/api/query/${userId}/transaction-feed?${params.toString()}`
+    return `/api/query/transaction-feed?${params.toString()}`
   }
 
   const { data, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(

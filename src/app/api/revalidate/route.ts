@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
 
-// Route segment configuration
 export const dynamic = "force-dynamic"
 
 // Define a type for the expected webhook payload
 interface WebhookPayload {
   table: string
-  record: {
-    user_id?: string
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -22,25 +18,21 @@ export async function POST(request: NextRequest) {
     }
 
     const payload: WebhookPayload = await request.json()
-    const { table, record } = payload
-    const userId = record?.user_id
+    const { table } = payload
 
-    if (!table || !userId) {
+    if (!table) {
       return NextResponse.json(
-        { error: "Missing table or user_id in payload" },
+        { error: "Missing table in payload" },
         { status: 400 },
       )
     }
 
-    // Revalidate based on the table that was updated for the specific user
+    // Revalidate based on the table that was updated
     if (table === "transactions") {
-      revalidateTag(`price-driven-${userId}`)
-      revalidateTag(`txn-driven-${userId}`)
-    } else if (
-      table === "daily_stock_prices" ||
-      table === "daily_exchange_rates"
-    ) {
-      revalidateTag(`price-driven-${userId}`)
+      revalidateTag(`price-driven`)
+      revalidateTag(`txn-driven`)
+    } else if (table === "daily_stock_prices" || table === "daily_exchange_rates") {
+      revalidateTag(`price-driven`)
     }
 
     return NextResponse.json({ revalidated: true, now: Date.now() })

@@ -10,7 +10,7 @@ import {
   Sheet,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Debts } from "@/components/debts"
+import { Debts } from "@/components/sheets/debts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"
@@ -63,7 +63,7 @@ function BSSkeleton({ header = false, label }: BSItemProps) {
 
 export function BalanceSheet({ title = false, data }: BalanceSheetProps) {
   return (
-    <Card className={`h-fit gap-3 ${!title && "border-0 px-6 py-0"}`}>
+    <Card className={`h-fit gap-3 ${!title && "border-0 py-0"}`}>
       {title && 
         <CardHeader className="flex items-center justify-between gap-2">
           <CardTitle className="text-xl">Balance Sheet</CardTitle>
@@ -105,37 +105,35 @@ export function BalanceSheet({ title = false, data }: BalanceSheetProps) {
             <BSSkeleton label="Owner Capital"/>
             <BSSkeleton label="Unrealized P/L"/>
           </div> : 
-          <div className="flex flex-col">
-            <Sheet>
-              <SheetTrigger asChild>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col">
+              <BSItem
+                header={true}
+                label="Liabilities"
+                value={formatNum(data.totalLiabilities)}
+              />
+              {data.liabilities.map((item: AssetItem) => (
                 <BSItem
-                  header={true}
-                  label="Liabilities"
-                  value={formatNum(data.totalLiabilities)}
-                  clickable={true}
+                  key={item.type}
+                  label={item.type}
+                  value={formatNum(item.totalAmount)}
                 />
-              </SheetTrigger>
-              <Debts />
-            </Sheet>
-            {data.liabilities.map((item: AssetItem) => (
+              ))}
+            </div>
+            <div className="flex flex-col">
               <BSItem
-                key={item.type}
-                label={item.type}
-                value={formatNum(item.totalAmount)}
+                header={true}
+                label="Equities"
+                value={formatNum(data.totalEquity)}
               />
-            ))}
-            <BSItem
-              header={true}
-              label="Equities"
-              value={formatNum(data.totalEquity)}
-            />
-            {data.equity.map((item: AssetItem) => (
-              <BSItem
-                key={item.type}
-                label={item.type}
-                value={formatNum(item.totalAmount)}
-              />
-            ))}
+              {data.equity.map((item: AssetItem) => (
+                <BSItem
+                  key={item.type}
+                  label={item.type}
+                  value={formatNum(item.totalAmount)}
+                />
+              ))}
+            </div>
           </div>
         }
       </CardContent>
