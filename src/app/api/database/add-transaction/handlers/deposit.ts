@@ -8,23 +8,10 @@ export async function handleDeposit(
 ) {
   const { transaction_date, quantity, asset } = data
 
-  const { data: assetSecurity, error: assetSecurityError } = await supabase
-    .from("assets")
-    .select("security_id")
-    .eq("id", asset)
-    .single()
-
-  if (assetSecurityError) {
-    console.error("Error fetching asset security id:", assetSecurityError)
-    throw new Error(
-      `Failed to fetch asset security details: ${assetSecurityError.message}`,
-    )
-  }
-
   const { data: assetData, error: assetError } = await supabase
-    .from("securities")
+    .from("assets")
     .select("ticker")
-    .eq("id", assetSecurity.security_id)
+    .eq("id", asset)
     .single()
 
   if (assetError) {

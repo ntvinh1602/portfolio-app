@@ -4,14 +4,6 @@ import { Tables } from "@/types/database.types"
 
 export const dynamic = "force-dynamic"
 
-type AssetWithSecurity = Tables<"assets"> & {
-  securities: Tables<"securities">
-}
-
-type AssetData = {
-  assets: AssetWithSecurity[]
-}
-
 export async function GET(request: NextRequest) {
 
   try {
@@ -30,7 +22,7 @@ export async function GET(request: NextRequest) {
       throw assetError
     }
 
-    return NextResponse.json(assetData as AssetData)
+    return NextResponse.json(assetData as Tables<"assets">)
 
   } catch (e) {
     console.error("Unexpected error fetching asset account data:", e)

@@ -60,13 +60,13 @@ export function DividendForm({
             {assets
               .filter(
                 asset =>
-                  asset.securities &&
-                  (asset.securities.asset_class === "cash" ||
-                    asset.securities.asset_class === "epf"),
+                  asset &&
+                  (asset.asset_class === "cash" ||
+                    asset.asset_class === "epf"),
               )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
-                  {asset.securities?.name}
+                  {asset?.name}
                 </SelectItem>
               ))}
           </SelectContent>
@@ -78,13 +78,13 @@ export function DividendForm({
           items={assets
             .filter(
               asset =>
-                asset.securities &&
-                (asset.securities.asset_class === "stock" ||
-                  asset.securities.asset_class === "epf"),
+                asset &&
+                (asset.asset_class === "stock" ||
+                  asset.asset_class === "epf"),
             )
             .map(asset => ({
               value: asset.id,
-              label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
+              label: `${asset?.ticker} - ${asset?.name}`,
             }))}
           value={formState.dividend_asset}
           onChange={handlePickerChange("dividend_asset")}

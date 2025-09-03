@@ -11,16 +11,16 @@ export async function POST(request: Request) {
     }
 
     // 1. Get all stock and crypto securities from the securities table
-    const { data: securitiesData, error: securitiesError } = await supabase
-      .from("securities")
+    const { data: assetData, error: assetError } = await supabase
+      .from("assets")
       .select("ticker, asset_class")
       .in("asset_class", ["stock", "crypto"])
 
-    if (securitiesError) {
-      throw securitiesError
+    if (assetError) {
+      throw assetError
     }
 
-    const allHoldings = (securitiesData || []).map((s: { ticker: string, asset_class: string }) => ({
+    const allHoldings = (assetData || []).map((s: { ticker: string, asset_class: string }) => ({
       ticker: s.ticker,
       type: s.asset_class,
     }))

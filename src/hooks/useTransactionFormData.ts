@@ -4,12 +4,8 @@ import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import { Tables } from "@/types/database.types"
 
-export type AssetWithSecurity = Tables<"assets"> & {
-  securities: Tables<"securities">
-}
-
 interface TransactionFormData {
-  assets: AssetWithSecurity[]
+  assets: Tables<"assets">[]
   debts: Tables<"debts">[]
 }
 
@@ -20,7 +16,7 @@ export function useTransactionFormData(enabled: boolean = true) {
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
-
+ 
   return {
     assets: data?.assets ?? [],
     debts: data?.debts ?? [],

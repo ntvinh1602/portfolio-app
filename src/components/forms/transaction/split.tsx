@@ -30,11 +30,11 @@ export function SplitForm({
         <Combobox
           items={assets
             .filter(
-              asset => asset.securities && asset.securities.asset_class === "stock",
+              asset => asset.asset_class === "stock",
             )
             .map(asset => ({
               value: asset.id,
-              label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
+              label: `${asset.ticker} - ${asset.name}`,
             }))}
           value={formState.asset}
           onChange={handlePickerChange("asset")}

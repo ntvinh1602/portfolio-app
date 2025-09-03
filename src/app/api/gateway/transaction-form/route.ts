@@ -4,10 +4,6 @@ import { Tables } from "@/types/database.types"
 
 export const dynamic = "force-dynamic"
 
-type AssetWithSecurity = Tables<"assets"> & {
-  securities: Tables<"securities">
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { headers } = request
@@ -56,7 +52,7 @@ export async function GET(request: NextRequest) {
     const debts = await debtsResponse.json()
 
     return NextResponse.json({
-      assets: (assets as AssetWithSecurity[]) || [],
+      assets: (assets as Tables<"assets">[]) || [],
       debts: debts || [],
     })
     

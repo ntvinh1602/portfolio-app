@@ -1118,17 +1118,16 @@ BEGIN
     -- Calculate total assets value for the day
     WITH user_assets AS (
       SELECT
-        a.security_id,
-        s.asset_class,
-        s.currency_code,
+        a.id,
+        a.asset_class,
+        a.currency_code,
         SUM(tl.quantity) as total_quantity
       FROM transaction_legs tl
       JOIN transactions t ON tl.transaction_id = t.id
       JOIN assets a ON tl.asset_id = a.id
-      JOIN securities s ON a.security_id = s.id
       WHERE t.transaction_date <= loop_date
-        AND s.asset_class NOT IN ('equity', 'liability')
-      GROUP BY a.security_id, s.asset_class, s.currency_code
+        AND a.asset_class NOT IN ('equity', 'liability')
+      GROUP BY a.id, a.asset_class, a.currency_code
     )
     SELECT COALESCE(SUM(
       CASE
@@ -1141,12 +1140,12 @@ BEGIN
     FROM user_assets ua
     LEFT JOIN LATERAL (
       SELECT price FROM daily_stock_prices
-      WHERE security_id = ua.security_id AND date <= loop_date
+      WHERE asset_id = ua.id AND date <= loop_date
       ORDER BY date DESC LIMIT 1
     ) sdp ON ua.asset_class = 'stock'
     LEFT JOIN LATERAL (
       SELECT price FROM daily_crypto_prices
-      WHERE security_id = ua.security_id AND date <= loop_date
+      WHERE asset_id = ua.id AND date <= loop_date
       ORDER BY date DESC LIMIT 1
     ) dcp ON ua.asset_class = 'crypto'
     LEFT JOIN LATERAL (
@@ -1171,10 +1170,9 @@ BEGIN
           FROM transaction_legs tl
           JOIN transactions t ON tl.transaction_id = t.id
           JOIN assets a ON tl.asset_id = a.id
-          JOIN securities s ON a.security_id = s.id
           WHERE t.related_debt_id = d.id
             AND t.transaction_date <= loop_date
-            AND s.ticker = 'DEBTS'
+            AND a.ticker = 'DEBTS'
         ) AS balance_at_date
       FROM debts d
       WHERE d.start_date <= loop_date
@@ -1194,10 +1192,9 @@ BEGIN
     FROM transactions t
     JOIN transaction_legs tl ON t.id = tl.transaction_id
     JOIN assets a ON tl.asset_id = a.id
-    JOIN securities s ON a.security_id = s.id
     WHERE t.transaction_date = loop_date
       AND t.type IN ('deposit', 'withdraw')
-      AND s.asset_class IN ('cash', 'epf');
+      AND a.asset_class IN ('cash', 'epf');
     v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
     -- Calculate Equity Index
     SELECT net_equity_value, equity_index
@@ -1292,9 +1289,8 @@ CREATE OR REPLACE FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") RE
 DECLARE
   v_currency text;
 BEGIN
-  SELECT s.currency_code INTO v_currency
+  SELECT a.currency_code INTO v_currency
   FROM public.assets a
-  JOIN public.securities s ON s.id = a.security_id
   WHERE a.id = p_asset_id;
   RETURN v_currency;
 END;
@@ -1315,13 +1311,11 @@ BEGIN
   SELECT jsonb_agg(
     jsonb_build_object(
       'id', a.id,
-      'security_id', a.security_id,
-      'securities', to_jsonb(s)
+      'assets', to_jsonb(a)
     )
   ) INTO assets_data
   FROM public.assets a
-  JOIN public.securities s ON a.security_id = s.id
-  WHERE s.asset_class NOT IN ('equity', 'liability');
+  WHERE a.asset_class NOT IN ('equity', 'liability');
   RETURN jsonb_build_object('assets', assets_data);
 END;
 $$;
@@ -1337,13 +1331,10 @@ CREATE OR REPLACE FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text"
 DECLARE
   v_id uuid;
 BEGIN
-  SELECT a.id INTO v_id
-  FROM public.assets a
-  JOIN public.securities s ON s.id = a.security_id
-  WHERE s.ticker = p_ticker;
+  SELECT a.id INTO v_id FROM public.assets a WHERE a.ticker = p_ticker;
 
   IF v_id IS NULL THEN
-    RAISE EXCEPTION 'Asset for ticker % not found for user.', p_ticker;
+    RAISE EXCEPTION 'Asset for ticker % not found', p_ticker;
   END IF;
   RETURN v_id;
 END;
@@ -1381,30 +1372,28 @@ BEGIN
   SELECT COALESCE(jsonb_object_agg(cb_totals.asset_class, cb_totals.total), '{}'::jsonb)
   INTO asset_cb_by_class
   FROM (
-    SELECT s.asset_class, sum(tl.amount) as total
+    SELECT a.asset_class, sum(tl.amount) as total
     FROM public.transaction_legs tl
     JOIN public.assets a ON tl.asset_id = a.id
-    JOIN public.securities s ON a.security_id = s.id
-    WHERE s.asset_class NOT IN ('equity', 'liability')
-    GROUP BY s.asset_class
+    WHERE a.asset_class NOT IN ('equity', 'liability')
+    GROUP BY a.asset_class
   ) as cb_totals;
   -- Calculate market value totals by asset class (excluding equity/liability)
   SELECT COALESCE(jsonb_object_agg(mv_totals.asset_class, mv_totals.total), '{}'::jsonb)
   INTO asset_mv_by_class
   FROM (
     SELECT
-      s.asset_class,
+      a.asset_class,
       SUM(
         CASE
-          WHEN s.asset_class = 'stock' THEN a.current_quantity * COALESCE(public.get_latest_stock_price(s.id), 0)
-          WHEN s.asset_class = 'crypto' THEN a.current_quantity * COALESCE(public.get_latest_crypto_price(s.id), 0) * COALESCE(public.get_latest_exchange_rate('USD'), 1)
-          ELSE a.current_quantity * COALESCE(public.get_latest_exchange_rate(s.currency_code), 1)
+          WHEN a.asset_class = 'stock' THEN a.current_quantity * COALESCE(public.get_latest_stock_price(a.id), 0)
+          WHEN a.asset_class = 'crypto' THEN a.current_quantity * COALESCE(public.get_latest_crypto_price(a.id), 0) * COALESCE(public.get_latest_exchange_rate('USD'), 1)
+          ELSE a.current_quantity * COALESCE(public.get_latest_exchange_rate(a.currency_code), 1)
         END
       ) AS total
     FROM public.assets a
-    JOIN public.securities s ON a.security_id = s.id
-    WHERE s.asset_class NOT IN ('equity', 'liability')
-    GROUP BY s.asset_class
+    WHERE a.asset_class NOT IN ('equity', 'liability')
+    GROUP BY a.asset_class
   ) as mv_totals;
   -- Calculate total asset cost basis
   total_assets_cb := (coalesce((asset_cb_by_class->>'cash')::numeric, 0)) +
@@ -1419,8 +1408,7 @@ BEGIN
   -- Calculate liability values
   SELECT a.current_quantity * -1 INTO debts_principal
   FROM public.assets a
-  JOIN public.securities s ON s.id = a.security_id
-  WHERE s.ticker = 'DEBTS';
+  WHERE a.ticker = 'DEBTS';
   -- Calculate accrued interest using daily compounding
   SELECT COALESCE(SUM(d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)), 0)
   INTO accrued_interest
@@ -1430,8 +1418,7 @@ BEGIN
   -- Calculate equity values
   SELECT a.current_quantity * -1 INTO owner_capital
   FROM public.assets a
-  JOIN public.securities s ON s.id = a.security_id
-  WHERE s.ticker = 'CAPITAL';
+  WHERE a.ticker = 'CAPITAL';
   unrealized_pl := total_assets_mv - total_assets_cb - accrued_interest;
   equity_total := owner_capital + unrealized_pl;
   
@@ -1508,27 +1495,26 @@ BEGIN
   RETURN QUERY
   WITH latest_data AS (
     SELECT
-      s.id AS security_id,
-      public.get_latest_crypto_price(s.id) AS latest_price,
+      a.id AS asset_id,
+      public.get_latest_crypto_price(a.id) AS latest_price,
       public.get_latest_exchange_rate('USD') AS latest_usd_rate
-    FROM public.securities s
-    WHERE s.asset_class = 'crypto'
+    FROM public.assets a
+    WHERE a.asset_class = 'crypto'
   )
   SELECT
-    s.ticker,
-    s.name,
-    s.logo_url AS logo_url,
+    a.ticker,
+    a.name,
+    a.logo_url AS logo_url,
     SUM(tl.quantity) AS quantity,
     SUM(tl.amount) AS cost_basis,
     ld.latest_price,
     ld.latest_usd_rate,
     SUM(tl.quantity) * ld.latest_price * ld.latest_usd_rate AS total_amount
   FROM public.assets a
-  JOIN public.securities s ON a.security_id = s.id
   JOIN public.transaction_legs tl ON a.id = tl.asset_id
-  JOIN latest_data ld ON ld.security_id = s.id
-  WHERE s.asset_class = 'crypto'
-  GROUP BY a.id, s.id, s.ticker, s.name, s.logo_url, ld.latest_price, ld.latest_usd_rate
+  JOIN latest_data ld ON ld.asset_id = a.id
+  WHERE a.asset_class = 'crypto'
+  GROUP BY a.id, a.ticker, a.name, a.logo_url, ld.latest_price, ld.latest_usd_rate
   HAVING SUM(tl.quantity) > 0;
 END;
 $$;
@@ -1573,17 +1559,16 @@ $$;
 ALTER FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") RETURNS numeric
+CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
     AS $$
 DECLARE
   latest_price NUMERIC;
 BEGIN
-  SELECT price
-  INTO latest_price
+  SELECT price INTO latest_price
   FROM public.daily_crypto_prices
-  WHERE security_id = p_security_id
+  WHERE asset_id = p_asset_id
   ORDER BY date DESC
   LIMIT 1;
   RETURN latest_price;
@@ -1591,7 +1576,7 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") RETURNS numeric
@@ -1615,7 +1600,7 @@ $$;
 ALTER FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") RETURNS numeric
+CREATE OR REPLACE FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") RETURNS numeric
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
     AS $$
@@ -1625,7 +1610,7 @@ BEGIN
   SELECT price
   INTO latest_price
   FROM public.daily_stock_prices
-  WHERE security_id = p_security_id
+  WHERE asset_id = p_asset_id
   ORDER BY date DESC
   LIMIT 1;
   RETURN latest_price;
@@ -1633,7 +1618,7 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_monthly_expenses"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("month" "text", "trading_fees" numeric, "taxes" numeric, "interest" numeric)
@@ -1655,10 +1640,9 @@ BEGIN
     FROM public.transactions t
     JOIN public.transaction_legs tl ON t.id = tl.transaction_id
     JOIN public.assets a ON tl.asset_id = a.id
-    JOIN public.securities s ON a.security_id = s.id
     WHERE t.transaction_date BETWEEN p_start_date AND p_end_date
       AND t.type = 'expense'
-      AND s.ticker IN ('EARNINGS', 'CAPITAL')
+      AND a.ticker IN ('EARNINGS', 'CAPITAL')
     GROUP BY 1
   ),
   -- 2. Loan Interest from debt_payment transactions
@@ -1669,10 +1653,9 @@ BEGIN
     FROM public.transactions t
     JOIN public.transaction_legs tl ON t.id = tl.transaction_id
     JOIN public.assets a ON tl.asset_id = a.id
-    JOIN public.securities s ON a.security_id = s.id
     WHERE t.transaction_date BETWEEN p_start_date AND p_end_date
       AND t.type = 'debt_payment'
-      AND s.ticker IN ('EARNINGS', 'CAPITAL')
+      AND a.ticker IN ('EARNINGS', 'CAPITAL')
     GROUP BY 1
   ),
   -- 3. Margin and Cash Advance Interest from expense transactions
@@ -1684,10 +1667,9 @@ BEGIN
     FROM public.transactions t
     JOIN public.transaction_legs tl ON t.id = tl.transaction_id
     JOIN public.assets a ON tl.asset_id = a.id
-    JOIN public.securities s ON a.security_id = s.id
     WHERE t.transaction_date BETWEEN p_start_date AND p_end_date
       AND t.type = 'expense'
-      AND s.ticker IN ('EARNINGS', 'CAPITAL')
+      AND a.ticker IN ('EARNINGS', 'CAPITAL')
     GROUP BY 1
   )
   -- Final aggregation
@@ -1813,24 +1795,23 @@ BEGIN
   RETURN QUERY
   WITH latest_prices AS (
     SELECT 
-      s.id AS security_id, 
-      public.get_latest_stock_price(s.id) AS latest_price
-    FROM public.securities s
+      a.id AS asset_id, 
+      public.get_latest_stock_price(a.id) AS latest_price
+    FROM public.assets a
   )
   SELECT
-    s.ticker,
-    s.name,
-    s.logo_url,
+    a.ticker,
+    a.name,
+    a.logo_url,
     SUM(tl.quantity) AS quantity,
     SUM(tl.amount) AS cost_basis,
     lp.latest_price,
     SUM(tl.quantity) * lp.latest_price AS total_amount
   FROM public.assets a
-  JOIN public.securities s ON a.security_id = s.id
   JOIN public.transaction_legs tl ON a.id = tl.asset_id
-  JOIN latest_prices lp ON lp.security_id = s.id
-  WHERE s.asset_class = 'stock'
-  GROUP BY a.id, s.id, s.ticker, s.name, s.logo_url, lp.latest_price
+  JOIN latest_prices lp ON lp.asset_id = a.id
+  WHERE a.asset_class = 'stock'
+  GROUP BY a.id, a.ticker, a.name, a.logo_url, lp.latest_price
   HAVING SUM(tl.quantity) > 0;
 END;
 $$;
@@ -1854,10 +1835,10 @@ BEGIN
     t.transaction_date,
     t.type::text,
     t.description,
-    s.ticker,
-    s.name,
+    a.ticker,
+    a.name,
     CASE
-      WHEN s.logo_url IS NOT NULL THEN s.logo_url
+      WHEN a.logo_url IS NOT NULL THEN a.logo_url
       ELSE NULL
     END,
     tl.quantity,
@@ -1866,12 +1847,11 @@ BEGIN
   FROM public.transactions t
   JOIN public.transaction_legs tl ON t.id = tl.transaction_id
   JOIN public.assets a ON tl.asset_id = a.id
-  JOIN public.securities s ON a.security_id = s.id
-  WHERE s.asset_class NOT IN ('equity', 'liability')
-    AND NOT (s.asset_class = 'cash' AND (t.type = 'buy' OR t.type = 'sell'))
+  WHERE a.asset_class NOT IN ('equity', 'liability')
+    AND NOT (a.asset_class = 'cash' AND (t.type = 'buy' OR t.type = 'sell'))
     AND (start_date IS NULL OR t.transaction_date >= start_date)
     AND (end_date IS NULL OR t.transaction_date <= end_date)
-    AND (asset_class_filter IS NULL OR s.asset_class::text = asset_class_filter)
+    AND (asset_class_filter IS NULL OR a.asset_class::text = asset_class_filter)
   ORDER BY t.created_at DESC
   LIMIT page_size
   OFFSET v_offset;
@@ -1925,7 +1905,6 @@ DECLARE
   v_asset_ticker text;
   v_cash_asset_ticker text;
   v_lender_name text;
-  v_security_id uuid;
 BEGIN
   IF NOT jsonb_typeof(p_transactions_data) = 'array' THEN
     RAISE EXCEPTION 'Input must be a JSON array of transactions.';
@@ -2377,7 +2356,7 @@ BEGIN
   -- Update all assets linked to the inserted transaction
   UPDATE public.assets a
   SET current_quantity = CASE
-    WHEN s.ticker = 'INTERESTS' THEN COALESCE((
+    WHEN a.ticker = 'INTERESTS' THEN COALESCE((
       SELECT SUM(
         d.principal_amount *
         (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
@@ -2390,9 +2369,7 @@ BEGIN
       FROM public.transaction_legs tl
       WHERE tl.asset_id = a.id
     ), 0)
-  END
-  FROM public.securities s
-  WHERE a.security_id = s.id;
+  END;
   RETURN NULL;
 END;
 $$;
@@ -2406,15 +2383,17 @@ CREATE OR REPLACE FUNCTION "public"."upsert_daily_crypto_price"("p_ticker" "text
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-  v_security_id UUID;
+  v_asset_id UUID;
 BEGIN
-  -- Get the security_id from the securities table for crypto assets
-  SELECT id INTO v_security_id FROM securities WHERE ticker = p_ticker AND asset_class = 'crypto';
+  -- Get the asset_id from the assets table for crypto assets
+  SELECT id INTO v_asset_id
+  FROM public.assets
+  WHERE ticker = p_ticker AND asset_class = 'crypto';
   -- If the security exists, insert or update the price
-  IF v_security_id IS NOT NULL THEN
-    INSERT INTO daily_crypto_prices (security_id, price, date)
-    VALUES (v_security_id, p_price, CURRENT_DATE)
-    ON CONFLICT (security_id, date) 
+  IF v_asset_id IS NOT NULL THEN
+    INSERT INTO daily_crypto_prices (asset_id, price, date)
+    VALUES (v_asset_id, p_price, CURRENT_DATE)
+    ON CONFLICT (asset_id, date) 
     DO UPDATE SET price = p_price;
   END IF;
 END;
@@ -2429,15 +2408,17 @@ CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text"
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-  v_security_id UUID;
+  v_asset_id UUID;
 BEGIN
   -- Get the security_id from the securities table for stock assets
-  SELECT id INTO v_security_id FROM securities WHERE ticker = p_ticker AND asset_class = 'stock';
+  SELECT id INTO v_asset_id
+  FROM public.assets
+  WHERE ticker = p_ticker AND asset_class = 'stock';
   -- If the security exists, insert or update the price
-  IF v_security_id IS NOT NULL THEN
-    INSERT INTO daily_stock_prices (security_id, price, date)
-    VALUES (v_security_id, p_price, CURRENT_DATE)
-    ON CONFLICT (security_id, date) 
+  IF v_asset_id IS NOT NULL THEN
+    INSERT INTO daily_stock_prices (asset_id, price, date)
+    VALUES (v_asset_id, p_price, CURRENT_DATE)
+    ON CONFLICT (asset_id, date) 
     DO UPDATE SET price = p_price;
   END IF;
 END;
@@ -2450,7 +2431,12 @@ ALTER FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" 
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "security_id" "uuid",
-    "current_quantity" numeric(20,8) DEFAULT 0 NOT NULL
+    "current_quantity" numeric(20,8) DEFAULT 0 NOT NULL,
+    "asset_class" "public"."asset_class",
+    "ticker" "text",
+    "name" "text",
+    "currency_code" character varying(3),
+    "logo_url" "text"
 );
 
 
@@ -2468,7 +2454,7 @@ ALTER TABLE "public"."currencies" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_crypto_prices" (
-    "security_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
@@ -2498,7 +2484,6 @@ ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "date" "date" NOT NULL,
     "net_equity_value" numeric(16,4) NOT NULL,
     "net_cash_flow" numeric(16,4) NOT NULL,
@@ -2510,7 +2495,7 @@ ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_stock_prices" (
-    "security_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
@@ -2603,6 +2588,21 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
 
 
 ALTER TABLE "public"."transactions" OWNER TO "postgres";
+
+
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_ticker_key" UNIQUE ("ticker");
+
+
+
+ALTER TABLE ONLY "public"."daily_performance_snapshots"
+    ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("date");
+
+
+
+ALTER TABLE ONLY "public"."daily_stock_prices"
+    ADD CONSTRAINT "daily_stock_prices_pkey" PRIMARY KEY ("asset_id", "date");
+
 
 
 ALTER TABLE ONLY "public"."dnse_orders"
@@ -2991,9 +2991,9 @@ GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_security_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "service_role";
 
 
 
@@ -3003,9 +3003,9 @@ GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "tex
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_security_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "service_role";
 
 
 

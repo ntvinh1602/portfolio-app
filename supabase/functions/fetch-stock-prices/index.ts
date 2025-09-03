@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// Try importing yahoo-finance2 via ESM.sh
 import yahooFinance from 'https://esm.sh/yahoo-finance2@2.13.3';
 
 const supabase = createClient(
@@ -11,9 +10,23 @@ const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
 
 interface SuccessfulFetch {
-  security_id: string;
+  asset_id: string;
   date: string;
   price: number;
+}
+
+// Helper function to send a Telegram message
+async function sendTelegramMessage(message: string) {
+  if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+      }),
+    });
+  }
 }
 
 // Helper function using yahoo-finance2
@@ -93,28 +106,27 @@ async function batchFetchPrices(tickers: string[]): Promise<Map<string, number |
 }
 
 Deno.serve(async (_req: Request) => {
-  const startTime = Date.now();
   
   try {
     console.log('Starting yahoo-finance2 stock price fetch...');
     
-    const { data: securities, error: securitiesError } = await supabase
-      .from('securities')
+    const { data: assets, error: assetsError } = await supabase
+      .from('assets')
       .select('id, ticker')
       .eq('asset_class', 'stock');
 
-    if (securitiesError) {
-      throw new Error(`Error fetching securities: ${securitiesError.message}`);
+    if (assetsError) {
+      throw new Error(`Error fetching assets: ${assetsError.message}`);
     }
 
-    if (!securities || securities.length === 0) {
-      throw new Error('No securities found');
+    if (!assets || assets.length === 0) {
+      throw new Error('No assets found');
     }
 
-    console.log(`Found ${securities.length} securities to process`);
+    console.log(`Found ${assets.length} assets to process`);
 
     // Prepare tickers with .VN suffix
-    const tickers = securities.map(s => `${s.ticker}.VN`);
+    const tickers = assets.map(a => `${a.ticker}.VN`);
     
     // Use yahoo-finance2 for batch fetching
     const priceResults = await batchFetchPrices(tickers);
@@ -122,18 +134,18 @@ Deno.serve(async (_req: Request) => {
     const successfulFetches: SuccessfulFetch[] = [];
     const failedFetches: string[] = [];
 
-    securities.forEach(security => {
-      const suffixedTicker = `${security.ticker}.VN`;
+    assets.forEach(asset => {
+      const suffixedTicker = `${asset.ticker}.VN`;
       const price = priceResults.get(suffixedTicker);
       
       if (price !== null && price !== undefined) {
         successfulFetches.push({
-          security_id: security.id,
+          asset_id: asset.id,
           date: new Date().toISOString().split('T')[0],
           price: price,
         });
       } else {
-        failedFetches.push(security.ticker);
+        failedFetches.push(asset.ticker);
       }
     });
 
@@ -142,47 +154,19 @@ Deno.serve(async (_req: Request) => {
       const { error: upsertError } = await supabase
         .from('daily_stock_prices')
         .upsert(successfulFetches, {
-          onConflict: 'security_id,date'
+          onConflict: 'asset_id,date'
         });
 
       if (upsertError) {
-        console.error('Error saving stock prices:', upsertError);
         throw new Error(`Database error: ${upsertError.message}`);
       }
     }
 
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(1);
+    const successRate = ((successfulFetches.length / assets.length) * 100).toFixed(1);
     
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-
-    const successRate = ((successfulFetches.length / securities.length) * 100).toFixed(1);
-    
-    const summaryMessage = `
-📈 Stock Update (yahoo-finance2) - ${formattedDate}
-
-✅ Success: ${successfulFetches.length}/${securities.length} (${successRate}%)
-❌ Failed: ${failedFetches.length}
-⏱️ Duration: ${duration}s
-
-${failedFetches.length > 0 ? `Failed: ${failedFetches.join(', ')}` : ''}
-    `.trim();
-
-    // Send Telegram notification
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: summaryMessage,
-        }),
-      });
+    if (failedFetches.length > 0) {
+      const errorMessage = `Failed to fetch prices for: ${failedFetches.join(', ')}`;
+      await sendTelegramMessage(`🚨 ERROR (fetch-stock-prices)\n\n${errorMessage}`);
     }
 
     return new Response(JSON.stringify({
@@ -190,10 +174,9 @@ ${failedFetches.length > 0 ? `Failed: ${failedFetches.join(', ')}` : ''}
       message: "Stock price fetching complete (yahoo-finance2)",
       method: "yahoo-finance2",
       stats: {
-        total: securities.length,
+        total: assets.length,
         successful: successfulFetches.length,
         failed: failedFetches.length,
-        duration: `${duration}s`,
         successRate: `${successRate}%`
       }
     }), {
@@ -203,27 +186,14 @@ ${failedFetches.length > 0 ? `Failed: ${failedFetches.join(', ')}` : ''}
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     
     console.error('Critical error:', errorMessage);
-    
-    // Send error notification
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: `🚨 ERROR (yahoo-finance2)\n\n${errorMessage}\n\nDuration: ${duration}s`,
-        }),
-      });
-    }
+    await sendTelegramMessage(`🚨 ERROR (fetch-stock-prices)\n\n${errorMessage}`);
 
     return new Response(JSON.stringify({
       success: false,
       error: errorMessage,
       method: "yahoo-finance2",
-      duration: `${duration}s`
     }), {
       headers: { 'Content-Type': 'application/json' },
       status: 500,

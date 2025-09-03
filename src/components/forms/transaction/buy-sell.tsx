@@ -30,7 +30,6 @@ export function TradeForm({
   handlePickerChange,
 }: TradeFormProps) {
   const { assets, loading } = useTransactionFormData()
- 
    if (loading) {
      return <div>Loading...</div>
    }
@@ -50,11 +49,11 @@ export function TradeForm({
           <SelectContent>
             {assets
               .filter(
-                asset => asset.securities && asset.securities.asset_class === "cash",
+                asset => asset.asset_class === "cash",
               )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
-                  {asset.securities?.name}
+                  {asset.name}
                 </SelectItem>
               ))}
           </SelectContent>
@@ -63,16 +62,17 @@ export function TradeForm({
       <div className="grid gap-3 col-span-2">
         <Label htmlFor="asset">Assets</Label>
         <Combobox
-          items={assets
-            .filter(
-              asset =>
-                asset.securities &&
-                ["stock", "crypto"].includes(asset.securities.asset_class),
-            )
-            .map(asset => ({
+          items={(() => {
+            const filteredAssets = assets
+              .filter(
+                asset =>
+                  typeof asset.asset_class === 'string' && ["stock", "crypto"].includes(asset.asset_class),
+              );
+            return filteredAssets.map(asset => ({
               value: asset.id,
-              label: `${asset.securities?.ticker} - ${asset.securities?.name}`,
-            }))}
+              label: `${asset.ticker} - ${asset.name}`,
+            }));
+          })()}
           value={formState.asset}
           onChange={handlePickerChange("asset")}
           placeholder={
