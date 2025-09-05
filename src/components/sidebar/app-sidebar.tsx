@@ -4,12 +4,11 @@ import * as React from "react"
 import {
   Wrench,
   TrendingUp,
-  Sprout,
   Coins,
   Gauge,
   LogOut,
   Plus,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react"
 
 import { mutate } from "swr"
@@ -116,13 +115,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <SidebarGroup className="gap-2">
+        <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
-            <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="stroke-1" />Add Transaction
+            <Button 
+              className="justify-start"
+              variant="ghost" 
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="size-5 stroke-1" />Add Transaction
             </Button>
-            <Button variant="outline" onClick={handleRefresh}>
-              <RefreshCw className={`stroke-1 ${isRefreshing && "animate-spin"}`} />
+            <Button
+              className="justify-start"
+              variant="ghost"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className={`size-5 stroke-1 ${isRefreshing && "animate-spin"}`} />
               Update Price
             </Button>
         </SidebarGroup>

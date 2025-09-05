@@ -1307,13 +1307,7 @@ CREATE OR REPLACE FUNCTION "public"."get_asset_data"() RETURNS "jsonb"
 DECLARE
   assets_data jsonb;
 BEGIN
-  -- Fetch assets data
-  SELECT jsonb_agg(
-    jsonb_build_object(
-      'id', a.id,
-      'assets', to_jsonb(a)
-    )
-  ) INTO assets_data
+  SELECT jsonb_agg(to_jsonb(a)) INTO assets_data
   FROM public.assets a
   WHERE a.asset_class NOT IN ('equity', 'liability');
   RETURN jsonb_build_object('assets', assets_data);
@@ -2124,8 +2118,28 @@ CREATE OR REPLACE FUNCTION "public"."refresh_performance_snapshots"() RETURNS "t
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
+DECLARE
+    v_date date;
 BEGIN
-  PERFORM public.generate_performance_snapshots(NEW.date, CURRENT_DATE);
+  -- Try to get NEW.date if the column exists
+  BEGIN
+    v_date := NEW.date;
+  EXCEPTION
+    WHEN undefined_column THEN
+      -- Column doesn't exist → fall back to transaction_id lookup
+      IF NEW.transaction_id IS NOT NULL THEN
+        SELECT t.transaction_date
+        INTO v_date
+        FROM public.transactions t
+        WHERE t.id = NEW.transaction_id;
+      END IF;
+  END;
+
+  -- If we found a valid date, run generator
+  IF v_date IS NOT NULL THEN
+      PERFORM public.generate_performance_snapshots(v_date, CURRENT_DATE);
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -2369,7 +2383,8 @@ BEGIN
       FROM public.transaction_legs tl
       WHERE tl.asset_id = a.id
     ), 0)
-  END;
+  END
+  WHERE a.id = NEW.asset_id;
   RETURN NULL;
 END;
 $$;
@@ -2410,7 +2425,7 @@ CREATE OR REPLACE FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text"
 DECLARE
   v_asset_id UUID;
 BEGIN
-  -- Get the security_id from the securities table for stock assets
+  -- Get the asset_id from the assets table for stock assets
   SELECT id INTO v_asset_id
   FROM public.assets
   WHERE ticker = p_ticker AND asset_class = 'stock';
@@ -2430,7 +2445,6 @@ ALTER FUNCTION "public"."upsert_daily_stock_price"("p_ticker" "text", "p_price" 
 
 CREATE TABLE IF NOT EXISTS "public"."assets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "security_id" "uuid",
     "current_quantity" numeric(20,8) DEFAULT 0 NOT NULL,
     "asset_class" "public"."asset_class",
     "ticker" "text",
@@ -2531,19 +2545,6 @@ CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
 
 
 ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."securities" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_class" "public"."asset_class" NOT NULL,
-    "ticker" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "currency_code" character varying(10),
-    "logo_url" "text"
-);
-
-
-ALTER TABLE "public"."securities" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
@@ -3171,12 +3172,6 @@ GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
 GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."securities" TO "anon";
-GRANT ALL ON TABLE "public"."securities" TO "authenticated";
-GRANT ALL ON TABLE "public"."securities" TO "service_role";
 
 
 

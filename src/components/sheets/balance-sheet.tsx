@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet"
 import { BalanceSheetData } from "@/types/dashboard-data"
 import { BalanceSheet } from "@/components/cards/balance-sheet"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 interface BSSheetProps {
   side: "right" | "bottom"
@@ -24,12 +24,12 @@ export function BSSheet({ side, data }: BSSheetProps) {
     <Sheet>
       <SheetTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="font-thin gap-0.5 [&_svg]:stroke-1"
+          className="gap-0 text-muted-foreground font-light"
         >
-          B. Sheet
-          <ArrowUpRight />
+          Balance Sheet
+          <ArrowRight />
         </Button>
       </SheetTrigger>
       <SheetContent side={side}>

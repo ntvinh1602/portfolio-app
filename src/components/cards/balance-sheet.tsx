@@ -6,11 +6,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import {
-  Sheet,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Debts } from "@/components/sheets/debts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"

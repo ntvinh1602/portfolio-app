@@ -157,7 +157,7 @@ export default function Page() {
   } = useDashboardData()
 
   const { price: liveBtcPrice } = useBTCUSDTPrice()
-
+ 
   return (
     <SidebarProvider>
       {!isMobile && <AppSidebar />}
@@ -212,7 +212,7 @@ export default function Page() {
                   variant={isMobile ? "compact" : "full"}
                   data={stockData}
                 />
-                <Separator className="my-4"/>
+                <Separator className="mt-4 mb-3"/>
                 <CardDescription>Crypto</CardDescription>
                 <CryptoHoldings
                   variant={isMobile ? "compact" : "full"}

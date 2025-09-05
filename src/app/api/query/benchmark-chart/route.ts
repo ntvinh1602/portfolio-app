@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
 
   const threshold = 150
 

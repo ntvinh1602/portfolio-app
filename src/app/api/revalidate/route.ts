@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
 
+// Route segment configuration
 export const dynamic = "force-dynamic"
-
-// Define a type for the expected webhook payload
-interface WebhookPayload {
-  table: string
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,12 +13,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const payload: WebhookPayload = await request.json()
-    const { table } = payload
+    const table = request.headers.get("x-table-name")
 
     if (!table) {
       return NextResponse.json(
-        { error: "Missing table in payload" },
+        { error: "Missing x-table-name header" },
         { status: 400 },
       )
     }
@@ -31,7 +26,9 @@ export async function POST(request: NextRequest) {
     if (table === "transactions") {
       revalidateTag(`price-driven`)
       revalidateTag(`txn-driven`)
-    } else if (table === "daily_stock_prices" || table === "daily_exchange_rates") {
+    } else if (
+      table === "daily_stock_prices" || table === "daily_exchange_rates"
+    ) {
       revalidateTag(`price-driven`)
     }
 

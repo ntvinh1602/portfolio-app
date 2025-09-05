@@ -20,7 +20,6 @@ interface LinechartProps {
   legend?: boolean
   xAxisTickFormatter?: (value: string | number) => string
   yAxisTickFormatter?: (value: string | number) => string
-  ticks?: (string | number)[]
   valueFormatter?: (value: number) => string
 }
 
@@ -33,7 +32,6 @@ export function Areachart({
   legend = false,
   xAxisTickFormatter,
   yAxisTickFormatter,
-  ticks,
   valueFormatter,
 }: LinechartProps) {
   return (
@@ -63,8 +61,8 @@ export function Areachart({
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
           className="font-light"
-          interval="preserveStartEnd"
-          ticks={ticks}
+          interval="equidistantPreserveStart"
+          minTickGap={60}
         />
         <YAxis
           tickLine={false}

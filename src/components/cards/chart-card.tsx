@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
-import { useChartTicks } from "@/hooks/use-chart-ticks"
+import { parseISO, format } from "date-fns"
 import TabSwitcher from "@/components/tab-switcher"
 import { Separator } from "../ui/separator"
 
@@ -36,6 +36,7 @@ interface ChartCardProps<
   xAxisDataKey: string
   lineDataKeys: string[]
   legend?: boolean
+  xAxisTickFormatter?: (value: string | number) => string
   yAxisTickFormatter?: (value: string | number) => string
   tooltipValueFormatter?: (value: number) => string
   children?: React.ReactNode
@@ -67,7 +68,23 @@ function ChartCard<
   dateRange,
   onDateRangeChange,
 }: ChartCardProps<TData>) {
-  const { ticks, xAxisTickFormatter } = useChartTicks(chartData, dateRange)
+
+  const xAxisTickFormatter = (value: string | number) => {
+    if (typeof value !== "string") {
+      return value.toString()
+    }
+    const date = parseISO(value)
+    if (isNaN(date.getTime())) {
+      return value
+    }
+    switch (dateRange) {
+      case "1y":
+      case "all_time":
+        return format(date, "MMM yy")
+      default:
+        return format(date, "dd MMM")
+    }
+  }
 
   return (
     <Card className="flex flex-col gap-0 h-full">
@@ -126,7 +143,6 @@ function ChartCard<
           legend={legend}
           xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={yAxisTickFormatter}
-          ticks={ticks}
           valueFormatter={tooltipValueFormatter}
         />
       </CardContent>
