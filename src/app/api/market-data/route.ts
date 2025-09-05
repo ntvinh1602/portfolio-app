@@ -1,6 +1,28 @@
 import mqtt from "mqtt"
+import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
+
+function isTradingHours() {
+  const now = new Date()
+  const utcOffset = now.getTimezoneOffset() * 60 * 1000 // Offset in milliseconds
+  const utc7Offset = 7 * 60 * 60 * 1000 // UTC+7 offset in milliseconds
+  const nowUtc7 = new Date(now.getTime() + utcOffset + utc7Offset)
+
+  const day = nowUtc7.getDay() // Sunday - 0, Monday - 1, ..., Saturday - 6
+  const hours = nowUtc7.getHours()
+  const minutes = nowUtc7.getMinutes()
+
+  // Check if it's a weekday (Monday to Friday)
+  const isWeekday = day >= 1 && day <= 5
+
+  // Check if time is between 9:15 AM and 2:45 PM (14:45)
+  const isWithinTradingTime =
+    (hours > 9 || (hours === 9 && minutes >= 15)) &&
+    (hours < 14 || (hours === 14 && minutes <= 45))
+
+  return isWeekday && isWithinTradingTime
+}
 
 async function authenticate(
   username: string,
@@ -33,9 +55,10 @@ async function authenticate(
   }
 }
 
-import { NextRequest } from "next/server"
-
 export async function GET(request: NextRequest) {
+  if (!isTradingHours()) {
+    return new Response("Market data is only available from Monday to Friday, 9:15 AM to 2:45 PM UTC+7.", { status: 403 })
+  }
   const searchParams = request.nextUrl.searchParams
   const symbols = searchParams.get("symbols")?.split(",") ?? []
 
@@ -53,6 +76,8 @@ export async function GET(request: NextRequest) {
     return new Response("Authentication failed", { status: 401 })
   }
 
+  let client: mqtt.MqttClient
+
   const stream = new ReadableStream({
     start(controller) {
       const BROKER_HOST = "datafeed-lts-krx.dnse.com.vn"
@@ -60,7 +85,7 @@ export async function GET(request: NextRequest) {
       const CLIENT_ID_PREFIX = "dnse-price-json-mqtt-ws-sub-"
       const clientId = `${CLIENT_ID_PREFIX}${Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000}`
 
-      const client = mqtt.connect(`wss://${BROKER_HOST}:${BROKER_PORT}/wss`, {
+      client = mqtt.connect(`wss://${BROKER_HOST}:${BROKER_PORT}/wss`, {
         clientId,
         username: investorId,
         password: token,
@@ -88,6 +113,11 @@ export async function GET(request: NextRequest) {
             side: payload.side,
             time: payload.sendingTime
           }
+          // Check if the stream is still active before trying to enqueue
+          if (controller.desiredSize === null) {
+            // Controller is closed
+            return
+          }
           controller.enqueue(`data: ${JSON.stringify(data)}\n\n`)
         } catch (e) {
           console.error("Failed to parse message:", e)
@@ -96,20 +126,21 @@ export async function GET(request: NextRequest) {
 
       client.on("error", (error) => {
         console.error("MQTT Client Error:", error)
-        controller.error(error)
-        client.end()
+        try {
+          controller.error(error)
+        } catch (e) {
+          // Ignore errors if controller is already closed
+        }
+        if (client) {
+          client.end()
+        }
       })
-
-      // Handle client disconnection
-      // This part is tricky with serverless functions. The connection will be closed when the function times out.
-      // For a persistent connection, a different architecture would be needed, but for this case,
-      // the client will disconnect when the GET request is terminated by the client (e.g., browser tab closed).
     },
     cancel() {
-      // This will be called if the client closes the connection.
-      // It's a good place to clean up the MQTT connection.
-      // client.end(); // This would be ideal, but the client is not in this scope.
-      console.log("Client disconnected.")
+      console.log("Client disconnected. Closing MQTT connection.")
+      if (client) {
+        client.end()
+      }
     }
   })
 

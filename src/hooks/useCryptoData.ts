@@ -25,23 +25,32 @@ interface BinanceKline {
   }
 }
 
-export const useBTCUSDTPrice = () => {
-  const [price, setPrice] = useState<string | null>(null)
+export const useCryptoData = (symbols: string[] = []) => {
+  const [prices, setPrices] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<Event | null>(null)
 
   useEffect(() => {
-    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m")
+    if (symbols.length === 0) {
+      setLoading(false)
+      return
+    }
+
+    const streams = symbols.map((s) => `${s.toLowerCase()}usdt@kline_1m`).join("/")
+    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`)
 
     ws.onopen = () => {
-      console.log("WebSocket connection opened for BTCUSDT")
+      console.log(`WebSocket connection opened for ${symbols.join(", ")}`)
       setLoading(false)
     }
 
     ws.onmessage = (event) => {
       const klineData: BinanceKline = JSON.parse(event.data)
       if (klineData.k && klineData.k.c) {
-        setPrice(klineData.k.c)
+        setPrices((prevPrices) => ({
+          ...prevPrices,
+          [klineData.s]: klineData.k.c
+        }))
       }
     }
 
@@ -52,7 +61,7 @@ export const useBTCUSDTPrice = () => {
     }
 
     ws.onclose = () => {
-      console.log("WebSocket connection closed for BTCUSDT")
+      console.log(`WebSocket connection closed for ${symbols.join(", ")}`)
     }
 
     return () => {
@@ -62,7 +71,7 @@ export const useBTCUSDTPrice = () => {
       ws.onclose = null
       ws.close()
     }
-  }, [])
+  }, [symbols])
 
-  return { price, loading, error }
+  return { prices, loading, error }
 }

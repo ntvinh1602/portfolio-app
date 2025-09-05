@@ -1,30 +1,24 @@
 import { SecurityItem, SecuritySkeleton } from "@/components/list-item/security"
-import { CryptoData } from "@/types/dashboard-data"
+import { useAssetData } from "@/context/asset-data-context"
+import { Loading } from "../loader"
 
 interface CryptoHoldingsProps {
   variant?: "compact" | "full"
-  data: CryptoData[] | null
-  liveBtcPrice?: string | null
 }
 
-export function CryptoHoldings({ variant = "full", data, liveBtcPrice }: CryptoHoldingsProps) {
+export function CryptoHoldings({ variant = "full" }: CryptoHoldingsProps) {
+  const { processedCryptoData, loading } = useAssetData()
+    
+  if (loading) {
+    return (
+      <Loading/>
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-1 text-muted-foreground"> 
-      {!data ? (
-        Array.from({ length: 2 }).map((_, index) => (
-          <SecuritySkeleton key={index} />
-        ))
-      ) : data.length > 0 ? (
-        data.map((crypto) => {
-          const isBTC = crypto.ticker === "BTC"
-          const livePrice = isBTC && liveBtcPrice 
-            ? parseFloat(liveBtcPrice)
-            : crypto.latest_price
-          const liveTotalAmount = isBTC && liveBtcPrice
-            ? crypto.quantity * parseFloat(liveBtcPrice) * crypto.latest_usd_rate
-            : crypto.total_amount
-
+    <div className="flex flex-col gap-1 text-muted-foreground">
+      {processedCryptoData.length > 0 ? (
+        processedCryptoData.map((crypto) => {
           return (
             <SecurityItem
               key={crypto.ticker}
@@ -32,13 +26,10 @@ export function CryptoHoldings({ variant = "full", data, liveBtcPrice }: CryptoH
               name={crypto.name}
               logoUrl={crypto.logo_url}
               quantity={crypto.quantity}
-              totalAmount={liveTotalAmount}
-              pnlPct={crypto.cost_basis > 0
-                ? (liveTotalAmount / crypto.cost_basis - 1) * 100
-                : 0
-              }
-              pnlNet={liveTotalAmount - crypto.cost_basis}
-              price={livePrice}
+              totalAmount={crypto.totalAmount}
+              pnlPct={crypto.pnlPct}
+              pnlNet={crypto.pnlNet}
+              price={crypto.price}
               variant={variant}
               type="crypto"
             />

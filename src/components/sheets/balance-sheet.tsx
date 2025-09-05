@@ -9,16 +9,14 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet"
-import { BalanceSheetData } from "@/types/dashboard-data"
 import { BalanceSheet } from "@/components/cards/balance-sheet"
 import { ArrowRight } from "lucide-react"
 
 interface BSSheetProps {
   side: "right" | "bottom"
-  data: BalanceSheetData | null
 }
 
-export function BSSheet({ side, data }: BSSheetProps) {
+export function BSSheet({ side }: BSSheetProps) {
 
   return (
     <Sheet>
@@ -40,8 +38,8 @@ export function BSSheet({ side, data }: BSSheetProps) {
           <SheetDescription className="font-light">
             Summary of fund assets by its origins and allocation
           </SheetDescription>
-        </SheetHeader>                  
-        <BalanceSheet title={false} data={data}/>
+        </SheetHeader>
+        <BalanceSheet title={false}/>
         <SheetFooter>
           <SheetClose asChild>
             <Button variant="outline">Close</Button>

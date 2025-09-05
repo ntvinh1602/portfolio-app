@@ -13,7 +13,6 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useBTCUSDTPrice } from "@/hooks/use-btcusdt-price"
 import {
   SidebarInset,
   SidebarProvider
@@ -39,6 +38,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import TradingView from "@/components/cards/trading-view"
 import { Wallet } from "lucide-react"
+import { AssetDataProvider } from "@/context/asset-data-context"
+import { Loading } from "@/components/loader"
 
 interface EquityChartProps {
   balanceSheetData: BalanceSheetData | null
@@ -156,78 +157,73 @@ export default function Page() {
     cagr
   } = useDashboardData()
 
-  const { price: liveBtcPrice } = useBTCUSDTPrice()
  
   return (
     <SidebarProvider>
-      {!isMobile && <AppSidebar />}
-      <SidebarInset className={!isMobile ? "px-6" : undefined}>
-        <Header title={isMobile ? "Home" : "Dashboard"}/>
-        <div className="grid grid-cols-3 px-0 gap-2">
-          {isMobile ?
-            <Carousel opts={{ align: "center" }} className="w-full col-span-3">
-              <CarouselContent className="-ml-2">
-                <CarouselItem className="basis-11/12 pl-8">
-                  <EquityChart
-                    balanceSheetData={balanceSheetData}
-                    pnlData={pnlData}
-                    equityData={equityData}
-                  />
-                </CarouselItem>
-                <CarouselItem className="basis-11/12 pl-1 pr-6">
-                  <Benchmarkchart
-                    twrData={twrData}
-                    cagr={cagr}
-                    benchmarkData={benchmarkData}
-                  />
-                </CarouselItem>
-              </CarouselContent>
-            </Carousel> :
-            <div className="flex flex-col col-span-1 gap-2">
-              <EquityChart
-                balanceSheetData={balanceSheetData}
-                pnlData={pnlData}
-                equityData={equityData}
-              />
-              <Benchmarkchart
-                twrData={twrData}
-                cagr={cagr}
-                benchmarkData={benchmarkData}
-              />
+      <AssetDataProvider
+        bsData={balanceSheetData}
+        stockData={stockData}
+        cryptoData={cryptoData}
+        >
+        {!isMobile && <AppSidebar />}
+        <SidebarInset className={!isMobile ? "px-6" : undefined}>
+          <Header title={isMobile ? "Home" : "Dashboard"}/>
+          <div className="grid grid-cols-3 px-0 gap-2">
+            {isMobile ?
+              <Carousel opts={{ align: "center" }} className="w-full col-span-3">
+                <CarouselContent className="-ml-2">
+                  <CarouselItem className="basis-11/12 pl-8">
+                    <EquityChart
+                      balanceSheetData={balanceSheetData}
+                      pnlData={pnlData}
+                      equityData={equityData}
+                    />
+                  </CarouselItem>
+                  <CarouselItem className="basis-11/12 pl-1 pr-6">
+                    <Benchmarkchart
+                      twrData={twrData}
+                      cagr={cagr}
+                      benchmarkData={benchmarkData}
+                    />
+                  </CarouselItem>
+                </CarouselContent>
+              </Carousel> :
+              <div className="flex flex-col col-span-1 gap-2">
+                <EquityChart
+                  balanceSheetData={balanceSheetData}
+                  pnlData={pnlData}
+                  equityData={equityData}
+                />
+                <Benchmarkchart
+                  twrData={twrData}
+                  cagr={cagr}
+                  benchmarkData={benchmarkData}
+                />
+              </div>
+            }
+            <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
+              <AssetCard sheetSide={isMobile ? "bottom" : "right"} />
+              <Card className="gap-2 md:min-h-[700px]">
+                <CardHeader className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-xl">Portfolio</CardTitle>
+                  <Wallet className="stroke-1 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="flex flex-col gap-1 md:gap-2">
+                  <CardDescription>Stocks</CardDescription>
+                  <StockHoldings variant={isMobile ? "compact" : "full"} />
+                  <Separator className="mt-4 mb-3"/>
+                  <CardDescription>Crypto</CardDescription>
+                  <CryptoHoldings variant={isMobile ? "compact" : "full"} />
+                </CardContent>
+              </Card>
             </div>
-          }
-          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
-            <AssetCard
-              sheetSide={isMobile ? "bottom" : "right"}
-              data={balanceSheetData}
-            />
-            <Card className="gap-2 md:min-h-[700px]">
-              <CardHeader className="flex items-center justify-between gap-2">
-                <CardTitle className="text-xl">Portfolio</CardTitle>
-                <Wallet className="stroke-1 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1 md:gap-2">
-                <CardDescription>Stocks</CardDescription>
-                <StockHoldings
-                  variant={isMobile ? "compact" : "full"}
-                  data={stockData}
-                />
-                <Separator className="mt-4 mb-3"/>
-                <CardDescription>Crypto</CardDescription>
-                <CryptoHoldings
-                  variant={isMobile ? "compact" : "full"}
-                  data={cryptoData}
-                  liveBtcPrice={liveBtcPrice}
-                />
-              </CardContent>
-            </Card>
+            <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
+              {!isMobile && <div className="h-[400px]"><TradingView /></div>}
+            </div>
           </div>
-          <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-6 md:px-0">
-            {!isMobile && <div className="h-[400px]"><TradingView /></div>}
-          </div>
-        </div>
-      </SidebarInset>
-      {isMobile && <BottomNavBar />}
+        </SidebarInset>
+        {isMobile && <BottomNavBar />}
+      </AssetDataProvider>
     </SidebarProvider>
   )
 }

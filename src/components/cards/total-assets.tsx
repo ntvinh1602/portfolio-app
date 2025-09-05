@@ -13,15 +13,15 @@ import {
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum, formatNum } from "@/lib/utils"
-import { BalanceSheetData } from "@/types/dashboard-data"
+import { useAssetData } from "@/context/asset-data-context"
 import { BSSheet } from "../sheets/balance-sheet"
 
 interface AssetCardProps {
   sheetSide: "right" | "bottom"
-  data: BalanceSheetData | null;
 }
 
-export function AssetCard({ sheetSide, data }: AssetCardProps) {
+export function AssetCard({ sheetSide }: AssetCardProps) {
+  const { totalAssets, totalEquity, balanceSheet } = useAssetData()
 
   const assetChartCfg = {
     allocation: {
@@ -45,7 +45,7 @@ export function AssetCard({ sheetSide, data }: AssetCardProps) {
     },
   } satisfies ChartConfig
 
-  const assetChartData = data?.assets?.filter(item => item.totalAmount > 0).map(item => ({
+  const assetChartData = balanceSheet.assets.filter(item => item.totalAmount > 0).map(item => ({
     asset: item.type.toLowerCase(),
     allocation: item.totalAmount,
     fill: `var(--color-${item.type.toLowerCase()})`
@@ -68,31 +68,31 @@ export function AssetCard({ sheetSide, data }: AssetCardProps) {
   const liabilityChartData = [
     {
       liability: "equity",
-      allocation: data?.totalEquity ?? 0,
+      allocation: balanceSheet.totalEquity ?? 0,
       fill: "var(--chart-1)",
     },
     {
       liability: "liabilities",
-      allocation: data?.totalLiabilities ?? 0,
+      allocation: balanceSheet.totalLiabilities ?? 0,
       fill: "var(--chart-2)",
     },
   ].filter((d) => d.allocation > 0)
 
-  const leverage = data && data?.totalEquity !== 0
-    ? (data.totalLiabilities / data.totalEquity).toFixed(2)
+  const leverage = balanceSheet && balanceSheet.totalEquity !== 0
+    ? (balanceSheet.totalLiabilities / balanceSheet.totalEquity).toFixed(2)
     : "Infinite"
 
   return (
     <>
-      {data ?
+      {balanceSheet ?
         <Card className="gap-0">
           <CardHeader>
             <CardDescription>Total Assets</CardDescription>
             <CardTitle className="text-2xl">
-              {formatNum(data.totalAssets)}
+              {formatNum(totalAssets)}
             </CardTitle>
             <CardAction>
-              <BSSheet side={sheetSide} data={data}/>
+              <BSSheet side={sheetSide}/>
             </CardAction>
           </CardHeader>
           <CardContent className="px-0 flex w-full justify-between">
@@ -108,7 +108,7 @@ export function AssetCard({ sheetSide, data }: AssetCardProps) {
               margin_tb={0}
               centerText="Liquid Eqty."
               centerValue={
-                compactNum(data.totalEquity - (data.assets.find(a => a.type === "EPF")?.totalAmount ?? 0
+                compactNum(totalEquity - (balanceSheet.assets.find(a => a.type === "EPF")?.totalAmount ?? 0
               ))}
               valueFormatter={(value) => formatNum(value)}
             />

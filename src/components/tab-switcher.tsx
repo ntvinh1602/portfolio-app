@@ -6,7 +6,7 @@ import {
 
 type SwitchOption = {
   value: string
-  label: string
+  label: (isSelected: boolean) => React.ReactNode
 }
 
 type TabSwitcherProps = {
@@ -42,7 +42,9 @@ export default function TabSwitcher({
             value={option.value}
             className={triggerClassName}
           >
-            {option.label}
+            {typeof option.label === "function"
+              ? option.label(value === option.value)
+              : option.label}
           </TabsTrigger>
         ))}
       </TabsList>

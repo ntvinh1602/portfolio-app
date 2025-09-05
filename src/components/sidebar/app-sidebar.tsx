@@ -9,10 +9,14 @@ import {
   LogOut,
   Plus,
   RefreshCw,
+  Moon,
+  Sun,
 } from "lucide-react"
 
 import { mutate } from "swr"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
+import TabSwitcher from "@/components/tab-switcher"
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavSecondary } from "@/components/sidebar/nav-secondary"
 import {
@@ -73,7 +77,13 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { resolvedTheme, setTheme } = useTheme()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleRefresh = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -93,6 +103,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     await supabase.auth.signOut()
     router.push("/login")
   }
+
+  const themeOptions = React.useMemo(
+    () => [
+      {
+        value: "light",
+        label: () => (
+          <div className="flex items-center gap-2">
+            <Sun className="stroke-1" />
+            Light
+          </div>
+        )
+      },
+      {
+        value: "dark",
+        label: () => (
+          <div className="flex items-center gap-2">
+            <Moon className="stroke-1" />
+            Dark
+          </div>
+        )
+      }
+    ],
+    []
+  );
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -114,6 +148,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <div className="px-2">
+          {mounted && (
+            <TabSwitcher
+              onValueChange={(value) => setTheme(value)}
+              value={resolvedTheme ?? "light"}
+              options={themeOptions}
+              border={true}
+            />
+          )}
+        </div>
         <NavMain items={data.navMain} />
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
@@ -133,7 +177,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               Update Price
             </Button>
         </SidebarGroup>
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={data.navSecondary} className="mt-auto"/>
       </SidebarContent>
       <SidebarFooter>
         <Button

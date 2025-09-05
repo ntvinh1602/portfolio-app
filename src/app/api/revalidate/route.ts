@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
 
-// Route segment configuration
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get("x-secret-token")
     const expectedSecret = process.env.REVALIDATION_TOKEN
+    const secret = request.headers.get("x-secret-token")
+    const table = request.headers.get("x-table-name")
 
     if (!secret || secret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const table = request.headers.get("x-table-name")
 
     if (!table) {
       return NextResponse.json(
@@ -23,11 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Revalidate based on the table that was updated
-    if (table === "transactions") {
+    if (table === "transaction_legs") {
       revalidateTag(`price-driven`)
       revalidateTag(`txn-driven`)
     } else if (
-      table === "daily_stock_prices" || table === "daily_exchange_rates"
+      table === "daily_stock_prices"||
+      table === "daily_exchange_rates" ||
+      table === "daily_crypto_prices"
     ) {
       revalidateTag(`price-driven`)
     }
