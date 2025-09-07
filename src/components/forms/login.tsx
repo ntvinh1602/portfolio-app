@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { TurnstileWidget } from "../turnstile"
+import { TurnstileWidget } from "@/components/turnstile"
 
 export function LoginForm({
   className,
@@ -25,15 +25,15 @@ export function LoginForm({
     setError(null)
     setIsLoading(true)
 
-    const res = await fetch("/api/auth/login", {
+    const response = await fetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password, token }),
     })
 
-    if (res.ok) {
-      router.push("/")
+    if (response.ok) {
+      router.push("/dashboard")
     } else {
-      const { error } = await res.json()
+      const { error } = await response.json()
       setError(error)
     }
 

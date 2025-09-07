@@ -3,10 +3,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { Moon, Sun } from "lucide-react"
 
 type SwitchOption = {
   value: string
-  label: (isSelected: boolean) => React.ReactNode
+  label: string
 }
 
 type TabSwitcherProps = {
@@ -42,9 +43,10 @@ export default function TabSwitcher({
             value={option.value}
             className={triggerClassName}
           >
-            {typeof option.label === "function"
-              ? option.label(value === option.value)
-              : option.label}
+            {option.value === "light"
+              ? <Sun/>
+              : option.value === "dark" && <Moon/>}
+            {option.label}
           </TabsTrigger>
         ))}
       </TabsList>

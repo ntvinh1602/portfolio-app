@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import React, { useEffect, useRef, memo } from "react";
+import React, { useEffect, useRef, memo } from "react"
 
 function TradingViewWidget() {
-  const container = useRef<HTMLDivElement>(null);
+  const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!container.current) return;
+    if (!container.current) return
 
     // Clear old scripts/widgets (important during hot reload)
-    container.current.innerHTML = "";
+    container.current.innerHTML = ""
 
-    const script = document.createElement("script");
+    const script = document.createElement("script")
     script.src =
-      "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
-    script.type = "text/javascript";
-    script.async = true;
+      "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
+    script.type = "text/javascript"
+    script.async = true
     script.innerHTML = JSON.stringify({
       "lineWidth": 1.5,
       "lineType": 2,
@@ -43,11 +43,13 @@ function TradingViewWidget() {
       "changeMode": "price-and-percent",
       symbols: [
         ["Bitcoin", "BINANCE:BTCUSDT|1D"],
-        ["S&P 500", "FOREXCOM:SPXUSD|1D"],
+        ["S&P 500", "FOREXCOM:SPXUSD|1M"],
+        ["Gold", "CAPITALCOM:GOLD|1M"],
       ],
       dateRanges: [
         "1d|5",
-        "1m|60",
+        "1w|30",
+        "1m|240",
         "6m|1D",
         "12m|1D",
         "60m|1W",
@@ -62,10 +64,10 @@ function TradingViewWidget() {
       hideDateRanges: false,
       hideMarketStatus: false,
       hideSymbolLogo: false,
-    });
+    })
 
-    container.current.appendChild(script);
-  }, []);
+    container.current.appendChild(script)
+  }, [])
 
   return (
     <>
@@ -73,7 +75,7 @@ function TradingViewWidget() {
         <div className="tradingview-widget-container__widget"></div>
       </div>
     </>
-  );
+  )
 }
 
-export default memo(TradingViewWidget);
+export default memo(TradingViewWidget)

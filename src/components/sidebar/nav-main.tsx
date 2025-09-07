@@ -35,44 +35,47 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Insights</SidebarGroupLabel>
+      <SidebarGroupLabel>Pages</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
-                  <item.icon className="stroke-1" />
-                  <span className="font-light">{item.title}</span>
-                </a>
-              </SidebarMenuButton>
-              {item.items?.length ? (
-                <>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
-                      <span className="sr-only">Toggle</span>
-                    </SidebarMenuAction>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {item.items?.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
-                              <span className="font-light text-muted-foreground">{subItem.title}</span>
-                            </a>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </>
-              ) : null}
-            </SidebarMenuItem>
+          <Collapsible key={item.title} defaultOpen={item.isActive}>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <div className="flex select-none">
+                    <item.icon/>
+                    <span className="font-light">{item.title}</span>
+                  </div>
+                </SidebarMenuButton>
+                {item.items?.length ?
+                  <SidebarMenuAction>
+                    <ChevronRight />
+                    <span className="sr-only">Toggle</span>
+                  </SidebarMenuAction>
+                 : null}
+              </SidebarMenuItem>
+            </CollapsibleTrigger>
+            {item.items?.length ? (
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {item.items?.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton asChild>
+                        <a href={subItem.url}>
+                          <span className="font-light text-muted-foreground">
+                            {subItem.title}
+                          </span>
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            ) : null}
           </Collapsible>
         ))}
       </SidebarMenu>
     </SidebarGroup>
   )
 }
+

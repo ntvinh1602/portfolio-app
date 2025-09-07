@@ -4,7 +4,7 @@ import * as React from "react"
 import TabSwitcher from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
 import { formatNum } from "@/lib/utils"
-import { TwoMetric } from "@/components/cards/two-metric"
+import { TwoMetric } from "@/components/two-metric"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useEarningsData } from "@/hooks/useEarningsData"
 import {

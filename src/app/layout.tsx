@@ -1,11 +1,9 @@
 import type { Metadata } from "next"
-import {
-  Roboto_Flex,
-  Roboto_Condensed
-} from "next/font/google"
+import { Roboto_Flex, Roboto_Condensed } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
+import { AssetDataProvider } from "@/context/asset-data-context"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
@@ -38,13 +36,14 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+export default function RootLayout({ children }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning
+    >
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
@@ -55,10 +54,19 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <RootLayoutContent>{children}</RootLayoutContent>
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
+
+  return (
+    <AssetDataProvider>
+      {children}
+    </AssetDataProvider>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { BalanceSheetData, StockData, CryptoData } from "@/types/dashboard-data"
 import { useStockData } from "@/hooks/useStockData"
 import { useCryptoData } from "@/hooks/useCryptoData"
+import { useDashboardData } from "@/hooks/useDashboardData"
 
 export interface ProcessedStockData extends StockData {
   totalAmount: number
@@ -35,18 +36,15 @@ interface AssetDataContextType {
   processedStockData: ProcessedStockData[]
   processedCryptoData: ProcessedCryptoData[]
   balanceSheet: BalanceSheetData
+  isStockPriceLive: boolean
+  isCryptoPriceLive: boolean
 }
 
 const AssetDataContext = createContext<AssetDataContextType | undefined>(
   undefined
 )
 
-interface AssetDataProviderProps {
-  children: ReactNode
-  bsData: BalanceSheetData | null
-  stockData: StockData[] | null
-  cryptoData: CryptoData[] | null
-}
+interface AssetDataProviderProps {children: ReactNode}
 
 const safeBalanceSheet: BalanceSheetData = {
   assets: [],
@@ -57,12 +55,13 @@ const safeBalanceSheet: BalanceSheetData = {
   totalEquity: 0,
 }
 
-export const AssetDataProvider = ({
-  children,
-  bsData,
-  stockData,
-  cryptoData,
-}: AssetDataProviderProps) => {
+export const AssetDataProvider = ({ children }: AssetDataProviderProps) => {
+  const {
+    balanceSheetData: bsData,
+    stockData,
+    cryptoData,
+  } = useDashboardData()
+
   const [totalStockValue, setTotalStockValue] = useState(0)
   const [totalCryptoValue, setTotalCryptoValue] = useState(0)
   const [totalAssets, setTotalAssets] = useState(0)
@@ -75,15 +74,28 @@ export const AssetDataProvider = ({
     () => stockData?.map((stock) => stock.ticker) ?? [],
     [stockData]
   )
-  const { data: marketData } = useStockData(stockSymbols)
+  const {
+    data: marketData,
+    error: stockError
+  } = useStockData(stockSymbols)
 
   const cryptoSymbols = useMemo(
     () =>
-      cryptoData?.filter((crypto) => crypto.ticker !== "USDT").map((crypto) => crypto.ticker) ??
+      cryptoData?.filter((crypto) => crypto.ticker !== "USDT")
+        .map((crypto) => crypto.ticker) ??
       [],
     [cryptoData]
   )
-  const { prices: liveCryptoPrices } = useCryptoData(cryptoSymbols)
+  const {
+    prices: liveCryptoPrices,
+    loading: isCryptoDataLoading,
+    error: cryptoError
+  } = useCryptoData(cryptoSymbols)
+
+  const isStockDataLoading = stockSymbols.length > 0 && Object.keys(marketData).length === 0 && !stockError;
+
+  const isStockPriceLive = !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
+  const isCryptoPriceLive = !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
 
   const processedStockData = useMemo(() => {
     if (!stockData) return []
@@ -230,6 +242,8 @@ export const AssetDataProvider = ({
         processedStockData,
         processedCryptoData,
         balanceSheet,
+        isStockPriceLive,
+        isCryptoPriceLive,
       }}
     >
       {children}

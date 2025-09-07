@@ -90,3 +90,25 @@ export function formatNumberWithCommas(value: string | number): string {
 export function parseFormattedNumber(value: string): string {
   return value.replace(/,/g, "")
 }
+
+// Check trading hours
+export function isTradingHours() {
+  const now = new Date()
+  const utcOffset = now.getTimezoneOffset() * 60 * 1000 // Offset in milliseconds
+  const utc7Offset = 7 * 60 * 60 * 1000 // UTC+7 offset in milliseconds
+  const nowUtc7 = new Date(now.getTime() + utcOffset + utc7Offset)
+
+  const day = nowUtc7.getDay() // Sunday - 0, Monday - 1, ..., Saturday - 6
+  const hours = nowUtc7.getHours()
+  const minutes = nowUtc7.getMinutes()
+
+  // Check if it's a weekday (Monday to Friday)
+  const isWeekday = day >= 1 && day <= 5
+
+  // Check if time is between 9:15 AM and 2:45 PM (14:45)
+  const isWithinTradingTime =
+    (hours > 9 || (hours === 9 && minutes >= 15)) &&
+    (hours < 14 || (hours === 14 && minutes <= 45))
+
+  return isWeekday && isWithinTradingTime
+}

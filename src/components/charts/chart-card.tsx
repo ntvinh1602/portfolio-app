@@ -97,8 +97,8 @@ function ChartCard<
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
               {minorValue1 !== null && minorValue1 < 0
-                ? <TrendingDown className="text-red-700 dark:text-red-400" />
-                : <TrendingUp className="text-green-700 dark:text-green-400" />
+                ? <TrendingDown className="text-red-700" />
+                : <TrendingUp className="text-green-500" />
               }
               {minorValue1 !== null && minorValue1Formatter(Math.abs(minorValue1))}
             </div>
@@ -111,8 +111,8 @@ function ChartCard<
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
               {minorValue2 !== null && minorValue2 < 0
-                ? <TrendingDown className="text-red-700 dark:text-red-400" />
-                : <TrendingUp className="text-green-700 dark:text-green-400" />
+                ? <TrendingDown className="text-red-700" />
+                : <TrendingUp className="text-green-500" />
               }
               {minorValue2 !== null && minorValue2Formatter(Math.abs(minorValue2))}
             </div>
@@ -128,7 +128,7 @@ function ChartCard<
             { label: "3M", value: "3m" },
             { label: "6M", value: "6m" },
             { label: "1Y", value: "1y" },
-            { label: "All", value: "all_time" },
+            { label: "All", value: "all_time" }
           ]}
           border={false}
           tabClassName="ml-auto"
