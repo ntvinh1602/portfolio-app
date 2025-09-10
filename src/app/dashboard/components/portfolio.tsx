@@ -113,7 +113,7 @@ export function Portfolio() {
   if (loading) return <Loading/>
 
   return (
-    <Card className="gap-2 md:min-h-[700px]">
+    <Card className="gap-2">
       <CardHeader>
         <CardTitle className="text-xl">Portfolio</CardTitle>
       </CardHeader>

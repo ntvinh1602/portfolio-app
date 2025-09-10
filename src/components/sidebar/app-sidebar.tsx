@@ -42,7 +42,7 @@ const data = {
       items: [
         {
           title: "Transactions",
-          url: "/transactions",
+          url: "/txn",
         },
       ],
     },

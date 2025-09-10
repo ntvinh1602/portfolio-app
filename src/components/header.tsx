@@ -5,7 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import TabSwitcher from "@/components/tab-switcher"
+import { TabSwitcher } from "@/components/tab-switcher"
 
 export const Header = React.memo(({ title }: { title: string }) => {
   const { resolvedTheme, setTheme } = useTheme()
@@ -35,6 +35,7 @@ export const Header = React.memo(({ title }: { title: string }) => {
                 { value: "dark", label: "Dark" }
               ]}
               tabClassName="h-full flex flex-col justify-center"
+              border={false}
             />
           )}
         </div>

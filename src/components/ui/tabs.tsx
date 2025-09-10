@@ -20,8 +20,10 @@ function Tabs({
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
+    indicatorClassName?: string
+  }
+>(({ className, indicatorClassName, ...props }, ref) => {
   const [indicatorStyle, setIndicatorStyle] = useState({
     left: 0,
     top: 0,
@@ -80,13 +82,16 @@ const TabsList = React.forwardRef<
         ref={ref}
         data-slot="tabs-list"
         className={cn(
-          "bg-card/40 border text-muted-foreground relative inline-flex h-10 items-center justify-center rounded-md p-[3px]",
+          "bg-card/40 border text-muted-foreground relative inline-flex h-10 items-center justify-center rounded-md p-[3px] ",
           className
         )}
         {...props}
       />
       <div
-        className="absolute rounded-md text-foreground bg-secondary shadow-sm transition-all duration-300 ease-in-out"
+        className={cn(
+          "absolute rounded-sm text-foreground transition-all duration-300 ease-in-out",
+          indicatorClassName ?? "bg-secondary"
+        )}
         style={indicatorStyle}
       />
     </div>
@@ -102,7 +107,7 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     data-slot="tabs-trigger"
     className={cn(
-      "data-[state=active]:text-secondary-foreground data-[state=active]:font-light focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1 text-sm font-thin whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 z-10",
+      "data-[state=active]:text-secondary-foreground data-[state=active]:font-light focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1 text-sm font-thin whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 z-10 ",
       className
     )}
     {...props}

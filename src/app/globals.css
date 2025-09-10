@@ -111,30 +111,45 @@
 }
 
 @layer base {
-  html,
-  body,
-  body > div:first-child,
-  div#__next,
-  div#__next > div {
-    @apply h-full;
-  }
   * {
     @apply border-border;
   }
+
   body {
     font-family: var(--font-roboto-flex);
     background-color: var(--background);
+    @apply bg-background text-foreground;
   }
+  
   h1 {
     font-family: var(--font-roboto-condensed);
   }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@layer utilities {
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
   }
-  body {
-    @apply bg-background text-foreground;
+
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  .animate-collapsible-down {
+    animation: collapsible-down 0.2s ease-out;
+  }
+
+  .animate-collapsible-up {
+    animation: collapsible-up 0.2s ease-out;
   }
 }

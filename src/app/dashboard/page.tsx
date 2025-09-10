@@ -9,10 +9,7 @@ import {
 import { AssetCard } from "@/app/dashboard/components/total-assets"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import { useIsMobile } from "@/hooks/use-mobile"
-import {
-  SidebarInset,
-  SidebarProvider
-} from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { Portfolio } from "@/app/dashboard/components/portfolio"
@@ -26,7 +23,7 @@ export default function Page() {
   return (
     <SidebarProvider>
       {!isMobile && <AppSidebar />}
-      <SidebarInset className={`flex flex-col h-svh ${!isMobile ? "px-6" : undefined}`}>
+      <SidebarInset className={`flex flex-col ${isMobile ? undefined : "px-4 h-svh"}`}>
         <Header title={!isMobile ? "Dashboard" : "Home"}/>
         <div className="grid grid-cols-3 px-0 gap-2 flex-1 overflow-hidden">
           {isMobile ?

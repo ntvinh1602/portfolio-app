@@ -28,7 +28,7 @@ export function Areachart({
   chartConfig,
   className,
   xAxisDataKey,
-  lineDataKeys: areaDataKeys,
+  lineDataKeys,
   legend = false,
   xAxisTickFormatter,
   yAxisTickFormatter,
@@ -38,7 +38,7 @@ export function Areachart({
     <ChartContainer config={chartConfig} className={cn(className)}>
       <AreaChart data={data}>
         <defs>
-          {areaDataKeys.map((key) => (
+          {lineDataKeys.map((key) => (
             <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
@@ -53,7 +53,7 @@ export function Areachart({
             </linearGradient>
           ))}
         </defs>
-        <CartesianGrid horizontal={true} vertical={false} />
+        <CartesianGrid vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
           tickLine={true}
@@ -82,7 +82,7 @@ export function Areachart({
             <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
           }
         />
-        {areaDataKeys.map((key) => (
+        {lineDataKeys.map((key) => (
           <Area
             key={key}
             dataKey={key}

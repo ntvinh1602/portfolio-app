@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { formatISO } from "date-fns"
-import DatePicker from "@/components/date-picker"
+import { SingleDate } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -261,7 +261,7 @@ export function TransactionForm({
              <div className="grid grid-cols-2 gap-4 pb-4">
                <div className="grid gap-3">
                  <Label htmlFor="date">Date</Label>
-                 <DatePicker mode="single" selected={date} onSelect={setDate} />
+                 <SingleDate selected={date} onSelect={setDate} />
                </div>
                <div className="grid gap-3">
                  <Label htmlFor="transaction-type">Type</Label>

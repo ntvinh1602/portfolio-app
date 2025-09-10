@@ -13,7 +13,7 @@ import {
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { parseISO, format } from "date-fns"
-import TabSwitcher from "@/components/tab-switcher"
+import { TabSwitcher } from "@/components/tab-switcher"
 import { Separator } from "../ui/separator"
 
 interface ChartCardProps<
