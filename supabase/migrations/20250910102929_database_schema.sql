@@ -1069,33 +1069,6 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."call_vercel_revalidate"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'vault', 'extensions'
-    AS $$
-DECLARE
-  token text;
-BEGIN
-  -- Retrieve the secret directly from vault.decrypted_secrets
-  SELECT decrypted_secret
-  INTO token
-  FROM vault.decrypted_secrets
-  WHERE name = 'vercel_revalidate_token';
-
-  -- Call Vercel revalidate API
-  PERFORM net.http_post(
-    'https://portapp-vinh.vercel.app/api/revalidate',
-    jsonb_build_object('x-secret-token', token)
-  );
-
-  RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."call_vercel_revalidate"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") RETURNS "void"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2522,7 +2495,6 @@ CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
     "id" bigint NOT NULL,
     "side" "text" NOT NULL,
     "symbol" "text" NOT NULL,
-    "order_type" "text",
     "order_status" "text",
     "fill_quantity" numeric,
     "average_price" numeric,
@@ -2584,7 +2556,8 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "description" "text",
     "related_debt_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "price" numeric(16,4)
+    "price" numeric(16,4),
+    "linked_txn" "uuid"
 );
 
 
@@ -2592,7 +2565,22 @@ ALTER TABLE "public"."transactions" OWNER TO "postgres";
 
 
 ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_ticker_key" UNIQUE ("ticker");
+
+
+
+ALTER TABLE ONLY "public"."currencies"
+    ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
+
+
+
+ALTER TABLE ONLY "public"."daily_crypto_prices"
+    ADD CONSTRAINT "daily_crypto_prices_pkey" PRIMARY KEY ("asset_id", "date");
 
 
 
@@ -2606,8 +2594,95 @@ ALTER TABLE ONLY "public"."daily_stock_prices"
 
 
 
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."dnse_orders"
     ADD CONSTRAINT "dnse_orders_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."daily_exchange_rates"
+    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("currency_code", "date");
+
+
+
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
+
+
+
+ALTER TABLE ONLY "public"."daily_market_indices"
+    ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
+
+
+
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."transactions"
+    ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
+
+
+
+CREATE INDEX "debts_currency_code_idx" ON "public"."debts" USING "btree" ("currency_code");
+
+
+
+CREATE INDEX "lot_consumptions_tax_lot_id_idx" ON "public"."lot_consumptions" USING "btree" ("tax_lot_id");
+
+
+
+CREATE INDEX "tax_lots_asset_id_idx" ON "public"."tax_lots" USING "btree" ("asset_id");
+
+
+
+CREATE INDEX "tax_lots_creation_transaction_id_idx" ON "public"."tax_lots" USING "btree" ("creation_transaction_id");
+
+
+
+CREATE INDEX "transaction_legs_asset_id_idx" ON "public"."transaction_legs" USING "btree" ("asset_id");
+
+
+
+CREATE INDEX "transaction_legs_currency_code_idx" ON "public"."transaction_legs" USING "btree" ("currency_code");
+
+
+
+CREATE INDEX "transaction_legs_transaction_id_idx" ON "public"."transaction_legs" USING "btree" ("transaction_id");
+
+
+
+CREATE INDEX "transactions_related_debt_id_idx" ON "public"."transactions" USING "btree" ("related_debt_id");
+
+
+
+CREATE OR REPLACE TRIGGER "revalidate_after_new_crypto_prices" AFTER INSERT OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_crypto_prices"}', '{}', '5000');
+
+
+
+CREATE OR REPLACE TRIGGER "revalidate_after_new_fx_rate" AFTER INSERT OR UPDATE ON "public"."daily_exchange_rates" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_exchange_rates"}', '{}', '5000');
+
+
+
+CREATE OR REPLACE TRIGGER "revalidate_after_new_stock_prices" AFTER INSERT OR UPDATE ON "public"."daily_stock_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_stock_prices"}', '{}', '5000');
+
+
+
+CREATE OR REPLACE TRIGGER "revalidate_after_new_txn" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"transaction_legs"}', '{}', '5000');
+
+
+
+CREATE OR REPLACE TRIGGER "snapshot_after_new_crypto_prices" AFTER INSERT OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "public"."refresh_performance_snapshots"();
 
 
 
@@ -2620,6 +2695,96 @@ CREATE OR REPLACE TRIGGER "snapshot_after_new_stock_price" AFTER INSERT OR UPDAT
 
 
 CREATE OR REPLACE TRIGGER "snapshot_after_new_txn" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."refresh_performance_snapshots"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_assets_on_new_transaction" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."update_assets_after_transaction"();
+
+
+
+ALTER TABLE ONLY "public"."assets"
+    ADD CONSTRAINT "assets_currency_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."daily_crypto_prices"
+    ADD CONSTRAINT "daily_crypto_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."daily_stock_prices"
+    ADD CONSTRAINT "daily_stock_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+
+
+
+ALTER TABLE ONLY "public"."dnse_orders"
+    ADD CONSTRAINT "dnse_orders_symbol_fkey" FOREIGN KEY ("symbol") REFERENCES "public"."assets"("ticker") ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."daily_exchange_rates"
+    ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_sell_transaction_leg_id_fkey" FOREIGN KEY ("sell_transaction_leg_id") REFERENCES "public"."transaction_legs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lot_consumptions"
+    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tax_lots"
+    ADD CONSTRAINT "tax_lots_creation_transaction_id_fkey" FOREIGN KEY ("creation_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
+
+
+
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+
+
+
+ALTER TABLE ONLY "public"."transaction_legs"
+    ADD CONSTRAINT "transaction_legs_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."transactions"
+    ADD CONSTRAINT "transactions_related_debt_id_fkey" FOREIGN KEY ("related_debt_id") REFERENCES "public"."debts"("id") ON DELETE SET NULL;
+
+
+
+CREATE POLICY "Authenticated users can access crypto prices" ON "public"."daily_crypto_prices" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Authenticated users can access exchange rates" ON "public"."daily_exchange_rates" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Authenticated users can access market indices" ON "public"."daily_market_indices" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Authenticated users can access stock prices" ON "public"."daily_stock_prices" TO "authenticated" USING (true);
 
 
 
@@ -2657,6 +2822,45 @@ CREATE POLICY "Logged in users can access transactions" ON "public"."transaction
 
 CREATE POLICY "Users can read DNSE orders" ON "public"."dnse_orders" TO "authenticated" USING (true);
 
+
+
+ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."daily_crypto_prices" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."daily_exchange_rates" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."daily_market_indices" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."daily_stock_prices" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."transaction_legs" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -2917,12 +3121,6 @@ GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_dat
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "anon";
-GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."call_vercel_revalidate"() TO "service_role";
 
 
 
