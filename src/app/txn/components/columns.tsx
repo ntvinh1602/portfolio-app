@@ -29,13 +29,7 @@ export const columns: ColumnDef<Transaction>[] = [
         </Button>
       )
     },
-    size: 80,
     cell: ({ row }) => <>{row.getValue("transaction_date")}</>
-  },
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div className="truncated">{row.getValue("id")}</div>
   },
   {
     accessorKey: "type",

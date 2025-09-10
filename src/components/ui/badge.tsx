@@ -18,9 +18,9 @@ const badgeVariants = cva(
         outline:
           "text-muted-foreground font-light [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         inbound:
-          "font-light bg-lime-800 [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+          "font-light text-white bg-lime-800 [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         outbound:
-          "font-light bg-rose-800 [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
+          "font-light text-white bg-rose-800 [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
       },
     },
     defaultVariants: {

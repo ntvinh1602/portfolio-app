@@ -27,12 +27,16 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   category: string
+  onRowClick?: (row: TData) => void
+  selectedTransaction?: TData | null
 }
 
-export function Transactions<TData, TValue>({
+export function Transactions<TData extends { id: string }, TValue>({
   columns,
   data,
-  category
+  category,
+  onRowClick,
+  selectedTransaction,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -115,7 +119,12 @@ return (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={
+                    (row.original as any).id === (selectedTransaction as any)?.id &&
+                    "selected"
+                  }
+                  onClick={() => onRowClick?.(row.original)}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

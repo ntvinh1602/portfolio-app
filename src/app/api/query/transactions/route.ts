@@ -1,13 +1,27 @@
 import { createClient } from "@/lib/supabase/supabaseServer"
 import { NextResponse } from "next/server"
 
-export async function GET() {
+import { type NextRequest } from "next/server"
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const startDate = searchParams.get("startDate")
+  const endDate = searchParams.get("endDate")
   const supabase = await createClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from("transactions")
     .select("id, transaction_date, type, description")
     .neq("description", "Income tax")
     .neq("description", "Transaction fee")
+
+  if (startDate) {
+    query = query.gte("transaction_date", startDate)
+  }
+  if (endDate) {
+    query = query.lte("transaction_date", endDate)
+  }
+
+  const { data, error } = await query
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(200)

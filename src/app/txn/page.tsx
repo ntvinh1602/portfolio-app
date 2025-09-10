@@ -4,7 +4,7 @@ import * as React from "react"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
+import { TransactionDetails } from "./components/details"
 import { Transactions } from "./components/table"
 import { columns, Transaction } from "./components/columns"
 import { TabSwitcher } from "@/components/tab-switcher"
@@ -17,26 +17,70 @@ export default function Page() {
   const [dateFrom, setDateFrom] = React.useState<Date | undefined>(
     subMonths(new Date(), 1)
   )
-  const [dateTo, setDateTo] = React.useState<Date | undefined>(
-    new Date()
-  )
+  const [dateTo, setDateTo] = React.useState<Date | undefined>(new Date())
+  const [selectedTransaction, setSelectedTransaction] =
+    React.useState<Transaction | null>(null)
+  const [transactionLegs, setTransactionLegs] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const handleTransactionSelect = async (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setLoading(true)
+    setError(null)
+    try {
+      const url = new URL(
+        "/api/query/transaction-legs",
+        window.location.origin
+      )
+      url.searchParams.append("transactionId", transaction.id)
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error("Failed to fetch transaction legs")
+      }
+      const result = await response.json()
+      setTransactionLegs(result)
+    } catch (error) {
+      setError("Failed to fetch transaction legs")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   React.useEffect(() => {
     async function fetchData() {
-      const response = await fetch("/api/query/transactions")
-      const result = await response.json()
-      setData(result)
+      setLoading(true)
+      setError(null)
+      try {
+        const url = new URL("/api/query/transactions", window.location.origin)
+        if (dateFrom) {
+          url.searchParams.append("startDate", dateFrom.toISOString())
+        }
+        if (dateTo) {
+          url.searchParams.append("endDate", dateTo.toISOString())
+        }
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error("Failed to fetch transactions")
+        }
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        setError("Failed to fetch transactions")
+      } finally {
+        setLoading(false)
+      }
     }
     fetchData()
-  }, [])
+  }, [dateFrom, dateTo])
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="flex flex-col px-4">
         <Header title="Transactions" />
-        <div className="grid grid-cols-3 px-0 gap-2 flex-1 overflow-hidden">
-          <div className="flex flex-col gap-2 col-span-2 px-0">
+        <div className="flex gap-4 flex-1 overflow-hidden w-3/4 mx-auto">
+          <div className="flex w-6/10 flex-col gap-2">
             <div className="flex justify-between items-center">
               <DateRange
                 dateFrom={dateFrom}
@@ -61,16 +105,17 @@ export default function Page() {
               columns={columns}
               data={data}
               category={category}
+              onRowClick={handleTransactionSelect}
+              selectedTransaction={selectedTransaction}
             />
           </div>
-          <div className="flex flex-col gap-2 col-span-1 px-0">
-            <Card className="">
-              <CardHeader>
-                <CardTitle className="text-xl">
-                  Transaction Details
-                </CardTitle>
-              </CardHeader>
-            </Card>
+          <div className="flex w-4/10 flex-col gap-2">
+            {error && <p className="text-red-500">{error}</p>}
+            <TransactionDetails
+              transaction={selectedTransaction}
+              transactionLegs={transactionLegs}
+              loading={loading}
+            />
           </div>
         </div>
       </SidebarInset>
