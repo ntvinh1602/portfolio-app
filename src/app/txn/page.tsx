@@ -74,6 +74,20 @@ export default function Page() {
     fetchData()
   }, [dateFrom, dateTo])
 
+  const transactionCounts = React.useMemo(() => {
+    return data.reduce(
+      (acc, transaction) => {
+        if (["buy", "sell", "split"].includes(transaction.type)) {
+          acc.trade += 1
+        } else {
+          acc.cash += 1
+        }
+        return acc
+      },
+      { cash: 0, trade: 0 }
+    )
+  }, [data])
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -92,8 +106,16 @@ export default function Page() {
                 value={category}
                 onValueChange={setCategory}
                 options={[
-                  { label: "Cashflow", value: "cash" },
-                  { label: "Trades", value: "trade" }
+                  {
+                    label: "Cashflow",
+                    value: "cash",
+                    number: transactionCounts.cash,
+                  },
+                  {
+                    label: "Trades",
+                    value: "trade",
+                    number: transactionCounts.trade,
+                  },
                 ]}
                 border={false}
                 tabClassName="ml-auto"

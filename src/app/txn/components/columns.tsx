@@ -12,6 +12,7 @@ export type Transaction = {
   type: Database["public"]["Enums"]["transaction_type"]
   transaction_date: string
   description: string
+  category: "trade" | "cash"
 }
 
 export const columns: ColumnDef<Transaction>[] = [

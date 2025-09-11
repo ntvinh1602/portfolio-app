@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import { TabSwitcher } from "@/components/tab-switcher"
+import { Moon, Sun } from "lucide-react"
 
 export const Header = React.memo(({ title }: { title: string }) => {
   const { resolvedTheme, setTheme } = useTheme()
@@ -31,8 +32,16 @@ export const Header = React.memo(({ title }: { title: string }) => {
               onValueChange={setTheme}
               value={resolvedTheme ?? "light"}
               options={[
-                { value: "light", label: "Light" },
-                { value: "dark", label: "Dark" }
+                {
+                  value: "light",
+                  label: "Light",
+                  icon: Sun,
+                },
+                {
+                  value: "dark",
+                  label: "Dark",
+                  icon: Moon,
+                }
               ]}
               tabClassName="h-full flex flex-col justify-center"
               border={false}

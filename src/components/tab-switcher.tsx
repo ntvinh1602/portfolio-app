@@ -3,11 +3,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-import { Moon, Sun } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 type SwitchOption = {
   value: string
   label: string
+  icon?: React.ElementType
+  number?: number
 }
 
 type TabSwitcherProps = {
@@ -48,10 +50,11 @@ export function TabSwitcher({
             value={option.value}
             className={triggerClassName}
           >
-            {option.value === "light"
-              ? <Sun/>
-              : option.value === "dark" && <Moon/>}
+            {option.icon && <option.icon />}
             {option.label}
+            {option.number !== undefined && option.number > 0 && (
+              <Badge variant="outline">{option.number}</Badge>
+            )}
           </TabsTrigger>
         ))}
       </TabsList>

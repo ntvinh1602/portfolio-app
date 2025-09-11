@@ -17,11 +17,7 @@ import {
 
 export function Pagination<TData>({ table }: { table: Table<TData> }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="text-muted-foreground flex-1 text-sm font-light">
-        {table.getFilteredRowModel().rows.length} transactions found
-      </div>
-      <div className="flex items-center gap-8 w-fit">
+      <div className="flex items-center justify-end gap-8 w-fit">
         <div className="flex items-center gap-2">
           <Label htmlFor="rows-per-page" className="text-sm font-light">
             Rows per page
@@ -44,11 +40,11 @@ export function Pagination<TData>({ table }: { table: Table<TData> }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex w-fit items-center justify-center text-sm font-light">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
-        </div>
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex w-fit items-center justify-center text-sm font-light">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
@@ -90,6 +86,5 @@ export function Pagination<TData>({ table }: { table: Table<TData> }) {
           </Button>
         </div>
       </div>
-    </div>
   )
 }
