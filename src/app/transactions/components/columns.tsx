@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 // This type is used to define the shape of our data.
 export type Transaction = {
   id: string
-  type: Database["public"]["Enums"]["transaction_type"]
   transaction_date: string
+  type: Database["public"]["Enums"]["transaction_type"]
   description: string
   category: "trade" | "cash"
 }
@@ -35,26 +35,23 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "type",
     header: "Type",
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+    filterFn: (row, id, value: string[]) => {
+      if (!value || value.length === 0) return true
+      const set = new Set(value) // O(1) lookups
+      return set.has(row.getValue(id))
     },
     cell: ({ row }) => {
       const raw = row.getValue("type") as string
 
       const formatted = raw
-        .replace(/_/g, " ") // replace underscores with spaces
-        .replace(/\b\w/g, (c) => c.toUpperCase()) // capitalize each word
+        .replace(/_/g, " ") 
+        .replace(/\b\w/g, (c) => c.toUpperCase()) 
 
       return (
         <div className="flex">
-          {
-            raw == "buy" ||
-            raw == "income" ||
-            raw == "deposit" ||
-            raw == "borrow" ||
-            raw == "dividend"
-              ? <Badge variant="inbound">{formatted}</Badge>
-              : <Badge variant="outbound">{formatted}</Badge>
+          {["buy", "income", "deposit", "borrow", "dividend"].includes(raw)
+            ? <Badge variant="inbound">{formatted}</Badge>
+            : <Badge variant="outbound">{formatted}</Badge>
           }
         </div>
       )

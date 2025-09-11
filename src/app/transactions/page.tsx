@@ -1,134 +1,147 @@
 "use client"
 
 import * as React from "react"
-import {
-  TransactionCard,
-  TransactionSkeleton
-} from "@/components/list-item/transaction"
-import { type DateRange } from "react-day-picker"
-import TabSwitcher from "@/components/tab-switcher"
-import DatePicker from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
-import { BottomNavBar } from "@/components/menu/bottom-nav"
-import useSWRInfinite from "swr/infinite"
-import { fetcher } from "@/lib/fetcher"
-import {
-  SidebarInset,
-  SidebarProvider
-} from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
-import { useIsMobile } from "@/hooks/use-mobile"
-
-type TransactionFeed = {
-  transaction_id: string
-  transaction_date: string
-  type: string
-  description: string | null
-  ticker: string
-  name: string
-  logo_url: string | null
-  quantity: number
-  amount: number
-  currency_code: string
-  net_sold?: number
-}
-
-const PAGE_SIZE = 6
+import { TransactionDetails } from "./components/details"
+import { Transactions } from "./components/table"
+import { columns, Transaction } from "./components/columns"
+import { TabSwitcher } from "@/components/tab-switcher"
+import { DateRange } from "@/components/date-picker"
+import { subMonths } from "date-fns"
 
 export default function Page() {
-  const isMobile = useIsMobile()
-  const [date, setDate] = React.useState<DateRange | undefined>(undefined)
-  const [assetType, setAssetType] = React.useState("stock")
+  const [data, setData] = React.useState<Transaction[]>([])
+  const [category, setCategory] = React.useState("trade")
+  const [dateFrom, setDateFrom] = React.useState<Date | undefined>(
+    subMonths(new Date(), 1)
+  )
+  const [dateTo, setDateTo] = React.useState<Date | undefined>(new Date())
+  const [selectedTransaction, setSelectedTransaction] =
+    React.useState<Transaction | null>(null)
+  const [transactionLegs, setTransactionLegs] = React.useState<any[]>([])
+  const [associatedExpenses, setAssociatedExpenses] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const getKey = (pageIndex: number, previousPageData: TransactionFeed[] | null) => {
-    if (previousPageData && !previousPageData.length) return null // reached the end
-    
-    const params = new URLSearchParams({
-      page_size: PAGE_SIZE.toString(),
-      page_number: (pageIndex + 1).toString(),
-      asset_class_filter: assetType,
-    });
-
-    if (date?.from) params.append("start_date", date.from.toISOString());
-    if (date?.to) params.append("end_date", date.to.toISOString());
-
-    return `/api/query/transaction-feed?${params.toString()}`
+  const handleTransactionSelect = async (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setLoading(true)
+    setError(null)
+    try {
+      const url = new URL(
+        "/api/query/transaction-legs",
+        window.location.origin
+      )
+      url.searchParams.append("transactionId", transaction.id)
+      url.searchParams.append("include-expenses", "true")
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error("Failed to fetch transaction legs")
+      }
+      const result = await response.json()
+      setTransactionLegs(result.legs || [])
+      setAssociatedExpenses(result.expenses || [])
+    } catch (error) {
+      setError("Failed to fetch transaction legs")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const { data, size, setSize, isLoading } = useSWRInfinite<TransactionFeed[]>(
-    getKey,
-    fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
+  React.useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+      try {
+        const url = new URL("/api/query/transactions", window.location.origin)
+        if (dateFrom) {
+          url.searchParams.append("startDate", dateFrom.toISOString())
+        }
+        if (dateTo) {
+          url.searchParams.append("endDate", dateTo.toISOString())
+        }
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error("Failed to fetch transactions")
+        }
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        setError("Failed to fetch transactions")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [dateFrom, dateTo])
 
-  const transactions = data ? ([] as TransactionFeed[]).concat(...data) : [];
-  const isLoadingMore = isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");
-  const isEmpty = data?.[0]?.length === 0;
-  const hasMore = !isEmpty && (data?.[data.length - 1]?.length ?? 0) === PAGE_SIZE;
-
-  const tabOptions = [
-    { value: "cash", label: "Cash" },
-    { value: "stock", label: "Stock" },
-    { value: "epf", label: "EPF" },
-    { value: "crypto", label: "Crypto" },
-  ]
+  const transactionCounts = React.useMemo(() => {
+    return data.reduce(
+      (acc, transaction) => {
+        if (["buy", "sell", "split"].includes(transaction.type)) {
+          acc.trade += 1
+        } else {
+          acc.cash += 1
+        }
+        return acc
+      },
+      { cash: 0, trade: 0 }
+    )
+  }, [data])
 
   return (
     <SidebarProvider>
-      {!isMobile && <AppSidebar />}
-      <SidebarInset className={!isMobile ? "px-6" : undefined}>
-        <Header title="Transactions"/>
-        <div className="grid grid-cols-3 px-4 md:px-0 gap-2">
-          <div className="col-span-3 md:col-span-1 md:col-start-2 flex flex-col gap-2">
-            <DatePicker mode="range" selected={date} onSelect={setDate} />
-            <TabSwitcher
-              options={tabOptions}
-              onValueChange={setAssetType}
-              value={assetType}
-              defaultValue="stock"
-              border={false}
-            />
-            {isLoading && !data &&
-              Array.from({ length: PAGE_SIZE }).map((_, index) => (
-                <TransactionSkeleton key={index} />
-              ))}
-            {transactions.map(tx => (
-              <TransactionCard
-                key={tx.transaction_id}
-                ticker={tx.ticker}
-                name={tx.name}
-                logoUrl={tx.logo_url || ""}
-                amount={tx.amount}
-                quantity={tx.quantity}
-                type={tx.type}
-                description={tx.description || ""}
-                currencyCode={tx.currency_code}
-                date={tx.transaction_date}
+      <AppSidebar />
+      <SidebarInset className="flex flex-col px-4">
+        <Header title="Transactions" />
+        <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
+          <div className="flex w-6/10 flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <DateRange
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
               />
-            ))}
-            {isLoadingMore &&
-              Array.from({ length: 3 }).map((_, index) => (
-                <TransactionSkeleton key={`loading-${index}`} />
-              ))}
-            {isEmpty &&
-              <p className="mx-auto font-thin py-10">
-                No transactions found
-              </p>
-            }
-            {hasMore && !isLoadingMore && (
-              <Button
-                onClick={() => setSize(size + 1)}
-                variant="outline"
-                className="mx-auto mb-20"
-              >
-                Load more...
-              </Button>
-            )}
+              <TabSwitcher
+                variant="content"
+                value={category}
+                onValueChange={setCategory}
+                options={[
+                  {
+                    label: "Cashflow",
+                    value: "cash",
+                    number: transactionCounts.cash
+                  },
+                  {
+                    label: "Trades",
+                    value: "trade",
+                    number: transactionCounts.trade
+                  },
+                ]}
+              />
+            </div>
+            <Transactions
+              columns={columns}
+              data={data}
+              category={category}
+              onRowClick={handleTransactionSelect}
+              selectedTransaction={selectedTransaction}
+            />
+          </div>
+          <div className="flex w-4/10 flex-col gap-2">
+            {error && <p className="text-red-500">{error}</p>}
+            <TransactionDetails
+              transaction={selectedTransaction}
+              transactionLegs={transactionLegs}
+              associatedExpenses={associatedExpenses}
+              loading={loading}
+            />
           </div>
         </div>
       </SidebarInset>
-      {isMobile && <BottomNavBar />}
     </SidebarProvider>
   )
 }

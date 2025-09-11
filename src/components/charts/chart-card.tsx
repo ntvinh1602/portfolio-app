@@ -130,7 +130,7 @@ function ChartCard<
             { label: "1Y", value: "1y" },
             { label: "All", value: "all_time" }
           ]}
-          border={false}
+          variant="switch"
           tabClassName="ml-auto"
           triggerClassName="w-[50px]"
         />

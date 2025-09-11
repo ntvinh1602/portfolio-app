@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { DebtItem, DebtItemSkeleton } from "@/components/list-item/debt"
+import { DebtItem, DebtItemSkeleton } from "@/components/debt"
 import {
   SheetClose,
   SheetContent,

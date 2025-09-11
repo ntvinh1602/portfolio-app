@@ -8,23 +8,10 @@ export async function GET(request: NextRequest) {
   const startDate = searchParams.get("startDate")
   const endDate = searchParams.get("endDate")
   const supabase = await createClient()
-  let query = supabase
-    .from("transactions")
-    .select("id, transaction_date, type, description")
-    .neq("description", "Income tax")
-    .neq("description", "Transaction fee")
-
-  if (startDate) {
-    query = query.gte("transaction_date", startDate)
-  }
-  if (endDate) {
-    query = query.lte("transaction_date", endDate)
-  }
-
-  const { data, error } = await query
-    .order("transaction_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(200)
+  const { data, error } = await supabase.rpc("get_transactions", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+  })
 
   if (error) {
     console.error("Error fetching transactions:", error)

@@ -29,22 +29,21 @@ export const Header = React.memo(({ title }: { title: string }) => {
         <div className="flex items-center">
           {mounted && (
             <TabSwitcher
-              onValueChange={setTheme}
+              variant="switch"
               value={resolvedTheme ?? "light"}
+              onValueChange={setTheme}
               options={[
                 {
                   value: "light",
                   label: "Light",
-                  icon: Sun,
+                  icon: Sun
                 },
                 {
                   value: "dark",
                   label: "Dark",
-                  icon: Moon,
-                }
+                  icon: Moon
+                },
               ]}
-              tabClassName="h-full flex flex-col justify-center"
-              border={false}
             />
           )}
         </div>

@@ -77,13 +77,14 @@ React.useEffect(() => {
     "debt_payment"
   ]
 
-  if (category === "cash") {
-    table.getColumn("type")
-      ?.setFilterValue(transactionTypes.filter((t) => !["buy", "sell"].includes(t)))
-  } else {
-    table.getColumn("type")?.setFilterValue(["buy", "sell"])
+  const CATEGORY_FILTERS: Record<string, typeof transactionTypes> = {
+    cash: transactionTypes.filter((t) => !["buy", "sell"].includes(t)),
+    trade: ["buy", "sell"],
   }
+
+  table.getColumn("type")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
 }, [category, table])
+
 
 return (
     <>

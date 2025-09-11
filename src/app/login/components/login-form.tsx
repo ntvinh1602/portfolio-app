@@ -25,7 +25,7 @@ export function LoginForm({
     setError(null)
     setIsLoading(true)
 
-    const response = await fetch("/api/auth/login", {
+    const response = await fetch("/api/auth", {
       method: "POST",
       body: JSON.stringify({ email, password, token }),
     })

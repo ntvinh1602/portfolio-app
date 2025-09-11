@@ -35,14 +35,14 @@ import { Separator } from "../ui/separator"
 const data = {
   navMain: [
     {
-      title: "History",
+      title: "Archive",
       url: "#",
       icon: Coins,
       isActive: true,
       items: [
         {
           title: "Transactions",
-          url: "/txn",
+          url: "/transactions",
         },
       ],
     },
