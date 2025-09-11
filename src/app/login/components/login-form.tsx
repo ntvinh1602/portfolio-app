@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { TurnstileWidget } from "@/components/turnstile"
+import { TurnstileWidget } from "@/app/login/components/turnstile"
 
 export function LoginForm({
   className,

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("transaction_legs")
-    .select("*, assets(name, ticker, asset_class)")
+    .select("*, assets(name, ticker, asset_class, logo_url)")
     .eq("transaction_id", transactionId)
 
   if (error) {
