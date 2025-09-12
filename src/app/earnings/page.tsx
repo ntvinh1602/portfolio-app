@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import TabSwitcher from "@/components/tab-switcher"
+import { TabSwitcher } from "@/components/tab-switcher"
 import { PnLTable } from "@/components/monthly-pnl-table"
 import { formatNum } from "@/lib/utils"
 import { TwoMetric } from "@/components/two-metric"
