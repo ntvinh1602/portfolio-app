@@ -11,8 +11,7 @@ import {
   RefreshCw
 } from "lucide-react"
 import { mutate } from "swr"
-import { useEffect, useState } from "react"
-import { useTheme } from "next-themes"
+import { useState } from "react"
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavSecondary } from "@/components/sidebar/nav-secondary"
 import {

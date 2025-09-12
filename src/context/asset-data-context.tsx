@@ -138,15 +138,15 @@ export const AssetDataProvider = ({ children }: AssetDataProviderProps) => {
         const isUSDT = crypto.ticker === "USDT"
         const livePriceStr = liveCryptoPrices[`${crypto.ticker}USDT`]
         const livePrice = isUSDT
-          ? 1
+          ? crypto.latest_usd_rate
           : livePriceStr
-          ? parseFloat(livePriceStr)
-          : crypto.latest_price
+            ? parseFloat(livePriceStr)
+            : crypto.latest_price
         const totalAmount = isUSDT
-          ? crypto.quantity
+          ? crypto.quantity * crypto.latest_usd_rate
           : livePriceStr
-          ? crypto.quantity * parseFloat(livePriceStr) * crypto.latest_usd_rate
-          : crypto.total_amount
+            ? crypto.quantity * parseFloat(livePriceStr) * crypto.latest_usd_rate
+            : crypto.total_amount
         const pnlNet = totalAmount - crypto.cost_basis
         const pnlPct =
           crypto.cost_basis > 0

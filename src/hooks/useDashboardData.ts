@@ -40,7 +40,7 @@ export function useDashboardData() {
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
     "/api/gateway/dashboard",
     fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
+    { revalidateOnFocus: true, revalidateOnReconnect: true }
   )
 
   const years =

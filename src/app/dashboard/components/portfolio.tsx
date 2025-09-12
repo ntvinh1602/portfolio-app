@@ -62,10 +62,14 @@ function Security({
             </CardDescription>
             {<CardDescription className="flex items-center gap-1 truncate pt-1">
                 <Badge variant="outline" className="font-thin text-foreground">
-                  {quantity 
+                  <Leaf />
+                  {quantity
                     ? type === 'stock'
-                      ? <><Leaf />{formatNum(quantity)}</>
-                      : <><Bitcoin />{formatNum(quantity, 6)}</>
+                      ? <>{formatNum(quantity)}</>
+                      : <>{formatNum(
+                          quantity,
+                          ticker === "BTC" ? 8 : 2
+                        )}</>
                     : 0
                   }
                 </Badge>

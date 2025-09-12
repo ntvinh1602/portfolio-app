@@ -30,6 +30,7 @@ import { DividendForm } from "./dividend"
 import { BorrowForm } from "./borrow"
 import { DebtPaymentForm } from "./debt-payment"
 import { SplitForm } from "./split"
+import { mutate } from "swr"
 
 type TransactionType = Enums<"transaction_type">
 
@@ -202,9 +203,13 @@ export function TransactionForm({
       }
 
       toast.success("Transaction saved successfully!")
+
+      // Clear form, close modal
       setFormState({})
       onOpenChange(false)
-      router.refresh()
+
+      // ✅ Tell SWR to refetch dashboard data
+      await mutate("/api/gateway/dashboard")
     } catch (error) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred."
       toast.error(`Failed to save transaction: ${message}`)
