@@ -1,5 +1,3 @@
-"use client"
-
 import { Pie, PieChart, Cell, Label } from "recharts"
 import { cn } from "@/lib/utils"
 import {
@@ -10,30 +8,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { Skeleton } from "@/components/ui/skeleton"
 
 type PieChartData = {
   fill: string
   [key: string]: unknown
 }
 
-interface PiechartProps {
-  data: PieChartData[] | undefined
-  chartConfig: ChartConfig
-  dataKey: string
-  nameKey: string
-  className?: string
-  innerRadius?: number
-  legend?: string
-  label?: boolean
-  centerText?: string
-  centerValue?: string
-  margin_tb?: number
-  label_pos?: number
-  valueFormatter?: (value: number) => string
-}
-
-function Piechart({
+export function Piechart({
   data,
   chartConfig,
   dataKey,
@@ -47,7 +28,21 @@ function Piechart({
   margin_tb = 10,
   label_pos = 1.5,
   valueFormatter
-}: PiechartProps) {
+}: {
+  data: PieChartData[] | undefined
+  chartConfig: ChartConfig
+  dataKey: string
+  nameKey: string
+  className?: string
+  innerRadius?: number
+  legend?: string
+  label?: boolean
+  centerText?: string
+  centerValue?: string
+  margin_tb?: number
+  label_pos?: number
+  valueFormatter?: (value: number) => string
+}) {
   const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0
 
   const RADIAN = Math.PI / 180
@@ -166,22 +161,4 @@ interface RenderLabelProps {
       </PieChart>
     </ChartContainer>
   )
-}
-
-function PiechartSkeleton() {
-  return (
-    <div className="flex flex-col items-center gap-y-4 py-8">
-      <Skeleton className="h-48 w-48 rounded-full" />
-      <div className="flex items-center gap-x-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-4 w-20" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export {
-  Piechart,
-  PiechartSkeleton
 }

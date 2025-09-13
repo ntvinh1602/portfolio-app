@@ -1,5 +1,4 @@
 import { Loading } from "@/components/loader"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -9,28 +8,15 @@ import {
   CardTitle
 } from "@/components/ui/card"
 import { useAssetData } from "@/context/asset-data-context"
-import { isTradingHours } from "@/lib/utils"
 import Image from 'next/image'
 import {
   Leaf,
   TrendingUp,
   TrendingDown,
-  Bitcoin,
   Coins,
 } from "lucide-react"
 import { formatNum, compactNum } from "@/lib/utils"
-
-interface SecurityProps {
-  ticker: string
-  name: string
-  logoUrl: string
-  totalAmount: number
-  pnlPct: number
-  pnlNet: number
-  quantity?: number
-  price?: number
-  type: 'stock' | 'crypto'
-}
+import { LiveIndicator } from "./live-indicator"
 
 function Security({
   ticker,
@@ -42,7 +28,17 @@ function Security({
   pnlNet,
   price,
   type
-}: SecurityProps) {
+}: {
+  ticker: string
+  name: string
+  logoUrl: string
+  totalAmount: number
+  pnlPct: number
+  pnlNet: number
+  quantity?: number
+  price?: number
+  type: 'stock' | 'crypto'
+}) {
 
   return (
     <Card className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
@@ -117,23 +113,15 @@ export function Portfolio() {
   if (loading) return <Loading/>
 
   return (
-    <Card className="gap-2">
+    <Card className="gap-2 h-full">
       <CardHeader>
         <CardTitle className="text-xl">Portfolio</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-1 md:gap-2 px-2 md:px-4">
+      <CardContent className="flex flex-col gap-4 md:gap-6 px-2 md:px-4">
         <Card className="border-0 py-0 gap-1 md:gap-2">
           <CardHeader className="flex justify-between px-0">
             <CardDescription className="px-2">Stocks</CardDescription>
-            <Badge variant="outline" className="mx-2">
-              <div className={`h-2 w-2 shrink-0 rounded-full
-                ${isStockPriceLive
-                  ? `bg-green-500 animate-pulse`
-                  : `bg-red-700`}`}/>
-              {isStockPriceLive
-                ? "Real-time"
-                : !isTradingHours() ? "Closed" : "Delayed"}
-            </Badge>
+            <LiveIndicator is247={false} source={isStockPriceLive}/>
           </CardHeader>
           <CardContent className="flex flex-col px-0 gap-1">
             {processedStockData.length > 0 ?
@@ -155,19 +143,11 @@ export function Portfolio() {
               : <span className="self-center py-20">No stock holdings.</span>}
           </CardContent>
         </Card>
-
-        <Separator className="mt-4 mb-2"/>
         
         <Card className="border-0 py-0 gap-1 md:gap-2">
           <CardHeader className="flex justify-between px-0">
             <CardDescription className="px-2">Crypto</CardDescription>
-            <Badge variant="outline" className="mx-2">
-              <div className={`h-2 w-2 shrink-0 rounded-full
-                ${isCryptoPriceLive
-                  ? `bg-green-500 animate-pulse`
-                  : `bg-red-700`}`}/>
-              {isCryptoPriceLive ? "Real-time" : "Delayed"}
-            </Badge>
+            <LiveIndicator is247={true} source={isCryptoPriceLive}/>
           </CardHeader>
           <CardContent className="flex flex-col px-0 gap-1">
             {processedCryptoData.length > 0 ?

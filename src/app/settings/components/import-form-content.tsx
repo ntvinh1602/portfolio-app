@@ -6,23 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { parse as parseCsv } from "papaparse"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 
 const REQUIRED_HEADERS = [
   "date",
@@ -38,49 +29,11 @@ const REQUIRED_HEADERS = [
   "description",
 ]
 
-export function TransactionImportForm({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = React.useState(false)
-  const isMobile = useIsMobile()
-
-  const title = "Ready to import data?"
-  const description = "Make sure your .csv file is in correct header format"
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>{children}</DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{title}</DrawerTitle>
-            <DrawerDescription>{description}</DrawerDescription>
-          </DrawerHeader>
-          <ImportForm className="px-6 pb-40"/>
-        </DrawerContent>
-      </Drawer>
-    )
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-        <ImportForm />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 interface ImportFormProps {
   className?: string
 }
 
-function ImportForm( { className }: ImportFormProps ) {
+export function ImportForm( { className }: ImportFormProps ) {
   const [file, setFile] = React.useState<File | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
   const router = useRouter()
@@ -168,22 +121,30 @@ function ImportForm( { className }: ImportFormProps ) {
   }
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
-        <Input
-          id="csv-file"
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          disabled={isUploading}
-          className="rounded-full h-10"
-        />
-        <div className="flex justify-end">
-          <Button type="submit" disabled={!file || isUploading}>
-            {isUploading ? "Importing..." : "Import"}
-          </Button>
-        </div>
-      </form>
-    </>
+    <Card className="col-start-2 h-fit">
+      <CardHeader>
+        <CardTitle>Import Data</CardTitle>
+        <CardDescription>
+          Upload transaction data for bulk processing
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            id="csv-file"
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            disabled={isUploading}
+            className="h-10"
+          />
+          <div className="flex justify-end">
+            <Button type="submit" disabled={!file || isUploading}>
+              {isUploading ? "Importing..." : "Import"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

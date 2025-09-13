@@ -42,7 +42,15 @@ export type Database = {
           name?: string | null
           ticker?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_currency_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       currencies: {
         Row: {
@@ -254,7 +262,15 @@ export type Database = {
           tax?: number | null
           txn_created?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dnse_orders_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["ticker"]
+          },
+        ]
       }
       lot_consumptions: {
         Row: {
@@ -288,6 +304,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      monthly_snapshots: {
+        Row: {
+          date: string
+          fee: number | null
+          interest: number | null
+          pnl: number | null
+          tax: number | null
+        }
+        Insert: {
+          date: string
+          fee?: number | null
+          interest?: number | null
+          pnl?: number | null
+          tax?: number | null
+        }
+        Update: {
+          date?: string
+          fee?: number | null
+          interest?: number | null
+          pnl?: number | null
+          tax?: number | null
+        }
+        Relationships: []
       }
       tax_lots: {
         Row: {
@@ -388,6 +428,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          linked_txn: string | null
           price: number | null
           related_debt_id: string | null
           transaction_date: string
@@ -397,6 +438,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          linked_txn?: string | null
           price?: number | null
           related_debt_id?: string | null
           transaction_date: string
@@ -406,6 +448,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          linked_txn?: string | null
           price?: number | null
           related_debt_id?: string | null
           transaction_date?: string
@@ -533,6 +576,10 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
+      generate_monthly_snapshots: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_performance_snapshots: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: undefined
@@ -611,22 +658,6 @@ export type Database = {
         Args: { p_asset_id: string }
         Returns: number
       }
-      get_monthly_expenses: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: {
-          interest: number
-          month: string
-          taxes: number
-          trading_fees: number
-        }[]
-      }
-      get_monthly_pnl: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: {
-          month: string
-          pnl: number
-        }[]
-      }
       get_monthly_twr: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: {
@@ -653,6 +684,10 @@ export type Database = {
           total_amount: number
         }[]
       }
+      get_transaction_details: {
+        Args: { include_expenses?: boolean; txn_id: string }
+        Returns: Json
+      }
       get_transaction_feed: {
         Args: {
           asset_class_filter?: string
@@ -671,6 +706,15 @@ export type Database = {
           ticker: string
           transaction_date: string
           transaction_id: string
+          type: string
+        }[]
+      }
+      get_transactions: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: {
+          description: string
+          id: string
+          transaction_date: string
           type: string
         }[]
       }

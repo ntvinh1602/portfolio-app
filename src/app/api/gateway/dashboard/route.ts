@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/supabaseServer"
-import {
-  lifetime
-} from "@/lib/start-dates"
 
 export const dynamic = "force-dynamic"
 
@@ -29,33 +26,33 @@ export async function GET(request: Request) {
 
     const [
       twrResponse,
-      monthlyReturnResponse,
       pnlResponse,
       equityResponse,
       benchmarkResponse,
       balanceSheetResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
+      monthlyDataResponse,
     ] = await Promise.all([
       fetch(`${baseURL}/api/query/twr`, fetchOptions),
-      fetch(`${baseURL}/api/query/monthly-twr?start=${lifetime}`, fetchOptions),
       fetch(`${baseURL}/api/query/pnl`, fetchOptions),
       fetch(`${baseURL}/api/query/equity-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/benchmark-chart`, fetchOptions),
       fetch(`${baseURL}/api/query/balance-sheet`, fetchOptions),
       fetch(`${baseURL}/api/query/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/query/crypto-holdings`, fetchOptions),
+      fetch(`${baseURL}/api/query/monthly-data`, fetchOptions),
     ])
 
     for (const response of [
       twrResponse,
-      monthlyReturnResponse,
       pnlResponse,
       equityResponse,
       benchmarkResponse,
       balanceSheetResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
+      monthlyDataResponse,
     ]) {
       if (!response.ok) {
         const errorText = await response.text()
@@ -66,36 +63,34 @@ export async function GET(request: Request) {
 
     const [
       twrData,
-      monthlyReturns,
       pnlData,
       equityData,
       benchmarkData,
       balanceSheetData,
       stockData,
       cryptoData,
+      monthlyData,
     ] = await Promise.all([
       twrResponse.json(),
-      monthlyReturnResponse.json(),
       pnlResponse.json(),
       equityResponse.json(),
       benchmarkResponse.json(),
       balanceSheetResponse.json(),
       stockHoldingsResponse.json(),
       cryptoHoldingsResponse.json(),
+      monthlyDataResponse.json(),
     ])
-
-    const monthlyReturnData = monthlyReturns.map((item: { twr: number }) => item.twr)
 
     return NextResponse.json(
       {
         twrData,
-        monthlyReturnData,
         pnlData,
         equityData,
         benchmarkData,
         balanceSheetData,
         stockData,
-        cryptoData
+        cryptoData,
+        monthlyData
       }
     )
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChartCard, ChartCardSkeleton } from "../../../components/charts/chart-card"
+import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useAssetData } from "@/context/asset-data-context"
@@ -38,7 +38,7 @@ export function EquityChart() {
           }}
           chartClassName="h-full w-full"
           xAxisDataKey="snapshot_date"
-          lineDataKeys={["net_equity_value"]}
+          chartDataKeys={["net_equity_value"]}
           yAxisTickFormatter={(value) => compactNum(Number(value))}
           tooltipValueFormatter={(value) => formatNum(value)}
           dateRange={dateRange}

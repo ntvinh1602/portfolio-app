@@ -1,5 +1,3 @@
-"use client"
-
 import { CartesianGrid, XAxis, YAxis, Area, AreaChart } from "recharts"
 import {
   ChartConfig,
@@ -11,34 +9,32 @@ import {
 } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
-interface LinechartProps {
-  data: Record<string, string | number>[]
-  chartConfig: ChartConfig
-  className?: string
-  xAxisDataKey: string
-  lineDataKeys: string[]
-  legend?: boolean
-  xAxisTickFormatter?: (value: string | number) => string
-  yAxisTickFormatter?: (value: string | number) => string
-  valueFormatter?: (value: number) => string
-}
-
 export function Areachart({
   data,
-  chartConfig,
+  config,
   className,
   xAxisDataKey,
-  lineDataKeys,
+  dataKeys,
   legend = false,
   xAxisTickFormatter,
   yAxisTickFormatter,
   valueFormatter,
-}: LinechartProps) {
+}: {
+  data: Record<string, string | number>[]
+  config: ChartConfig
+  className?: string
+  xAxisDataKey: string
+  dataKeys: string[]
+  legend?: boolean
+  xAxisTickFormatter?: (value: string | number) => string
+  yAxisTickFormatter?: (value: string | number) => string
+  valueFormatter?: (value: number) => string
+}) {
   return (
-    <ChartContainer config={chartConfig} className={cn(className)}>
-      <AreaChart data={data}>
+    <ChartContainer config={config} className={cn(className)}>
+      <AreaChart data={data} margin={{ left: -10 }}>
         <defs>
-          {lineDataKeys.map((key) => (
+          {dataKeys.map((key) => (
             <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
@@ -82,7 +78,7 @@ export function Areachart({
             <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
           }
         />
-        {lineDataKeys.map((key) => (
+        {dataKeys.map((key) => (
           <Area
             key={key}
             dataKey={key}

@@ -1,25 +1,18 @@
 "use client"
 
-import { useTheme } from "next-themes"
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { BottomNavBar } from "@/components/menu/bottom-nav"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { TransactionImportForm } from "@/components/forms/import-data"
-import { Info } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import DatePicker from "@/components/date-picker"
+import { ImportForm } from "@/app/settings/components/import-form-content"
+import { SingleDate } from "@/components/date-picker"
 import { Toaster } from "@/components/ui/sonner"
 import {
   SidebarInset,
@@ -28,21 +21,11 @@ import {
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { mutate } from "swr"
 
 export default function Page() {
   const isMobile = useIsMobile()
-  const router = useRouter()
-  const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const [startDate, setStartDate] = useState<Date | undefined>()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const handleNavigation = () => {
-    router.push("/help")
-  }
 
   const handleBackfill = async () => {
 
@@ -69,6 +52,9 @@ export default function Page() {
       toast.success("Backfill process started successfully.", {
         id: toastId
       })
+
+      // ✅ Tell SWR to refetch dashboard data
+      await mutate("/api/gateway/dashboard")
     } catch {
       toast.error("An error occurred while starting the backfill process.", {
         id: toastId
@@ -82,53 +68,9 @@ export default function Page() {
       {!isMobile && <AppSidebar />}
       <SidebarInset className={!isMobile ? "px-6" : undefined}>
         <Header title="Settings"/>
-        <Card className="gap-4">
-          <CardHeader>
-            <CardTitle>Theme</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!mounted ? (
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-6 w-12 rounded-full" />
-                <Skeleton className="h-6 w-20" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="dark-mode"
-                  checked={resolvedTheme === "dark"}
-                  onCheckedChange={() =>
-                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                  }
-                />
-                <Label htmlFor="dark-mode">Dark mode</Label>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="gap-8">
-          <div className="flex flex-col gap-4">
-            <CardHeader>
-              <CardTitle>Import Data</CardTitle>
-              <CardDescription>
-                Upload transaction data for bulk processing
-              </CardDescription>
-              <CardAction>
-                <Info
-                  className="size-4"
-                  onClick={handleNavigation}
-                />
-              </CardAction>
-            </CardHeader>
-            <CardContent className="flex flex-col">
-              <TransactionImportForm>
-                <Button variant="outline">
-                  Import
-                </Button>
-              </TransactionImportForm>
-            </CardContent>
-          </div>
-          <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-4 px-0 gap-2 flex-1 overflow-hidden">
+          <ImportForm />
+          <Card className="h-fit">
             <CardHeader>
               <CardTitle>Generate Snapshots</CardTitle>
               <CardDescription>
@@ -136,13 +78,13 @@ export default function Page() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <DatePicker mode="single" selected={startDate} onSelect={setStartDate} />
+              <SingleDate selected={startDate} onSelect={setStartDate} />
               <Button variant="outline" onClick={handleBackfill}>
                 Generate
               </Button>
             </CardContent>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </SidebarInset>
       {isMobile && <BottomNavBar />}
     </SidebarProvider>

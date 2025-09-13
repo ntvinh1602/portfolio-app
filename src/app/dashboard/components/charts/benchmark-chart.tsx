@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChartCard, ChartCardSkeleton } from "../../../components/charts/chart-card"
+import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useDashboardData } from "@/hooks/useDashboardData"
@@ -40,7 +40,7 @@ export function Benchmarkchart() {
           }}
           chartClassName="h-full w-full"
           xAxisDataKey="snapshot_date"
-          lineDataKeys={["portfolio_value", "vni_value"]}
+          chartDataKeys={["portfolio_value", "vni_value"]}
           legend={true}
           yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
           tooltipValueFormatter={(value) => formatNum(value, 1)}

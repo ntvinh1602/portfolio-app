@@ -1,9 +1,5 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import {
-  calculateCAGR,
-  calculateSharpeRatio,
-} from "@/lib/utils"
 import { lifetime } from "@/lib/start-dates"
 import {
   BalanceSheetData,
@@ -12,12 +8,13 @@ import {
   StockData,
   CryptoData,
   PnLData,
-  TWRData
+  TWRData,
+  MonthlyData
 } from "@/types/dashboard-data"
 
 interface DashboardApiResponse {
   twrData: TWRData
-  monthlyReturnData: number[]
+  monthlyData: MonthlyData[]
   pnlData: PnLData
   equityData: {
     all_time: EquityChartData[]
@@ -47,11 +44,7 @@ export function useDashboardData() {
     (new Date().getTime() - new Date(lifetime).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
  
   const cagr = data && years > 0
-    ? calculateCAGR(1, 1 + data.twrData.all_time, years)
-    : null
- 
-  const sharpeRatio = data
-    ? calculateSharpeRatio(data.monthlyReturnData, 0.055)
+    ? (Math.pow(1 + data.twrData.all_time, 1 / years) - 1) * 100
     : null
  
   return {
@@ -62,8 +55,8 @@ export function useDashboardData() {
     balanceSheetData: data?.balanceSheetData ?? null,
     stockData: data?.stockData ?? null,
     cryptoData: data?.cryptoData ?? null,
+    monthlyData: data?.monthlyData ?? null,
     cagr,
-    sharpeRatio,
     isLoading,
     error,
   }

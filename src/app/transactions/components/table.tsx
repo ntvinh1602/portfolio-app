@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Pagination } from "./pagination"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -29,6 +30,7 @@ interface DataTableProps<TData, TValue> {
   category: string
   onRowClick?: (row: TData) => void
   selectedTransaction?: TData | null
+  loading: boolean
 }
 
 export function Transactions<TData extends { id: string }, TValue>({
@@ -37,6 +39,7 @@ export function Transactions<TData extends { id: string }, TValue>({
   category,
   onRowClick,
   selectedTransaction,
+  loading
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -52,41 +55,94 @@ export function Transactions<TData extends { id: string }, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    initialState: {
-      pagination: {
-        pageSize: 20,
+      initialState: {
+        pagination: {
+          pageSize: 20,
+        },
       },
-    },
-    state: {
-      sorting,
-      columnFilters
+      state: {
+        sorting,
+        columnFilters
+      }
+    })
+
+  React.useEffect(() => {
+    const transactionTypes: Database["public"]["Enums"]["transaction_type"][] = [
+      "buy",
+      "sell",
+      "deposit",
+      "withdraw",
+      "income",
+      "expense",
+      "dividend",
+      "split",
+      "borrow",
+      "debt_payment"
+    ]
+
+    const CATEGORY_FILTERS: Record<string, typeof transactionTypes> = {
+      cash: transactionTypes.filter((t) => !["buy", "sell"].includes(t)),
+      trade: ["buy", "sell"],
+    }
+
+    table.getColumn("type")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
+  }, [category, table])
+
+  if (loading) {
+    return (
+      <>
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className="bg-muted font-light"
+                        style={{
+                          minWidth: header.column.columnDef.size,
+                          maxWidth: header.column.columnDef.size,
+                        }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 20 }).map((_, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {table.getAllLeafColumns().map((column) => (
+                    <TableCell
+                      key={column.id}
+                      style={{
+                        minWidth: column.columnDef.size,
+                        maxWidth: column.columnDef.size,
+                      }}
+                    >
+                      <Skeleton className="h-5.5 w-7/10" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <Pagination table={table}/>
+      </>
+    )
   }
-})
 
-React.useEffect(() => {
-  const transactionTypes: Database["public"]["Enums"]["transaction_type"][] = [
-    "buy",
-    "sell",
-    "deposit",
-    "withdraw",
-    "income",
-    "expense",
-    "dividend",
-    "split",
-    "borrow",
-    "debt_payment"
-  ]
-
-  const CATEGORY_FILTERS: Record<string, typeof transactionTypes> = {
-    cash: transactionTypes.filter((t) => !["buy", "sell"].includes(t)),
-    trade: ["buy", "sell"],
-  }
-
-  table.getColumn("type")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
-}, [category, table])
-
-
-return (
+  return (
     <>
       <div className="overflow-hidden rounded-md border">
         <Table>
@@ -116,7 +172,7 @@ return (
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}

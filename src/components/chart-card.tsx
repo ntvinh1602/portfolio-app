@@ -14,7 +14,7 @@ import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { parseISO, format } from "date-fns"
 import { TabSwitcher } from "@/components/tab-switcher"
-import { Separator } from "../ui/separator"
+import { Separator } from "@/components/ui/separator"
 
 interface ChartCardProps<
   TData extends { snapshot_date: string; [key: string]: number | string }
@@ -23,25 +23,25 @@ interface ChartCardProps<
   description: string
   majorValue: number | null
   majorValueFormatter: (value: number) => string
-  minorValue1: number | null
-  minorValue1Formatter: (value: number) => string
-  minorText1: string
-  minorValue2: number | null
-  minorValue2Formatter: (value: number) => string
-  minorText2: string
+  minorValue1?: number | null
+  minorValue1Formatter?: (value: number) => string
+  minorText1?: string
+  minorValue2?: number | null
+  minorValue2Formatter?: (value: number) => string
+  minorText2?: string
   chartComponent: React.ElementType
   chartData: TData[]
   chartConfig: ChartConfig
   chartClassName?: string
   xAxisDataKey: string
-  lineDataKeys: string[]
+  chartDataKeys: string[]
   legend?: boolean
   xAxisTickFormatter?: (value: string | number) => string
   yAxisTickFormatter?: (value: string | number) => string
   tooltipValueFormatter?: (value: number) => string
   children?: React.ReactNode
-  dateRange: string
-  onDateRangeChange: (value: string) => void
+  dateRange?: string
+  onDateRangeChange?: (value: string) => void
 }
 
 function ChartCard<
@@ -61,7 +61,7 @@ function ChartCard<
   chartConfig,
   chartClassName,
   xAxisDataKey,
-  lineDataKeys,
+  chartDataKeys,
   legend,
   yAxisTickFormatter,
   tooltipValueFormatter,
@@ -93,53 +93,57 @@ function ChartCard<
         <CardTitle className="text-2xl">
           {majorValue && majorValueFormatter(majorValue)}
         </CardTitle>
-        <CardAction className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {minorValue1 !== null && minorValue1 < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {minorValue1 !== null && minorValue1Formatter(Math.abs(minorValue1))}
+        {minorValue1 && minorValue2 && (
+          <CardAction className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+                {minorValue1 !== null && minorValue1 < 0
+                  ? <TrendingDown className="text-red-700" />
+                  : <TrendingUp className="text-green-500" />
+                }
+                {minorValue1 !== null && minorValue1Formatter?.(Math.abs(minorValue1))}
+              </div>
+              <CardDescription className="text-xs">{minorText1}</CardDescription>
             </div>
-            <CardDescription className="text-xs">{minorText1}</CardDescription>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {minorValue2 !== null && minorValue2 < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {minorValue2 !== null && minorValue2Formatter(Math.abs(minorValue2))}
+            <Separator
+              orientation="vertical"
+              className="data-[orientation=vertical]:h-8 -mr-1"
+            />
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+                {minorValue2 !== null && minorValue2 < 0
+                  ? <TrendingDown className="text-red-700" />
+                  : <TrendingUp className="text-green-500" />
+                }
+                {minorValue2 !== null && minorValue2Formatter?.(Math.abs(minorValue2))}
+              </div>
+              <CardDescription className="text-xs">{minorText2}</CardDescription>
             </div>
-            <CardDescription className="text-xs">{minorText2}</CardDescription>
-          </div>
-        </CardAction>
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent className="px-4 flex flex-col gap-1 h-full">
-        <TabSwitcher
-          value={dateRange}
-          onValueChange={onDateRangeChange}
-          options={[
-            { label: "3M", value: "3m" },
-            { label: "6M", value: "6m" },
-            { label: "1Y", value: "1y" },
-            { label: "All", value: "all_time" }
-          ]}
-          variant="switch"
-          tabClassName="ml-auto"
-          triggerClassName="w-[50px]"
-        />
+        {dateRange && onDateRangeChange && (
+          <TabSwitcher
+            value={dateRange}
+            onValueChange={onDateRangeChange}
+            options={[
+              { label: "3M", value: "3m" },
+              { label: "6M", value: "6m" },
+              { label: "1Y", value: "1y" },
+              { label: "All", value: "all_time" }
+            ]}
+            variant="switch"
+            tabClassName="ml-auto"
+            triggerClassName="w-[50px]"
+          />
+        )}
         <ChartComponent
           data={chartData}
-          chartConfig={chartConfig}
+          config={chartConfig}
           className={chartClassName}
           xAxisDataKey={xAxisDataKey}
-          lineDataKeys={lineDataKeys}
+          dataKeys={chartDataKeys}
           legend={legend}
           xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={yAxisTickFormatter}

@@ -41,14 +41,6 @@ export function compactNum(amount: number) {
   return formatted
 }
 
-// Calculate compounded annual growth rate
-export function calculateCAGR(beginningValue: number, endingValue: number, years: number): number {
-  if (beginningValue <= 0 || endingValue <= 0 || years <= 0) {
-    return 0
-  }
-  return (Math.pow(endingValue / beginningValue, 1 / years) - 1) * 100
-}
-
 // Calculate Sharpe ratio
 export function calculateSharpeRatio(monthlyReturns: number[], annualRiskFreeRate: number): number {
   const n = monthlyReturns.length

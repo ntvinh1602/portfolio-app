@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import {
-  Wrench,
+  Settings,
   TrendingUp,
-  Coins,
+  FolderSearch,
   Gauge,
   LogOut,
   Plus,
@@ -12,8 +12,8 @@ import {
 } from "lucide-react"
 import { mutate } from "swr"
 import { useState } from "react"
-import { NavMain } from "@/components/sidebar/nav-main"
-import { NavSecondary } from "@/components/sidebar/nav-secondary"
+import { PrimaryPages } from "@/components/sidebar/primary-pages"
+import { SecondaryPages } from "@/components/sidebar/secondary-pages"
 import {
   Sidebar,
   SidebarContent,
@@ -27,16 +27,16 @@ import {
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/supabaseClient"
-import { TransactionForm } from "@/components/forms/transaction/add-transaction"
+import { TransactionForm } from "@/components/sidebar/transaction/add-transaction"
 import Link from "next/link"
 import { Separator } from "../ui/separator"
 
 const data = {
-  navMain: [
+  primaryPages: [
     {
-      title: "Archive",
+      title: "Database",
       url: "#",
-      icon: Coins,
+      icon: FolderSearch,
       isActive: true,
       items: [
         {
@@ -45,35 +45,19 @@ const data = {
         },
       ],
     },
-    {
-      title: "Performance",
-      url: "#",
-      icon: Gauge,
-      isActive: true,
-      items: [
-        {
-          title: "Monthly Earnings",
-          url: "/earnings",
-        },
-        {
-          title: "Expenses Analysis",
-          url: "/expenses",
-        },
-      ],
-    },
   ],
-  navSecondary: [
+  secondaryPages: [
     {
       title: "Settings",
       url: "/settings",
-      icon: Wrench,
+      icon: Settings,
     }
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -106,19 +90,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <PrimaryPages items={data.primaryPages} />
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarMenuButton onClick={() => setIsDialogOpen(true)}>
+          <SidebarMenuButton onClick={() => setTxnFormOpen(true)}>
             <Plus />
-            <span className="font-light">Add Transaction</span>
+            <span className="font-light text-muted-foreground">Add Transaction</span>
           </SidebarMenuButton>
           <SidebarMenuButton onClick={handleRefresh}>
             <RefreshCw className={`${isRefreshing && "animate-spin"}`} />
-            <span className="font-light">Refresh Prices</span>
+            <span className="font-light text-muted-foreground">Refresh Prices</span>
           </SidebarMenuButton>
         </SidebarGroup>
-        <NavSecondary items={data.navSecondary} className="mt-auto"/>
+        <SecondaryPages items={data.secondaryPages} className="mt-auto"/>
       </SidebarContent>
       <Separator />
       <SidebarFooter>
@@ -127,8 +111,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenuButton>
       </SidebarFooter>
       <TransactionForm
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={isTxnFormOpen}
+        onOpenChange={setTxnFormOpen}
         transactionType="buy"
       />
     </Sidebar>

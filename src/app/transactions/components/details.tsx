@@ -64,22 +64,21 @@ function LegItem({ leg, type }: LegItemProps) {
   return (
     <div className="grid grid-cols-4 text-sm">
       <div className="col-span-2 flex items-center gap-3">
-{assets.logo_url ? (
-  <div className="size-9 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
-    <Image
-      src={assets.logo_url}
-      alt={assets.ticker}
-      width={36}
-      height={36}
-      className="object-contain"
-    />
-  </div>
-) : (
-  <div className="size-9 flex-shrink-0 rounded-full bg-primary flex items-center justify-center">
-    <DollarSign className="size-5 text-primary-foreground" />
-  </div>
-)}
-
+        {assets.logo_url ? (
+          <div className="size-9 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
+            <Image
+              src={assets.logo_url}
+              alt={assets.ticker}
+              width={36}
+              height={36}
+              className="object-contain"
+            />
+          </div>
+        ) : (
+          <div className="size-9 flex-shrink-0 rounded-full bg-primary flex items-center justify-center">
+            <DollarSign className="size-5 text-primary-foreground" />
+          </div>
+        )}
         <div className="flex flex-col w-full text-start gap-1 justify-center truncate">
           {assets.name}
           <Badge variant="outline">
