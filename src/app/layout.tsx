@@ -44,9 +44,6 @@ export default function RootLayout({ children }: Readonly<{
       lang="en"
       className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning
     >
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
       <body className="antialiased bg-fixed">
         <ThemeProvider
           attribute="class"
