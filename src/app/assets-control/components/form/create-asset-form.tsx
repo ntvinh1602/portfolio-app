@@ -1,0 +1,65 @@
+"use client"
+
+import * as React from "react"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import { Tables } from "@/types/database.types"
+import { AssetFormBase } from "./base-form"
+import { useAssetForm } from "../../hooks/useAssetForm"
+import { revalidateAndMutate } from "../../lib/revalidate"
+
+type NewAsset = Omit<Partial<Tables<"assets">>, "id">
+
+interface CreateAssetFormProps {
+  onSuccess?: (asset: Tables<"assets">) => void
+  onCancel?: () => void
+}
+
+export function CreateAssetForm({ onSuccess, onCancel }: CreateAssetFormProps) {
+  const [isSaving, setIsSaving] = React.useState(false)
+
+  const handleSubmit = async (formData: NewAsset) => {
+    setIsSaving(true)
+
+    const { data: inserted, error } = await supabase
+      .from("assets")
+      .insert({
+        ticker: formData.ticker,
+        name: formData.name,
+        asset_class: formData.asset_class,
+        currency_code: formData.currency_code,
+        logo_url: formData.logo_url,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      toast.error("Failed to create asset.")
+      setIsSaving(false)
+      return
+    }
+
+    await revalidateAndMutate()
+    toast.success("Asset created successfully!")
+    setIsSaving(false)
+    onSuccess?.(inserted)
+  }
+
+  // ✅ hook handles event wrapping (FormEvent → formData)
+  const { formData, handleChange, handleSubmit: handleFormSubmit } = useAssetForm<NewAsset>(
+    {},
+    handleSubmit,
+    false
+  )
+
+  return (
+    <AssetFormBase
+      formData={formData}
+      handleChange={handleChange}
+      handleSubmit={handleFormSubmit} // correct signature now
+      isSaving={isSaving}
+      submitLabel="Create"
+    />
+  )
+}
+

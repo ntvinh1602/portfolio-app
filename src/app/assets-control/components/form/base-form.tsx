@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { Tables, Enums, Constants } from "@/types/database.types"
 import { Label } from "@/components/ui/label"
@@ -26,35 +24,42 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-export function UpdateAssetForm({
-  initialData,
-  onSubmit,
-  onDelete,
-  isSaving = false,
-  isDeleting = false,
+function FormRow({
+  label,
+  children
 }: {
-  initialData: Tables<"assets">
-  onSubmit: (data: Tables<"assets">) => Promise<void> | void
-  onDelete?: (data: Tables<"assets">) => Promise<void> | void
-  isSaving?: boolean
-  isDeleting?: boolean
+  label: string
+  children: React.ReactNode
 }) {
-  const [formData, setFormData] = React.useState<Tables<"assets">>(initialData)
+  return (
+    <div className="grid grid-cols-4 items-center text-end gap-2">
+      <Label>{label}</Label>
+      <div className="col-span-3">{children}</div>
+    </div>
+  )
+}
 
-  // reset on asset change
-  React.useEffect(() => {
-    setFormData(initialData)
-  }, [initialData])
-
-  const handleChange = (field: keyof Tables<"assets">, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+export function AssetFormBase<T extends Partial<Tables<"assets">>>({
+  formData,
+  handleChange,
+  handleSubmit,
+  isSaving = false,
+  submitLabel,
+  deleteConfig,
+}: {
+  formData: T
+  handleChange: (field: keyof T, value: string) => void
+  handleSubmit: (e: React.FormEvent) => void
+  isSaving?: boolean
+  submitLabel: string
+  deleteConfig?: {
+    isDeleting?: boolean
+    onDelete: () => void
+    deleteLabel?: string
+    confirmMessage?: string
+    entityName?: string
   }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
-
+}) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 font-thin">
       <FormRow label="Ticker">
@@ -108,35 +113,39 @@ export function UpdateAssetForm({
       <div className="flex justify-end gap-1">
         <Button type="submit" disabled={isSaving}>
           {isSaving
-            ? <><RefreshCw className="animate-spin" />Updating</>
-            : <><Save />Update</>
+            ? <><RefreshCw className="animate-spin" />Processing</>
+            : <><Save />{submitLabel}</>
           }
         </Button>
 
-        {onDelete && (
+        {deleteConfig && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" type="button" disabled={isDeleting}>
-                {isDeleting
+              <Button
+                variant="destructive"
+                type="button"
+                disabled={deleteConfig.isDeleting}
+              >
+                {deleteConfig.isDeleting
                   ? <><RefreshCw className="animate-spin" />Deleting</>
-                  : <><CircleX />Delete</>
+                  : <><CircleX />{deleteConfig.deleteLabel ?? "Delete"}</>
                 }
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  Delete {formData.ticker}?
+                  {deleteConfig.confirmMessage ?? `Delete ${deleteConfig.entityName ?? "this item"}?`}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. It will permanently remove the
-                  asset and its associations.
+                  This action cannot be undone. It will permanently remove{" "}
+                  {deleteConfig.entityName ?? "this item"} and its associations.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => onDelete(formData)}
+                  onClick={deleteConfig.onDelete}
                   className="bg-destructive/60 text-destructive-foreground hover:bg-destructive/90"
                 >
                   Confirm Delete
@@ -147,14 +156,5 @@ export function UpdateAssetForm({
         )}
       </div>
     </form>
-  )
-}
-
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-4 items-center text-end gap-2">
-      <Label>{label}</Label>
-      <div className="col-span-3">{children}</div>
-    </div>
   )
 }

@@ -12,91 +12,19 @@ import {
 import { NotepadText } from "lucide-react"
 import Image from "next/image"
 import { Tables } from "@/types/database.types"
-import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { mutate } from "swr"
-import { UpdateAssetForm } from "./update-asset-form"
+import { UpdateAssetForm } from "./form/update-asset-form"
 
 export function AssetDetails({
   asset,
-  onDeleted
+  onDeleted,
+  onUpdated,
 }: {
-  asset: Tables<"assets"> | null,
+  asset: Tables<"assets"> | null
   onDeleted?: () => void
+  onUpdated?: (asset: Tables<"assets">) => void
 }) {
   const [isSaving, setIsSaving] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
-
-  const handleUpdate = async (formData: Tables<"assets">) => {
-    setIsSaving(true)
-
-    const { error } = await supabase
-      .from("assets")
-      .update({
-        ticker: formData.ticker,
-        name: formData.name,
-        asset_class: formData.asset_class,
-        currency_code: formData.currency_code,
-        logo_url: formData.logo_url,
-      })
-      .eq("id", formData.id)
-
-    if (error) {
-      setIsSaving(false)
-      toast.error("Failed to save asset details.")
-      return
-    }
-
-    // 🔑 Revalidate caches
-    await fetch("/api/revalidate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-secret-token": process.env.NEXT_PUBLIC_REVALIDATION_TOKEN!,
-        "x-table-name": "transaction_legs",
-      },
-    })
-
-    await mutate("/api/gateway/transaction-form")
-
-    setIsSaving(false)
-    toast.success("Asset details saved successfully!")
-  }
-
-  const handleDelete = async (formData: Tables<"assets">) => {
-    setIsDeleting(true)
-
-    const { error } = await supabase
-      .from("assets")
-      .delete()
-      .eq("id", formData.id)
-
-    if (error) {
-      setIsDeleting(false)
-      toast.error("Failed to delete asset.")
-      return
-    }
-
-    // 🔑 Revalidate caches
-    await fetch("/api/revalidate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-secret-token": process.env.NEXT_PUBLIC_REVALIDATION_TOKEN!,
-        "x-table-name": "transaction_legs",
-      },
-    })
-
-    await mutate("/api/gateway/transaction-form")
-
-    setIsDeleting(false)
-    toast.success("Asset deleted successfully!")
-
-    // notify parent if provided
-    if (onDeleted) {
-      onDeleted()
-    }
-  }
 
   if (!asset) {
     return (
@@ -136,8 +64,14 @@ export function AssetDetails({
           initialData={asset}
           isSaving={isSaving}
           isDeleting={isDeleting}
-          onSubmit={handleUpdate}
-          onDelete={handleDelete}
+          onSuccess={(updated) => {
+            setIsSaving(false)
+            onUpdated?.(updated) // notify parent if needed
+          }}
+          onDeleted={() => {
+            setIsDeleting(false)
+            onDeleted?.()
+          }}
         />
       </CardContent>
     </Card>

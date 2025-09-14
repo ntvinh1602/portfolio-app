@@ -24,10 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CreateAssetForm } from "./components/create-asset-form"
-import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
-import { mutate } from "swr"
+import { CreateAssetForm } from "./components/form/create-asset-form"
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -37,49 +34,9 @@ export default function Page() {
     React.useState<Tables<"assets"> | null>(null)
   const [isCreateAssetDialogOpen, setIsCreateAssetDialogOpen] =
     React.useState(false)
-  const [isSaving, setIsSaving] = React.useState(false)
 
   const handleAssetSelect = async (asset: Tables<"assets">) => {
     setSelectedAsset(asset)
-  }
-
-  const handleCreateAssetSubmit = async (formData: Omit<Partial<Tables<"assets">>, "id">) => {
-    setIsSaving(true)
-
-    const { data: inserted, error } = await supabase
-      .from("assets")
-      .insert({
-        ticker: formData.ticker,
-        name: formData.name,
-        asset_class: formData.asset_class,
-        currency_code: formData.currency_code,
-        logo_url: formData.logo_url,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      setIsSaving(false)
-      toast.error("Failed to create asset.")
-      return
-    }
-
-    // 🔑 Revalidate caches
-    await fetch("/api/revalidate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-secret-token": process.env.NEXT_PUBLIC_REVALIDATION_TOKEN!,
-        "x-table-name": "transaction_legs",
-      },
-    })
-
-    await mutate("/api/gateway/transaction-form")
-
-    setIsSaving(false)
-    setIsCreateAssetDialogOpen(false)
-    setSelectedAsset(inserted) // auto-select new asset
-    toast.success("Asset created successfully!")
   }
 
   const assetCounts = React.useMemo(() => {
@@ -120,8 +77,11 @@ export default function Page() {
                     <DialogTitle>Create New Asset</DialogTitle>
                   </DialogHeader>
                   <CreateAssetForm
-                    onSubmit={handleCreateAssetSubmit}
-                    isSaving={isSaving}
+                    onSuccess={(inserted) => {
+                      setSelectedAsset(inserted)
+                      setIsCreateAssetDialogOpen(false)
+                    }}
+                    onCancel={() => setIsCreateAssetDialogOpen(false)}
                   />
                 </DialogContent>
               </Dialog>
