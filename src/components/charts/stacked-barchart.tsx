@@ -24,6 +24,7 @@ export function ChartBarStacked<TData extends object>({
   dataKeys,
   xAxisTickFormatter,
   xAxisDataKey,
+  valueFormatter,
 }: {
   data: TData[]
   config: ChartConfig
@@ -32,6 +33,7 @@ export function ChartBarStacked<TData extends object>({
   dataKeys: string[]
   xAxisTickFormatter?: (value: string | number) => string
   xAxisDataKey: string
+  valueFormatter?: (value: number) => string
 }) {
 
   return (
@@ -49,10 +51,10 @@ export function ChartBarStacked<TData extends object>({
         <XAxis
           dataKey={xAxisDataKey}
           type="category"
-          tickLine={false}
+          tickLine={true}
           tickMargin={10}
           axisLine={false}
-          className="font-thin"
+          className="font-light"
           tickFormatter={xAxisTickFormatter}
           interval="equidistantPreserveStart"
         />
@@ -62,15 +64,17 @@ export function ChartBarStacked<TData extends object>({
           tickLine={false}
           tickMargin={10}
           tickFormatter={(value: number) => compactNum(value)}
-          className="font-thin"
+          className="font-light"
         />
         <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent />}
+          cursor={true}
+          content={
+            <ChartTooltipContent valueFormatter={valueFormatter}/>
+          }
         />
         <ChartLegend
           content={<ChartLegendContent />}
-          className="justify-center pt-3 gap-4"
+          className="justify-center pt-3 gap-4 text-muted-foreground"
         />
         {dataKeys.map((key, index) => (
           <Bar

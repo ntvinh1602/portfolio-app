@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { BottomNavBar } from "@/components/menu/bottom-nav"
 import {
   Card,
   CardContent,
@@ -13,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { ImportForm } from "@/app/settings/components/import-form-content"
 import { SingleDate } from "@/components/date-picker"
-import { Toaster } from "@/components/ui/sonner"
 import {
   SidebarInset,
   SidebarProvider
@@ -64,8 +62,7 @@ export default function Page() {
 
   return (
     <SidebarProvider>
-      <Toaster/>
-      {!isMobile && <AppSidebar />}
+      <AppSidebar />
       <SidebarInset className={!isMobile ? "px-6" : undefined}>
         <Header title="Settings"/>
         <div className="grid grid-cols-4 px-0 gap-2 flex-1 overflow-hidden">
@@ -86,7 +83,6 @@ export default function Page() {
           </Card>
         </div>
       </SidebarInset>
-      {isMobile && <BottomNavBar />}
     </SidebarProvider>
   )
 }

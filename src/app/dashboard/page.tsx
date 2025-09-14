@@ -15,7 +15,7 @@ import { Portfolio } from "@/app/dashboard/components/portfolio"
 import TradingView from "@/app/dashboard/components/trading-view"
 import { EquityChart } from "./components/charts/equity-chart"
 import { Benchmarkchart } from "./components/charts/benchmark-chart"
-import { ExpenseChart } from "./components/charts/expense-chart"
+import { ExpenseChart } from "./components/charts/monthly-chart"
 
 export default function Page() {
   const isMobile = useIsMobile()

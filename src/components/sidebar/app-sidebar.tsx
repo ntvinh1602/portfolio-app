@@ -12,8 +12,8 @@ import {
 } from "lucide-react"
 import { mutate } from "swr"
 import { useState } from "react"
-import { PrimaryPages } from "@/components/sidebar/primary-pages"
-import { SecondaryPages } from "@/components/sidebar/secondary-pages"
+import { CollapsibleMenu } from "@/components/sidebar/collapsible-menu"
+import { SinglePage } from "@/components/sidebar/single-page"
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +32,7 @@ import Link from "next/link"
 import { Separator } from "../ui/separator"
 
 const data = {
-  primaryPages: [
+  collapsibleMenu: [
     {
       title: "Database",
       url: "#",
@@ -45,11 +45,27 @@ const data = {
         },
       ],
     },
+    {
+      title: "Configuration",
+      url: "#",
+      icon: Settings,
+      isActive: true,
+      items: [
+        {
+          title: "General Settings",
+          url: "/settings",
+        },
+        {
+          title: "Assets Control",
+          url: "/settings/assets",
+        },
+      ]
+    }
   ],
-  secondaryPages: [
+  singlePage: [
     {
       title: "Settings",
-      url: "/settings",
+      url: "#",
       icon: Settings,
     }
   ],
@@ -90,7 +106,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <PrimaryPages items={data.primaryPages} />
+        <CollapsibleMenu items={data.collapsibleMenu} />
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
           <SidebarMenuButton onClick={() => setTxnFormOpen(true)}>
@@ -102,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <span className="font-light text-muted-foreground">Refresh Prices</span>
           </SidebarMenuButton>
         </SidebarGroup>
-        <SecondaryPages items={data.secondaryPages} className="mt-auto"/>
+        <SinglePage items={data.singlePage} className="mt-auto"/>
       </SidebarContent>
       <Separator />
       <SidebarFooter>

@@ -33,7 +33,7 @@ export default function Page() {
     setError(null)
     try {
       const url = new URL(
-        "/api/query/transaction-legs",
+        "/api/query/txn-details",
         window.location.origin
       )
       url.searchParams.append("transactionId", transaction.id)
