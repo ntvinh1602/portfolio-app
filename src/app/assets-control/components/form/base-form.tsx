@@ -2,6 +2,7 @@ import * as React from "react"
 import { Tables, Enums, Constants } from "@/types/database.types"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -26,15 +27,15 @@ import {
 
 function FormRow({
   label,
-  children
+  children,
 }: {
   label: string
   children: React.ReactNode
 }) {
   return (
-    <div className="grid grid-cols-4 items-center text-end gap-2">
+    <div className="h-9 grid grid-cols-4 items-center text-end gap-2">
       <Label>{label}</Label>
-      <div className="col-span-3">{children}</div>
+      <div className="col-span-3 text-start">{children}</div>
     </div>
   )
 }
@@ -48,7 +49,7 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
   deleteConfig,
 }: {
   formData: T
-  handleChange: (field: keyof T, value: string) => void
+  handleChange: <K extends keyof T>(field: K, value: T[K]) => void
   handleSubmit: (e: React.FormEvent) => void
   isSaving?: boolean
   submitLabel: string
@@ -60,26 +61,39 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
     entityName?: string
   }
 }) {
+  // convenience wrappers
+  const handleStringChange =
+    <K extends keyof T>(field: K) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleChange(field, e.target.value as T[K])
+
+  const handleBooleanChange =
+    <K extends keyof T>(field: K) =>
+    (checked: boolean | "indeterminate") =>
+      handleChange(field, (checked === true) as T[K])
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 font-thin">
       <FormRow label="Ticker">
         <Input
           value={formData.ticker ?? ""}
-          onChange={(e) => handleChange("ticker", e.target.value)}
+          onChange={handleStringChange("ticker")}
         />
       </FormRow>
 
       <FormRow label="Name">
         <Input
           value={formData.name ?? ""}
-          onChange={(e) => handleChange("name", e.target.value)}
+          onChange={handleStringChange("name")}
         />
       </FormRow>
 
       <FormRow label="Asset Class">
         <Select
           value={formData.asset_class ?? ""}
-          onValueChange={(val) => handleChange("asset_class", val)}
+          onValueChange={(val) =>
+            handleChange("asset_class", val as T["asset_class"])
+          }
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select an asset class" />
@@ -99,23 +113,39 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
       <FormRow label="Currency">
         <Input
           value={formData.currency_code ?? ""}
-          onChange={(e) => handleChange("currency_code", e.target.value)}
+          onChange={handleStringChange("currency_code")}
         />
       </FormRow>
 
       <FormRow label="Logo URL">
         <Input
           value={formData.logo_url ?? ""}
-          onChange={(e) => handleChange("logo_url", e.target.value)}
+          onChange={handleStringChange("logo_url")}
+        />
+      </FormRow>
+
+      <FormRow label="Active">
+        <Checkbox
+          id="is_active"
+          checked={!!formData.is_active}
+          onCheckedChange={handleBooleanChange("is_active")}
+          className="justify-self-start"
         />
       </FormRow>
 
       <div className="flex justify-end gap-1">
         <Button type="submit" disabled={isSaving}>
-          {isSaving
-            ? <><RefreshCw className="animate-spin" />Processing</>
-            : <><Save />{submitLabel}</>
-          }
+          {isSaving ? (
+            <>
+              <RefreshCw className="animate-spin" />
+              Processing
+            </>
+          ) : (
+            <>
+              <Save />
+              {submitLabel}
+            </>
+          )}
         </Button>
 
         {deleteConfig && (
@@ -126,16 +156,24 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
                 type="button"
                 disabled={deleteConfig.isDeleting}
               >
-                {deleteConfig.isDeleting
-                  ? <><RefreshCw className="animate-spin" />Deleting</>
-                  : <><CircleX />{deleteConfig.deleteLabel ?? "Delete"}</>
-                }
+                {deleteConfig.isDeleting ? (
+                  <>
+                    <RefreshCw className="animate-spin" />
+                    Deleting
+                  </>
+                ) : (
+                  <>
+                    <CircleX />
+                    {deleteConfig.deleteLabel ?? "Delete"}
+                  </>
+                )}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {deleteConfig.confirmMessage ?? `Delete ${deleteConfig.entityName ?? "this item"}?`}
+                  {deleteConfig.confirmMessage ??
+                    `Delete ${deleteConfig.entityName ?? "this item"}?`}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. It will permanently remove{" "}

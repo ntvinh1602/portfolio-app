@@ -36,7 +36,8 @@ export default function Page() {
     React.useState(false)
 
   const handleAssetSelect = async (asset: Tables<"assets">) => {
-    setSelectedAsset(asset)
+    if (selectedAsset === asset) setSelectedAsset(null)
+    else setSelectedAsset(asset)
   }
 
   const assetCounts = React.useMemo(() => {
@@ -68,8 +69,7 @@ export default function Page() {
               >
                 <DialogTrigger asChild>
                   <Button variant="default">
-                    <Plus />
-                    Create Asset
+                    <Plus />Asset
                   </Button>
                 </DialogTrigger>
                 <DialogContent>

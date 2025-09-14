@@ -14,8 +14,11 @@ export function useAssetForm<T extends Partial<Tables<"assets">>>(
     }
   }, [initialData, enableReset])
 
-  const handleChange = (field: keyof T, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleChange = <K extends keyof T>(field: K, value: T[K]) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -5,6 +5,7 @@ import { Tables } from "@/types/database.types"
 import { assetClassFormatter } from "@/lib/utils"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 export const columns: ColumnDef<Tables<"assets">>[] = [
   {
@@ -21,7 +22,7 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
         </Button>
       )
     },
-    size: 80,
+    size: 60,
     cell: ({ row }) => <div className="pl-3">{row.getValue("ticker")}</div>
   },
   {
@@ -32,7 +33,7 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
       const set = new Set(value) // O(1) lookups
       return set.has(row.getValue(id))
     },
-    size: 80,
+    size: 60,
     cell: ({ row }) => <>{assetClassFormatter(row.getValue("asset_class"))}</>
   },
   {
@@ -40,4 +41,17 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
     header: "Name",
     cell: ({ row }) => <>{row.getValue("name")}</>
   },
+  {
+    accessorKey: "is_active",
+    header: "Status",
+    size: 60,
+    cell: ({ row }) => {
+      const value = row.getValue("is_active") as boolean
+      return (
+        <Badge variant={value ? "inbound" : "outbound"}>
+          {value ? "Active" : "Inactive"}
+        </Badge>
+      )
+    },
+  }
 ]

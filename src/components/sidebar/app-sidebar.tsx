@@ -52,11 +52,11 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "General Settings",
+          title: "Settings",
           url: "/settings",
         },
         {
-          title: "Assets Control",
+          title: "Assets",
           url: "/assets-control",
         },
       ]

@@ -10,12 +10,13 @@ import { revalidateAndMutate } from "../../lib/revalidate"
 
 type NewAsset = Omit<Partial<Tables<"assets">>, "id">
 
-interface CreateAssetFormProps {
+export function CreateAssetForm({
+  onSuccess,
+  onCancel
+}: {
   onSuccess?: (asset: Tables<"assets">) => void
   onCancel?: () => void
-}
-
-export function CreateAssetForm({ onSuccess, onCancel }: CreateAssetFormProps) {
+}) {
   const [isSaving, setIsSaving] = React.useState(false)
 
   const handleSubmit = async (formData: NewAsset) => {
@@ -29,6 +30,7 @@ export function CreateAssetForm({ onSuccess, onCancel }: CreateAssetFormProps) {
         asset_class: formData.asset_class,
         currency_code: formData.currency_code,
         logo_url: formData.logo_url,
+        is_active: formData.is_active
       })
       .select()
       .single()

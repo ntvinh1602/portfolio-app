@@ -20,6 +20,7 @@ export type Database = {
           currency_code: string
           current_quantity: number
           id: string
+          is_active: boolean
           logo_url: string | null
           name: string
           ticker: string
@@ -29,6 +30,7 @@ export type Database = {
           currency_code: string
           current_quantity?: number
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name: string
           ticker: string
@@ -38,6 +40,7 @@ export type Database = {
           currency_code?: string
           current_quantity?: number
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name?: string
           ticker?: string

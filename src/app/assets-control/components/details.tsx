@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { NotepadText } from "lucide-react"
 import Image from "next/image"
 import { Tables } from "@/types/database.types"
 import { UpdateAssetForm } from "./form/update-asset-form"
@@ -23,17 +22,12 @@ export function AssetDetails({
   onDeleted?: () => void
   onUpdated?: (asset: Tables<"assets">) => void
 }) {
-  const [isSaving, setIsSaving] = React.useState(false)
-  const [isDeleting, setIsDeleting] = React.useState(false)
 
   if (!asset) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Asset</CardTitle>
-          <CardAction>
-            <NotepadText className="stroke-1 text-muted-foreground" />
-          </CardAction>
+          <CardTitle className="text-xl">Asset Information</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center">
           <span className="font-thin">No asset selected</span>
@@ -45,8 +39,8 @@ export function AssetDetails({
   return (
     <Card>
       <CardHeader>
-        <CardDescription>{asset.ticker}</CardDescription>
-        <CardTitle className="text-xl">{asset.name}</CardTitle>
+        <CardTitle className="text-xl">Asset Information</CardTitle>
+        <CardDescription className="text-xs">{asset.id}</CardDescription>
         <CardAction>
           <div className="size-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
             <Image
@@ -62,14 +56,10 @@ export function AssetDetails({
       <CardContent>
         <UpdateAssetForm
           initialData={asset}
-          isSaving={isSaving}
-          isDeleting={isDeleting}
           onSuccess={(updated) => {
-            setIsSaving(false)
             onUpdated?.(updated) // notify parent if needed
           }}
           onDeleted={() => {
-            setIsDeleting(false)
             onDeleted?.()
           }}
         />

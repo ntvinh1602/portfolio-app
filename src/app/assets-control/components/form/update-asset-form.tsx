@@ -12,17 +12,16 @@ export function UpdateAssetForm({
   initialData,
   onSuccess,
   onDeleted,
-  isSaving = false,
-  isDeleting = false,
 }: {
   initialData: Tables<"assets">
   onSuccess?: (asset: Tables<"assets">) => void
   onDeleted?: () => void
-  isSaving?: boolean
-  isDeleting?: boolean
 }) {
-  // 🔑 Update handler
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
   const handleUpdate = async (formData: Tables<"assets">) => {
+    setIsSaving(true)
     const { error } = await supabase
       .from("assets")
       .update({
@@ -31,30 +30,35 @@ export function UpdateAssetForm({
         asset_class: formData.asset_class,
         currency_code: formData.currency_code,
         logo_url: formData.logo_url,
+        is_active: formData.is_active,
       })
       .eq("id", formData.id)
 
     if (error) {
       toast.error("Failed to save asset details.")
+      setIsSaving(false)
       return
     }
 
     await revalidateAndMutate()
     toast.success("Asset details saved successfully!")
+    setIsSaving(false)
     onSuccess?.(formData)
   }
 
-  // 🔑 Delete handler
   const handleDelete = async (formData: Tables<"assets">) => {
+    setIsDeleting(true)
     const { error } = await supabase.from("assets").delete().eq("id", formData.id)
 
     if (error) {
       toast.error("Failed to delete asset.")
+      setIsDeleting(false)
       return
     }
 
     await revalidateAndMutate()
     toast.success("Asset deleted successfully!")
+    setIsDeleting(false)
     onDeleted?.()
   }
 
