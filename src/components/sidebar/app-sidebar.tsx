@@ -57,7 +57,7 @@ const data = {
         },
         {
           title: "Assets Control",
-          url: "/settings/assets",
+          url: "/assets-control",
         },
       ]
     }

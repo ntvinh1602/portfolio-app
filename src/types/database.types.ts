@@ -16,31 +16,31 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
-          asset_class: Database["public"]["Enums"]["asset_class"] | null
-          currency_code: string | null
+          asset_class: Database["public"]["Enums"]["asset_class"]
+          currency_code: string
           current_quantity: number
           id: string
           logo_url: string | null
-          name: string | null
-          ticker: string | null
+          name: string
+          ticker: string
         }
         Insert: {
-          asset_class?: Database["public"]["Enums"]["asset_class"] | null
-          currency_code?: string | null
+          asset_class: Database["public"]["Enums"]["asset_class"]
+          currency_code: string
           current_quantity?: number
           id?: string
           logo_url?: string | null
-          name?: string | null
-          ticker?: string | null
+          name: string
+          ticker: string
         }
         Update: {
-          asset_class?: Database["public"]["Enums"]["asset_class"] | null
-          currency_code?: string | null
+          asset_class?: Database["public"]["Enums"]["asset_class"]
+          currency_code?: string
           current_quantity?: number
           id?: string
           logo_url?: string | null
-          name?: string | null
-          ticker?: string | null
+          name?: string
+          ticker?: string
         }
         Relationships: [
           {
@@ -604,13 +604,21 @@ export type Database = {
         Args: { p_asset_id: string }
         Returns: string
       }
-      get_asset_data: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
       get_asset_id_from_ticker: {
         Args: { p_ticker: string }
         Returns: string
+      }
+      get_assets: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          asset_class: string
+          currency_code: string
+          current_quantity: number
+          id: string
+          logo_url: string
+          name: string
+          ticker: string
+        }[]
       }
       get_balance_sheet: {
         Args: Record<PropertyKey, never>
@@ -687,27 +695,6 @@ export type Database = {
       get_transaction_details: {
         Args: { include_expenses?: boolean; txn_id: string }
         Returns: Json
-      }
-      get_transaction_feed: {
-        Args: {
-          asset_class_filter?: string
-          end_date?: string
-          page_number: number
-          page_size: number
-          start_date?: string
-        }
-        Returns: {
-          amount: number
-          currency_code: string
-          description: string
-          logo_url: string
-          name: string
-          quantity: number
-          ticker: string
-          transaction_date: string
-          transaction_id: string
-          type: string
-        }[]
       }
       get_transactions: {
         Args: { p_end_date: string; p_start_date: string }

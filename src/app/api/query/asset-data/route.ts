@@ -14,15 +14,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data: assetData, error: assetError } = await supabase
-      .rpc("get_asset_data")
-      .single()
+    const { data: assetData, error: assetError } = await supabase.rpc("get_assets")
 
     if (assetError) {
       throw assetError
     }
 
-    return NextResponse.json(assetData as Tables<"assets">)
+    return NextResponse.json(assetData as Tables<"assets">[])
 
   } catch (e) {
     console.error("Unexpected error fetching asset account data:", e)

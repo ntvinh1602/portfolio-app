@@ -5,6 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Capitalization formatter for asset class
+export function assetClassFormatter(value: string) {
+  if (value === "epf")
+    return value.toUpperCase()
+  else 
+    return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) 
+}
+
 // Format number based on currency and decimal places
 export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
   if (currency) {

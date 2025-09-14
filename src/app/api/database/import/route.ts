@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/middleware'
 import { NextRequest, NextResponse } from 'next/server'
-import { lifetime } from "@/lib/start-dates"
 
 export async function POST(req: NextRequest) {
   const { supabase } = createClient(req)
@@ -43,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.rpc('import_transactions', {
     p_transactions_data: transactions,
-    p_start_date: lifetime
+    p_start_date: '2021-11-09'
   })
 
   if (error) {

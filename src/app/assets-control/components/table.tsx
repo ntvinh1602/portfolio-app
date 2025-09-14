@@ -24,22 +24,24 @@ import {
 import { Pagination } from "@/components/table-pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export function Transactions<TData extends { id: string }, TValue>({
+export function Assets<TData extends { id: string }, TValue>({
   columns,
   data,
   category,
   onRowClick,
-  selectedTransaction,
+  selectedAsset,
   loading
 }: {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   category: string
   onRowClick?: (row: TData) => void
-  selectedTransaction?: TData | null
+  selectedAsset?: TData | null
   loading: boolean
 }) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: "ticker", desc: false },
+  ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
 
   const table = useReactTable({
@@ -61,17 +63,17 @@ export function Transactions<TData extends { id: string }, TValue>({
         columnFilters
       }
     })
+    
+    React.useEffect(() => {
+      const CATEGORY_FILTERS: Record<string, Enums<"asset_class">[]> = {
+        stock: ["stock"],
+        others: Constants.public.Enums.asset_class.filter(
+          (assetClass) => assetClass !== "stock"
+        ),
+      }
 
-  React.useEffect(() => {
-    const CATEGORY_FILTERS: Record<string, Enums<"transaction_type">[]> = {
-      cash: Constants.public.Enums.transaction_type.filter(
-        (t) => !["buy", "sell"].includes(t)
-      ),
-      trade: ["buy", "sell"],
-    }
-
-    table.getColumn("type")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
-  }, [category, table])
+      table.getColumn("asset_class")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
+    }, [category, table])
 
   if (loading) {
     return (
@@ -162,7 +164,7 @@ export function Transactions<TData extends { id: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={
-                    (row.original as any).id === (selectedTransaction as any)?.id &&
+                    (row.original as any).id === (selectedAsset as any)?.id &&
                     "selected"
                   }
                   onClick={() => onRowClick?.(row.original)}

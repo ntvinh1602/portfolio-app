@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Transaction } from "./columns"
-import { formatNum } from "@/lib/utils"
+import { assetClassFormatter, formatNum } from "@/lib/utils"
 import { Loading } from "@/components/loader"
 import { Badge } from "@/components/ui/badge"
 import { NotepadText, DollarSign } from "lucide-react"
@@ -59,7 +59,6 @@ interface LegItemProps {
 
 function LegItem({ leg, type }: LegItemProps) {
   const { assets, amount } = leg
-  const assetClass = assets.asset_class
 
   return (
     <div className="grid grid-cols-4 text-sm">
@@ -82,10 +81,7 @@ function LegItem({ leg, type }: LegItemProps) {
         <div className="flex flex-col w-full text-start gap-1 justify-center truncate">
           {assets.name}
           <Badge variant="outline">
-            {assetClass === "epf"
-              ? assetClass.toUpperCase()
-              : assetClass.replace(/\b\w/g, (c:string) => c.toUpperCase())
-            }
+            {assetClassFormatter(assets.asset_class)}
           </Badge>
         </div>
       </div>

@@ -29,38 +29,33 @@ export async function GET(request: NextRequest) {
       `${baseUrl}/api/query/asset-data`,
       fetchOptions,
     )
-
     if (!assetDataResponse.ok) {
-      const errorText = await assetDataResponse.text();
-      console.error(`Error fetching asset account data: ${assetDataResponse.url} - ${assetDataResponse.status} ${assetDataResponse.statusText}`, errorText);
-      throw new Error(`Failed to fetch from ${assetDataResponse.url}`);
+      const errorText = await assetDataResponse.text()
+      console.error("Error fetching asset data:", errorText)
+      throw new Error("Failed to fetch asset-data")
     }
-
-    const { assets } = await assetDataResponse.json()
+    const assets = await assetDataResponse.json()
 
     const debtsResponse = await fetch(
       `${baseUrl}/api/query/debts`,
       fetchOptions,
     )
-
     if (!debtsResponse.ok) {
-      const errorText = await debtsResponse.text();
-      console.error(`Error fetching debts data: ${debtsResponse.url} - ${debtsResponse.status} ${debtsResponse.statusText}`, errorText);
-      throw new Error(`Failed to fetch from ${debtsResponse.url}`);
+      const errorText = await debtsResponse.text()
+      console.error("Error fetching debts data:", errorText)
+      throw new Error("Failed to fetch debts")
     }
-
     const debts = await debtsResponse.json()
 
     return NextResponse.json({
       assets: (assets as Tables<"assets">[]) || [],
       debts: debts || [],
     })
-    
   } catch (error) {
     console.error("Error fetching transaction form data:", error)
     return NextResponse.json(
       { error: "Failed to fetch transaction form data" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

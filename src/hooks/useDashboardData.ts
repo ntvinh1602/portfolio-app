@@ -1,6 +1,5 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import { lifetime } from "@/lib/start-dates"
 import {
   BalanceSheetData,
   EquityChartData,
@@ -37,11 +36,11 @@ export function useDashboardData() {
   const { data, error, isLoading } = useSWR<DashboardApiResponse>(
     "/api/gateway/dashboard",
     fetcher,
-    { revalidateOnFocus: true, revalidateOnReconnect: true }
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
   )
 
   const years =
-    (new Date().getTime() - new Date(lifetime).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    (new Date().getTime() - new Date('2021-11-09').getTime()) / (1000 * 60 * 60 * 24 * 365.25)
  
   const cagr = data && years > 0
     ? (Math.pow(1 + data.twrData.all_time, 1 / years) - 1) * 100

@@ -5,6 +5,7 @@ import { Database } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { assetClassFormatter } from "@/lib/utils"
 
 // This type is used to define the shape of our data.
 export type Transaction = {
@@ -23,14 +24,16 @@ export const columns: ColumnDef<Transaction>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-foreground"
-        >
+          className="text-foreground gap-1"
+        > 
           Date
-          <ArrowUpDown className="h-4 w-4" />
+          <ArrowUpDown className="size-4 stroke-1" />
         </Button>
       )
     },
-    cell: ({ row }) => <>{row.getValue("transaction_date")}</>
+    cell: ({ row }) => <div className="pl-3">
+      {row.getValue("transaction_date")}
+    </div>
   },
   {
     accessorKey: "type",
@@ -42,10 +45,7 @@ export const columns: ColumnDef<Transaction>[] = [
     },
     cell: ({ row }) => {
       const raw = row.getValue("type") as string
-
-      const formatted = raw
-        .replace(/_/g, " ") 
-        .replace(/\b\w/g, (c) => c.toUpperCase()) 
+      const formatted = assetClassFormatter(raw)
 
       return (
         <div className="flex">
@@ -54,8 +54,7 @@ export const columns: ColumnDef<Transaction>[] = [
             : <Badge variant="outbound">{formatted}</Badge>
           }
         </div>
-      )
-    }
+    )}
   },
   {
     accessorKey: "description",
