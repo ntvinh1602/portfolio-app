@@ -21,31 +21,30 @@ export async function GET(request: NextRequest) {
       headers,
       next: {
         revalidate: 600,
-        tags: [`txn-driven`],
+        tags: [`account`],
       },
     }
 
-    const assetDataResponse = await fetch(
-      `${baseUrl}/api/query/asset-data`,
-      fetchOptions,
-    )
-    if (!assetDataResponse.ok) {
-      const errorText = await assetDataResponse.text()
-      console.error("Error fetching asset data:", errorText)
-      throw new Error("Failed to fetch asset-data")
-    }
-    const assets = await assetDataResponse.json()
+    const [assetDataResponse, debtsResponse] = await Promise.all([
+      fetch(`${baseUrl}/api/query/assets`, fetchOptions),
+      fetch(`${baseUrl}/api/query/debts`, fetchOptions),
+    ])
 
-    const debtsResponse = await fetch(
-      `${baseUrl}/api/query/debts`,
-      fetchOptions,
-    )
-    if (!debtsResponse.ok) {
-      const errorText = await debtsResponse.text()
-      console.error("Error fetching debts data:", errorText)
-      throw new Error("Failed to fetch debts")
+    for (const response of [assetDataResponse, debtsResponse]) {
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(
+          `Error fetching account data: ${response.url} - ${response.status} ${response.statusText}`,
+          errorText,
+        )
+        throw new Error(`Failed to fetch from ${response.url}`)
+      }
     }
-    const debts = await debtsResponse.json()
+
+    const [assets, debts] = await Promise.all([
+      assetDataResponse.json(),
+      debtsResponse.json(),
+    ])
 
     return NextResponse.json({
       assets: (assets as Tables<"assets">[]) || [],

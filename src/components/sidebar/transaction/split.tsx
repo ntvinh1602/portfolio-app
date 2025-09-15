@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
 
 type SplitFormProps = {
@@ -17,7 +17,7 @@ export function SplitForm({
   handleInputChange,
   handlePickerChange,
 }: SplitFormProps) {
-  const { assets, loading } = useTransactionFormData()
+  const { assets, loading } = useAccountData()
 
   if (loading) {
     return <div>Loading...</div>

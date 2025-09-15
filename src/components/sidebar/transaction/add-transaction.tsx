@@ -21,9 +21,8 @@ import {
 } from "@/components/ui/select"
 import { Enums, Constants } from "@/types/database.types"
 import { formatNumberWithCommas, parseFormattedNumber } from "@/lib/utils"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import { CashFlowForm } from "./cashflow"
 import { TradeForm } from "./buy-sell"
 import { DividendForm } from "./dividend"
@@ -31,8 +30,7 @@ import { BorrowForm } from "./borrow"
 import { DebtPaymentForm } from "./debt-payment"
 import { SplitForm } from "./split"
 import { mutate } from "swr"
-
-type TransactionType = Enums<"transaction_type">
+import { Loading } from "@/components/loader"
 
 const FORM_COMPONENTS: Record<string, Array<Enums<"transaction_type">>> = {
   cashflow: ["deposit", "withdraw", "income", "expense"],
@@ -46,18 +44,19 @@ const FORM_COMPONENTS: Record<string, Array<Enums<"transaction_type">>> = {
 export function TransactionForm({
   open,
   onOpenChange,
-  transactionType: initialTransactionType = "deposit",
+  defaultType = "deposit",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  transactionType?: TransactionType
+  defaultType?: Enums<"transaction_type">
 }) {
-  const router = useRouter()
+  const { loading } = useAccountData()
   const [date, setDate] = React.useState<Date | undefined>(new Date())
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [transactionType, setTransactionType] = React.useState<TransactionType>(initialTransactionType)
-  const [formState, setFormState] = React.useState<Record<string, string | undefined>>({})
-  const { loading } = useTransactionFormData(open)
+  const [transactionType, setTransactionType] =
+    React.useState<Enums<"transaction_type">>(defaultType)
+  const [formState, setFormState] =
+    React.useState<Record<string, string | undefined>>({})
 
   const updateFormState = React.useCallback((updates: Record<string, string | undefined>) => {
     setFormState(prev => ({ ...prev, ...updates }))
@@ -94,9 +93,9 @@ export function TransactionForm({
   }, [updateFormState])
 
   React.useEffect(() => {
-    setTransactionType(initialTransactionType)
+    setTransactionType(defaultType)
     setFormState({ asset: "" })
-  }, [initialTransactionType])
+  }, [defaultType])
 
   const buildRequestBody = React.useCallback(() => {
     const baseBody = {
@@ -271,7 +270,7 @@ export function TransactionForm({
                <div className="grid gap-3">
                  <Label htmlFor="transaction-type">Type</Label>
                  <Select
-                   onValueChange={value => setTransactionType(value as TransactionType)}
+                   onValueChange={value => setTransactionType(value as Enums<"transaction_type">)}
                    defaultValue={transactionType}
                  >
                    <SelectTrigger className="w-full">
@@ -286,13 +285,12 @@ export function TransactionForm({
                    </SelectContent>
                  </Select>
                </div>
-               {loading ? (
-                 <div className="col-span-2 flex justify-center items-center h-24">
-                   <p>Loading form data...</p>
-                 </div>
-               ) : (
-                 renderFormFields()
-               )}
+               {loading ?
+                  <div className="col-span-2 flex justify-center items-center h-24">
+                    <Loading/>
+                  </div>
+                : renderFormFields()
+               }
              </div>
             <DialogFooter className="sticky bottom-0 bg-card/0">
               <Button 

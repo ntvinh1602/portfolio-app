@@ -7,9 +7,9 @@ interface TransactionFormData {
   debts: Tables<"debts">[]
 }
 
-export function useTransactionFormData(enabled: boolean = true) {
-  const { data, error, isLoading, mutate } = useSWR<TransactionFormData>(
-    enabled ? `/api/gateway/transaction-form` : null,
+export function useAccountData() {
+  const { data, error, isLoading } = useSWR<TransactionFormData>(
+    `/api/gateway/account-data`,
     fetcher,
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   )

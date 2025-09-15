@@ -5,39 +5,49 @@ export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
+    // --- Auth check ---
     const expectedSecret = process.env.REVALIDATION_TOKEN
     const secret = request.headers.get("x-secret-token")
-    const table = request.headers.get("x-table-name")
 
     if (!secret || secret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!table) {
+    // --- Get tags from header ---
+    const tagsHeader = request.headers.get("x-tags")
+    if (!tagsHeader) {
       return NextResponse.json(
-        { error: "Missing x-table-name header" },
-        { status: 400 },
+        { error: "Missing x-tags header" },
+        { status: 400 }
       )
     }
 
-    // Revalidate based on the table that was updated
-    if (table === "transaction_legs") {
-      revalidateTag(`price-driven`)
-      revalidateTag(`txn-driven`)
-    } else if (
-      table === "daily_stock_prices"||
-      table === "daily_exchange_rates" ||
-      table === "daily_crypto_prices"
-    ) {
-      revalidateTag(`price-driven`)
+    // --- Split and clean tags ---
+    const tags = tagsHeader
+      .split(",")
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+
+    if (tags.length === 0) {
+      return NextResponse.json(
+        { error: "No valid tags provided" },
+        { status: 400 }
+      )
     }
 
-    return NextResponse.json({ revalidated: true, now: Date.now() })
+    // --- Revalidate each tag ---
+    tags.forEach(tag => revalidateTag(tag))
+
+    return NextResponse.json({
+      revalidated: true,
+      tags,
+      timestamp: Date.now(),
+    })
   } catch (error) {
     console.error("Error in revalidation webhook:", error)
     return NextResponse.json(
       { error: "Failed to revalidate" },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

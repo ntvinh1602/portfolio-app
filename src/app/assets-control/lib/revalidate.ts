@@ -6,9 +6,9 @@ export async function revalidateAndMutate() {
     headers: {
       "Content-Type": "application/json",
       "x-secret-token": process.env.NEXT_PUBLIC_REVALIDATION_TOKEN!,
-      "x-table-name": "transaction_legs",
+      "x-tags": "account",
     },
   })
 
-  await mutate("/api/gateway/transaction-form")
+  await mutate("/api/gateway/account-data")
 }

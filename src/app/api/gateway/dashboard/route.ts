@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       headers,
       next: {
         revalidate: 600,
-        tags: [`price-driven`],
+        tags: [`dashboard`],
       },
     }
 

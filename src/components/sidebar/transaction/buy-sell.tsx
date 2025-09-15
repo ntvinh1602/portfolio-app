@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
 import { Enums } from "@/types/database.types"
 
@@ -29,7 +29,7 @@ export function TradeForm({
   handleSelectChange,
   handlePickerChange,
 }: TradeFormProps) {
-  const { assets, loading } = useTransactionFormData()
+  const { assets, loading } = useAccountData()
    if (loading) {
      return <div>Loading...</div>
    }

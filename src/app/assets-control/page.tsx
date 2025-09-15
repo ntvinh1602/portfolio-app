@@ -9,7 +9,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { columns } from "./components/columns"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { Assets } from "./components/table"
 import { Separator } from "@/components/ui/separator"
 import { AssetDetails } from "./components/details"
@@ -28,7 +28,7 @@ import { CreateAssetForm } from "./components/form/create-asset-form"
 
 export default function Page() {
   const isMobile = useIsMobile()
-  const { assets, loading } = useTransactionFormData(true)
+  const { assets, loading } = useAccountData()
   const [category, setCategory] = React.useState("stock")
   const [selectedAsset, setSelectedAsset] =
     React.useState<Tables<"assets"> | null>(null)

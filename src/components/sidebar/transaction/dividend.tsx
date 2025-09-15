@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
 
 type DividendFormProps = {
@@ -26,7 +26,7 @@ export function DividendForm({
   handleSelectChange,
   handlePickerChange,
 }: DividendFormProps) {
-  const { assets, loading } = useTransactionFormData()
+  const { assets, loading } = useAccountData()
 
   if (loading) {
     return <div>Loading...</div>

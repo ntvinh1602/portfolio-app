@@ -311,24 +311,24 @@ export type Database = {
       monthly_snapshots: {
         Row: {
           date: string
-          fee: number | null
-          interest: number | null
-          pnl: number | null
-          tax: number | null
+          fee: number
+          interest: number
+          pnl: number
+          tax: number
         }
         Insert: {
           date: string
-          fee?: number | null
-          interest?: number | null
-          pnl?: number | null
-          tax?: number | null
+          fee: number
+          interest: number
+          pnl: number
+          tax: number
         }
         Update: {
           date?: string
-          fee?: number | null
-          interest?: number | null
-          pnl?: number | null
-          tax?: number | null
+          fee?: number
+          interest?: number
+          pnl?: number
+          tax?: number
         }
         Relationships: []
       }
@@ -618,6 +618,7 @@ export type Database = {
           currency_code: string
           current_quantity: number
           id: string
+          is_active: boolean
           logo_url: string
           name: string
           ticker: string

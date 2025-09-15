@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTransactionFormData } from "@/hooks/useTransactionFormData"
+import { useAccountData } from "@/hooks/useAccountData"
 import { formatNum } from "@/lib/utils"
 
 type DebtPaymentFormProps = {
@@ -24,7 +24,7 @@ export function DebtPaymentForm({
   handleInputChange,
   handleSelectChange,
 }: DebtPaymentFormProps) {
-  const { assets, debts, loading } = useTransactionFormData()
+  const { assets, debts, loading } = useAccountData()
 
   if (loading) {
     return <div>Loading...</div>

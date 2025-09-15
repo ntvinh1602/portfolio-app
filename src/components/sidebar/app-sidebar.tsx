@@ -129,7 +129,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <TransactionForm
         open={isTxnFormOpen}
         onOpenChange={setTxnFormOpen}
-        transactionType="buy"
+        defaultType="buy"
       />
     </Sidebar>
   )

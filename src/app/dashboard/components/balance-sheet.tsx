@@ -60,7 +60,7 @@ export function BalanceSheet() {
   } = useAssetData()
   const isMobile = useIsMobile()
 
-  if (loading) return <Loading/>
+  if (loading || !bs) return <Loading/>
 
   return (
     <Sheet>

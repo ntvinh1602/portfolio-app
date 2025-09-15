@@ -47,11 +47,3 @@ export type TWRData = {
   all_time: number
   ytd: number
 }
-
-export type MonthlyData = {
-  date: string
-  fee: number
-  interest: number
-  pnl: number
-  tax: number
-}
