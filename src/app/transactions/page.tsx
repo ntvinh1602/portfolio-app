@@ -12,6 +12,7 @@ import { DateRange } from "@/components/date-picker"
 import { subMonths } from "date-fns"
 import { format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
+import { TxnLeg, Expense } from "./types/data"
 
 export default function Page() {
   const [data, setData] = React.useState<Transaction[]>([])
@@ -21,8 +22,8 @@ export default function Page() {
   )
   const [dateTo, setDateTo] = React.useState<Date | undefined>(new Date())
   const [selectedTxn, setSelectedTxn] = React.useState<Transaction | null>(null)
-  const [txnLegs, setTxnLegs] = React.useState<any[]>([])
-  const [expenses, setExpenses] = React.useState<any[]>([])
+  const [txnLegs, setTxnLegs] = React.useState<TxnLeg[]>([])
+  const [expenses, setExpenses] = React.useState<Expense[]>([])
   const [txnLoading, setTxnLoading] = React.useState(true)
   const [detailLoading, setDetailLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -30,7 +31,6 @@ export default function Page() {
   const handleTransactionSelect = async (transaction: Transaction) => {
     setSelectedTxn(transaction)
     setDetailLoading(true)
-    setError(null)
     try {
       const url = new URL(
         "/api/query/txn-details",
@@ -45,7 +45,7 @@ export default function Page() {
       const result = await response.json()
       setTxnLegs(result.legs || [])
       setExpenses(result.expenses || [])
-    } catch (error) {
+    } catch {
       setError("Failed to fetch transaction legs")
     } finally {
       setDetailLoading(false)
@@ -55,7 +55,6 @@ export default function Page() {
   React.useEffect(() => {
     async function fetchData() {
       setTxnLoading(true)
-      setError(null)
       try {
         const url = new URL("/api/query/transactions", window.location.origin)
         if (dateFrom) {
@@ -70,7 +69,7 @@ export default function Page() {
         }
         const result = await response.json()
         setData(result)
-      } catch (error) {
+      } catch {
         setError("Failed to fetch transactions")
       } finally {
         setTxnLoading(false)

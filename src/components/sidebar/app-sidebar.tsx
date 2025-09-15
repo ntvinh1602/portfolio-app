@@ -5,7 +5,6 @@ import {
   Settings,
   TrendingUp,
   FolderSearch,
-  Gauge,
   LogOut,
   Plus,
   RefreshCw

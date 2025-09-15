@@ -12,10 +12,8 @@ type NewAsset = Omit<Partial<Tables<"assets">>, "id">
 
 export function CreateAssetForm({
   onSuccess,
-  onCancel
 }: {
   onSuccess?: (asset: Tables<"assets">) => void
-  onCancel?: () => void
 }) {
   const [isSaving, setIsSaving] = React.useState(false)
 

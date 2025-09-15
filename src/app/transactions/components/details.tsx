@@ -14,19 +14,9 @@ import { Loading } from "@/components/loader"
 import { Badge } from "@/components/ui/badge"
 import { NotepadText, DollarSign } from "lucide-react"
 import Image from "next/image"
+import { TxnLeg, Expense } from "../types/data"
 
-interface TransactionDetailsProps {
-  transaction: Transaction | null
-  transactionLegs: any[]
-  associatedExpenses: any[]
-  loading: boolean
-}
-
-interface AssociatedExpenseProps {
-  expenses: any[]
-}
-
-function AssociatedExpenses({ expenses }: AssociatedExpenseProps) {
+function AssociatedExpenses({ expenses }: { expenses: Expense[] }) {
   const transactionFee = expenses.find(
     (expense) => expense.description === "Transaction fee"
   )
@@ -52,12 +42,13 @@ function AssociatedExpenses({ expenses }: AssociatedExpenseProps) {
   )
 }
 
-interface LegItemProps {
-  leg: any
+function LegItem({
+  leg,
+  type
+}: {
+  leg: TxnLeg
   type: "debit" | "credit"
-}
-
-function LegItem({ leg, type }: LegItemProps) {
+}) {
   const { assets, amount } = leg
 
   return (
@@ -100,7 +91,12 @@ export function TransactionDetails({
   transactionLegs,
   associatedExpenses,
   loading,
-}: TransactionDetailsProps) {
+}: {
+  transaction: Transaction | null
+  transactionLegs: TxnLeg[]
+  associatedExpenses: Expense[]
+  loading: boolean
+}) {
   if (loading) {
     return (
       <Card>

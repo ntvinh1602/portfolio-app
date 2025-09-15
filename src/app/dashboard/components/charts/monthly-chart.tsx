@@ -11,16 +11,22 @@ export function ExpenseChart() {
   if (isLoading || !monthlyData)
     return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />
 
-  const chartData = monthlyData.slice(-12).map(d => ({ ...d, snapshot_date: d.date }))
+  const chartData = monthlyData.slice(-12).map(d => ({
+     revenue: d.pnl + d.fee + d.interest + d.tax,
+     fee: -d.fee,
+     interest: -d.interest,
+     tax: -d.tax,
+     snapshot_date: d.date
+    }))
   const totalPnL = monthlyData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const last12MPnL = chartData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const avgLast12MPnL = last12MPnL / chartData.length
+  const last12MPnL = monthlyData.slice(-12).reduce((acc, curr) => acc + curr.pnl, 0)
+  const avgLast12MPnL = last12MPnL / 12
   const avgAllTimePnL = totalPnL / monthlyData.length
 
   return (
     <div className="flex-1">
       <ChartCard
-        description="Total P/L"
+        description="Total Income"
         majorValue={totalPnL}
         majorValueFormatter={(value) => formatNum(value)}
         minorValue1={avgLast12MPnL}
@@ -44,14 +50,14 @@ export function ExpenseChart() {
             label: "Interest",
             color: "var(--chart-3)",
           },
-          pnl: {
-              label: "Net P/L",
+          revenue: {
+              label: "Revenue",
               color: "var(--chart-4)",
           }
         }}
         chartClassName="h-full w-full"
         xAxisDataKey="snapshot_date"
-        chartDataKeys={["tax", "fee", "interest", "pnl"]}
+        chartDataKeys={["tax", "fee", "interest", "revenue"]}
         dateRange="1y"
         yAxisTickFormatter={(value) => compactNum(Number(value))}
         xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}

@@ -81,7 +81,7 @@ export function ChartBarStacked<TData extends object>({
             key={key}
             dataKey={key}
             layout="vertical"
-            stackId={key === "pnl" ? undefined : "a"}
+            stackId={key === "revenue" ? undefined : "a"}
             fill={`var(--color-${key})`}
           >
             {labelKey && index === dataKeys.length - 1 && (

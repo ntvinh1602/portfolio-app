@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       .from("assets")
       .select("ticker, asset_class")
       .in("asset_class", ["stock", "crypto"])
+      .filter('is_active', 'eq', true)
 
     if (assetError) {
       throw assetError

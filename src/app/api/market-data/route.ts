@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         try {
           controller.error(error)
         } catch (e) {
-          // Ignore errors if controller is already closed
+          console.error("MQTT Client Error:", e)
         }
         if (client) {
           client.end()

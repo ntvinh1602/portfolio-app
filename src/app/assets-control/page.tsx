@@ -81,7 +81,6 @@ export default function Page() {
                       setSelectedAsset(inserted)
                       setIsCreateAssetDialogOpen(false)
                     }}
-                    onCancel={() => setIsCreateAssetDialogOpen(false)}
                   />
                 </DialogContent>
               </Dialog>

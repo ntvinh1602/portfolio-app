@@ -164,7 +164,7 @@ export function Assets<TData extends { id: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={
-                    (row.original as any).id === (selectedAsset as any)?.id &&
+                    (row.original).id === selectedAsset?.id &&
                     "selected"
                   }
                   onClick={() => onRowClick?.(row.original)}

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { parse as parseCsv } from "papaparse"
-import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -29,11 +28,7 @@ const REQUIRED_HEADERS = [
   "description",
 ]
 
-interface ImportFormProps {
-  className?: string
-}
-
-export function ImportForm( { className }: ImportFormProps ) {
+export function ImportForm() {
   const [file, setFile] = React.useState<File | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
   const router = useRouter()

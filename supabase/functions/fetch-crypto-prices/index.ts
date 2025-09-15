@@ -113,7 +113,8 @@ Deno.serve(async (_req: Request) => {
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
       .select('id, ticker')
-      .eq('asset_class', 'crypto');
+      .filter('asset_class', 'eq', 'crypto')
+      .filter('is_active', 'eq', true);
 
     if (assetsError) {
       throw new Error(`Error fetching assets: ${assetsError.message}`);
