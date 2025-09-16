@@ -749,7 +749,15 @@ export type Database = {
       }
     }
     Enums: {
-      asset_class: "cash" | "stock" | "crypto" | "epf" | "equity" | "liability"
+      asset_class:
+        | "cash"
+        | "stock"
+        | "crypto"
+        | "epf"
+        | "equity"
+        | "liability"
+        | "index"
+        | "fund"
       currency_type: "fiat" | "crypto"
       transaction_type:
         | "buy"
@@ -889,7 +897,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      asset_class: ["cash", "stock", "crypto", "epf", "equity", "liability"],
+      asset_class: [
+        "cash",
+        "stock",
+        "crypto",
+        "epf",
+        "equity",
+        "liability",
+        "index",
+        "fund",
+      ],
       currency_type: ["fiat", "crypto"],
       transaction_type: [
         "buy",

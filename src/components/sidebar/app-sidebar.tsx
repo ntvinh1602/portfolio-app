@@ -7,12 +7,8 @@ import {
   FolderSearch,
   LogOut,
   Plus,
-  RefreshCw
 } from "lucide-react"
-import { mutate } from "swr"
-import { useState } from "react"
 import { CollapsibleMenu } from "@/components/sidebar/collapsible-menu"
-import { SinglePage } from "@/components/sidebar/single-page"
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +25,7 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { TransactionForm } from "@/components/sidebar/transaction/add-transaction"
 import Link from "next/link"
 import { Separator } from "../ui/separator"
+import { RefreshPricesButton } from "./refresh-price-button"
 
 const data = {
   collapsibleMenu: [
@@ -71,16 +68,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await fetch('/api/external/refresh-prices', { method: 'POST' })
-    await mutate((key: string) => typeof key === 'string'
-      && key.startsWith(`/api/gateway/dashboard`))
-    setIsRefreshing(false)
-  }
 
   const router = useRouter()
   const handleSignOut = async () => {
@@ -106,30 +94,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <CollapsibleMenu items={data.collapsibleMenu} />
-        <SidebarGroup>
+        <SidebarGroup className="flex gap-1">
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarMenuButton onClick={() => setTxnFormOpen(true)}>
-            <Plus />
-            <span className="font-light text-muted-foreground">Add Transaction</span>
+          <SidebarMenuButton asChild>
+            <TransactionForm open={isTxnFormOpen} onOpenChange={setTxnFormOpen}/>
           </SidebarMenuButton>
-          <SidebarMenuButton onClick={handleRefresh}>
-            <RefreshCw className={`${isRefreshing && "animate-spin"}`} />
-            <span className="font-light text-muted-foreground">Refresh Prices</span>
+          <SidebarMenuButton asChild>
+            <RefreshPricesButton />
           </SidebarMenuButton>
         </SidebarGroup>
-        <SinglePage items={data.singlePage} className="mt-auto"/>
       </SidebarContent>
-      <Separator />
       <SidebarFooter>
-        <SidebarMenuButton onClick={handleSignOut} className="text-red-400">
+        <SidebarMenuButton onClick={handleSignOut} className="text-rose-400">
           <LogOut/>Logout
         </SidebarMenuButton>
       </SidebarFooter>
-      <TransactionForm
-        open={isTxnFormOpen}
-        onOpenChange={setTxnFormOpen}
-        defaultType="buy"
-      />
     </Sidebar>
   )
 }

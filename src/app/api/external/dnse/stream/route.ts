@@ -1,13 +1,7 @@
-// app/api/dnse/stream/route.ts
 import mqtt from "mqtt"
 import { NextRequest } from "next/server"
-import { isTradingHours } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
-  if (!isTradingHours()) {
-    return new Response("Market closed", { status: 403 })
-  }
-
   const searchParams = request.nextUrl.searchParams
   const symbols = searchParams.get("symbols")?.split(",") ?? []
   const token = searchParams.get("token")

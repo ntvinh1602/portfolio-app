@@ -31,6 +31,7 @@ import { DebtPaymentForm } from "./debt-payment"
 import { SplitForm } from "./split"
 import { mutate } from "swr"
 import { Loading } from "@/components/loader"
+import { Plus } from "lucide-react"
 
 const FORM_COMPONENTS: Record<string, Array<Enums<"transaction_type">>> = {
   cashflow: ["deposit", "withdraw", "income", "expense"],
@@ -252,6 +253,15 @@ export function TransactionForm({
  
    return (
     <>
+      <Button
+        variant="outline"
+        disabled={open}
+        onClick={() => onOpenChange(true)}
+        className="flex items-center"
+      >
+        <Plus/>
+        <span className="font-light text-muted-foreground">Add Transaction</span>
+      </Button>
       <Dialog open={open} onOpenChange={onOpenChange}>
        <DialogContent
           className="flex flex-col max-h-[95vh]"

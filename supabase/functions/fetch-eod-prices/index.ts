@@ -1,9 +1,22 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import yahooFinance from "https://esm.sh/yahoo-finance2@2.13.3"
 
-interface QuoteLite {
+interface Asset {
+  id: string
+  ticker: string
+  asset_class: string
+}
+
+interface SecurityData {
+  asset_id: string
+  date: string
+  price: number
+}
+
+interface IndexData {
   symbol: string
-  regularMarketPrice: number | null
+  date: string
+  close: number
 }
 
 const supabase = createClient(
@@ -20,10 +33,7 @@ async function sendTelegramMessage(message: string) {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-        }),
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
       })
     } catch (err) {
       console.error("Failed to send Telegram message:", err)
@@ -31,14 +41,16 @@ async function sendTelegramMessage(message: string) {
   }
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async () => {
+  const today = new Date().toISOString().split("T")[0]
+
   try {
-    // 1. Fetch stock + crypto assets
+    // 1. Fetch all active assets
     const { data: assets, error: assetError } = await supabase
       .from("assets")
       .select("id, ticker, asset_class")
       .eq("is_active", true)
-      .in("asset_class", ["stock", "crypto"])
+      .in("asset_class", ["stock", "crypto", "index"])
 
     if (assetError) {
       const msg = `❌ Error fetching assets: ${assetError.message}`
@@ -48,70 +60,85 @@ Deno.serve(async (_req) => {
     }
 
     if (!assets || assets.length === 0) {
-      return new Response(JSON.stringify({ message: "No active stock/crypto assets" }), { status: 200 })
+      return new Response(JSON.stringify({ message: "No active assets" }), { status: 200 })
     }
 
-    // 2. Map to Yahoo tickers
-    const tickers = assets.map((a) =>
-      a.asset_class === "crypto" ? `${a.ticker}-USD` : `${a.ticker}.VN`
-    )
+    // 2. Asset config mapping
+    const assetConfig: Record<
+      string,
+      {
+        tickerFormatter: (ticker: string) => string
+        rowBuilder: (asset: Asset, price: number) => SecurityData | IndexData
+        targetRows: (SecurityData | IndexData)[]
+        tableName: string
+        conflictColumns: string
+      }
+    > = {
+      stock: {
+        tickerFormatter: (t) => `${t}.VN`,
+        rowBuilder: (a, price) => ({ asset_id: a.id, date: today, price }),
+        targetRows: [],
+        tableName: "daily_stock_prices",
+        conflictColumns: "asset_id,date",
+      },
+      crypto: {
+        tickerFormatter: (t) => `${t}-USD`,
+        rowBuilder: (a, price) => ({ asset_id: a.id, date: today, price }),
+        targetRows: [],
+        tableName: "daily_crypto_prices",
+        conflictColumns: "asset_id,date",
+      },
+      index: {
+        tickerFormatter: (t) => `^${t}.VN`,
+        rowBuilder: (a, price) => ({ symbol: a.ticker, date: today, close: price }),
+        targetRows: [],
+        tableName: "daily_market_indices",
+        conflictColumns: "symbol,date",
+      },
+    }
 
-    // 3. Fetch batch quotes
+    // 3. Map assets to Yahoo tickers
+    const tickers = assets.map((a) => assetConfig[a.asset_class]?.tickerFormatter(a.ticker) || a.ticker)
+
+    // 4. Fetch batch quotes
     yahooFinance.suppressNotices(["yahooSurvey"])
-    const results = (await yahooFinance.quote(tickers)) as QuoteLite[]
+    const results = await yahooFinance.quote(tickers)
 
-    // 4. Build rows
-    const today = new Date().toISOString().split("T")[0]
+    // Ensure results is always an array
+    const quotes = Array.isArray(results) ? results : [results]
 
-    const stockRows: { asset_id: string; date: string; price: number }[] = []
-    const cryptoRows: { asset_id: string; date: string; price: number }[] = []
-
+    // 5. Build rows dynamically
     for (const asset of assets) {
-      const symbol =
-        asset.asset_class === "crypto" ? `${asset.ticker}-USD` : `${asset.ticker}.VN`
-      const match = results.find((r) => r.symbol === symbol)
+      const config = assetConfig[asset.asset_class]
+      if (!config) continue
+
+      const symbol = config.tickerFormatter(asset.ticker)
+      const match = quotes.find((r) => r.symbol === symbol)
       if (!match?.regularMarketPrice) continue
 
-      const row = {
-        asset_id: asset.id,
-        date: today,
-        price: match.regularMarketPrice,
-      }
-
-      if (asset.asset_class === "stock") stockRows.push(row)
-      if (asset.asset_class === "crypto") cryptoRows.push(row)
+      config.targetRows.push(config.rowBuilder(asset, match.regularMarketPrice))
     }
 
-    // 5. Upsert into Supabase
-    if (stockRows.length > 0) {
-      const { error } = await supabase
-        .from("daily_stock_prices")
-        .upsert(stockRows, { onConflict: "asset_id,date" })
-      if (error) {
-        const msg = `❌ Stock upsert error: ${error.message}`
-        console.error(msg)
-        await sendTelegramMessage(msg)
-        return new Response(JSON.stringify({ error: "Failed to upsert stock prices" }), { status: 500 })
-      }
-    }
+    // 6. Upsert rows per asset class
+    for (const key of Object.keys(assetConfig)) {
+      const { targetRows, tableName, conflictColumns } = assetConfig[key]
+      if (targetRows.length === 0) continue
 
-    if (cryptoRows.length > 0) {
-      const { error } = await supabase
-        .from("daily_crypto_prices")
-        .upsert(cryptoRows, { onConflict: "asset_id,date" })
+      const { error } = await supabase.from(tableName).upsert(targetRows, { onConflict: conflictColumns })
       if (error) {
-        const msg = `❌ Crypto upsert error: ${error.message}`
+        const msg = `❌ ${key} upsert error: ${error.message}`
         console.error(msg)
         await sendTelegramMessage(msg)
-        return new Response(JSON.stringify({ error: "Failed to upsert crypto prices" }), { status: 500 })
+        return new Response(JSON.stringify({ error: `Failed to upsert ${key} prices` }), { status: 500 })
       }
     }
 
     return new Response(
       JSON.stringify({
         message: "✅ Prices refreshed successfully",
-        stocks: stockRows.length,
-        cryptos: cryptoRows.length,
+        stocks: assetConfig.stock.targetRows.length,
+        cryptos: assetConfig.crypto.targetRows.length,
+        indices: assetConfig.index.targetRows.length,
       }),
       { status: 200 }
     )

@@ -27,6 +27,12 @@ export function useStockData(symbols: string[] = []) {
       try {
         // 1. Fetch token from cached API
         const authRes = await fetch("/api/external/dnse/auth")
+        if (authRes.status === 403) {
+          setError("Market is closed.")
+          eventSource?.close()
+          if (reconnectTimer) clearTimeout(reconnectTimer)
+          return
+        }
         if (!authRes.ok) {
           setError("Authentication failed.")
           return
@@ -61,7 +67,7 @@ export function useStockData(symbols: string[] = []) {
 
         eventSource.onerror = (e) => {
           console.error("SSE connection failed:", e)
-          setError("Market data stream disconnected. Retrying...")
+          setError("Market data stream disconnected.") // Removed "Retrying..."
           eventSource?.close()
 
           // reconnect after 5s

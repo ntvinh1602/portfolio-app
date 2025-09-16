@@ -13,10 +13,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase.rpc("get_active_debts")
+    const { data, error } = await supabase
+      .from("debts")
+      .select()
+      .eq("is_active", true)
 
     if (error) {
-      throw error
+      console.error("Error fetching assets:", error)
+      throw new Error("Internal Server Error")
     }
 
     return NextResponse.json(data)

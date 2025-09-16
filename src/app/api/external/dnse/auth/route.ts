@@ -1,7 +1,12 @@
-// app/api/dnse/auth/route.ts
 import { NextResponse } from "next/server"
+import { isTradingHours } from "@/lib/utils"
 
 export async function GET() {
+  
+  if (!isTradingHours()) {
+    return new Response("Market closed", { status: 403 })
+  }
+
   const username = process.env.DNSE_USERNAME
   const password = process.env.DNSE_PASSWORD
 
