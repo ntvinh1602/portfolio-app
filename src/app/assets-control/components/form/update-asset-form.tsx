@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { AssetFormBase } from "./base-form"
 import { useAssetForm } from "../../hooks/useAssetForm"
-import { revalidateAndMutate } from "../../lib/revalidate"
+import { refreshData } from "../../lib/revalidate"
 
 export function UpdateAssetForm({
   initialData,
@@ -40,7 +40,7 @@ export function UpdateAssetForm({
       return
     }
 
-    await revalidateAndMutate()
+    await refreshData()
     toast.success("Asset details saved successfully!")
     setIsSaving(false)
     onSuccess?.(formData)
@@ -56,7 +56,7 @@ export function UpdateAssetForm({
       return
     }
 
-    await revalidateAndMutate()
+    await refreshData()
     toast.success("Asset deleted successfully!")
     setIsDeleting(false)
     onDeleted?.()

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase/supabaseClient"
 import { Tables } from "@/types/database.types"
 import { AssetFormBase } from "./base-form"
 import { useAssetForm } from "../../hooks/useAssetForm"
-import { revalidateAndMutate } from "../../lib/revalidate"
+import { refreshData } from "../../lib/revalidate"
 
 type NewAsset = Omit<Partial<Tables<"assets">>, "id">
 
@@ -39,7 +39,7 @@ export function CreateAssetForm({
       return
     }
 
-    await revalidateAndMutate()
+    await refreshData()
     toast.success("Asset created successfully!")
     setIsSaving(false)
     onSuccess?.(inserted)

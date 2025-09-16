@@ -76,7 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await fetch('/api/external/refresh-all-asset-prices', { method: 'POST' })
+    await fetch('/api/external/refresh-prices', { method: 'POST' })
     await mutate((key: string) => typeof key === 'string'
       && key.startsWith(`/api/gateway/dashboard`))
     setIsRefreshing(false)

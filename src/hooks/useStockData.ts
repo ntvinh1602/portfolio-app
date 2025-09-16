@@ -16,49 +16,67 @@ export function useStockData(symbols: string[] = []) {
   const symbolString = useMemo(() => symbols.join(","), [symbols])
 
   useEffect(() => {
-    if (symbols.length === 0) {
-      return
-    }
+    if (symbols.length === 0) return
 
     let eventSource: EventSource | null = null
+    let reconnectTimer: NodeJS.Timeout | null = null
+    let isMounted = true
 
-    const checkMarketStatusAndConnect = async () => {
+    const connectStream = async () => {
       try {
-        const response = await fetch(`/api/market-data?symbols=${symbolString}`, { method: "HEAD" })
-        if (response.status === 403) {
-          const errorMessage = await response.text()
-          setError(errorMessage)
+        // 1. Fetch token from cached API
+        const authRes = await fetch("/api/external/dnse/auth")
+        if (!authRes.ok) {
+          setError("Authentication failed.")
           return
-        } else if (!response.ok) {
-          setError("Failed to connect to market data. Please try again later.")
+        }
+        const { token } = await authRes.json()
+        if (!token) {
+          setError("No token received from server.")
           return
         }
 
-        setError(null) // Clear any previous errors
-        eventSource = new EventSource(`/api/market-data?symbols=${symbolString}`)
+        // 2. Open SSE stream
+        setError(null)
+        eventSource = new EventSource(
+          `/api/external/dnse/stream?symbols=${symbolString}&token=${token}`
+        )
 
         eventSource.onmessage = (event) => {
-          const priceData: PriceData = JSON.parse(event.data)
-          setData((prevData) => ({
-            ...prevData,
-            [priceData.symbol]: priceData
-          }))
+          try {
+            const priceData: PriceData = JSON.parse(event.data)
+            if (!isMounted) return
+            setData((prev) => ({
+              ...prev,
+              [priceData.symbol]: priceData,
+            }))
+          } catch (e) {
+            console.error("Failed to parse SSE message:", e)
+          }
         }
 
         eventSource.onerror = (e) => {
-          console.error("EventSource failed:", e)
-          setError("Market data stream failed. Please try again later.")
+          console.error("SSE connection failed:", e)
+          setError("Market data stream disconnected. Retrying...")
           eventSource?.close()
+
+          // reconnect after 5s
+          if (reconnectTimer) clearTimeout(reconnectTimer)
+          reconnectTimer = setTimeout(() => {
+            if (isMounted) connectStream()
+          }, 5000)
         }
       } catch (e) {
-        console.error("Failed to fetch market data status:", e)
-        setError("Network error or server is unreachable.")
+        console.error("Stream connection error:", e)
+        setError("Network error.")
       }
     }
 
-    checkMarketStatusAndConnect()
+    connectStream()
 
     return () => {
+      isMounted = false
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       eventSource?.close()
     }
   }, [symbolString, symbols.length])

@@ -1,6 +1,6 @@
 import { mutate } from "swr"
 
-export async function revalidateAndMutate() {
+export async function refreshData() {
   await fetch("/api/revalidate", {
     method: "POST",
     headers: {
