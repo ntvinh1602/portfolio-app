@@ -19,7 +19,7 @@ import {
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { mutate } from "swr"
+import { refreshData } from "@/lib/refresh"
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -52,7 +52,7 @@ export default function Page() {
       })
 
       // ✅ Tell SWR to refetch dashboard data
-      await mutate("/api/gateway/dashboard")
+      await refreshData("dashboard", "api/gateway/dashboard")
     } catch {
       toast.error("An error occurred while starting the backfill process.", {
         id: toastId

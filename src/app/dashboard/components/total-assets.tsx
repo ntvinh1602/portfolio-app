@@ -17,7 +17,12 @@ import { BalanceSheet } from "./balance-sheet"
 import { Loading } from "@/components/loader"
 
 export function AssetCard() {
-  const { totalAssets, totalEquity, balanceSheet, loading } = useAssetData()
+  const {
+    totalAssets,
+    totalEquity,
+    balanceSheet: bs,
+    loading
+  } = useAssetData()
 
   const assetChartCfg = {
     allocation: {
@@ -41,7 +46,7 @@ export function AssetCard() {
     },
   } satisfies ChartConfig
 
-  const assetChartData = balanceSheet.assets
+  const assetChartData = bs.assets
     .filter(item => item.totalAmount > 0)
     .map(item => ({
       asset: item.type.toLowerCase(),
@@ -66,19 +71,22 @@ export function AssetCard() {
   const liabilityChartData = [
     {
       liability: "equity",
-      allocation: balanceSheet.totalEquity,
+      allocation: bs.totalEquity,
       fill: "var(--chart-1)",
     },
     {
       liability: "liabilities",
-      allocation: balanceSheet.totalLiabilities,
+      allocation: bs.totalLiabilities,
       fill: "var(--chart-2)",
     },
   ].filter((d) => d.allocation > 0)
 
-  const leverage = balanceSheet && balanceSheet.totalEquity !== 0
-    ? (balanceSheet.totalLiabilities / balanceSheet.totalEquity).toFixed(2)
+  const leverage = bs && bs.totalEquity !== 0
+    ? (bs.totalLiabilities / bs.totalEquity).toFixed(2)
     : "Infinite"
+  const epf = bs.assets.find(a => a.type === "EPF")?.totalAmount || 0
+  const liquidity = ( totalEquity - epf ) / totalEquity * 100
+
 
   if (loading) return (
     <Card className="gap-0">
@@ -114,10 +122,8 @@ export function AssetCard() {
           legend="right"
           label={false}
           margin_tb={0}
-          centerText="Liquid Eqty."
-          centerValue={
-            compactNum(totalEquity - (balanceSheet.assets.find(a => a.type === "EPF")?.totalAmount ?? 0
-          ))}
+          centerText="Liquidity"
+          centerValue={`${formatNum(liquidity, 1)}%`}
           valueFormatter={(value) => formatNum(value)}
         />
         <Piechart
