@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { Loading } from "@/components/loader"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -27,6 +28,7 @@ function Security({
   pnlPct,
   pnlNet,
   price,
+  prevPrice,
   type
 }: {
   ticker: string
@@ -35,10 +37,25 @@ function Security({
   totalAmount: number
   pnlPct: number
   pnlNet: number
-  quantity?: number
-  price?: number
+  quantity: number
+  price: number
+  prevPrice?: number | null
   type: 'stock' | 'crypto'
 }) {
+
+  const [priceChanged, setPriceChanged] = useState<"up" | "down" | null>(null)
+
+  useEffect(() => {
+    if (prevPrice) {
+      if (price > prevPrice) {
+        setPriceChanged("up")
+      } else if (price < prevPrice) {
+        setPriceChanged("down")
+      }
+      const timer = setTimeout(() => setPriceChanged(null), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [price, prevPrice])
 
   return (
     <Card className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
@@ -69,7 +86,16 @@ function Security({
                     : 0
                   }
                 </Badge>
-                <Badge variant="outline" className="font-thin text-foreground">
+                <Badge
+                  variant="outline"
+                  className={`font-thin text-foreground ${
+                    priceChanged === "up"
+                      ? "animate-flash-green"
+                      : priceChanged === "down"
+                        ? "animate-flash-red"
+                        : ""
+                  }`}
+                >
                   <Coins />
                   {price
                     ? type === 'stock'
@@ -137,6 +163,7 @@ export function Portfolio() {
                     pnlPct={stock.pnlPct}
                     pnlNet={stock.pnlNet}
                     price={stock.price}
+                    prevPrice={stock.prevPrice}
                     type="stock"
                   />
               )})
@@ -163,6 +190,7 @@ export function Portfolio() {
                     pnlPct={crypto.pnlPct}
                     pnlNet={crypto.pnlNet}
                     price={crypto.price}
+                    prevPrice={crypto.prevPrice}
                     type="crypto"
                   />
               )})

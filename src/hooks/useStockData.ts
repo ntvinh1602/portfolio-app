@@ -8,6 +8,7 @@ interface PriceData {
   quantity: number
   side: string
   time: string
+  prevPrice: number
 }
 
 export function useStockData(symbols: string[] = []) {
@@ -46,10 +47,13 @@ export function useStockData(symbols: string[] = []) {
           try {
             const priceData: PriceData = JSON.parse(event.data)
             if (!isMounted) return
-            setData((prev) => ({
-              ...prev,
-              [priceData.symbol]: priceData,
-            }))
+            setData((prevData) => {
+              const prevPrice = prevData[priceData.symbol]?.price
+              return {
+                ...prevData,
+                [priceData.symbol]: { ...priceData, prevPrice },
+              }
+            })
           } catch (e) {
             console.error("Failed to parse SSE message:", e)
           }

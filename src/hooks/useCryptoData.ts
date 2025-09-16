@@ -25,8 +25,13 @@ interface BinanceKline {
   }
 }
 
+interface PriceInfo {
+  price: string
+  prevPrice: string | null
+}
+
 export const useCryptoData = (symbols: string[] = []) => {
-  const [prices, setPrices] = useState<Record<string, string>>({})
+  const [prices, setPrices] = useState<Record<string, PriceInfo>>({})
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<Event | null>(null)
 
@@ -47,10 +52,19 @@ export const useCryptoData = (symbols: string[] = []) => {
     ws.onmessage = (event) => {
       const klineData: BinanceKline = JSON.parse(event.data)
       if (klineData.k && klineData.k.c) {
-        setPrices((prevPrices) => ({
-          ...prevPrices,
-          [klineData.s]: klineData.k.c
-        }))
+        const symbol = klineData.s
+        const newPrice = klineData.k.c
+
+        setPrices((prevPrices) => {
+          const prev = prevPrices[symbol]?.price ?? null
+          return {
+            ...prevPrices,
+            [symbol]: {
+              price: newPrice,
+              prevPrice: prev,
+            },
+          }
+        })
       }
     }
 

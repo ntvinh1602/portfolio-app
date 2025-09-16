@@ -18,6 +18,7 @@ export interface ProcessedStockData extends StockData {
   pnlPct: number
   pnlNet: number
   price: number
+  prevPrice?: number
 }
 
 export interface ProcessedCryptoData extends CryptoData {
@@ -25,6 +26,7 @@ export interface ProcessedCryptoData extends CryptoData {
   pnlPct: number
   pnlNet: number
   price: number
+  prevPrice?: number | null
 }
 
 interface AssetDataContextType {
@@ -101,7 +103,10 @@ export const AssetDataProvider = ({ children }: AssetDataProviderProps) => {
     if (!stockData) return []
     return stockData
       .map((stock) => {
-        const livePrice = marketData[stock.ticker]?.price
+        const liveEntry = marketData[stock.ticker]
+        const livePrice = liveEntry?.price
+        const prevPrice = liveEntry?.prevPrice   // <--- add this
+
         const totalAmount = livePrice
           ? livePrice * stock.quantity * 1000
           : stock.total_amount
@@ -110,12 +115,14 @@ export const AssetDataProvider = ({ children }: AssetDataProviderProps) => {
           stock.cost_basis > 0
             ? (totalAmount * 0.99873 / stock.cost_basis - 1) * 100
             : 0
+
         return {
           ...stock,
           totalAmount,
           pnlNet,
           pnlPct,
           price: livePrice ?? stock.latest_price / 1000,
+          prevPrice, // <--- include it here
         }
       })
       .sort((a, b) => b.totalAmount - a.totalAmount)
@@ -131,37 +138,48 @@ export const AssetDataProvider = ({ children }: AssetDataProviderProps) => {
     }
   }, [processedStockData])
 
-  const processedCryptoData = useMemo(() => {
-    if (!cryptoData) return []
-    return cryptoData
-      .map((crypto) => {
-        const isUSDT = crypto.ticker === "USDT"
-        const livePriceStr = liveCryptoPrices[`${crypto.ticker}USDT`]
-        const livePrice = isUSDT
-          ? crypto.latest_usd_rate
-          : livePriceStr
-            ? parseFloat(livePriceStr)
-            : crypto.latest_price
-        const totalAmount = isUSDT
-          ? crypto.quantity * crypto.latest_usd_rate
-          : livePriceStr
-            ? crypto.quantity * parseFloat(livePriceStr) * crypto.latest_usd_rate
-            : crypto.total_amount
-        const pnlNet = totalAmount - crypto.cost_basis
-        const pnlPct =
-          crypto.cost_basis > 0
-            ? (totalAmount / crypto.cost_basis - 1) * 100
-            : 0
-        return {
-          ...crypto,
-          totalAmount,
-          pnlNet,
-          pnlPct,
-          price: livePrice,
-        }
-      })
-      .sort((a, b) => b.totalAmount - a.totalAmount)
-  }, [cryptoData, liveCryptoPrices])
+const processedCryptoData = useMemo(() => {
+  if (!cryptoData) return []
+
+  return cryptoData
+    .map((crypto) => {
+      const isUSDT = crypto.ticker === "USDT"
+      const liveInfo = liveCryptoPrices[`${crypto.ticker}USDT`]
+
+      // Extract price + prevPrice from liveInfo if available
+      const livePrice = isUSDT
+        ? crypto.latest_usd_rate
+        : liveInfo?.price
+        ? parseFloat(liveInfo.price)
+        : crypto.latest_price
+
+      const prevPrice = liveInfo?.prevPrice
+        ? parseFloat(liveInfo.prevPrice)
+        : null
+
+      const totalAmount = isUSDT
+        ? crypto.quantity * crypto.latest_usd_rate
+        : liveInfo?.price
+        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
+        : crypto.total_amount
+
+      const pnlNet = totalAmount - crypto.cost_basis
+      const pnlPct =
+        crypto.cost_basis > 0
+          ? (totalAmount / crypto.cost_basis - 1) * 100
+          : 0
+
+      return {
+        ...crypto,
+        totalAmount,
+        pnlNet,
+        pnlPct,
+        price: livePrice,
+        prevPrice, // 👈 added this
+      }
+    })
+    .sort((a, b) => b.totalAmount - a.totalAmount)
+}, [cryptoData, liveCryptoPrices])
 
   useEffect(() => {
     if (processedCryptoData) {

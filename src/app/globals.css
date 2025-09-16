@@ -152,4 +152,35 @@
   .animate-collapsible-up {
     animation: collapsible-up 0.2s ease-out;
   }
+  @keyframes flash-green {
+    0% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: #84cc16;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .animate-flash-green {
+    animation: flash-green 0.5s ease-out;
+  }
+
+  @keyframes flash-red {
+    0% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: #be123c;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .animate-flash-red {
+    animation: flash-red 0.5s ease-out;
+  }
 }
