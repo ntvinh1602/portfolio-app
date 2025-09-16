@@ -12,7 +12,7 @@ import {
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum, formatNum } from "@/lib/utils"
-import { useAssetData } from "@/context/asset-data-context"
+import { useLiveData } from "@/context/live-data-context"
 import { BalanceSheet } from "./balance-sheet"
 import { Loading } from "@/components/loader"
 
@@ -22,7 +22,7 @@ export function AssetCard() {
     totalEquity,
     balanceSheet: bs,
     loading
-  } = useAssetData()
+  } = useLiveData()
 
   const assetChartCfg = {
     allocation: {

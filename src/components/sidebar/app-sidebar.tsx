@@ -6,7 +6,6 @@ import {
   TrendingUp,
   FolderSearch,
   LogOut,
-  Plus,
 } from "lucide-react"
 import { CollapsibleMenu } from "@/components/sidebar/collapsible-menu"
 import {
@@ -24,7 +23,6 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { TransactionForm } from "@/components/sidebar/transaction/add-transaction"
 import Link from "next/link"
-import { Separator } from "../ui/separator"
 import { RefreshPricesButton } from "./refresh-price-button"
 
 const data = {
@@ -35,6 +33,10 @@ const data = {
       icon: FolderSearch,
       isActive: true,
       items: [
+        {
+          title: "Assets",
+          url: "/assets",
+        },
         {
           title: "Transactions",
           url: "/transactions",
@@ -50,10 +52,6 @@ const data = {
         {
           title: "Settings",
           url: "/settings",
-        },
-        {
-          title: "Assets",
-          url: "/assets-control",
         },
       ]
     }

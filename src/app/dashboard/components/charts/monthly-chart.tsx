@@ -3,10 +3,10 @@ import { format } from "date-fns"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useDashboardData } from "@/hooks/useDashboardData"
+import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function ExpenseChart() {
-  const { monthlyData, isLoading } = useDashboardData()
+  const { monthlyData, isLoading } = useDelayedData()
 
   if (isLoading || !monthlyData)
     return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />

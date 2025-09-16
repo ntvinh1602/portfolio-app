@@ -2,10 +2,10 @@ import * as React from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useDashboardData } from "@/hooks/useDashboardData"
+import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function Benchmarkchart() {
-  const { twrData, benchmarkData, isLoading } = useDashboardData()
+  const { twrData, benchmarkData, isLoading } = useDelayedData()
 
   const [dateRange, setDateRange] = React.useState("1y")
 

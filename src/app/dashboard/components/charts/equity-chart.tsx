@@ -2,12 +2,12 @@ import * as React from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useAssetData } from "@/context/asset-data-context"
-import { useDashboardData } from "@/hooks/useDashboardData"
+import { useLiveData } from "@/context/live-data-context"
+import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function EquityChart() {
-  const { totalEquity } = useAssetData()
-  const { pnlData, equityData, isLoading } = useDashboardData()
+  const { totalEquity } = useLiveData()
+  const { pnlData, equityData, isLoading } = useDelayedData()
 
   const [dateRange, setDateRange] = React.useState("1y")
 

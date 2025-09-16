@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { formatNum } from "@/lib/utils"
-import { AssetItem } from "@/types/dashboard-data"
-import { useAssetData } from "@/context/asset-data-context"
+import { AssetItem } from "@/app/dashboard/types/dashboard-data"
+import { useLiveData } from "@/context/live-data-context"
 import { Loading } from "@/components/loader"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -57,7 +57,7 @@ export function BalanceSheet() {
   const {
     balanceSheet: bs,
     loading
-  } = useAssetData()
+  } = useLiveData()
   const isMobile = useIsMobile()
 
   if (loading || !bs) return <Loading/>

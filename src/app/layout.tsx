@@ -3,17 +3,16 @@ import { Roboto_Flex, Roboto_Condensed } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-providers"
-import { AssetDataProvider } from "@/context/asset-data-context"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
   subsets: ["latin"],
-});
+})
 
 const RobotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
   subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
   title: "Portfolio Tracker",
@@ -33,11 +32,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-};
+}
 
 
 export default function RootLayout({ children }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html
@@ -51,19 +50,10 @@ export default function RootLayout({ children }: Readonly<{
           enableSystem
           disableTransitionOnChange
         >
-          <RootLayoutContent>{children}</RootLayoutContent>
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
-  );
-}
-
-function RootLayoutContent({ children }: { children: React.ReactNode }) {
-
-  return (
-    <AssetDataProvider>
-      {children}
-    </AssetDataProvider>
-  );
+  )
 }

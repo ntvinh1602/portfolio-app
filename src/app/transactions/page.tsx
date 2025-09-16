@@ -9,15 +9,14 @@ import { Transactions } from "./components/table"
 import { columns, Transaction } from "./components/columns"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { DateRange } from "@/components/date-picker"
-import { subMonths } from "date-fns"
-import { format } from "date-fns"
+import { subMonths, format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { TxnLeg, Expense } from "./types/data"
 
 export default function Page() {
   const [data, setData] = React.useState<Transaction[]>([])
   const [category, setCategory] = React.useState("trade")
-  const [dateFrom, setDateFrom] =React.useState<Date | undefined>(
+  const [dateFrom, setDateFrom] = React.useState<Date | undefined>(
     subMonths(new Date(), 1)
   )
   const [dateTo, setDateTo] = React.useState<Date | undefined>(new Date())
@@ -32,21 +31,26 @@ export default function Page() {
     setSelectedTxn(transaction)
     setDetailLoading(true)
     try {
-      const url = new URL(
-        "/api/query/txn-details",
-        window.location.origin
-      )
-      url.searchParams.append("transactionId", transaction.id)
-      url.searchParams.append("include-expenses", "true")
+      const isTrade = (transaction.type === "buy" || transaction.type === "sell")
+        ? "true"
+        : "false"
+
+      const url = new URL("/api/gateway/txn-info", window.location.origin)
+      url.searchParams.append("txnID", transaction.id)
+      url.searchParams.append("isExpense", isTrade)
+
       const response = await fetch(url)
+
       if (!response.ok) {
-        throw new Error("Failed to fetch transaction legs")
+        throw new Error("Failed to fetch transaction details")
       }
+
       const result = await response.json()
       setTxnLegs(result.legs || [])
       setExpenses(result.expenses || [])
-    } catch {
-      setError("Failed to fetch transaction legs")
+    } catch (err) {
+      console.error(err)
+      setError("Failed to fetch transaction details")
     } finally {
       setDetailLoading(false)
     }
@@ -56,20 +60,24 @@ export default function Page() {
     async function fetchData() {
       setTxnLoading(true)
       try {
-        const url = new URL("/api/query/transactions", window.location.origin)
+        const url = new URL("/api/gateway/txn-feed", window.location.origin)
         if (dateFrom) {
           url.searchParams.append("startDate", format(dateFrom, "yyyy-MM-dd"))
         }
         if (dateTo) {
           url.searchParams.append("endDate", format(dateTo, "yyyy-MM-dd"))
         }
+
         const response = await fetch(url)
+
         if (!response.ok) {
           throw new Error("Failed to fetch transactions")
         }
+
         const result = await response.json()
         setData(result)
-      } catch {
+      } catch (err) {
+        console.error(err)
         setError("Failed to fetch transactions")
       } finally {
         setTxnLoading(false)
@@ -94,10 +102,10 @@ export default function Page() {
 
   return (
     <SidebarProvider>
-      <AppSidebar collapsible="icon"/>
+      <AppSidebar collapsible="icon" />
       <SidebarInset className="flex flex-col px-4">
         <Header title="Transactions" />
-        <Separator className="mb-4"/>
+        <Separator className="mb-4" />
         <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
           <div className="flex w-6/10 flex-col gap-2">
             <div className="flex justify-between items-center">
@@ -115,12 +123,12 @@ export default function Page() {
                   {
                     label: "Cashflow",
                     value: "cash",
-                    number: transactionCounts.cash
+                    number: transactionCounts.cash,
                   },
                   {
                     label: "Trades",
                     value: "trade",
-                    number: transactionCounts.trade
+                    number: transactionCounts.trade,
                   },
                 ]}
               />
@@ -135,15 +143,16 @@ export default function Page() {
             />
           </div>
           <div className="flex w-4/10 flex-col gap-2">
-            {error ? 
-              <p className="text-red-500">{error}</p> :
+            {error ? (
+              <p className="text-red-500">{error}</p>
+            ) : (
               <TransactionDetails
                 transaction={selectedTxn}
                 transactionLegs={txnLegs}
                 associatedExpenses={expenses}
                 loading={detailLoading}
               />
-            }
+            )}
           </div>
         </div>
       </SidebarInset>

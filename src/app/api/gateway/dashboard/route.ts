@@ -1,23 +1,16 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/supabaseServer"
+import { NextResponse, NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { headers } = request
-
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const baseURL = request.url.split("/api")[0]
 
+    // Prepare fetch options with the server-side secret
     const fetchOptions = {
-      headers,
+      headers: {
+        Authorization: `Bearer ${process.env.MY_APP_SECRET}`,
+      },
       next: {
         revalidate: 600,
         tags: [`dashboard`],
@@ -34,14 +27,14 @@ export async function GET(request: Request) {
       cryptoHoldingsResponse,
       monthlyDataResponse,
     ] = await Promise.all([
-      fetch(`${baseURL}/api/query/twr`, fetchOptions),
-      fetch(`${baseURL}/api/query/pnl`, fetchOptions),
-      fetch(`${baseURL}/api/query/equity-chart`, fetchOptions),
-      fetch(`${baseURL}/api/query/benchmark-chart`, fetchOptions),
-      fetch(`${baseURL}/api/query/balance-sheet`, fetchOptions),
-      fetch(`${baseURL}/api/query/stock-holdings`, fetchOptions),
-      fetch(`${baseURL}/api/query/crypto-holdings`, fetchOptions),
-      fetch(`${baseURL}/api/query/monthly-data`, fetchOptions),
+      fetch(`${baseURL}/api/internal/twr`, fetchOptions),
+      fetch(`${baseURL}/api/internal/pnl`, fetchOptions),
+      fetch(`${baseURL}/api/internal/equity-chart`, fetchOptions),
+      fetch(`${baseURL}/api/internal/benchmark-chart`, fetchOptions),
+      fetch(`${baseURL}/api/internal/balance-sheet`, fetchOptions),
+      fetch(`${baseURL}/api/internal/stock-holdings`, fetchOptions),
+      fetch(`${baseURL}/api/internal/crypto-holdings`, fetchOptions),
+      fetch(`${baseURL}/api/internal/monthly-data`, fetchOptions),
     ])
 
     for (const response of [
@@ -81,18 +74,16 @@ export async function GET(request: Request) {
       monthlyDataResponse.json(),
     ])
 
-    return NextResponse.json(
-      {
-        twrData,
-        pnlData,
-        equityData,
-        benchmarkData,
-        balanceSheetData,
-        stockData,
-        cryptoData,
-        monthlyData
-      }
-    )
+    return NextResponse.json({
+      twrData,
+      pnlData,
+      equityData,
+      benchmarkData,
+      balanceSheetData,
+      stockData,
+      cryptoData,
+      monthlyData
+    })
 
   } catch (error) {
     console.error("Error fetching dashboard data:", error)

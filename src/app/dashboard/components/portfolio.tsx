@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { useAssetData } from "@/context/asset-data-context"
+import { useLiveData } from "@/context/live-data-context"
 import Image from 'next/image'
 import {
   Leaf,
@@ -134,7 +134,7 @@ export function Portfolio() {
     isCryptoPriceLive,
     isStockPriceLive,
     loading
-  } = useAssetData()
+  } = useLiveData()
   
   if (loading) return <Loading/>
 

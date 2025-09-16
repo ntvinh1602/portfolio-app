@@ -1,43 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/supabaseServer"
 import { Tables } from "@/types/database.types"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    const { headers } = request
-
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const baseUrl = request.url.split("/api")[0]
 
+    // Prepare fetch options with the server-side secret
     const fetchOptions = {
-      headers,
+      headers: {
+        Authorization: `Bearer ${process.env.MY_APP_SECRET}`,
+      },
       next: {
         revalidate: 600,
         tags: [`account`],
       },
     }
 
+    // Fetch assets and debts in parallel
     const [assetDataResponse, debtsResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/query/assets`, fetchOptions),
-      fetch(`${baseUrl}/api/query/debts`, fetchOptions),
+      fetch(`${baseUrl}/api/internal/assets`, fetchOptions),
+      fetch(`${baseUrl}/api/internal/debts`, fetchOptions),
     ])
 
     for (const response of [assetDataResponse, debtsResponse]) {
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(
-          `Error fetching account data: ${response.url} - ${response.status} ${response.statusText}`,
-          errorText,
-        )
-        throw new Error(`Failed to fetch from ${response.url}`)
+        console.error(`Error fetching account data`, errorText)
+        throw new Error(`Failed to fetch account data`)
       }
     }
 
