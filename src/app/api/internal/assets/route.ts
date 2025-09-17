@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data as Tables<"assets">[])
 
   } catch (e) {
-    console.error("Unexpected error fetching assets:", e)
+    console.error("Unexpected error:", e)
     const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }

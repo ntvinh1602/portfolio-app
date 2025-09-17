@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { compactNum, formatNum } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
 import { useLiveData } from "@/context/live-data-context"
 import { BalanceSheet } from "./balance-sheet"
 import { Loading } from "@/components/loader"

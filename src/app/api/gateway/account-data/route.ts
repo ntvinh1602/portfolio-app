@@ -34,9 +34,8 @@ export async function GET(request: NextRequest) {
 
     for (const response of [assetDataResponse, debtsResponse]) {
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`Error fetching account data`, errorText)
-        throw new Error(`Failed to fetch account data`)
+        const result = await response.json()
+        throw new Error(result.error)
       }
     }
 
@@ -50,10 +49,8 @@ export async function GET(request: NextRequest) {
       debts: debts || [],
     })
   } catch (error) {
-    console.error("Error fetching transaction form data:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch transaction form data" },
-      { status: 500 },
-    )
+    console.error(error)
+    const message = error instanceof Error ? error.message : "Internal Server Error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

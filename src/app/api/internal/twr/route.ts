@@ -18,11 +18,14 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase.rpc("get_twr")
 
     if (error) {
-      console.error("Error calling calculate_twr function:", error)
-      throw new Error("Internal Server Error")
+      console.error("Supabase RPC error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const transformedData = data.reduce((acc: Record<string, number>, item: { range_label: string; twr: number }) => {
+    const transformedData = data.reduce((
+      acc: Record<string, number>,
+      item: { range_label: string; twr: number }
+    ) => {
       acc[item.range_label] = item.twr
       return acc
     }, {})
@@ -32,10 +35,6 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

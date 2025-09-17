@@ -46,7 +46,7 @@ export function LoginForm({
       <Card className="border-none bg-card/0">
         <CardHeader className="px-0 flex flex-col items-center">
           <h1 className="text-2xl text-accent-foreground">
-            Welcome back!
+            Hello there!
           </h1>
           <CardDescription>
             Enter your credentials below to login
@@ -67,7 +67,7 @@ export function LoginForm({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  className="rounded-full font-thin text-sm text-accent-foreground"
+                  className="font-thin text-sm text-accent-foreground"
                 />
               </div>
               <div className="grid gap-3">
@@ -75,12 +75,6 @@ export function LoginForm({
                   <Label className="text-muted-foreground" htmlFor="password">
                     Password
                   </Label>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm font-thin"
-                  >
-                    Forgot your password?
-                  </a>
                 </div>
                 <Input
                   id="password"
@@ -89,7 +83,7 @@ export function LoginForm({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="rounded-full text-accent-foreground"
+                  className="text-accent-foreground"
                 />
               </div>
               {error && (
@@ -100,7 +94,7 @@ export function LoginForm({
               </div>
               <Button
                 type="submit"
-                className="w-full rounded-full"
+                className="w-full"
                 disabled={isLoading || !token}
               >
                 {isLoading ? "Logging in..." : "Login"}

@@ -20,16 +20,15 @@ export async function GET(req: NextRequest) {
       .select()
 
     if (error) {
-      console.error("Error fetching monthly_snapshots:", error)
+      console.error("Supabase RPC error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
+    
   } catch (e) {
     console.error("Unexpected error:", e)
-    const errorMessage =
-      e instanceof Error ? e.message : "Internal Server Error"
-
+    const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

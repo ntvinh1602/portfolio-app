@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import { ChevronRight, Monitor, type LucideIcon } from "lucide-react"
 
 import {
   Collapsible,
@@ -37,6 +37,12 @@ export function CollapsibleMenu({
     <SidebarGroup>
       <SidebarGroupLabel>Pages</SidebarGroupLabel>
       <SidebarMenu>
+        <SidebarMenuButton tooltip="Dashboard">
+          <a href="/" className="flex items-center gap-2">
+            <Monitor className="size-4"/>
+            <span className="font-light">Dashboard</span>
+          </a>
+        </SidebarMenuButton>
         {items.map((item) => (
           <Collapsible key={item.title} defaultOpen={item.isActive}>
             <CollapsibleTrigger asChild>

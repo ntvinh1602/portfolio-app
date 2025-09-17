@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import {
   Settings,
   TrendingUp,
@@ -12,18 +11,13 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { TransactionForm } from "@/components/sidebar/transaction/add-transaction"
 import Link from "next/link"
-import { RefreshPricesButton } from "./refresh-price-button"
+import { QuickActions } from "./quick-actions"
 
 const data = {
   collapsibleMenu: [
@@ -68,8 +62,6 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const supabase = createClient()
-
-  const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
   
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -79,31 +71,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
-                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <TrendingUp className="size-4"/>
-                </div>
-                <h1 className="text-xl">Portfolio Tracker</h1>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarMenuButton size="lg">
+          <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
+            <TrendingUp className="size-4 text-primary-foreground"/>
+          </div>
+          <h1 className="text-xl">Portfolio Tracker</h1>
+        </SidebarMenuButton>
       </SidebarHeader>
+      
       <SidebarContent>
         <CollapsibleMenu items={data.collapsibleMenu} />
-        <SidebarGroup className="flex gap-1">
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarMenuButton asChild>
-            <TransactionForm open={isTxnFormOpen} onOpenChange={setTxnFormOpen}/>
-          </SidebarMenuButton>
-          <SidebarMenuButton asChild>
-            <RefreshPricesButton />
-          </SidebarMenuButton>
-        </SidebarGroup>
+        <QuickActions/>
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenuButton
           onClick={handleSignOut}

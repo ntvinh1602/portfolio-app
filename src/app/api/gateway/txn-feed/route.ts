@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       headers: response.headers,
     })
   } catch (error) {
-    console.error("Error in gateway /api/transactions:", error)
+    console.error(error)
     const message = error instanceof Error ? error.message : "Internal Server Error"
     return NextResponse.json({ error: message }, { status: 500 })
   }

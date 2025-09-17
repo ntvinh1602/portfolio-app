@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       headers: response.headers, // forward headers like content-type
     })
   } catch (error) {
-    console.error("Error in gateway /api/txn-details:", error)
+    console.error(error)
     const message = error instanceof Error ? error.message : "Internal Server Error"
     return NextResponse.json({ error: message }, { status: 500 })
   }

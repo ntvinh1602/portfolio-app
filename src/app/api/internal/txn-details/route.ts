@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
       : false
 
     if (!transactionId) {
-      return NextResponse.json(
-        { error: "transactionId is required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Missing txnID" }, { status: 400 })
     }
 
     // --- Call Supabase RPC ---
@@ -32,16 +29,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Supabase RPC error:", error)
-      return NextResponse.json(
-        { error: "Error fetching transaction details" },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (e) {
-    console.error("Unexpected error fetching transaction details:", e)
-    const message = e instanceof Error ? e.message : "Internal Server Error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error("Unexpected error:", e)
+    const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

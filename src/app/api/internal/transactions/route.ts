@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate")
 
     if (!startDate || !endDate) {
-      return NextResponse.json({ error: "Missing startDate or endDate" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Missing startDate or endDate" },
+        { status: 400 }
+      )
     }
 
     // --- Call Supabase RPC ---
@@ -31,9 +34,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data)
+
   } catch (e) {
-    console.error("Unexpected error fetching transactions:", e)
-    const message = e instanceof Error ? e.message : "Internal Server Error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error("Unexpected error:", e)
+    const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

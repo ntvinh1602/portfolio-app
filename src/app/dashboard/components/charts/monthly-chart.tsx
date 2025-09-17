@@ -6,22 +6,29 @@ import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function ExpenseChart() {
-  const { monthlyData, isLoading } = useDelayedData()
+  const {
+    monthlyData: AllTimeData,
+    isLoading
+  } = useDelayedData()
 
-  if (isLoading || !monthlyData)
+  if (isLoading || !AllTimeData)
     return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />
 
-  const chartData = monthlyData.slice(-12).map(d => ({
-     revenue: d.pnl + d.fee + d.interest + d.tax,
-     fee: -d.fee,
-     interest: -d.interest,
-     tax: -d.tax,
-     snapshot_date: d.date
+  const last12MData = AllTimeData
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-12)
+    .map(d => ({
+      revenue: d.pnl + d.fee + d.interest + d.tax,
+      pnl: d.pnl,
+      fee: -d.fee,
+      interest: -d.interest,
+      tax: -d.tax,
+      snapshot_date: d.date
     }))
-  const totalPnL = monthlyData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const last12MPnL = monthlyData.slice(-12).reduce((acc, curr) => acc + curr.pnl, 0)
+  const totalPnL = AllTimeData.reduce((acc, curr) => acc + curr.pnl, 0)
+  const last12MPnL = last12MData.reduce((acc, curr) => acc + curr.pnl, 0)
   const avgLast12MPnL = last12MPnL / 12
-  const avgAllTimePnL = totalPnL / monthlyData.length
+  const avgAllTimePnL = totalPnL / AllTimeData.length
 
   return (
     <div className="flex-1">
@@ -36,7 +43,7 @@ export function ExpenseChart() {
         minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
         minorText2="avg. all time"
         chartComponent={ChartBarStacked}
-        chartData={chartData}
+        chartData={last12MData}
         chartConfig={{
           tax: {
             label: "Tax",

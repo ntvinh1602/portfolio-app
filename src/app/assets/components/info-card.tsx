@@ -13,6 +13,7 @@ import Image from "next/image"
 import { Tables } from "@/types/database.types"
 import { UpdateAssetForm } from "./form/update-asset-form"
 import { Info } from "lucide-react"
+import { assetClassFormatter } from "@/lib/utils"
 
 export function InfoCard({
   asset,
@@ -44,6 +45,7 @@ export function InfoCard({
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">{asset.name}</CardTitle>
+        <CardDescription>{assetClassFormatter(asset.asset_class)}</CardDescription>
         <CardAction>
           <div className="size-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
             <Image
@@ -75,12 +77,8 @@ export function InfoCard({
         </div>
         <UpdateAssetForm
           initialData={asset}
-          onSuccess={(updated) => {
-            onUpdated?.(updated) // notify parent if needed
-          }}
-          onDeleted={() => {
-            onDeleted?.()
-          }}
+          onSuccess={(updated) => {onUpdated?.(updated)}}
+          onDeleted={() => {onDeleted?.()}}
         />
       </CardContent>
     </Card>

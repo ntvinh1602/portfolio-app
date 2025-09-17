@@ -56,9 +56,8 @@ export async function GET(request: NextRequest) {
       monthlyDataResponse,
     ]) {
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`Error fetching dashboard data: ${response.url} - ${response.status} ${response.statusText}`, errorText)
-        throw new Error(`Failed to fetch from ${response.url}`)
+        const result = await response.json()
+        throw new Error(result.error)
       }
     }
 
@@ -94,10 +93,8 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("Error fetching dashboard data:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard data" },
-      { status: 500 }
-    )
+    console.error(error)
+    const message = error instanceof Error ? error.message : "Internal Server Error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

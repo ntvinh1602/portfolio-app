@@ -252,56 +252,46 @@ export function TransactionForm({
     type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
  
    return (
-    <>
-      <Button
-        variant="outline"
-        disabled={open}
-        onClick={() => onOpenChange(true)}
-        className="flex items-center"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="flex flex-col max-h-[95vh]"
+        showCloseButton={false}
       >
-        <Plus/>
-        <span className="font-light text-muted-foreground">Add Transaction</span>
-      </Button>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-       <DialogContent
-          className="flex flex-col max-h-[95vh]"
-          showCloseButton={false}
-       >
-         <DialogHeader>
-           <DialogTitle>Add Transaction</DialogTitle>
-         </DialogHeader>
-         <div className="flex-auto overflow-y-auto">
-           <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
-             <div className="grid grid-cols-2 gap-4 pb-4">
-               <div className="grid gap-3">
-                 <Label htmlFor="date">Date</Label>
-                 <SingleDate selected={date} onSelect={setDate} />
-               </div>
-               <div className="grid gap-3">
-                 <Label htmlFor="transaction-type">Type</Label>
-                 <Select
-                   onValueChange={value => setTransactionType(value as Enums<"transaction_type">)}
-                   defaultValue={transactionType}
-                 >
-                   <SelectTrigger className="w-full">
-                     <SelectValue placeholder="Select type..." />
-                   </SelectTrigger>
-                   <SelectContent>
-                     {Constants.public.Enums.transaction_type.map(type => (
-                       <SelectItem key={type} value={type}>
-                         {formatTransactionType(type)}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-               </div>
-               {loading ?
-                  <div className="col-span-2 flex justify-center items-center h-24">
-                    <Loading/>
-                  </div>
-                : renderFormFields()
-               }
-             </div>
+        <DialogHeader>
+          <DialogTitle>Add Transaction</DialogTitle>
+        </DialogHeader>
+        <div className="flex-auto overflow-y-auto">
+          <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 pb-4">
+              <div className="grid gap-3">
+                <Label htmlFor="date">Date</Label>
+                <SingleDate selected={date} onSelect={setDate} />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="transaction-type">Type</Label>
+                <Select
+                  onValueChange={value => setTransactionType(value as Enums<"transaction_type">)}
+                  defaultValue={transactionType}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Constants.public.Enums.transaction_type.map(type => (
+                      <SelectItem key={type} value={type}>
+                        {formatTransactionType(type)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {loading ?
+                <div className="col-span-2 flex justify-center items-center h-24">
+                  <Loading/>
+                </div>
+              : renderFormFields()
+              }
+            </div>
             <DialogFooter className="sticky bottom-0 bg-card/0">
               <Button 
                 variant="outline"
@@ -322,6 +312,5 @@ export function TransactionForm({
         </div>
       </DialogContent>
     </Dialog>
-    </>
   )
 }

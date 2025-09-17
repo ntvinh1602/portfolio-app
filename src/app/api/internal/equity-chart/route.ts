@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
     })
 
     if (error) {
-      console.error("Error calling get_equity_chart_data function:", error)
-      throw new Error("Internal Server Error")
+      console.error("Supabase RPC error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     // Process the new data structure
@@ -51,10 +51,6 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error("Unexpected error:", e)
     const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

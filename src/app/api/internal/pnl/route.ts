@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase.rpc("get_pnl")
 
     if (error) {
-      console.error("Error calling get_pnl function:", error)
-      throw new Error("Internal Server Error")
+      console.error("Supabase RPC error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     const transformedData = data.reduce((acc: Record<string, number>, item: { range_label: string; pnl: number }) => {
@@ -31,12 +31,7 @@ export async function GET(req: NextRequest) {
 
   } catch (e) {
     console.error("Unexpected error:", e)
-    const errorMessage =
-      e instanceof Error ? e.message : "Internal Server Error"
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    )
+    const errorMessage = e instanceof Error ? e.message : "Internal Server Error"
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
