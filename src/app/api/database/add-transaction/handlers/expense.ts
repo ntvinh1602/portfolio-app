@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/middleware"
+import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { expenseSchema } from "@/lib/schemas/transactions"
 
 export async function handleExpense(
-  supabase: ReturnType<typeof createClient>["supabase"],
+  supabase: SupabaseClient,
   data: z.infer<typeof expenseSchema>
 ) {
   const { transaction_date, quantity, description, asset } = data

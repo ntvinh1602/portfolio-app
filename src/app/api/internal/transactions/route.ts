@@ -1,6 +1,5 @@
-import { createClient } from "@/lib/supabase/supabaseServer"
-import { NextResponse } from "next/server"
-import { type NextRequest } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { NextResponse, NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Supabase RPC error:", error)
-      return NextResponse.json({ error: "Error fetching transactions" }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)

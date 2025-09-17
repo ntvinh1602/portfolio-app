@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/supabaseServer"
-import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { NextResponse, NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
 
   try {
     // Check Authorization header
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     if (error) {
       console.error("Error calling get_balance_sheet function:", error)
-      throw new Error("Internal Server Error")
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)

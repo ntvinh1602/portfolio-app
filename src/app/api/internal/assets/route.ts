@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/supabaseServer"
+import { NextResponse, NextRequest } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 import { Tables } from "@/types/database.types"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   
   try {
     // Check Authorization header
@@ -23,8 +23,8 @@ export async function GET(req: Request) {
       .not("asset_class", "in", "(equity,liability)")
 
     if (error) {
-      console.error("Error fetching assets:", error)
-      throw new Error("Internal Server Error")
+      console.error("Supabase RPC error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data as Tables<"assets">[])

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/supabaseServer"
+import { createClient } from "@/lib/supabase/server"
 import yahooFinance from "yahoo-finance2"
 
 interface Asset {

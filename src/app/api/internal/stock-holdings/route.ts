@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/supabaseServer"
+import { createClient } from "@/lib/supabase/server"
+import { NextResponse, NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
 
   try {
     // Check Authorization header

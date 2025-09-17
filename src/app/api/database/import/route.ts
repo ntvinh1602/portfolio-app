@@ -1,15 +1,15 @@
-import { createClient } from '@/lib/supabase/middleware'
+import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const { supabase } = createClient(req)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Check Authorization header
+  const authHeader = req.headers.get("Authorization")
+  if (authHeader !== `Bearer ${process.env.MY_APP_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  // Initialize Supabase client
+  const supabase = await createClient()
 
   const formData = await req.formData()
   const file = formData.get('file') as File

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/middleware"
+import { createClient } from "@/lib/supabase/server"
 import { transactionSchema } from "@/lib/schemas/transactions"
 import {
   handleBorrow,
@@ -15,14 +15,14 @@ import {
 } from "./handlers"
 
 export async function POST(request: NextRequest) {
-  const { supabase } = createClient(request)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  // Check Authorization header
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader !== `Bearer ${process.env.MY_APP_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  // Initialize Supabase client
+  const supabase = await createClient()
 
   const body = await request.json()
   const parseResult = transactionSchema.safeParse(body)

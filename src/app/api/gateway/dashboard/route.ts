@@ -4,12 +4,20 @@ export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
+    const expectedSecret = process.env.MY_APP_SECRET
+
+    if (!expectedSecret) {
+      const errorMsg = "Server misconfigured: missing MY_APP_SECRET"
+      console.error(errorMsg)
+      return NextResponse.json({ error: errorMsg }, { status: 500 })
+    }
+
     const baseURL = request.url.split("/api")[0]
 
     // Prepare fetch options with the server-side secret
     const fetchOptions = {
       headers: {
-        Authorization: `Bearer ${process.env.MY_APP_SECRET}`,
+        Authorization: `Bearer ${expectedSecret}`,
       },
       next: {
         revalidate: 600,

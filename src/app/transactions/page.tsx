@@ -12,6 +12,7 @@ import { DateRange } from "@/components/date-picker"
 import { subMonths, format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { TxnLeg, Expense } from "./types/data"
+import { toast } from "sonner"
 
 export default function Page() {
   const [data, setData] = React.useState<Transaction[]>([])
@@ -25,15 +26,12 @@ export default function Page() {
   const [expenses, setExpenses] = React.useState<Expense[]>([])
   const [txnLoading, setTxnLoading] = React.useState(true)
   const [detailLoading, setDetailLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
 
   const handleTransactionSelect = async (transaction: Transaction) => {
     setSelectedTxn(transaction)
     setDetailLoading(true)
     try {
-      const isTrade = (transaction.type === "buy" || transaction.type === "sell")
-        ? "true"
-        : "false"
+      const isTrade = transaction.type === "buy" || transaction.type === "sell" ? "true" : "false"
 
       const url = new URL("/api/gateway/txn-info", window.location.origin)
       url.searchParams.append("txnID", transaction.id)
@@ -41,16 +39,22 @@ export default function Page() {
 
       const response = await fetch(url)
 
+      // Attempt to parse JSON regardless of status
+      const result = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to fetch transaction details")
+        // Display error returned from gateway
+        const errorMessage = result?.error || "Failed to fetch transaction details"
+        throw new Error(errorMessage)
       }
 
-      const result = await response.json()
+      // Success: set data
       setTxnLegs(result.legs || [])
       setExpenses(result.expenses || [])
     } catch (err) {
       console.error(err)
-      setError("Failed to fetch transaction details")
+      const message = err instanceof Error ? err.message : "Failed to fetch transactions"
+      toast.error(message)
     } finally {
       setDetailLoading(false)
     }
@@ -70,21 +74,29 @@ export default function Page() {
 
         const response = await fetch(url)
 
+        // Parse JSON regardless of response.ok
+        const result = await response.json()
+
         if (!response.ok) {
-          throw new Error("Failed to fetch transactions")
+          // Use the error returned by gateway
+          const errorMessage = result?.error || "Failed to fetch transactions"
+          throw new Error(errorMessage)
         }
 
-        const result = await response.json()
+        // Success
         setData(result)
       } catch (err) {
         console.error(err)
-        setError("Failed to fetch transactions")
+        const message = err instanceof Error ? err.message : "Failed to fetch transactions"
+        toast.error(message)
       } finally {
         setTxnLoading(false)
       }
     }
+
     fetchData()
   }, [dateFrom, dateTo])
+
 
   const transactionCounts = React.useMemo(() => {
     return data.reduce(
@@ -143,16 +155,12 @@ export default function Page() {
             />
           </div>
           <div className="flex w-4/10 flex-col gap-2">
-            {error ? (
-              <p className="text-red-500">{error}</p>
-            ) : (
-              <TransactionDetails
-                transaction={selectedTxn}
-                transactionLegs={txnLegs}
-                associatedExpenses={expenses}
-                loading={detailLoading}
-              />
-            )}
+            <TransactionDetails
+              transaction={selectedTxn}
+              transactionLegs={txnLegs}
+              associatedExpenses={expenses}
+              loading={detailLoading}
+            />
           </div>
         </div>
       </SidebarInset>

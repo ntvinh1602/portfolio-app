@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
+import { createClient } from "@/lib/supabase/client"
 import { Tables } from "@/types/database.types"
 import { AssetFormBase } from "./base-form"
 import { useAssetForm } from "../../hooks/useAssetForm"
@@ -16,6 +16,7 @@ export function CreateAssetForm({
   onSuccess?: (asset: Tables<"assets">) => void
 }) {
   const [isSaving, setIsSaving] = React.useState(false)
+  const supabase = createClient()
 
   const handleSubmit = async (formData: NewAsset) => {
     setIsSaving(true)

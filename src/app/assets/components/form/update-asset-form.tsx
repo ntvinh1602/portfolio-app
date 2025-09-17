@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Tables } from "@/types/database.types"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/supabaseClient"
+import { createClient } from "@/lib/supabase/client"
 import { AssetFormBase } from "./base-form"
 import { useAssetForm } from "../../hooks/useAssetForm"
 import { refreshData } from "../../../../lib/refresh"
@@ -19,6 +19,7 @@ export function UpdateAssetForm({
 }) {
   const [isSaving, setIsSaving] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const supabase = createClient()
 
   const handleUpdate = async (formData: Tables<"assets">) => {
     setIsSaving(true)

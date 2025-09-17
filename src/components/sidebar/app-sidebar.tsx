@@ -20,7 +20,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/supabaseClient"
+import { createClient } from "@/lib/supabase/client"
 import { TransactionForm } from "@/components/sidebar/transaction/add-transaction"
 import Link from "next/link"
 import { RefreshPricesButton } from "./refresh-price-button"
@@ -66,9 +66,11 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
-
   const router = useRouter()
+  const supabase = createClient()
+
+  const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
+  
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push("/login")
@@ -103,7 +105,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenuButton onClick={handleSignOut} className="text-rose-400">
+        <SidebarMenuButton
+          onClick={handleSignOut}
+          className="text-rose-400"
+        >
           <LogOut/>Logout
         </SidebarMenuButton>
       </SidebarFooter>

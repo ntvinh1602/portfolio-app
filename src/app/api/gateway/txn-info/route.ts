@@ -4,20 +4,27 @@ export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
+    const expectedSecret = process.env.MY_APP_SECRET
+
+    if (!expectedSecret) {
+      const errorMsg = "Server misconfigured: missing MY_APP_SECRET"
+      console.error(errorMsg)
+      return NextResponse.json({ error: errorMsg }, { status: 500 })
+    }
+    
     const baseUrl = request.url.split("/api")[0]
     const searchParams = request.nextUrl.searchParams
     const transactionId = searchParams.get("txnID")
     const includeExpenses = searchParams.get("isExpense") === "true"
 
     if (!transactionId) {
-      return NextResponse.json(
-        { error: "transactionId is required" },
-        { status: 400 }
-      )
+      const errorMsg = "transactionId is required"
+      console.error(errorMsg)
+      return NextResponse.json({ error: errorMsg }, { status: 400 })
     }
 
     // Auth + caching options
-    const fetchOptions = {
+    const fetchOptions: RequestInit & { next?: { revalidate: number; tags: string[] } } = {
       headers: {
         Authorization: `Bearer ${process.env.MY_APP_SECRET}`,
       },
@@ -32,23 +39,17 @@ export async function GET(request: NextRequest) {
     targetUrl.searchParams.append("txnID", transactionId)
     targetUrl.searchParams.append("isExpense", includeExpenses.toString())
 
-    // Fetch
+    // Fetch internal endpoint
     const response = await fetch(targetUrl, fetchOptions)
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Error fetching transaction details:", errorText)
-      throw new Error("Failed to fetch transaction details")
-    }
-
-    const data = await response.json()
-
-    return NextResponse.json(data)
+    // Stream response back unchanged (status + headers + body)
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers: response.headers, // forward headers like content-type
+    })
   } catch (error) {
-    console.error("Error in /api/internal/txn-details:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch transaction details" },
-      { status: 500 }
-    )
+    console.error("Error in gateway /api/txn-details:", error)
+    const message = error instanceof Error ? error.message : "Internal Server Error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

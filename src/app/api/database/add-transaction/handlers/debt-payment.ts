@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/middleware"
+import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { debtPaymentSchema } from "@/lib/schemas/transactions"
 
 export async function handleDebtPayment(
-  supabase: ReturnType<typeof createClient>["supabase"],
+  supabase: SupabaseClient,
   data: z.infer<typeof debtPaymentSchema>
 ) {
   const {
