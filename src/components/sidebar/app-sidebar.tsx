@@ -71,7 +71,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <SidebarMenuButton size="lg">
+        <SidebarMenuButton size="lg" className="pointer-events-none">
           <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
             <TrendingUp className="size-4 text-primary-foreground"/>
           </div>

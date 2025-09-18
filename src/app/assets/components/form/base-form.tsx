@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Tables, Enums, Constants } from "@/types/database.types"
-import { Label } from "@/components/ui/label"
+import { FormRow } from "@/components/form-row"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -24,21 +24,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-
-function FormRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="h-9 grid grid-cols-4 items-center text-end gap-2">
-      <Label>{label}</Label>
-      <div className="col-span-3 text-start">{children}</div>
-    </div>
-  )
-}
 
 export function AssetFormBase<T extends Partial<Tables<"assets">>>({
   formData,
@@ -85,6 +70,7 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
         <Input
           value={formData.name ?? ""}
           onChange={handleStringChange("name")}
+          variant="underline"
         />
       </FormRow>
 

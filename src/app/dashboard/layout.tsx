@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <SidebarProvider>
       <LiveDataProvider>
         <AppSidebar collapsible="icon"/>
-          <SidebarInset className={`flex flex-col ${isMobile ? undefined : "px-4 h-svh"}`}>
+          <SidebarInset className={`flex flex-col ${!isMobile && "px-4 h-svh"}`}>
             <Header title="Dashboard"/>
             {children}
         </SidebarInset>

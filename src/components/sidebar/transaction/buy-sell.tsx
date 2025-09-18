@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -13,6 +12,8 @@ import {
 import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
 import { Enums } from "@/types/database.types"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type TradeFormProps = {
   transactionType: Enums<"transaction_type">
@@ -31,13 +32,12 @@ export function TradeForm({
 }: TradeFormProps) {
   const { assets, loading } = useAccountData()
    if (loading) {
-     return <div>Loading...</div>
+     return <Loading/>
    }
 
   return (
-    <>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="cash_asset_id">Cash</Label>
+    <div className="flex flex-col gap-3">
+      <FormRow label="Cash">
         <Select
           name="cash_asset_id"
           onValueChange={handleSelectChange("cash_asset_id")}
@@ -58,9 +58,8 @@ export function TradeForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Assets</Label>
+      </FormRow>
+      <FormRow label="Assets">
         <Combobox
           items={(() => {
             const filteredAssets = assets
@@ -75,17 +74,12 @@ export function TradeForm({
           })()}
           value={formState.asset}
           onChange={handlePickerChange("asset")}
-          placeholder={
-            `Select asset you're ${transactionType}ing...`
-          }
+          placeholder={`Select asset you're ${transactionType}ing...`}
           searchPlaceholder="Search asset..."
           emptyPlaceholder="No assets found."
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="quantity">
-          {transactionType === "buy" ? "Buy " : "Sell "}Quantity
-        </Label>
+      </FormRow>
+      <FormRow label={`${transactionType === "buy" ? "Buy" : "Sell"} Quantity`}>
         <Input
           id="quantity"
           name="quantity"
@@ -95,9 +89,8 @@ export function TradeForm({
           value={formState.quantity || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="price">Price</Label>
+      </FormRow>
+      <FormRow label="Price">
         <Input
           id="price"
           name="price"
@@ -107,7 +100,7 @@ export function TradeForm({
           value={formState.price || ""}
           onChange={handleInputChange}
         />
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

@@ -57,7 +57,7 @@ export default function Page() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className={!isMobile ? "px-6" : undefined}>
+      <SidebarInset className={`${!isMobile && "px-4"}`}>
         <Header title="Assets" />
         <Separator className="mb-4" />
         <div className="flex gap-4 flex-1 overflow-hidden w-7/10 mx-auto">

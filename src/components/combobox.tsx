@@ -3,7 +3,7 @@
 import * as React from "react"
 import { 
   CheckIcon,
-  ChevronsUpDownIcon
+  ChevronDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -53,13 +53,16 @@ export function Combobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="underline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-10 text-muted-foreground", className)}
+          className={cn("has-[>svg]:px-0 w-full justify-between h-10", className)}
         >
-          {selectedItem ? selectedItem.label : placeholder}
-          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {selectedItem
+            ? <span>{selectedItem.label}</span>
+            : <span className="text-muted-foreground">{placeholder}</span>
+          }
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

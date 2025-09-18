@@ -61,11 +61,11 @@ export function InfoCard({
       <CardContent className="flex flex-col gap-3">
         <div className="h-9 grid grid-cols-4 items-center text-left text-foreground text-sm font-thin gap-2">
           <span>Asset ID</span>
-          <span className="col-span-3 px-2">{asset.id}</span>
+          <span className="col-span-3">{asset.id}</span>
         </div>
         <div className="h-9 grid grid-cols-4 items-center text-left text-foreground text-sm font-thin gap-2">
           <span>Current Quantity</span>
-          <span className="col-span-3 px-2">
+          <span className="col-span-3">
             {asset.current_quantity} {
               asset.asset_class !== "stock"
                 ? asset.currency_code

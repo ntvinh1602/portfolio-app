@@ -18,11 +18,6 @@ type DateRangeProps = {
   onDateToChange: (date: Date | undefined) => void
 }
 
-type SingleDateProps = {
-  selected: Date | undefined
-  onSelect: (date: Date | undefined) => void
-}
-
 function DateRange({
   dateFrom,
   dateTo,
@@ -86,7 +81,15 @@ function DateRange({
   )
 }
 
-function SingleDate({ selected, onSelect }: SingleDateProps) {
+function SingleDate({
+  selected,
+  onSelect,
+  dateFormat = "dd/MM/yyyy"
+}: {
+  selected: Date | undefined
+  onSelect: (date: Date | undefined) => void
+  dateFormat?: string
+}) {
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -95,7 +98,7 @@ function SingleDate({ selected, onSelect }: SingleDateProps) {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="underline" className="flex-1 px-2" id="dates">
-            {selected ? format(selected, "dd/MM/yyyy") : "Select date"}
+            {selected ? format(selected, dateFormat) : "Select date"}
           </Button>
         </PopoverTrigger>
         <PopoverContent

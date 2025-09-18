@@ -31,7 +31,7 @@ import { DebtPaymentForm } from "./debt-payment"
 import { SplitForm } from "./split"
 import { mutate } from "swr"
 import { Loading } from "@/components/loader"
-import { Plus } from "lucide-react"
+import { FormRow } from "@/components/form-row"
 
 const FORM_COMPONENTS: Record<string, Array<Enums<"transaction_type">>> = {
   cashflow: ["deposit", "withdraw", "income", "expense"],
@@ -262,13 +262,8 @@ export function TransactionForm({
         </DialogHeader>
         <div className="flex-auto overflow-y-auto">
           <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 pb-4">
-              <div className="grid gap-3">
-                <Label htmlFor="date">Date</Label>
-                <SingleDate selected={date} onSelect={setDate} />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="transaction-type">Type</Label>
+            <div className="flex flex-col gap-3 pb-4">
+              <FormRow label="Type">
                 <Select
                   onValueChange={value => setTransactionType(value as Enums<"transaction_type">)}
                   defaultValue={transactionType}
@@ -284,13 +279,15 @@ export function TransactionForm({
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              {loading ?
-                <div className="col-span-2 flex justify-center items-center h-24">
-                  <Loading/>
-                </div>
-              : renderFormFields()
-              }
+              </FormRow>
+              <FormRow label="Date">
+                <SingleDate
+                  selected={date}
+                  onSelect={setDate}
+                  dateFormat="iiii, dd MMMM yyyy"
+                />
+              </FormRow>
+              { loading ? <Loading/> : renderFormFields() }
             </div>
             <DialogFooter className="sticky bottom-0 bg-card/0">
               <Button 
