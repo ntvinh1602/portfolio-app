@@ -5,7 +5,6 @@ import { Database } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { assetClassFormatter } from "@/lib/utils"
 
 // This type is used to define the shape of our data.
 export type Transaction = {
@@ -45,7 +44,7 @@ export const columns: ColumnDef<Transaction>[] = [
     },
     cell: ({ row }) => {
       const raw = row.getValue("type") as string
-      const formatted = assetClassFormatter(raw)
+      const formatted = raw.replace(/\b\w/g, (c) => c.toUpperCase())
 
       return (
         <div className="flex">

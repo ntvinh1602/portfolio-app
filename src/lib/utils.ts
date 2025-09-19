@@ -5,14 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Capitalization formatter for asset class
-export function assetClassFormatter(value: string) {
-  if (value === "fund")
-    return value.toUpperCase()
-  else 
-    return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) 
-}
-
 // Format number based on currency and decimal places
 export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
   if (currency) {
@@ -21,7 +13,9 @@ export function formatNum(amount: number, fractionDigits = 0, currency?: string)
       currency,
     }).resolvedOptions()
 
-    const finalFractionDigits = fractionDigits > 0 ? fractionDigits : options.minimumFractionDigits
+    const finalFractionDigits = fractionDigits > 0
+      ? fractionDigits
+      : options.minimumFractionDigits
 
     const formatter = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: finalFractionDigits,

@@ -11,7 +11,7 @@ export async function handleDividend(
     transaction_type,
     quantity,
     dividend_asset,
-    asset
+    cash_asset_id
   } = data
 
   const { data: assetData, error: assetError } = await supabase
@@ -29,7 +29,7 @@ export async function handleDividend(
     p_transaction_date: transaction_date,
     p_quantity: quantity,
     p_description: `Dividend from ${assetData.ticker}`,
-    p_asset_id: asset,
+    p_asset_id: cash_asset_id,
     p_transaction_type: transaction_type,
   })
 

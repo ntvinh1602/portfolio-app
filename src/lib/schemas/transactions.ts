@@ -53,7 +53,7 @@ export const dividendSchema = z.object({
   transaction_type: z.literal("dividend"),
   quantity: z.number().positive(),
   dividend_asset: z.string().uuid(),
-  asset: z.string().uuid(), // This is the cash asset
+  cash_asset_id: z.string().uuid(), // This is the cash asset
 })
 
 export const borrowSchema = z.object({

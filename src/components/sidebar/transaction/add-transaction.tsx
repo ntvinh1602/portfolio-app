@@ -4,7 +4,6 @@ import * as React from "react"
 import { formatISO } from "date-fns"
 import { SingleDate } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -127,7 +126,7 @@ export function TransactionForm({
         return {
           ...baseBody,
           quantity: parseFloat(formState.quantity),
-          asset: formState.asset,
+          cash_asset_id: formState.cash_asset_id,
           dividend_asset: formState.dividend_asset
         }
 

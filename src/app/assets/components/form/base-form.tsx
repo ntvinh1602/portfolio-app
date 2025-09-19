@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Save, RefreshCw, CircleX } from "lucide-react"
-import { assetClassFormatter } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,7 +88,7 @@ export function AssetFormBase<T extends Partial<Tables<"assets">>>({
               .filter((cls) => cls !== "liability" && cls !== "equity")
               .map((cls: Enums<"asset_class">) => (
                 <SelectItem key={cls} value={cls}>
-                  {assetClassFormatter(cls)}
+                  {cls.replace(/\b\w/g, (c) => c.toUpperCase())}
                 </SelectItem>
               ))}
           </SelectContent>

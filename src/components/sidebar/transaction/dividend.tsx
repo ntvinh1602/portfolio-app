@@ -46,44 +46,44 @@ export function DividendForm({
           onChange={handleInputChange}
         />
       </FormRow>
+
       <FormRow label="Cash">
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
-          value={formState.asset}
+          value={formState.cash_asset_id}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select cash asset to be debited" />
           </SelectTrigger>
           <SelectContent>
             {assets
-              .filter(
-                asset =>
-                  asset &&
-                  (asset.asset_class === "cash" ||
-                    asset.asset_class === "fund"),
-              )
+              .filter(asset => asset && (
+                asset.asset_class === "cash" ||
+                asset.asset_class === "fund"
+              ))
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
                   {asset?.name}
                 </SelectItem>
-              ))}
+              ))
+            }
           </SelectContent>
         </Select>
       </FormRow>
+
       <FormRow label="Dividend from">
         <Combobox
           items={assets
-            .filter(
-              asset =>
-                asset &&
-                (asset.asset_class === "stock" ||
-                  asset.asset_class === "fund"),
-            )
+            .filter(asset => asset && (
+              asset.asset_class === "stock" ||
+              asset.asset_class === "fund"
+            ))
             .map(asset => ({
               value: asset.id,
-              label: `${asset?.ticker} - ${asset?.name}`,
-            }))}
+              label: `${asset?.ticker} - ${asset?.name}`
+            }))
+          }
           value={formState.dividend_asset}
           onChange={handlePickerChange("dividend_asset")}
           placeholder="Select the source of the dividend..."

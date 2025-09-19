@@ -13,7 +13,6 @@ import Image from "next/image"
 import { Tables } from "@/types/database.types"
 import { UpdateAssetForm } from "./form/update-asset-form"
 import { Info } from "lucide-react"
-import { assetClassFormatter } from "@/lib/utils"
 
 export function InfoCard({
   asset,
@@ -45,7 +44,9 @@ export function InfoCard({
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">{asset.name}</CardTitle>
-        <CardDescription>{assetClassFormatter(asset.asset_class)}</CardDescription>
+        <CardDescription>
+          {asset.asset_class.replace(/\b\w/g, (c) => c.toUpperCase())}
+        </CardDescription>
         <CardAction>
           <div className="size-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
             <Image
