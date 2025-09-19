@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -12,6 +11,8 @@ import {
 } from "@/components/ui/select"
 import { useAccountData } from "@/hooks/useAccountData"
 import { formatNum } from "@/lib/utils"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type DebtPaymentFormProps = {
   formState: Record<string, string | undefined>
@@ -25,15 +26,14 @@ export function DebtPaymentForm({
   handleSelectChange,
 }: DebtPaymentFormProps) {
   const { assets, debts, loading } = useAccountData()
-
+    
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading/>
   }
-
+  
   return (
-    <>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="debt">Debt</Label>
+    <div className="flex flex-col gap-3">
+      <FormRow label="Debt">
         <Select
           name="debt"
           onValueChange={handleSelectChange("debt")}
@@ -50,9 +50,8 @@ export function DebtPaymentForm({
             ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Cash Asset</Label>
+      </FormRow>
+      <FormRow label="Cash Asset">
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
@@ -73,9 +72,8 @@ export function DebtPaymentForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="principal_payment">Principal</Label>
+      </FormRow>
+      <FormRow label="Principal">
         <Input
           id="principal_payment"
           name="principal_payment"
@@ -85,9 +83,8 @@ export function DebtPaymentForm({
           value={formState.principal_payment || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="interest_payment">Interest</Label>
+      </FormRow>
+      <FormRow label="Interest">
         <Input
           id="interest_payment"
           name="interest_payment"
@@ -97,7 +94,7 @@ export function DebtPaymentForm({
           value={formState.interest_payment || ""}
           onChange={handleInputChange}
         />
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

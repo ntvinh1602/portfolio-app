@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type SplitFormProps = {
   formState: Record<string, string | undefined>
@@ -18,15 +19,14 @@ export function SplitForm({
   handlePickerChange,
 }: SplitFormProps) {
   const { assets, loading } = useAccountData()
-
+    
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading/>
   }
 
   return (
-    <>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Stock</Label>
+    <div className="flex flex-col gap-3">
+      <FormRow label="Stock">
         <Combobox
           items={assets
             .filter(
@@ -42,9 +42,8 @@ export function SplitForm({
           searchPlaceholder="Search stocks..."
           emptyPlaceholder="No assets found."
         />
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="split_quantity">Quantity of new shares received</Label>
+      </FormRow>
+      <FormRow label="Quantity">
         <Input
           id="split_quantity"
           name="split_quantity"
@@ -54,7 +53,7 @@ export function SplitForm({
           value={formState.split_quantity || ""}
           onChange={handleInputChange}
         />
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

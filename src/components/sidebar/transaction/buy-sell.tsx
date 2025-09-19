@@ -31,9 +31,10 @@ export function TradeForm({
   handlePickerChange,
 }: TradeFormProps) {
   const { assets, loading } = useAccountData()
-   if (loading) {
-     return <Loading/>
-   }
+  
+  if (loading) {
+    return <Loading/>
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,18 +60,17 @@ export function TradeForm({
           </SelectContent>
         </Select>
       </FormRow>
+
       <FormRow label="Assets">
         <Combobox
           items={(() => {
             const filteredAssets = assets
-              .filter(
-                asset =>
-                  typeof asset.asset_class === 'string' && ["stock", "crypto"].includes(asset.asset_class),
-              );
+              .filter( asset => typeof asset.asset_class === 'string' &&
+                ["stock", "crypto"].includes(asset.asset_class))
             return filteredAssets.map(asset => ({
               value: asset.id,
               label: `${asset.ticker} - ${asset.name}`,
-            }));
+            }))
           })()}
           value={formState.asset}
           onChange={handlePickerChange("asset")}
@@ -79,7 +79,8 @@ export function TradeForm({
           emptyPlaceholder="No assets found."
         />
       </FormRow>
-      <FormRow label={`${transactionType === "buy" ? "Buy" : "Sell"} Quantity`}>
+      
+      <FormRow label="Quantity">
         <Input
           id="quantity"
           name="quantity"
@@ -90,6 +91,7 @@ export function TradeForm({
           onChange={handleInputChange}
         />
       </FormRow>
+
       <FormRow label="Price">
         <Input
           id="price"

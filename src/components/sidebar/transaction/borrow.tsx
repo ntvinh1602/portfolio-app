@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -11,6 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAccountData } from "@/hooks/useAccountData"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type BorrowFormProps = {
   formState: Record<string, string | undefined>
@@ -26,13 +27,12 @@ export function BorrowForm({
   const { assets, loading } = useAccountData()
 
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading/>
   }
 
   return (
-    <>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="lender">Lender Name</Label>
+    <div className="flex flex-col gap-3">
+      <FormRow label="Lender">
         <Input
           id="lender"
           name="lender"
@@ -40,9 +40,8 @@ export function BorrowForm({
           value={formState.lender || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Cash Asset</Label>
+      </FormRow>
+      <FormRow label="Cash Asset">
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
@@ -63,9 +62,8 @@ export function BorrowForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="principal">Principal Amount</Label>
+      </FormRow>
+      <FormRow label="Principal Amount">
         <Input
           id="principal"
           name="principal"
@@ -75,9 +73,8 @@ export function BorrowForm({
           value={formState.principal || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3">
-        <Label htmlFor="interest_rate">Interest Rate (%)</Label>
+      </FormRow>
+      <FormRow label="Interest Rate (%)">
         <Input
           id="interest_rate"
           name="interest_rate"
@@ -87,7 +84,7 @@ export function BorrowForm({
           value={formState.interest_rate || ""}
           onChange={handleInputChange}
         />
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

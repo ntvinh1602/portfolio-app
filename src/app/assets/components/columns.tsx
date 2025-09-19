@@ -2,7 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Tables } from "@/types/database.types"
-import { assetClassFormatter } from "@/lib/utils"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +38,10 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
       return set.has(row.getValue(id))
     },
     size: 60,
-    cell: ({ row }) => <>{assetClassFormatter(row.getValue("asset_class"))}</>
+    cell: ({ row }) => {
+      const value = row.getValue("asset_class") as string
+      return <>{value.replace(/\b\w/g, (c) => c.toUpperCase())}</>
+    }
   },
   {
     accessorKey: "name",

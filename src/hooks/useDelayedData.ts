@@ -36,7 +36,7 @@ export function useDelayedData() {
   const { data, error, isLoading } = useSWR<DelayedDataApiResponse>(
     "/api/gateway/dashboard",
     fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
+    { revalidateOnFocus: true, revalidateOnReconnect: true }
   )
  
   return {

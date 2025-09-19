@@ -195,8 +195,8 @@ const processedCryptoData = useMemo(() => {
     if (bsData) {
       const cash =
         bsData.assets.find((a) => a.type === "Cash")?.totalAmount ?? 0
-      const epf =
-        bsData.assets.find((a) => a.type === "EPF")?.totalAmount ?? 0
+      const fund =
+        bsData.assets.find((a) => a.type === "Fund")?.totalAmount ?? 0
       const accruedInterest =
         bsData.assets.find((a) => a.type === "Accrued Interest")?.totalAmount ??
         0
@@ -205,7 +205,7 @@ const processedCryptoData = useMemo(() => {
       const cryptoPnL =
         processedCryptoData?.reduce((acc, crypto) => acc + crypto.pnlNet, 0) ?? 0
       setUnrealizedPnL(stockPnL + cryptoPnL - accruedInterest)
-      setTotalAssets(totalStockValue + totalCryptoValue + cash + epf)
+      setTotalAssets(totalStockValue + totalCryptoValue + cash + fund)
       setTotalEquity(totalAssets - bsData.totalLiabilities)
     }
   }, [

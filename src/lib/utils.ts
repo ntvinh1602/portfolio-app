@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 // Capitalization formatter for asset class
 export function assetClassFormatter(value: string) {
-  if (value === "epf")
+  if (value === "fund")
     return value.toUpperCase()
   else 
     return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) 

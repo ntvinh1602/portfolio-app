@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -12,6 +11,8 @@ import {
 } from "@/components/ui/select"
 import { useAccountData } from "@/hooks/useAccountData"
 import { Combobox } from "@/components/combobox"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type DividendFormProps = {
   formState: Record<string, string | undefined>
@@ -27,15 +28,14 @@ export function DividendForm({
   handlePickerChange,
 }: DividendFormProps) {
   const { assets, loading } = useAccountData()
-
+    
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading/>
   }
 
   return (
-    <>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="quantity">Quantity</Label>
+    <div className="flex flex-col gap-3">
+      <FormRow label="Quantity">
         <Input
           id="quantity"
           name="quantity"
@@ -45,16 +45,15 @@ export function DividendForm({
           value={formState.quantity || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Cash asset to be debited</Label>
+      </FormRow>
+      <FormRow label="Cash">
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
           value={formState.asset}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select asset..." />
+            <SelectValue placeholder="Select cash asset to be debited" />
           </SelectTrigger>
           <SelectContent>
             {assets
@@ -62,7 +61,7 @@ export function DividendForm({
                 asset =>
                   asset &&
                   (asset.asset_class === "cash" ||
-                    asset.asset_class === "epf"),
+                    asset.asset_class === "fund"),
               )
               .map(asset => (
                 <SelectItem key={asset.id} value={asset.id}>
@@ -71,16 +70,15 @@ export function DividendForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="dividend_asset">Dividend Asset</Label>
+      </FormRow>
+      <FormRow label="Dividend from">
         <Combobox
           items={assets
             .filter(
               asset =>
                 asset &&
                 (asset.asset_class === "stock" ||
-                  asset.asset_class === "epf"),
+                  asset.asset_class === "fund"),
             )
             .map(asset => ({
               value: asset.id,
@@ -88,11 +86,11 @@ export function DividendForm({
             }))}
           value={formState.dividend_asset}
           onChange={handlePickerChange("dividend_asset")}
-          placeholder="Select asset..."
+          placeholder="Select the source of the dividend..."
           searchPlaceholder="Search assets..."
           emptyPlaceholder="No assets found."
         />
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

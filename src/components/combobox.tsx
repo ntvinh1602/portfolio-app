@@ -56,7 +56,7 @@ export function Combobox({
           variant="underline"
           role="combobox"
           aria-expanded={open}
-          className={cn("has-[>svg]:px-0 w-full justify-between h-10", className)}
+          className={cn("has-[>svg]:px-0 w-full justify-between h-9", className)}
         >
           {selectedItem
             ? <span>{selectedItem.label}</span>

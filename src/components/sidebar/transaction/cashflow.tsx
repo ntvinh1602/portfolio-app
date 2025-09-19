@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select"
 import { useAccountData } from "@/hooks/useAccountData"
 import { Enums } from "@/types/database.types"
+import { FormRow } from "@/components/form-row"
+import { Loading } from "@/components/loader"
 
 type CashFlowFormProps = {
   transactionType: Enums<"transaction_type">
@@ -29,14 +31,13 @@ export function CashFlowForm({
   const { assets, loading } = useAccountData()
 
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading/>
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       {["income", "expense"].includes(transactionType) && (
-        <div className="grid col-span-2 gap-3">
-          <Label htmlFor="description">Description</Label>
+        <FormRow label="Description">
           <Input
             id="description"
             name="description"
@@ -45,10 +46,9 @@ export function CashFlowForm({
             value={formState.description || ""}
             onChange={handleInputChange}
           />
-        </div>
+        </FormRow>
       )}
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="quantity">Quantity</Label>
+      <FormRow label="Quantity">
         <Input
           id="quantity"
           name="quantity"
@@ -58,9 +58,8 @@ export function CashFlowForm({
           value={formState.quantity || ""}
           onChange={handleInputChange}
         />
-      </div>
-      <div className="grid gap-3 col-span-2">
-        <Label htmlFor="asset">Asset</Label>
+      </FormRow>
+      <FormRow label="Asset">
         <Select
           name="asset"
           onValueChange={handleSelectChange("asset")}
@@ -80,7 +79,7 @@ export function CashFlowForm({
                 asset =>
                   asset &&
                   (asset.asset_class === "cash" ||
-                    asset.asset_class === "epf" ||
+                    asset.asset_class === "fund" ||
                     asset.asset_class === "crypto"),
               )
               .map(asset => (
@@ -90,7 +89,7 @@ export function CashFlowForm({
               ))}
           </SelectContent>
         </Select>
-      </div>
-    </>
+      </FormRow>
+    </div>
   )
 }

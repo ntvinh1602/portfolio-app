@@ -36,8 +36,8 @@ export function AssetCard() {
       label: "Stocks",
       color: "var(--chart-2)",
     },
-    epf: {
-      label: "EPF",
+    fund: {
+      label: "Fund",
       color: "var(--chart-3)",
     },
     crypto: {
@@ -84,8 +84,8 @@ export function AssetCard() {
   const leverage = bs && bs.totalEquity !== 0
     ? (bs.totalLiabilities / bs.totalEquity).toFixed(2)
     : "Infinite"
-  const epf = bs.assets.find(a => a.type === "EPF")?.totalAmount || 0
-  const liquidity = ( totalEquity - epf ) / totalEquity * 100
+  const fund = bs.assets.find(a => a.type === "Fund")?.totalAmount || 0
+  const liquidity = ( totalEquity - fund ) / totalEquity * 100
 
 
   if (loading) return (
