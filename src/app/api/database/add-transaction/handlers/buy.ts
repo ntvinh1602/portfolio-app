@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { buySchema } from "@/lib/schemas/transactions"
+import { buySchema } from "@/components/sidebar/transaction/schema"
 
 export async function handleBuy(
   supabase: SupabaseClient,

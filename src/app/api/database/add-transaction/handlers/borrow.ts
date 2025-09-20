@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { borrowSchema } from "@/lib/schemas/transactions"
+import { borrowSchema } from "@/components/sidebar/transaction/schema"
 
 export async function handleBorrow(
   supabase: SupabaseClient,
@@ -11,7 +11,7 @@ export async function handleBorrow(
     lender,
     principal,
     interest_rate,
-    asset: cash_asset_id,
+    cash_asset_id,
   } = data
 
   const { error } = await supabase.rpc("add_borrow_transaction", {

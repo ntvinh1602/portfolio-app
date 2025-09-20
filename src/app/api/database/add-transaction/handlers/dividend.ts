@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { dividendSchema } from "@/lib/schemas/transactions"
+import { dividendSchema } from "@/components/sidebar/transaction/schema"
 
 export async function handleDividend(
   supabase: SupabaseClient,

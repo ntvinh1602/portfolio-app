@@ -53,7 +53,7 @@ export const dividendSchema = z.object({
   transaction_type: z.literal("dividend"),
   quantity: z.number().positive(),
   dividend_asset: z.string().uuid(),
-  cash_asset_id: z.string().uuid(), // This is the cash asset
+  cash_asset_id: z.string().uuid(),
 })
 
 export const borrowSchema = z.object({
@@ -62,7 +62,7 @@ export const borrowSchema = z.object({
   lender: z.string(),
   principal: z.number().positive(),
   interest_rate: z.number().nonnegative(),
-  asset: z.string().uuid(),
+  cash_asset_id: z.string().uuid(),
 })
 
 export const debtPaymentSchema = z.object({
@@ -71,7 +71,7 @@ export const debtPaymentSchema = z.object({
   debt: z.string().uuid(),
   principal_payment: z.number().positive(),
   interest_payment: z.number().nonnegative(),
-  asset: z.string().uuid(),
+  cash_asset_id: z.string().uuid(),
 })
 
 export const splitSchema = z.object({
@@ -81,7 +81,7 @@ export const splitSchema = z.object({
   split_quantity: z.number().positive(),
 })
 
-export const transactionSchema = z.discriminatedUnion("transaction_type", [
+export const txnSchema = z.discriminatedUnion("transaction_type", [
   depositSchema,
   withdrawSchema,
   buySchema,

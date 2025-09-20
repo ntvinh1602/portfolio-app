@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { debtPaymentSchema } from "@/lib/schemas/transactions"
+import { debtPaymentSchema } from "@/components/sidebar/transaction/schema"
 
 export async function handleDebtPayment(
   supabase: SupabaseClient,
@@ -11,7 +11,7 @@ export async function handleDebtPayment(
     debt: debt_id,
     principal_payment,
     interest_payment,
-    asset: cash_asset_id,
+    cash_asset_id,
   } = data
 
   const { data: debtData, error: debtError } = await supabase

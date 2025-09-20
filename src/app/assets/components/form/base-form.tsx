@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Tables, Enums, Constants } from "@/types/database.types"
-import { FormRow } from "@/components/form-row"
+import { FormRow } from "@/components/form/form-row"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
