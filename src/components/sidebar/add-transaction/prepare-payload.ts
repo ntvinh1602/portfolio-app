@@ -1,4 +1,4 @@
-import { FieldConfig } from "../../form/field-types";
+import { FieldConfig } from "@/components/form/field-types";
 
 export function preparePayload(
   formState: Record<string, string | undefined>,

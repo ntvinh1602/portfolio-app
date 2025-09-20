@@ -1,29 +1,41 @@
 import { FieldConfig } from "@/components/form/field-types"
 import { Constants } from "@/types/database.types"
 import { useAccountData } from "@/hooks/useAccountData"
+import { formatNum } from "@/lib/utils"
 
 export function useBlueprintMap() {
   const { assets, debts } = useAccountData()
 
-  const txnType = Constants.public.Enums.transaction_type.map((type) => ({ 
-    value: type,
-    label: type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  }))
+  const txnType = Constants.public.Enums.transaction_type
+    .filter((type) => !["dividend"].includes(type))
+    .map((type) => ({ 
+      value: type,
+      label: type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    }))
 
   const cashAssets = assets
     .filter((asset) => ["cash"].includes(asset.asset_class))
-    .map((asset) => ({ value: asset.id, label: asset.name }))
+    .map((asset) => ({ value: asset.id, label: asset.ticker }))
 
   const tradableAssets = assets
     .filter((asset) => ["stock","crypto"].includes(asset.asset_class))
-    .map((asset) => ({ value: asset.id, label: asset.name }))
+    .map((asset) => ({
+      value: asset.id,
+      label: `${asset.ticker} - ${asset.name}`
+    }))
 
   const stockAssets = assets
     .filter((asset) => ["stock"].includes(asset.asset_class))
-    .map((asset) => ({ value: asset.id, label: asset.name }))
+    .map((asset) => ({
+      value: asset.id,
+      label: `${asset.ticker} - ${asset.name}`
+    }))
 
-  const debtAssets = debts
-    .map((debt) => ({ value: debt.id, label: debt.lender_name }))
+  const debtAssets = debts.map((debt) => ({
+    value: debt.id,
+    label: `${debt.lender_name} - ${formatNum(debt.principal_amount)}`,
+  }))
+
 
   const trade: FieldConfig[] = [
     {
@@ -124,39 +136,6 @@ export function useBlueprintMap() {
     },
   ]
 
-  const dividend: FieldConfig[] = [
-    {
-      name: "transaction_type",
-      type: "select",
-      label: "Type",
-      options: txnType
-    },
-    {
-      name: "transaction_date",
-      type: "datepicker",
-      label: "Date"
-    },
-    {
-      name: "cash_asset_id",
-      type: "select",
-      label: "Cash Account",
-      options: cashAssets
-    },
-    {
-      name: "asset",
-      type: "combobox",
-      label: "Asset",
-      options: tradableAssets
-    },
-    {
-      name: "quantity",
-      type: "input",
-      label: "Quantity",
-      inputMode: "number",
-      parser: (v) => parseFloat(v || "0")
-    },
-  ]
-
   const borrow: FieldConfig[] = [
     {
       name: "transaction_type",
@@ -245,7 +224,6 @@ export function useBlueprintMap() {
     withdraw: cashFlow,
     income: cashFlow,
     expense: cashFlow,
-    dividend: dividend,
     split: split,
     borrow: borrow,
     debt_payment: debtPayment,

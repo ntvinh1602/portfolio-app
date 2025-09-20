@@ -48,14 +48,6 @@ export const expenseSchema = z.object({
   asset: z.string().uuid(),
 })
 
-export const dividendSchema = z.object({
-  transaction_date: z.string().date(),
-  transaction_type: z.literal("dividend"),
-  quantity: z.number().positive(),
-  dividend_asset: z.string().uuid(),
-  cash_asset_id: z.string().uuid(),
-})
-
 export const borrowSchema = z.object({
   transaction_date: z.string().date(),
   transaction_type: z.literal("borrow"),
@@ -88,7 +80,6 @@ export const txnSchema = z.discriminatedUnion("transaction_type", [
   sellSchema,
   incomeSchema,
   expenseSchema,
-  dividendSchema,
   borrowSchema,
   debtPaymentSchema,
   splitSchema,

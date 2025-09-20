@@ -8,7 +8,11 @@ import {
   useEffect,
   useMemo,
 } from "react"
-import { BalanceSheetData, StockData, CryptoData } from "@/app/dashboard/types/dashboard-data"
+import {
+  BalanceSheetData,
+  StockData,
+  CryptoData
+} from "@/app/dashboard/types/dashboard-data"
 import { useDNSEData } from "@/hooks/useDNSEData"
 import { useBinanceData } from "@/hooks/useBinanceData"
 import { useDelayedData } from "@/hooks/useDelayedData"
@@ -150,8 +154,8 @@ const processedCryptoData = useMemo(() => {
       const livePrice = isUSDT
         ? crypto.latest_usd_rate
         : liveInfo?.price
-        ? parseFloat(liveInfo.price)
-        : crypto.latest_price
+          ? parseFloat(liveInfo.price)
+          : crypto.latest_price
 
       const prevPrice = liveInfo?.prevPrice
         ? parseFloat(liveInfo.prevPrice)
@@ -160,8 +164,8 @@ const processedCryptoData = useMemo(() => {
       const totalAmount = isUSDT
         ? crypto.quantity * crypto.latest_usd_rate
         : liveInfo?.price
-        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
-        : crypto.total_amount
+          ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
+          : crypto.total_amount
 
       const pnlNet = totalAmount - crypto.cost_basis
       const pnlPct =

@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { borrowSchema } from "@/components/sidebar/transaction/schema"
+import { borrowSchema } from "@/lib/schemas/transaction"
 
 export async function handleBorrow(
   supabase: SupabaseClient,

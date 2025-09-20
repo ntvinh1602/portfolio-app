@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { txnSchema } from "@/components/sidebar/transaction/schema"
+import { txnSchema } from "@/lib/schemas/transaction"
 import {
   handleBorrow,
   handleBuy,

@@ -6,7 +6,7 @@ import {
   FolderSearch,
   LogOut,
 } from "lucide-react"
-import { CollapsibleMenu } from "@/components/sidebar/collapsible-menu"
+import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,
   SidebarContent,
@@ -16,11 +16,10 @@ import {
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 import { QuickActions } from "./quick-actions"
 
 const data = {
-  collapsibleMenu: [
+  navMenu: [
     {
       title: "Database",
       url: "#",
@@ -49,14 +48,7 @@ const data = {
         },
       ]
     }
-  ],
-  singlePage: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings,
-    }
-  ],
+  ]
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -80,15 +72,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       
       <SidebarContent>
-        <CollapsibleMenu items={data.collapsibleMenu} />
+        <NavMenu items={data.navMenu} />
         <QuickActions/>
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenuButton
-          onClick={handleSignOut}
-          className="text-rose-400"
-        >
+        <SidebarMenuButton onClick={handleSignOut}>
           <LogOut/>Logout
         </SidebarMenuButton>
       </SidebarFooter>

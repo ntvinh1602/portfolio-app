@@ -69,11 +69,10 @@ CREATE TYPE "public"."asset_class" AS ENUM (
     'cash',
     'stock',
     'crypto',
-    'epf',
+    'fund',
     'equity',
     'liability',
-    'index',
-    'fund'
+    'index'
 );
 
 
@@ -1003,6 +1002,20 @@ $$;
 ALTER FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."assets_quantity_trigger"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  PERFORM public.refresh_assets_quantity();
+  RETURN NULL; -- we don't need to return the row, just execute side-effect
+END;
+$$;
+
+
+ALTER FUNCTION "public"."assets_quantity_trigger"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1205,7 +1218,7 @@ BEGIN
     SELECT COALESCE(SUM(
       CASE
         WHEN ua.asset_class = 'stock' THEN ua.total_quantity * sdp.price
-        WHEN ua.asset_class = 'crypto' THEN ua.total_quantity * COALESCE(dcp.price, 0) * COALESCE(er_usd.rate, 1)
+        WHEN ua.asset_class = 'crypto' THEN ua.total_quantity * COALESCE(dcp.price, 1) * COALESCE(er_usd.rate, 1)
         ELSE ua.total_quantity * COALESCE(er.rate, 1)
       END
     ), 0)
@@ -1267,7 +1280,7 @@ BEGIN
     JOIN assets a ON tl.asset_id = a.id
     WHERE t.transaction_date = loop_date
       AND t.type IN ('deposit', 'withdraw')
-      AND a.asset_class IN ('cash', 'epf');
+      AND a.asset_class IN ('cash', 'fund');
     v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
     -- Calculate Equity Index
     SELECT net_equity_value, equity_index
@@ -1418,12 +1431,12 @@ BEGIN
   -- Calculate total asset cost basis
   total_assets_cb := (coalesce((asset_cb_by_class->>'cash')::numeric, 0)) +
     (coalesce((asset_cb_by_class->>'stock')::numeric, 0)) +
-    (coalesce((asset_cb_by_class->>'epf')::numeric, 0)) +
+    (coalesce((asset_cb_by_class->>'fund')::numeric, 0)) +
     (coalesce((asset_cb_by_class->>'crypto')::numeric, 0));
   -- Calculate total asset market value
   total_assets_mv := (coalesce((asset_mv_by_class->>'cash')::numeric, 0)) +
     (coalesce((asset_mv_by_class->>'stock')::numeric, 0)) +
-    (coalesce((asset_mv_by_class->>'epf')::numeric, 0)) +
+    (coalesce((asset_mv_by_class->>'fund')::numeric, 0)) +
     (coalesce((asset_mv_by_class->>'crypto')::numeric, 0));
   -- Calculate liability values
   SELECT a.current_quantity * -1 INTO debts_principal
@@ -1447,7 +1460,7 @@ BEGIN
     'assets', json_build_array(
       json_build_object('type', 'Cash', 'totalAmount', coalesce((asset_mv_by_class->>'cash')::numeric, 0)),
       json_build_object('type', 'Stocks', 'totalAmount', coalesce((asset_mv_by_class->>'stock')::numeric, 0)),
-      json_build_object('type', 'EPF', 'totalAmount', coalesce((asset_mv_by_class->>'epf')::numeric, 0)),
+      json_build_object('type', 'Fund', 'totalAmount', coalesce((asset_mv_by_class->>'fund')::numeric, 0)),
       json_build_object('type', 'Crypto', 'totalAmount', coalesce((asset_mv_by_class->>'crypto')::numeric, 0))
     ),
     'totalAssets', total_assets_mv,
@@ -2043,6 +2056,35 @@ $$;
 ALTER FUNCTION "public"."process_dnse_orders"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."refresh_assets_quantity"() RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  UPDATE public.assets a
+  SET current_quantity = CASE
+    WHEN a.ticker = 'INTERESTS' THEN COALESCE((
+      SELECT SUM(
+        d.principal_amount *
+        (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
+      )
+      FROM public.debts d
+      WHERE d.is_active
+    ), 0)
+    ELSE COALESCE((
+      SELECT SUM(quantity)
+      FROM public.transaction_legs tl
+      WHERE tl.asset_id = a.id
+    ), 0)
+  END
+  WHERE TRUE; -- explicitly mark it as intentional full-table update
+END;
+$$;
+
+
+ALTER FUNCTION "public"."refresh_assets_quantity"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2301,37 +2343,6 @@ $$;
 
 
 ALTER FUNCTION "public"."snapshots_trigger"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."update_assets_after_transaction"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-BEGIN
-  -- Update all assets linked to the inserted transaction
-  UPDATE public.assets a
-  SET current_quantity = CASE
-    WHEN a.ticker = 'INTERESTS' THEN COALESCE((
-      SELECT SUM(
-        d.principal_amount *
-        (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
-      )
-      FROM public.debts d
-      WHERE d.is_active
-    ), 0)
-    ELSE COALESCE((
-      SELECT SUM(quantity)
-      FROM public.transaction_legs tl
-      WHERE tl.asset_id = a.id
-    ), 0)
-  END
-  WHERE a.id = NEW.asset_id;
-  RETURN NULL;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."update_assets_after_transaction"() OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -2620,6 +2631,10 @@ CREATE INDEX "transactions_related_debt_id_idx" ON "public"."transactions" USING
 
 
 
+CREATE OR REPLACE TRIGGER "refresh_assets_after_new_txn" AFTER INSERT OR DELETE OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."assets_quantity_trigger"();
+
+
+
 CREATE OR REPLACE TRIGGER "revalidate_after_new_crypto_prices" AFTER INSERT OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_crypto_prices"}', '{}', '5000');
 
 
@@ -2649,10 +2664,6 @@ CREATE OR REPLACE TRIGGER "snapshot_after_new_stock_price" AFTER INSERT OR UPDAT
 
 
 CREATE OR REPLACE TRIGGER "snapshot_after_new_txn" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
-
-
-
-CREATE OR REPLACE TRIGGER "update_assets_on_new_transaction" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."update_assets_after_transaction"();
 
 
 
@@ -2692,7 +2703,7 @@ ALTER TABLE ONLY "public"."lot_consumptions"
 
 
 ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE RESTRICT;
+    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE CASCADE;
 
 
 
@@ -3073,6 +3084,12 @@ GRANT ALL ON FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "
 
 
 
+GRANT ALL ON FUNCTION "public"."assets_quantity_trigger"() TO "anon";
+GRANT ALL ON FUNCTION "public"."assets_quantity_trigger"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."assets_quantity_trigger"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") TO "service_role";
@@ -3199,6 +3216,12 @@ GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."refresh_assets_quantity"() TO "anon";
+GRANT ALL ON FUNCTION "public"."refresh_assets_quantity"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."refresh_assets_quantity"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
@@ -3214,12 +3237,6 @@ GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_
 GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "anon";
 GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "anon";
-GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."update_assets_after_transaction"() TO "service_role";
 
 
 

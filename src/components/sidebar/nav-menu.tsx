@@ -19,7 +19,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export function CollapsibleMenu({
+export function NavMenu({
   items,
 }: {
   items: {

@@ -12,11 +12,10 @@ import {
 } from "@/components/ui/dialog"
 import { Enums } from "@/types/database.types"
 import { toast } from "sonner"
-import { mutate } from "swr"
 import { useBlueprintMap } from "./blueprints"
 import { preparePayload } from "./prepare-payload"
 import { SchemaForm } from "@/components/form/schemaForm"
-import { txnSchema } from "@/components/sidebar/transaction/schema"
+import { txnSchema } from "@/lib/schemas/transaction"
 import { refreshData } from "@/lib/refresh"
 
 export function TransactionForm({
