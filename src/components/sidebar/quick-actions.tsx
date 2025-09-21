@@ -17,7 +17,7 @@ import {
 import { useRefreshPrices } from "@/hooks/useRefreshPrices"
 import { ChevronRight, Plus, type LucideIcon, RefreshCw } from "lucide-react"
 import { TransactionForm } from "@/components/sidebar/add-transaction/form-wrapper"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { refreshData } from "@/lib/refresh"
 
@@ -72,7 +72,7 @@ export function QuickActions() {
 
   async function refreshAssets() {
   
-    const supabase = await createClient()
+    const supabase = createClient()
     const { error } = await supabase.rpc("refresh_assets_quantity")
     if (error) {
       console.error(error)
