@@ -39,7 +39,6 @@ export default function Page() {
       })
 
       const response = await fetch(`/api/gateway/txn-info?${params.toString()}`)
-      console.log("Txn-info API Response Status:", response.status)
 
       const result = await response.json()
 
@@ -69,7 +68,6 @@ export default function Page() {
         if (dateTo) params.set("endDate", format(dateTo, "yyyy-MM-dd"))
 
         const response = await fetch(`/api/gateway/txn-feed?${params.toString()}`)
-        console.log("Txn-feed API Response Status:", response.status)
 
         const result = await response.json()
 
