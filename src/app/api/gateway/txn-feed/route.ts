@@ -36,8 +36,14 @@ export async function GET(request: NextRequest) {
     // Fetch internal endpoint
     const response = await fetch(targetUrl, fetchOptions)
 
+    // Log raw response details
+    const responseBody = await response.text();
+    console.log("Internal Txn-feed API Raw Response Status:", response.status);
+    console.log("Internal Txn-feed API Raw Response Headers:", Array.from(response.headers.entries()));
+    console.log("Internal Txn-feed API Raw Response Body:", responseBody);
+
     // Stream response directly to client (preserve status & headers)
-    return new NextResponse(response.body, {
+    return new NextResponse(responseBody, {
       status: response.status,
       headers: response.headers,
     })
