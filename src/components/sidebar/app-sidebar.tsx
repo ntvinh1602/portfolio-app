@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { QuickActions } from "./quick-actions"
+import { ConfirmDialog } from "../confirmation"
 
 const data = {
   navMenu: [
@@ -77,9 +78,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenuButton onClick={handleSignOut}>
-          <LogOut/>Logout
-        </SidebarMenuButton>
+        <ConfirmDialog
+          onConfirm={handleSignOut}
+          message="Do you really want to log out?"
+        >
+          <SidebarMenuButton>
+            <LogOut/>Logout
+          </SidebarMenuButton>
+        </ConfirmDialog>
       </SidebarFooter>
     </Sidebar>
   )

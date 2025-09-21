@@ -112,7 +112,7 @@ export function TransactionForm({
         </DialogHeader>
 
         <form id="transaction-form" onSubmit={handleSubmit}>
-          <SchemaForm
+          <SchemaForm<TransactionFormState>
             blueprint={blueprintMap[txnType]}
             formState={formState}
             onChange={handleChange}

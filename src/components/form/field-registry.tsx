@@ -12,13 +12,13 @@ import { SingleDate } from "@/components/date-picker"
 import { Combobox } from "@/components/combobox"
 import { Checkbox } from "@/components/ui/checkbox"
 
-interface FieldRendererProps {
+interface FieldRendererProps<T extends string | number | boolean | Date | undefined> {
   field: FieldConfig
-  value: any
-  onChange: (value: any) => void
+  value: T
+  onChange: (value: T) => void
 }
 
-const InputField: React.FC<FieldRendererProps> = ({ field, value, onChange }) => (
+const InputField: React.FC<FieldRendererProps<string | undefined>> = ({ field, value, onChange }) => (
   <Input
     type={field.inputMode}
     placeholder={field.placeholder}
@@ -28,7 +28,7 @@ const InputField: React.FC<FieldRendererProps> = ({ field, value, onChange }) =>
   />
 )
 
-const SelectField: React.FC<FieldRendererProps> = ({ field, value, onChange }) => {
+const SelectField: React.FC<FieldRendererProps<string | undefined>> = ({ field, value, onChange }) => {
 
   return (
     <Select onValueChange={onChange} value={value}>
@@ -46,7 +46,7 @@ const SelectField: React.FC<FieldRendererProps> = ({ field, value, onChange }) =
   )
 }
 
-const ComboboxField: React.FC<FieldRendererProps> = ({ field, value, onChange }) => {
+const ComboboxField: React.FC<FieldRendererProps<string | undefined>> = ({ field, value, onChange }) => {
 
   return (
     <Combobox
@@ -58,25 +58,26 @@ const ComboboxField: React.FC<FieldRendererProps> = ({ field, value, onChange })
   )
 }
 
-const DateField: React.FC<FieldRendererProps> = ({ value, onChange }) => (
-  <SingleDate
-    selected={value}
-    onSelect={onChange}
-    dateFormat="iiii, dd MMMM yyyy"
-  />
-)
+const DateField: React.FC<FieldRendererProps<string | undefined>> = ({ value, onChange }) => {
+  const dateValue = value ? new Date(value) : undefined;
+  return (
+    <SingleDate
+      selected={dateValue}
+      onSelect={(date) => onChange(date?.toISOString())}
+      dateFormat="iiii, dd MMMM yyyy"
+    />
+  );
+};
 
-const CheckboxField: React.FC<FieldRendererProps> = ({ value, onChange }) => (
+const CheckboxField: React.FC<FieldRendererProps<string | undefined>> = ({ value, onChange }) => (
   <Checkbox
-    checked={value === "true"}   // ✅ only true if string equals "true"
-    onCheckedChange={(checked) =>
-      onChange(checked === true ? "true" : "false") // ✅ write back string
-    }
+    checked={value === "true"}
+    onCheckedChange={(checked) => onChange(checked ? "true" : "false")}
   />
 )
 
 
-export const typeToRenderer: Record<string, React.FC<FieldRendererProps>> = {
+export const typeToRenderer: Record<string, React.FC<FieldRendererProps<string | undefined>>> = {
   input: InputField,
   select: SelectField,
   combobox: ComboboxField,

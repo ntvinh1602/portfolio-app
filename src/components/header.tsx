@@ -50,3 +50,5 @@ export const Header = React.memo(({ title }: { title: string }) => {
       </header>
     )
 })
+
+Header.displayName = 'Header'

@@ -35,7 +35,7 @@ export function CreateAssetForm({
   const [formState, setFormState] = React.useState<AssetFormState>({})
 
   const handleChange = React.useCallback(
-    <K extends keyof AssetFormState>(
+    <K extends keyof AssetFormState & string>(
       name: K,
       value: string | undefined
     ) => {
@@ -77,7 +77,7 @@ export function CreateAssetForm({
         </DialogHeader>
 
         <form id="create-asset" onSubmit={handleSubmit}>
-          <SchemaForm
+          <SchemaForm<AssetFormState>
             blueprint={assetBlueprint}
             formState={formState}
             onChange={handleChange}

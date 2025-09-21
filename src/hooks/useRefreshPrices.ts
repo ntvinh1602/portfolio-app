@@ -26,7 +26,7 @@ export function useRefreshPrices() {
         id: toastId,
         description: `Stocks: ${data.stocks}, Cryptos: ${data.cryptos}, Indices: ${data.indices}`,
       })
-    } catch (err) {
+    } catch {
       toast.error("Failed to refresh prices", { id: toastId })
     } finally {
       setIsRefreshing(false)

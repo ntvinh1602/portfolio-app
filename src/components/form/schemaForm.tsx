@@ -3,13 +3,13 @@ import { FieldConfig } from "./field-types"
 import { typeToRenderer } from "./field-registry"
 import { Label } from "@/components/ui/label"
 
-export type SchemaFormProps<T extends Record<string, any>> = {
+export type SchemaFormProps<T extends Record<string, string | undefined>> = {
   blueprint: FieldConfig<string>[]
   formState: Partial<Record<keyof T & string, string | undefined>>
   onChange: <K extends keyof T & string>(name: K, val: string | undefined) => void
 }
 
-export function SchemaForm<T extends Record<string, any>>({
+export function SchemaForm<T extends Record<string, string | undefined>>({
   blueprint,
   formState,
   onChange,

@@ -8,7 +8,7 @@ export type FieldConfig<K extends string = string> = {
     value: string
     label: string
   }[]
-  parser?: (value: string | undefined) => any
-  format?: (value: any) => string | undefined
+  parser?: (value: string | undefined) => string | number | boolean | Date | undefined
+  format?: (value: string | number | boolean | Date | undefined) => string | undefined
   transform?: (value: string) => string // optional live transform
 }

@@ -14,6 +14,7 @@ import { Tables } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
 import { Save, Shredder } from "lucide-react"
 import { Card, CardFooter } from "@/components/ui/card"
+import { ConfirmDialog } from "@/components/confirmation"
 
 function mapAssetToFormState(asset: Tables<"assets">) {
   const form: Partial<Record<keyof typeof asset, string>> = {}
@@ -115,9 +116,14 @@ export function EditAssetForm({
         />
       </form>
       <CardFooter className="flex justify-end gap-2 px-0">
-        <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
-          <Shredder/>Delete
-        </Button>
+        <ConfirmDialog
+          message="Selected asset will be deleted. This action cannot be undone."
+          onConfirm={handleDelete}
+        >
+          <Button variant="destructive" disabled={isSubmitting}>
+            <Shredder /> Delete
+          </Button>
+        </ConfirmDialog>
         <Button type="submit" form="edit-asset" disabled={isSubmitting}>
           <Save />Save
         </Button>

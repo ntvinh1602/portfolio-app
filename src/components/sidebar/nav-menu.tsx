@@ -18,6 +18,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
 
 export function NavMenu({
   items,
@@ -38,10 +39,10 @@ export function NavMenu({
       <SidebarGroupLabel>Pages</SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuButton tooltip="Dashboard">
-          <a href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <Monitor className="size-4"/>
             <span className="font-light">Dashboard</span>
-          </a>
+          </Link>
         </SidebarMenuButton>
         {items.map((item) => (
           <Collapsible key={item.title} defaultOpen={item.isActive}>
