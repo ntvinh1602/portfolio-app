@@ -16,7 +16,7 @@ import { preparePayload } from "./prepare-payload"
 import { SchemaForm } from "@/components/form/schemaForm"
 import { assetSchema } from "@/app/assets/components/form/schema"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/client"
 import { refreshData } from "@/lib/refresh"
 import { NormalizeError } from "@/lib/error"
 import { showErrorToast } from "@/components/error-toast"
@@ -53,7 +53,7 @@ export function CreateAssetForm({
 
       if (!validated.success) throw validated.error
 
-      const supabase = await createClient()
+      const supabase = createClient()
       const { error } = await supabase.from("assets").insert(validated.data)
 
       if (error) throw error
