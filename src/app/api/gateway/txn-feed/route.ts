@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
 
     // Build target URL
     const targetUrl = new URL(`${baseUrl}/api/internal/transactions`)
-    if (startDate) targetUrl.searchParams.append("startDate", startDate)
-    if (endDate) targetUrl.searchParams.append("endDate", endDate)
+    if (startDate) targetUrl.searchParams.set("startDate", startDate)
+    if (endDate) targetUrl.searchParams.set("endDate", endDate)
 
     // Fetch options
     const fetchOptions: RequestInit & { next?: { revalidate: number; tags: string[] } } = {
@@ -36,17 +36,15 @@ export async function GET(request: NextRequest) {
     // Fetch internal endpoint
     const response = await fetch(targetUrl, fetchOptions)
 
-    // Log raw response details
-    const responseBody = await response.text();
-    console.log("Internal Txn-feed API Raw Response Status:", response.status);
-    console.log("Internal Txn-feed API Raw Response Headers:", Array.from(response.headers.entries()));
-    console.log("Internal Txn-feed API Raw Response Body:", responseBody);
+    if (!response.ok) {
+      const errorResult = await response.json().catch(() => null)
+      const errorMsg = errorResult?.error || `Internal API failed with ${response.status}`
+      return NextResponse.json({ error: errorMsg }, { status: response.status })
+    }
 
-    // Stream response directly to client (preserve status & headers)
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: response.headers,
-    })
+    const result = await response.json()
+
+    return NextResponse.json(result, { status: response.status })
   } catch (error) {
     console.error(error)
     const message = error instanceof Error ? error.message : "Internal Server Error"

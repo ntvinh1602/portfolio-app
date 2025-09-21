@@ -40,16 +40,8 @@ export default function Page() {
 
       const response = await fetch(`/api/gateway/txn-info?${params.toString()}`)
       console.log("Txn-info API Response Status:", response.status)
-      const text = await response.text()
-      console.log("Txn-info API Raw Response:", text)
 
-      let result
-      try {
-        result = JSON.parse(text)
-      } catch (parseError) {
-        console.error("Txn-info JSON parsing failed:", parseError)
-        throw new Error("Failed to decode transaction details response")
-      }
+      const result = await response.json()
 
       if (!response.ok) {
         const errorMessage = result?.error || "Failed to fetch transaction details"
@@ -77,15 +69,9 @@ export default function Page() {
         if (dateTo) params.set("endDate", format(dateTo, "yyyy-MM-dd"))
 
         const response = await fetch(`/api/gateway/txn-feed?${params.toString()}`)
-        const text = await response.text()
+        console.log("Txn-feed API Response Status:", response.status)
 
-        let result
-        try {
-          result = JSON.parse(text)
-        } catch (parseError) {
-          console.error("Txn-feed JSON parsing failed:", parseError)
-          throw new Error("Failed to decode transaction feed response")
-        }
+        const result = await response.json()
 
         if (!response.ok) {
           const errorMessage = result?.error || "Failed to fetch transactions"
@@ -105,6 +91,7 @@ export default function Page() {
 
     fetchData()
   }, [dateFrom, dateTo])
+
 
   const transactionCounts = React.useMemo(() => {
     return data.reduce(

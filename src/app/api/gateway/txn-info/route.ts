@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       console.error(errorMsg)
       return NextResponse.json({ error: errorMsg }, { status: 500 })
     }
-    
+
     const baseUrl = request.url.split("/api")[0]
     const searchParams = request.nextUrl.searchParams
     const transactionId = searchParams.get("txnID")
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     // Auth + caching options
     const fetchOptions: RequestInit & { next?: { revalidate: number; tags: string[] } } = {
       headers: {
-        Authorization: `Bearer ${process.env.MY_APP_SECRET}`,
+        Authorization: `Bearer ${expectedSecret}`,
       },
       next: {
         revalidate: 600,
@@ -36,23 +36,29 @@ export async function GET(request: NextRequest) {
 
     // Build target URL
     const targetUrl = new URL(`${baseUrl}/api/internal/txn-details`)
-    targetUrl.searchParams.append("txnID", transactionId)
-    targetUrl.searchParams.append("isExpense", includeExpenses.toString())
+    targetUrl.searchParams.set("txnID", transactionId)
+    targetUrl.searchParams.set("isExpense", includeExpenses.toString())
 
     // Fetch internal endpoint
     const response = await fetch(targetUrl, fetchOptions)
 
-    // Log raw response details
-    const responseBody = await response.text();
-    console.log("Internal Txn-info API Raw Response Status:", response.status);
-    console.log("Internal Txn-info API Raw Response Headers:", Array.from(response.headers.entries()));
-    console.log("Internal Txn-info API Raw Response Body:", responseBody);
+    let result: any
+    try {
+      result = await response.json()
+    } catch (err) {
+      const bodyText = await response.text()
+      console.error("Failed to parse JSON from internal txn-details:", bodyText)
+      return NextResponse.json({ error: "Invalid JSON from internal service" }, { status: 502 })
+    }
 
-    // Stream response back unchanged (status + headers + body)
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: response.headers, // forward headers like content-type
-    })
+    if (!response.ok) {
+      const errorMsg = result?.error || "Failed to fetch transaction details"
+      console.error("Internal txn-details error:", errorMsg)
+      return NextResponse.json({ error: errorMsg }, { status: response.status })
+    }
+
+    // ✅ Always return JSON
+    return NextResponse.json(result, { status: response.status })
   } catch (error) {
     console.error(error)
     const message = error instanceof Error ? error.message : "Internal Server Error"
