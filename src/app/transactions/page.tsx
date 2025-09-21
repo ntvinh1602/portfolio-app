@@ -33,36 +33,35 @@ export default function Page() {
     try {
       const isTrade = transaction.type === "buy" || transaction.type === "sell" ? "true" : "false"
 
-      const url = new URL("/api/gateway/txn-info", window.location.origin)
-      url.searchParams.append("txnID", transaction.id)
-      url.searchParams.append("isExpense", isTrade)
+      const params = new URLSearchParams({
+        txnID: transaction.id,
+        isExpense: isTrade,
+      })
 
-      const response = await fetch(url)
-      console.log("Txn-info API Response Status:", response.status);
-      const text = await response.text();
-      console.log("Txn-info API Raw Response:", text);
+      const response = await fetch(`/api/gateway/txn-info?${params.toString()}`)
+      console.log("Txn-info API Response Status:", response.status)
+      const text = await response.text()
+      console.log("Txn-info API Raw Response:", text)
 
-      // Attempt to parse JSON regardless of status
-      let result;
+      let result
       try {
-        result = JSON.parse(text);
+        result = JSON.parse(text)
       } catch (parseError) {
-        console.error("Txn-info JSON parsing failed:", parseError);
-        throw new Error("Failed to decode transaction details response");
+        console.error("Txn-info JSON parsing failed:", parseError)
+        throw new Error("Failed to decode transaction details response")
       }
 
       if (!response.ok) {
-        // Display error returned from gateway
         const errorMessage = result?.error || "Failed to fetch transaction details"
         throw new Error(errorMessage)
       }
 
-      // Success: set data
       setTxnLegs(result.legs || [])
       setExpenses(result.expenses || [])
     } catch (err) {
       console.error(err)
-      const message = err instanceof Error ? err.message : "Failed to fetch transactions"
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch transactions"
       toast.error(message)
     } finally {
       setDetailLoading(false)
@@ -73,39 +72,31 @@ export default function Page() {
     async function fetchData() {
       setTxnLoading(true)
       try {
-        const url = new URL("/api/gateway/txn-feed", window.location.origin)
-        if (dateFrom) {
-          url.searchParams.append("startDate", format(dateFrom, "yyyy-MM-dd"))
-        }
-        if (dateTo) {
-          url.searchParams.append("endDate", format(dateTo, "yyyy-MM-dd"))
-        }
+        const params = new URLSearchParams()
+        if (dateFrom) params.set("startDate", format(dateFrom, "yyyy-MM-dd"))
+        if (dateTo) params.set("endDate", format(dateTo, "yyyy-MM-dd"))
 
-        const response = await fetch(url)
-        console.log("Txn-feed API Response Status:", response.status);
-        const text = await response.text();
-        console.log("Txn-feed API Raw Response:", text);
+        const response = await fetch(`/api/gateway/txn-feed?${params.toString()}`)
+        const text = await response.text()
 
-        // Parse JSON regardless of response.ok
-        let result;
+        let result
         try {
-          result = JSON.parse(text);
+          result = JSON.parse(text)
         } catch (parseError) {
-          console.error("Txn-feed JSON parsing failed:", parseError);
-          throw new Error("Failed to decode transaction feed response");
+          console.error("Txn-feed JSON parsing failed:", parseError)
+          throw new Error("Failed to decode transaction feed response")
         }
 
         if (!response.ok) {
-          // Use the error returned by gateway
           const errorMessage = result?.error || "Failed to fetch transactions"
           throw new Error(errorMessage)
         }
 
-        // Success
         setData(result)
       } catch (err) {
         console.error(err)
-        const message = err instanceof Error ? err.message : "Failed to fetch transactions"
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch transactions"
         toast.error(message)
       } finally {
         setTxnLoading(false)
@@ -114,7 +105,6 @@ export default function Page() {
 
     fetchData()
   }, [dateFrom, dateTo])
-
 
   const transactionCounts = React.useMemo(() => {
     return data.reduce(
