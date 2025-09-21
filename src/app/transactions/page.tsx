@@ -38,9 +38,18 @@ export default function Page() {
       url.searchParams.append("isExpense", isTrade)
 
       const response = await fetch(url)
+      console.log("Txn-info API Response Status:", response.status);
+      const text = await response.text();
+      console.log("Txn-info API Raw Response:", text);
 
       // Attempt to parse JSON regardless of status
-      const result = await response.json()
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error("Txn-info JSON parsing failed:", parseError);
+        throw new Error("Failed to decode transaction details response");
+      }
 
       if (!response.ok) {
         // Display error returned from gateway
@@ -73,9 +82,18 @@ export default function Page() {
         }
 
         const response = await fetch(url)
+        console.log("Txn-feed API Response Status:", response.status);
+        const text = await response.text();
+        console.log("Txn-feed API Raw Response:", text);
 
         // Parse JSON regardless of response.ok
-        const result = await response.json()
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (parseError) {
+          console.error("Txn-feed JSON parsing failed:", parseError);
+          throw new Error("Failed to decode transaction feed response");
+        }
 
         if (!response.ok) {
           // Use the error returned by gateway
