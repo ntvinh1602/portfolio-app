@@ -10,13 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Enums } from "@/types/database.types"
 import { toast } from "sonner"
+import { Save } from "lucide-react"
 import { useBlueprintMap } from "./blueprints"
 import { preparePayload } from "./prepare-payload"
 import { SchemaForm } from "@/components/form/schemaForm"
-import { txnSchema } from "@/lib/schemas/transaction"
-import { refreshData } from "@/lib/refresh"
+import { txnSchema } from "@/components/sidebar/add-transaction/schema"
+import { z } from "zod"
+
+// ✅ validated data type
+type TransactionData = z.infer<typeof txnSchema>
+
+// ✅ form state: all fields optional, stored as strings during editing
+type TransactionFormState = { [K in keyof TransactionData]?: string }
 
 export function TransactionForm({
   open,
@@ -26,32 +32,29 @@ export function TransactionForm({
   onOpenChange: (open: boolean) => void
 }) {
   const blueprintMap = useBlueprintMap()
+  
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-
-  // ✅ initialize with "buy" as the default
-  const [txnType, setTxnType] = React.useState<Enums<"transaction_type">>("buy")
-
-  const [formState, setFormState] = React.useState<
-    Record<string, string | undefined>
-  >({
+  const [formState, setFormState] = React.useState<TransactionFormState>({
     transaction_type: "buy",
     transaction_date: formatISO(new Date(), { representation: "date" }),
   })
 
+  // derive txnType from formState
+  const txnType = formState.transaction_type as TransactionData["transaction_type"]
+
   const handleChange = React.useCallback(
-    (name: string, value: string | undefined) => {
-      if (name === "transaction_type") {
-        setTxnType(value as Enums<"transaction_type">)
-      }
+    <K extends keyof TransactionFormState>(
+      name: K,
+      value: string | undefined
+    ) => {
       setFormState((prev) => ({ ...prev, [name]: value }))
     },
     []
   )
 
-  // ✅ Reset whenever the dialog is opened
+  // reset form whenever dialog opens
   React.useEffect(() => {
     if (open) {
-      setTxnType("buy")
       setFormState({
         transaction_type: "buy",
         transaction_date: formatISO(new Date(), { representation: "date" }),
@@ -64,11 +67,7 @@ export function TransactionForm({
     setIsSubmitting(true)
 
     try {
-      const payload = preparePayload(
-        formState,
-        blueprintMap[txnType],
-        txnType
-      )
+      const payload = preparePayload(formState, blueprintMap[txnType], txnType)
       const validated = txnSchema.safeParse(payload)
 
       if (!validated.success) {
@@ -85,13 +84,15 @@ export function TransactionForm({
       })
 
       const result = await response.json()
-
       if (!response.ok) {
         throw new Error(result.error || "An unknown error occurred.")
       }
 
       setFormState({})
+      // 🔄 refresh dashboard data
+      const { refreshData } = await import("@/lib/refresh")
       await refreshData("dashboard", "/api/gateway/dashboard")
+
       toast.success("Transaction saved successfully!")
       onOpenChange(false)
     } catch (error) {
@@ -105,27 +106,22 @@ export function TransactionForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col" showCloseButton={false}>
+      <DialogContent className="flex flex-col">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
         </DialogHeader>
+
+        <form id="transaction-form" onSubmit={handleSubmit}>
           <SchemaForm
-            id="transaction-form"
             blueprint={blueprintMap[txnType]}
             formState={formState}
             onChange={handleChange}
-            onSubmit={handleSubmit}
           />
+        </form>
+
         <DialogFooter className="sticky bottom-0 bg-card/0">
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
           <Button type="submit" form="transaction-form" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save"}
+            <Save /> Save
           </Button>
         </DialogFooter>
       </DialogContent>

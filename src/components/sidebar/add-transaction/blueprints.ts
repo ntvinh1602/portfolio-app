@@ -1,34 +1,34 @@
 import { FieldConfig } from "@/components/form/field-types"
-import { Constants } from "@/types/database.types"
+import { Enums, Constants } from "@/types/database.types"
 import { useAccountData } from "@/hooks/useAccountData"
 import { formatNum } from "@/lib/utils"
 
 export function useBlueprintMap() {
   const { assets, debts } = useAccountData()
 
-  const txnType = Constants.public.Enums.transaction_type
-    .filter((type) => !["dividend"].includes(type))
-    .map((type) => ({ 
+  const txnTypes = Constants.public.Enums.transaction_type
+    .map((type) => ({
       value: type,
-      label: type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      label: type.replace(/\b\w/g, (c) => c.toUpperCase()),
     }))
 
   const cashAssets = assets
     .filter((asset) => ["cash"].includes(asset.asset_class))
-    .map((asset) => ({ value: asset.id, label: asset.ticker }))
+    .map((asset) => ({ value: asset.id,
+      label: asset.ticker }))
 
   const tradableAssets = assets
-    .filter((asset) => ["stock","crypto"].includes(asset.asset_class))
+    .filter((asset) => ["stock", "crypto"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
-      label: `${asset.ticker} - ${asset.name}`
+      label: `${asset.ticker} - ${asset.name}`,
     }))
 
   const stockAssets = assets
     .filter((asset) => ["stock"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
-      label: `${asset.ticker} - ${asset.name}`
+      label: `${asset.ticker} - ${asset.name}`,
     }))
 
   const debtAssets = debts.map((debt) => ({
@@ -36,18 +36,18 @@ export function useBlueprintMap() {
     label: `${debt.lender_name} - ${formatNum(debt.principal_amount)}`,
   }))
 
-
-  const trade: FieldConfig[] = [
+  // blueprints
+  const trade: FieldConfig<string>[] = [
     {
       name: "transaction_type",
       type: "select",
       label: "Type",
-      options: txnType
+      options: txnTypes
     },
     {
       name: "transaction_date",
       type: "datepicker",
-      label: "Trade Date",
+      label: "Trade Date"
     },
     {
       name: "cash_asset_id",
@@ -66,7 +66,7 @@ export function useBlueprintMap() {
       type: "input",
       label: "Quantity",
       inputMode: "number",
-      parser: (v) => parseFloat(v || "0"),
+      parser: (v) => parseFloat(v || "0")
     },
     {
       name: "price",
@@ -77,12 +77,12 @@ export function useBlueprintMap() {
     },
   ]
 
-  const split: FieldConfig[] = [
+  const split: FieldConfig<string>[] = [
     {
       name: "transaction_type",
       type: "select",
       label: "Type",
-      options: txnType
+      options: txnTypes
     },
     {
       name: "transaction_date",
@@ -104,18 +104,18 @@ export function useBlueprintMap() {
     },
   ]
 
-  const cashFlow: FieldConfig[] = [
+  const cashFlow: FieldConfig<string>[] = [
     {
       name: "transaction_type",
       type: "select",
       label: "Type",
-      options: txnType
+      options: txnTypes
     },
     {
       name: "transaction_date",
       type: "datepicker",
-      label: "Date"
-    },
+      label: "Date" 
+  },
     {
       name: "asset",
       type: "select",
@@ -124,7 +124,7 @@ export function useBlueprintMap() {
     },
     {
       name: "quantity",
-      type: "input", 
+      type: "input",
       label: "Quantity",
       inputMode: "number",
       parser: (v) => parseFloat(v || "0")
@@ -136,15 +136,15 @@ export function useBlueprintMap() {
     },
   ]
 
-  const borrow: FieldConfig[] = [
+  const borrow: FieldConfig<string>[] = [
     {
       name: "transaction_type",
       type: "select",
       label: "Type",
-      options: txnType
+      options: txnTypes
     },
     {
-          name: "transaction_date",
+      name: "transaction_date",
       type: "datepicker",
       label: "Date"
     },
@@ -158,8 +158,7 @@ export function useBlueprintMap() {
       name: "lender",
       type: "input",
       label: "Lender",
-      inputMode: "text",
-      parser: (v) => parseFloat(v || "0")
+      inputMode: "text"
     },
     {
       name: "principal",
@@ -177,12 +176,12 @@ export function useBlueprintMap() {
     },
   ]
 
-  const debtPayment: FieldConfig[] = [
+  const repay: FieldConfig<string>[] = [
     {
       name: "transaction_type",
       type: "select",
       label: "Type",
-      options: txnType
+      options: txnTypes
     },
     {
       name: "transaction_date",
@@ -205,28 +204,29 @@ export function useBlueprintMap() {
       name: "principal_payment",
       type: "input",
       label: "Paid Principal",
-      inputMode: "number", 
+      inputMode: "number",
       parser: (v) => parseFloat(v || "0")
     },
     {
       name: "interest_payment",
       type: "input",
       label: "Paid Interest",
-      inputMode: "number", 
+      inputMode: "number",
       parser: (v) => parseFloat(v || "0")
     },
   ]
 
-  const blueprintMap: Record<string, FieldConfig[]> = {
+  // ✅ blueprint map now properly typed
+  const blueprintMap: Record<Enums<"transaction_type">, FieldConfig<string>[]> = {
     buy: trade,
     sell: trade,
     deposit: cashFlow,
     withdraw: cashFlow,
     income: cashFlow,
     expense: cashFlow,
-    split: split,
-    borrow: borrow,
-    debt_payment: debtPayment,
+    split,
+    borrow,
+    repay,
   }
 
   return blueprintMap

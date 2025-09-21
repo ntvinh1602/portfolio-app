@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -496,18 +496,6 @@ export type Database = {
         }
         Returns: string
       }
-      add_debt_payment_transaction: {
-        Args: {
-          p_cash_asset_id: string
-          p_created_at?: string
-          p_debt_id: string
-          p_description: string
-          p_interest_payment: number
-          p_principal_payment: number
-          p_transaction_date: string
-        }
-        Returns: undefined
-      }
       add_deposit_transaction: {
         Args: {
           p_asset_id: string
@@ -523,10 +511,11 @@ export type Database = {
           p_asset_id: string
           p_created_at?: string
           p_description: string
+          p_linked_txn?: string
           p_quantity: number
           p_transaction_date: string
         }
-        Returns: undefined
+        Returns: string
       }
       add_income_transaction: {
         Args: {
@@ -536,6 +525,18 @@ export type Database = {
           p_quantity: number
           p_transaction_date: string
           p_transaction_type: string
+        }
+        Returns: undefined
+      }
+      add_repay_transaction: {
+        Args: {
+          p_cash_asset_id: string
+          p_created_at?: string
+          p_debt_id: string
+          p_description: string
+          p_paid_interest: number
+          p_paid_principal: number
+          p_txn_date: string
         }
         Returns: undefined
       }
@@ -587,18 +588,6 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: undefined
       }
-      get_active_debts: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          currency_code: string
-          id: string
-          interest_rate: number
-          is_active: boolean
-          lender_name: string
-          principal_amount: number
-          start_date: string
-        }[]
-      }
       get_asset_balance: {
         Args: { p_asset_id: string }
         Returns: number
@@ -610,19 +599,6 @@ export type Database = {
       get_asset_id_from_ticker: {
         Args: { p_ticker: string }
         Returns: string
-      }
-      get_assets: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          asset_class: string
-          currency_code: string
-          current_quantity: number
-          id: string
-          is_active: boolean
-          logo_url: string
-          name: string
-          ticker: string
-        }[]
       }
       get_balance_sheet: {
         Args: Record<PropertyKey, never>
@@ -670,13 +646,6 @@ export type Database = {
         Args: { p_asset_id: string }
         Returns: number
       }
-      get_monthly_twr: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: {
-          month: string
-          twr: number
-        }[]
-      }
       get_pnl: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -717,10 +686,14 @@ export type Database = {
         }[]
       }
       import_transactions: {
-        Args: { p_start_date: string; p_transactions_data: Json }
+        Args: { p_start_date: string; p_txn_data: Json }
         Returns: undefined
       }
       process_dnse_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_assets_quantity: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -739,37 +712,27 @@ export type Database = {
           net_equity_value: number
         }[]
       }
-      upsert_daily_crypto_price: {
-        Args: { p_price: number; p_ticker: string }
-        Returns: undefined
-      }
-      upsert_daily_stock_price: {
-        Args: { p_price: number; p_ticker: string }
-        Returns: undefined
-      }
     }
     Enums: {
       asset_class:
         | "cash"
         | "stock"
         | "crypto"
-        | "epf"
+        | "fund"
         | "equity"
         | "liability"
         | "index"
-        | "fund"
       currency_type: "fiat" | "crypto"
       transaction_type:
         | "buy"
         | "sell"
         | "deposit"
         | "withdraw"
-        | "expense"
         | "income"
-        | "dividend"
-        | "debt_payment"
-        | "split"
+        | "expense"
         | "borrow"
+        | "repay"
+        | "split"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -901,11 +864,10 @@ export const Constants = {
         "cash",
         "stock",
         "crypto",
-        "epf",
+        "fund",
         "equity",
         "liability",
         "index",
-        "fund",
       ],
       currency_type: ["fiat", "crypto"],
       transaction_type: [
@@ -913,12 +875,11 @@ export const Constants = {
         "sell",
         "deposit",
         "withdraw",
-        "expense",
         "income",
-        "dividend",
-        "debt_payment",
-        "split",
+        "expense",
         "borrow",
+        "repay",
+        "split",
       ],
     },
   },

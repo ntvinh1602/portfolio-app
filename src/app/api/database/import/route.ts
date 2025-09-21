@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   })
 
   const { error } = await supabase.rpc('import_transactions', {
-    p_transactions_data: transactions,
+    p_txn_data: transactions,
     p_start_date: '2021-11-09'
   })
 

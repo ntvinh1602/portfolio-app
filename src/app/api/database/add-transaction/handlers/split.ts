@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { splitSchema } from "@/lib/schemas/transaction"
+import { splitSchema } from "@/components/sidebar/add-transaction/schema"
 
 export async function handleSplit(
   supabase: SupabaseClient,

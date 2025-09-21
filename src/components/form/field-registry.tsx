@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select"
 import { SingleDate } from "@/components/date-picker"
 import { Combobox } from "@/components/combobox"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface FieldRendererProps {
   field: FieldConfig
@@ -57,7 +58,7 @@ const ComboboxField: React.FC<FieldRendererProps> = ({ field, value, onChange })
   )
 }
 
-const DateField: React.FC<FieldRendererProps> = ({ field, value, onChange }) => (
+const DateField: React.FC<FieldRendererProps> = ({ value, onChange }) => (
   <SingleDate
     selected={value}
     onSelect={onChange}
@@ -65,9 +66,20 @@ const DateField: React.FC<FieldRendererProps> = ({ field, value, onChange }) => 
   />
 )
 
+const CheckboxField: React.FC<FieldRendererProps> = ({ value, onChange }) => (
+  <Checkbox
+    checked={value === "true"}   // ✅ only true if string equals "true"
+    onCheckedChange={(checked) =>
+      onChange(checked === true ? "true" : "false") // ✅ write back string
+    }
+  />
+)
+
+
 export const typeToRenderer: Record<string, React.FC<FieldRendererProps>> = {
   input: InputField,
   select: SelectField,
   combobox: ComboboxField,
-  datepicker: DateField
+  datepicker: DateField,
+  checkbox: CheckboxField
 }

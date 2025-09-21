@@ -1,4 +1,5 @@
 import * as React from "react"
+import { DailySnapshot } from "./daily-snapshot"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -67,6 +68,7 @@ function ActionGroup({ icon, label, items, isActive }: ActionGroupConfig) {
 export function QuickActions() {
   const { handleRefresh } = useRefreshPrices()
   const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
+  const [isBackfillOpen, setBackfillOpen] = React.useState(false)
 
   async function refreshAssets() {
     const supabase = createClient()
@@ -95,8 +97,9 @@ export function QuickActions() {
       items: [
         { text: "Market Prices", onClick: handleRefresh },
         { text: "Assets Quantity", onClick: refreshAssets },
+        { text: "Daily Snapshots", onClick: () => setBackfillOpen(true) },
       ],
-      isActive: false
+      isActive: true
     },
     // You can add more groups here later without touching JSX
   ]
@@ -108,6 +111,7 @@ export function QuickActions() {
         <ActionGroup key={group.label} {...group} />
       ))}
       <TransactionForm open={isTxnFormOpen} onOpenChange={setTxnFormOpen} />
+      <DailySnapshot open={isBackfillOpen} onOpenChange={setBackfillOpen} />
     </SidebarGroup>
   )
 }

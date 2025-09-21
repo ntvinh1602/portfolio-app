@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { depositSchema } from "@/lib/schemas/transaction"
+import { depositSchema } from "@/components/sidebar/add-transaction/schema"
 
 export async function handleDeposit(
   supabase: SupabaseClient,

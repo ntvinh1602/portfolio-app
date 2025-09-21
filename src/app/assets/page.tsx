@@ -8,23 +8,16 @@ import {
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { columns } from "./components/columns"
+import { columns } from "./components/table/columns"
 import { useAccountData } from "@/hooks/useAccountData"
-import { Assets } from "./components/table"
+import { Assets } from "./components/table/table"
 import { Separator } from "@/components/ui/separator"
 import { InfoCard } from "./components/info-card"
 import { Tables } from "@/types/database.types"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { CreateAssetForm } from "./components/form/create-asset-form"
+import { CreateAssetForm } from "./components/form/create-asset"
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -63,27 +56,11 @@ export default function Page() {
         <div className="flex gap-4 flex-1 overflow-hidden w-7/10 mx-auto">
           <div className="flex w-6/10 flex-col gap-2">
             <div className="flex justify-between items-center">
-              <Dialog
-                open={isCreateAssetDialogOpen}
-                onOpenChange={setIsCreateAssetDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button variant="default">
-                    <Plus />Asset
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Asset</DialogTitle>
-                  </DialogHeader>
-                  <CreateAssetForm
-                    onSuccess={(inserted) => {
-                      setSelectedAsset(inserted)
-                      setIsCreateAssetDialogOpen(false)
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
+              <Button
+                variant="default"
+                onClick={() => setIsCreateAssetDialogOpen(true)}>
+                <Plus/>Asset
+              </Button>
               <TabSwitcher
                 variant="content"
                 value={category}
@@ -119,6 +96,11 @@ export default function Page() {
           </div>
         </div>
       </SidebarInset>
+      
+      <CreateAssetForm
+        open={isCreateAssetDialogOpen}
+        onOpenChange={setIsCreateAssetDialogOpen}
+      />
     </SidebarProvider>
   )
 }

@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { withdrawSchema } from "@/lib/schemas/transaction"
+import { withdrawSchema } from "@/components/sidebar/add-transaction/schema"
 
 export async function handleWithdraw(
   supabase: SupabaseClient,

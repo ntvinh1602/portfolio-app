@@ -57,9 +57,9 @@ export const borrowSchema = z.object({
   cash_asset_id: z.string().uuid(),
 })
 
-export const debtPaymentSchema = z.object({
+export const repaySchema = z.object({
   transaction_date: z.string().date(),
-  transaction_type: z.literal("debt_payment"),
+  transaction_type: z.literal("repay"),
   debt: z.string().uuid(),
   principal_payment: z.number().positive(),
   interest_payment: z.number().nonnegative(),
@@ -81,6 +81,6 @@ export const txnSchema = z.discriminatedUnion("transaction_type", [
   incomeSchema,
   expenseSchema,
   borrowSchema,
-  debtPaymentSchema,
+  repaySchema,
   splitSchema,
 ])

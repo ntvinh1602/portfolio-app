@@ -1,14 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { txnSchema } from "@/lib/schemas/transaction"
+import { txnSchema } from "@/components/sidebar/add-transaction/schema"
 import {
   handleBorrow,
   handleBuy,
-  handleDebtPayment,
+  handleRepay,
   handleDeposit,
   handleExpense,
   handleIncome,
-  handleDividend,
   handleSell,
   handleSplit,
   handleWithdraw,
@@ -46,17 +45,14 @@ export async function POST(request: NextRequest) {
       case "income":
         result = await handleIncome(supabase, transactionData)
         break
-      case "dividend":
-        result = await handleDividend(supabase, transactionData)
-        break
       case "expense":
         result = await handleExpense(supabase, transactionData)
         break
       case "borrow":
         result = await handleBorrow(supabase, transactionData)
         break
-      case "debt_payment":
-        result = await handleDebtPayment(supabase, transactionData)
+      case "repay":
+        result = await handleRepay(supabase, transactionData)
         break
       case "split":
         result = await handleSplit(supabase, transactionData)

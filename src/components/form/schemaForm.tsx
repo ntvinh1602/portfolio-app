@@ -3,31 +3,26 @@ import { FieldConfig } from "./field-types"
 import { typeToRenderer } from "./field-registry"
 import { Label } from "@/components/ui/label"
 
-export function SchemaForm({
-  id,
+export type SchemaFormProps<T extends Record<string, any>> = {
+  blueprint: FieldConfig<string>[]
+  formState: Partial<Record<keyof T & string, string | undefined>>
+  onChange: <K extends keyof T & string>(name: K, val: string | undefined) => void
+}
+
+export function SchemaForm<T extends Record<string, any>>({
   blueprint,
   formState,
   onChange,
-  onSubmit
-}: {
-  id: string
-  blueprint: FieldConfig[]
-  formState: Record<string, string | undefined>
-  onChange: (name: string, val: string | undefined) => void
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
-}) {
+}: SchemaFormProps<T>) {
   return (
-    <form
-      id={id}
-      onSubmit={onSubmit}
-      className="flex flex-col gap-3"
-    >
+    <div className="flex flex-col gap-3">
       {blueprint.map((field) => {
         const Renderer = typeToRenderer[field.type]
         if (!Renderer) {
           console.warn(`No renderer found for field type: ${field.type}`)
           return null
         }
+
         return (
           <div key={field.name} className="h-9 grid grid-cols-4 items-center">
             <Label>{field.label}</Label>
@@ -35,13 +30,16 @@ export function SchemaForm({
               <Renderer
                 field={field}
                 value={formState[field.name]}
-                onChange={(val) => onChange(field.name, val)}
+                onChange={(val) => {
+                  const transformed =
+                    val && field.transform ? field.transform(val) : val
+                  onChange(field.name, transformed)
+                }}
               />
             </div>
           </div>
         )
       })}
-    </form>
+    </div>
   )
 }
-

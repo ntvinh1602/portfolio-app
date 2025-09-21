@@ -11,17 +11,15 @@ import {
 } from "@/components/ui/card"
 import Image from "next/image"
 import { Tables } from "@/types/database.types"
-import { UpdateAssetForm } from "./form/update-asset-form"
 import { Info } from "lucide-react"
+import { EditAssetForm } from "./form/edit-asset"
 
 export function InfoCard({
   asset,
   onDeleted,
-  onUpdated,
 }: {
   asset: Tables<"assets"> | null
   onDeleted?: () => void
-  onUpdated?: (asset: Tables<"assets">) => void
 }) {
 
   if (!asset) {
@@ -45,7 +43,7 @@ export function InfoCard({
       <CardHeader>
         <CardTitle className="text-xl">{asset.name}</CardTitle>
         <CardDescription>
-          {asset.asset_class.replace(/\b\w/g, (c) => c.toUpperCase())}
+          {asset.asset_class?.replace(/\b\w/g, (c) => c.toUpperCase())}
         </CardDescription>
         <CardAction>
           <div className="size-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
@@ -76,11 +74,11 @@ export function InfoCard({
             }
           </span>
         </div>
-        <UpdateAssetForm
-          initialData={asset}
-          onSuccess={(updated) => {onUpdated?.(updated)}}
-          onDeleted={() => {onDeleted?.()}}
+        <EditAssetForm
+          selectedAsset={asset}
+          onDeleted={onDeleted || (() => {})}
         />
+        
       </CardContent>
     </Card>
   )
