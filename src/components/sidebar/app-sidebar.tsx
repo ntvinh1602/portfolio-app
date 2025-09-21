@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 import { QuickActions } from "./quick-actions"
 import { ConfirmDialog } from "../confirmation"
 
@@ -54,9 +54,9 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
-  const supabase = createClient()
   
   const handleSignOut = async () => {
+    const supabase = await createClient()
     await supabase.auth.signOut()
     router.push("/login")
   }
