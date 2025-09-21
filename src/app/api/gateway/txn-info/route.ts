@@ -42,17 +42,23 @@ export async function GET(request: NextRequest) {
     // Fetch internal endpoint
     const response = await fetch(targetUrl, fetchOptions)
 
-    let result: any
+    let result: unknown
     try {
       result = await response.json()
-    } catch (err) {
+    } catch {
       const bodyText = await response.text()
       console.error("Failed to parse JSON from internal txn-details:", bodyText)
       return NextResponse.json({ error: "Invalid JSON from internal service" }, { status: 502 })
     }
 
     if (!response.ok) {
-      const errorMsg = result?.error || "Failed to fetch transaction details"
+      const errorMsg =
+        typeof result === "object" &&
+        result !== null &&
+        "error" in result
+          ? (result as { error: string }).error
+          : "Failed to fetch transaction details"
+
       console.error("Internal txn-details error:", errorMsg)
       return NextResponse.json({ error: errorMsg }, { status: response.status })
     }
