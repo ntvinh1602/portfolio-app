@@ -86,7 +86,7 @@ function LegItem({
   )
 }
 
-export function TransactionDetails({
+export function TxnInfo({
   transaction,
   transactionLegs,
   associatedExpenses,

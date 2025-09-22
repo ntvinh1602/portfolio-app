@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Constants, Enums } from "@/types/database.types"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -19,26 +18,32 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table"
 import { Pagination } from "@/components/table-pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export function Transactions<TData extends { id: string }, TValue>({
-  columns,
-  data,
-  category,
-  onRowClick,
-  selectedTransaction,
-  loading
-}: {
+interface DataTableProps<TData, TValue = unknown> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  category: string
+  loading?: boolean
+  selectedRow?: TData | null
   onRowClick?: (row: TData) => void
-  selectedTransaction?: TData | null
-  loading: boolean
-}) {
+  skeletonRows?: number
+  noDataMessage?: string
+  rowId: (row: TData) => string | number
+}
+
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  loading = false,
+  selectedRow = null,
+  onRowClick,
+  skeletonRows = 10,
+  noDataMessage = "No results.",
+  rowId,
+}: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
 
@@ -51,27 +56,9 @@ export function Transactions<TData extends { id: string }, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-      initialState: {
-        pagination: {
-          pageSize: 20,
-        },
-      },
-      state: {
-        sorting,
-        columnFilters
-      }
-    })
-
-  React.useEffect(() => {
-    const CATEGORY_FILTERS: Record<string, Enums<"transaction_type">[]> = {
-      cash: Constants.public.Enums.transaction_type.filter(
-        (t) => !["buy", "sell"].includes(t)
-      ),
-      trade: ["buy", "sell"],
-    }
-
-    table.getColumn("type")?.setFilterValue(CATEGORY_FILTERS[category] ?? [])
-  }, [category, table])
+    state: { sorting, columnFilters },
+    initialState: { pagination: { pageSize: 20 } },
+  })
 
   if (loading) {
     return (
@@ -81,31 +68,26 @@ export function Transactions<TData extends { id: string }, TValue>({
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className="bg-muted font-light"
-                        style={{
-                          minWidth: header.column.columnDef.size,
-                          maxWidth: header.column.columnDef.size,
-                        }}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    )
-                  })}
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="bg-muted font-light"
+                      style={{
+                        minWidth: header.column.columnDef.size,
+                        maxWidth: header.column.columnDef.size,
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {Array.from({ length: 20 }).map((_, rowIndex) => (
-                <TableRow key={rowIndex}>
+              {Array.from({ length: skeletonRows }).map((_, idx) => (
+                <TableRow key={idx}>
                   {table.getAllLeafColumns().map((column) => (
                     <TableCell
                       key={column.id}
@@ -122,7 +104,7 @@ export function Transactions<TData extends { id: string }, TValue>({
             </TableBody>
           </Table>
         </div>
-        <Pagination table={table}/>
+        <Pagination table={table} />
       </>
     )
   }
@@ -134,39 +116,35 @@ export function Transactions<TData extends { id: string }, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className="bg-muted font-light"
-                      style={{
-                        minWidth: header.column.columnDef.size,
-                        maxWidth: header.column.columnDef.size,
-                      }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="bg-muted font-light"
+                    style={{
+                      minWidth: header.column.columnDef.size,
+                      maxWidth: header.column.columnDef.size,
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {!loading && table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
+                  key={rowId(row.original)}
                   data-state={
-                    (row.original).id === selectedTransaction?.id &&
-                    "selected"
+                    selectedRow && rowId(row.original) === rowId(selectedRow)
+                      ? "selected"
+                      : undefined
                   }
                   onClick={() => onRowClick?.(row.original)}
-                  className="cursor-pointer"
+                  className={onRowClick ? "cursor-pointer" : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -184,14 +162,14 @@ export function Transactions<TData extends { id: string }, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {noDataMessage}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <Pagination table={table}/>
+      <Pagination table={table} />
     </>
   )
 }

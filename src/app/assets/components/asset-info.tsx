@@ -14,7 +14,7 @@ import { Tables } from "@/types/database.types"
 import { Info } from "lucide-react"
 import { EditAssetForm } from "./form/edit-asset"
 
-export function InfoCard({
+export function AssetInfo({
   asset,
   onDeleted,
 }: {

@@ -37,11 +37,6 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "type",
     header: "Type",
-    filterFn: (row, id, value: string[]) => {
-      if (!value || value.length === 0) return true
-      const set = new Set(value) // O(1) lookups
-      return set.has(row.getValue(id))
-    },
     cell: ({ row }) => {
       const raw = row.getValue("type") as string
       const formatted = raw.replace(/\b\w/g, (c) => c.toUpperCase())
