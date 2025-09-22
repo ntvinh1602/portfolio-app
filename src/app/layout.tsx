@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import { Roboto_Flex, Roboto_Condensed } from "next/font/google"
 import "./globals.css"
-import { Toaster } from "@/components/ui/sonner"
-import { ThemeProvider } from "@/components/theme-providers"
+import { ClientLayout } from "@/components/client-layout"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
@@ -44,15 +43,9 @@ export default function RootLayout({ children }: Readonly<{
       className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning
     >
       <body className="antialiased bg-fixed">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ClientLayout>
           {children}
-          <Toaster />
-        </ThemeProvider>
+        </ClientLayout>
       </body>
     </html>
   )

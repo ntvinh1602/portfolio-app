@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
 import { TransactionDetails } from "./components/details"
 import { Transactions } from "./components/table"
@@ -106,57 +104,54 @@ export default function Page() {
   }, [data])
 
   return (
-    <SidebarProvider>
-      <AppSidebar collapsible="icon" />
-      <SidebarInset className="flex flex-col px-4">
-        <Header title="Transactions" />
-        <Separator className="mb-4" />
-        <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
-          <div className="flex w-6/10 flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <DateRange
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
-              />
-              <TabSwitcher
-                variant="content"
-                value={category}
-                onValueChange={setCategory}
-                options={[
-                  {
-                    label: "Cashflow",
-                    value: "cash",
-                    number: transactionCounts.cash,
-                  },
-                  {
-                    label: "Trades",
-                    value: "trade",
-                    number: transactionCounts.trade,
-                  },
-                ]}
-              />
-            </div>
-            <Transactions
-              columns={columns}
-              data={data}
-              category={category}
-              onRowClick={handleTransactionSelect}
-              selectedTransaction={selectedTxn}
-              loading={txnLoading}
+    <div className="flex flex-col">
+      <Header title="Transactions" />
+      <Separator className="mb-4" />
+      <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
+        <div className="flex w-6/10 flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <DateRange
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onDateFromChange={setDateFrom}
+              onDateToChange={setDateTo}
+            />
+            <TabSwitcher
+              variant="content"
+              value={category}
+              onValueChange={setCategory}
+              options={[
+                {
+                  label: "Cashflow",
+                  value: "cash",
+                  number: transactionCounts.cash,
+                },
+                {
+                  label: "Trades",
+                  value: "trade",
+                  number: transactionCounts.trade,
+                },
+              ]}
             />
           </div>
-          <div className="flex w-4/10 flex-col gap-2">
-            <TransactionDetails
-              transaction={selectedTxn}
-              transactionLegs={txnLegs}
-              associatedExpenses={expenses}
-              loading={detailLoading}
-            />
-          </div>
+          <Transactions
+            columns={columns}
+            data={data}
+            category={category}
+            onRowClick={handleTransactionSelect}
+            selectedTransaction={selectedTxn}
+            loading={txnLoading}
+          />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+        <div className="flex w-4/10 flex-col gap-2">
+          <TransactionDetails
+            transaction={selectedTxn}
+            transactionLegs={txnLegs}
+            associatedExpenses={expenses}
+            loading={detailLoading}
+          />
+        </div>
+      </div>
+    </div>
   )
 }

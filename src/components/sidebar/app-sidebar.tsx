@@ -47,6 +47,10 @@ const data = {
           title: "Settings",
           url: "/settings",
         },
+        {
+          title: "Deployments",
+          url: "/deployments",
+        },
       ]
     }
   ]

@@ -31,8 +31,9 @@ export function SchemaForm<T extends Record<string, string | undefined>>({
                 field={field}
                 value={formState[field.name]}
                 onChange={(val) => {
-                  const transformed =
-                    val && field.transform ? field.transform(val) : val
+                  const transformed = val && field.transform
+                    ? field.transform(val)
+                    : val
                   onChange(field.name, transformed)
                 }}
               />

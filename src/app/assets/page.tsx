@@ -1,26 +1,19 @@
 "use client"
 
 import * as React from "react"
-import {
-  SidebarInset,
-  SidebarProvider
-} from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Header } from "@/components/header"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { columns } from "./components/table/columns"
 import { useAccountData } from "@/hooks/useAccountData"
-import { Assets } from "./components/table/table"
 import { Separator } from "@/components/ui/separator"
-import { InfoCard } from "./components/info-card"
 import { Tables } from "@/types/database.types"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { CreateAssetForm } from "./components/form/create-asset"
+import { columns } from "./components/table/columns"
+import { Assets } from "./components/table/table"
+import { InfoCard } from "./components/info-card"
 
 export default function Page() {
-  const isMobile = useIsMobile()
   const { assets, loading } = useAccountData()
   const [category, setCategory] = React.useState("stock")
   const [selectedAsset, setSelectedAsset] =
@@ -48,59 +41,56 @@ export default function Page() {
   }, [assets])
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className={`${!isMobile && "px-4"}`}>
-        <Header title="Assets" />
-        <Separator className="mb-4" />
-        <div className="flex gap-4 flex-1 overflow-hidden w-7/10 mx-auto">
-          <div className="flex w-6/10 flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <Button
-                variant="default"
-                onClick={() => setIsCreateAssetDialogOpen(true)}>
-                <Plus/>Asset
-              </Button>
-              <TabSwitcher
-                variant="content"
-                value={category}
-                onValueChange={setCategory}
-                options={[
-                  {
-                    label: "Stocks",
-                    value: "stock",
-                    number: assetCounts.stock,
-                  },
-                  {
-                    label: "Others",
-                    value: "others",
-                    number: assetCounts.others,
-                  },
-                ]}
-              />
-            </div>
-            <Assets
-              columns={columns}
-              data={assets}
-              category={category}
-              onRowClick={handleAssetSelect}
-              selectedAsset={selectedAsset}
-              loading={loading}
+    <div>
+      <Header title="Assets" />
+      <Separator className="mb-4" />
+      <div className="flex gap-4 flex-1 overflow-hidden w-7/10 mx-auto">
+        <div className="flex w-6/10 flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <Button
+              variant="default"
+              onClick={() => setIsCreateAssetDialogOpen(true)}>
+              <Plus/>Asset
+            </Button>
+            <TabSwitcher
+              variant="content"
+              value={category}
+              onValueChange={setCategory}
+              options={[
+                {
+                  label: "Stocks",
+                  value: "stock",
+                  number: assetCounts.stock,
+                },
+                {
+                  label: "Others",
+                  value: "others",
+                  number: assetCounts.others,
+                },
+              ]}
             />
           </div>
-          <div className="flex w-4/10 flex-col gap-2">
-            <InfoCard
-              asset={selectedAsset}
-              onDeleted={() => setSelectedAsset(null)}
-            />
-          </div>
+          <Assets
+            columns={columns}
+            data={assets}
+            category={category}
+            onRowClick={handleAssetSelect}
+            selectedAsset={selectedAsset}
+            loading={loading}
+          />
         </div>
-      </SidebarInset>
-      
+        <div className="flex w-4/10 flex-col gap-2">
+          <InfoCard
+            asset={selectedAsset}
+            onDeleted={() => setSelectedAsset(null)}
+          />
+        </div>
+      </div>
+    
       <CreateAssetForm
         open={isCreateAssetDialogOpen}
         onOpenChange={setIsCreateAssetDialogOpen}
       />
-    </SidebarProvider>
+    </div>
   )
 }

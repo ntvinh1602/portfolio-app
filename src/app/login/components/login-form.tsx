@@ -6,8 +6,13 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { TurnstileWidget } from "@/app/login/components/turnstile"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader
+} from "@/components/ui/card"
+import { TurnstileWidget } from "./turnstile"
 
 export function LoginForm({
   className,
@@ -60,9 +65,9 @@ export function LoginForm({
                   Email
                 </Label>
                 <Input 
+                  variant="default"
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -77,6 +82,7 @@ export function LoginForm({
                   </Label>
                 </div>
                 <Input
+                  variant="default"
                   id="password"
                   type="password"
                   required
