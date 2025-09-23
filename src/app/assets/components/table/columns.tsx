@@ -6,9 +6,9 @@ import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+  Root,
+  Content,
+  Trigger,
 } from "@/components/ui/tooltip"
 
 export const columns: ColumnDef<Tables<"assets">>[] = [
@@ -52,14 +52,14 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
     accessorKey: "is_active",
     header: () => (
       <div className="flex justify-center items-center">
-        <Tooltip>
-          <TooltipTrigger>
+        <Root>
+          <Trigger>
             <span className="border-b-1 border-foreground/40 border-dashed py-0.5">Fetching</span>
-          </TooltipTrigger>
-          <TooltipContent>
+          </Trigger>
+          <Content>
             Disabled assets are excluded from price fetching and saving
-          </TooltipContent>
-        </Tooltip>
+          </Content>
+        </Root>
       </div>
     ),
     size: 80,

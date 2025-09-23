@@ -5,11 +5,11 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+  Root,
+  Content,
+  Subtitle,
+  Header,
+  Title,
 } from "@/components/ui/dialog"
 import { SingleDate } from "@/components/date-picker"
 import { refreshData } from "@/lib/refresh"
@@ -58,23 +58,23 @@ export function DailySnapshot({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+    <Root open={open} onOpenChange={onOpenChange}>
+      <Content
         onOpenAutoFocus={(e) => e.preventDefault()}
         showCloseButton={false}
         className="w-100"
       >
-        <DialogHeader>
-          <DialogTitle>Generate Snapshots</DialogTitle>
-          <DialogDescription>
+        <Header>
+          <Title>Generate Snapshots</Title>
+          <Subtitle>
             Initialize or recalculate daily portfolio snapshots data from a specific date.
-          </DialogDescription>
-        </DialogHeader>
+          </Subtitle>
+        </Header>
         <SingleDate selected={startDate} onSelect={setStartDate} />
         <Button variant="outline" onClick={handleBackfill}>
           Generate
         </Button>
-      </DialogContent>
-    </Dialog>
+      </Content>
+    </Root>
   )
 }

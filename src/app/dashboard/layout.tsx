@@ -1,6 +1,6 @@
 "use client"
 
-import { LiveDataProvider } from "@/context/live-data-context"
+import { LiveDataProvider } from "@/app/dashboard/context/live-data-context"
 import { Header } from "@/components/header"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

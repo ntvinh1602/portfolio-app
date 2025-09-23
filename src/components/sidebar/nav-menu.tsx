@@ -8,15 +8,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
+  Group,
+  GroupLabel,
+  Menu,
+  MenuAction,
+  MenuButton,
+  MenuItem,
+  MenuSub,
+  MenuSubButton,
+  MenuSubItem,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 
@@ -35,54 +35,54 @@ export function NavMenu({
   }[]
 }) {
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Pages</SidebarGroupLabel>
-      <SidebarMenu>
-        <SidebarMenuButton tooltip="Dashboard">
+    <Group>
+      <GroupLabel>Pages</GroupLabel>
+      <Menu>
+        <MenuButton tooltip="Dashboard">
           <Link href="/" className="flex items-center gap-2">
             <Monitor className="size-4"/>
             <span className="font-light">Dashboard</span>
           </Link>
-        </SidebarMenuButton>
+        </MenuButton>
         {items.map((item) => (
           <Collapsible key={item.title} defaultOpen={item.isActive}>
             <CollapsibleTrigger asChild>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={item.title}>
+              <MenuItem>
+                <MenuButton asChild tooltip={item.title}>
                   <div className="flex select-none">
                     <item.icon/>
                     <span className="font-light">{item.title}</span>
                   </div>
-                </SidebarMenuButton>
+                </MenuButton>
                 {item.items?.length ?
-                  <SidebarMenuAction>
+                  <MenuAction>
                     <ChevronRight />
                     <span className="sr-only">Toggle</span>
-                  </SidebarMenuAction>
+                  </MenuAction>
                  : null}
-              </SidebarMenuItem>
+              </MenuItem>
             </CollapsibleTrigger>
             {item.items?.length ? (
               <CollapsibleContent>
-                <SidebarMenuSub>
+                <MenuSub>
                   {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
+                    <MenuSubItem key={subItem.title}>
+                      <MenuSubButton asChild>
                         <a href={subItem.url}>
                           <span className="font-light text-muted-foreground">
                             {subItem.title}
                           </span>
                         </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                      </MenuSubButton>
+                    </MenuSubItem>
                   ))}
-                </SidebarMenuSub>
+                </MenuSub>
               </CollapsibleContent>
             ) : null}
           </Collapsible>
         ))}
-      </SidebarMenu>
-    </SidebarGroup>
+      </Menu>
+    </Group>
   )
 }
 

@@ -1,14 +1,14 @@
 "use client"
 
-import * as React from "react"
+import { useState, useCallback, useEffect, FormEvent } from "react"
 import { formatISO } from "date-fns"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Root,
+  Content,
+  Footer,
+  Header,
+  Title,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Save } from "lucide-react"
@@ -33,8 +33,8 @@ export function TransactionForm({
 }) {
   const blueprintMap = useBlueprintMap()
   
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [formState, setFormState] = React.useState<TransactionFormState>({
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formState, setFormState] = useState<TransactionFormState>({
     transaction_type: "buy",
     transaction_date: formatISO(new Date(), { representation: "date" }),
   })
@@ -42,7 +42,7 @@ export function TransactionForm({
   // derive txnType from formState
   const txnType = formState.transaction_type as TransactionData["transaction_type"]
 
-  const handleChange = React.useCallback(
+  const handleChange = useCallback(
     <K extends keyof TransactionFormState>(
       name: K,
       value: string | undefined
@@ -53,7 +53,7 @@ export function TransactionForm({
   )
 
   // reset form whenever dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setFormState({
         transaction_type: "buy",
@@ -62,7 +62,7 @@ export function TransactionForm({
     }
   }, [open])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
 
@@ -105,11 +105,11 @@ export function TransactionForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
-        </DialogHeader>
+    <Root open={open} onOpenChange={onOpenChange}>
+      <Content className="flex flex-col">
+        <Header>
+          <Title>Add Transaction</Title>
+        </Header>
 
         <form id="transaction-form" onSubmit={handleSubmit}>
           <SchemaForm<TransactionFormState>
@@ -119,12 +119,12 @@ export function TransactionForm({
           />
         </form>
 
-        <DialogFooter className="sticky bottom-0 bg-card/0">
+        <Footer className="sticky bottom-0 bg-card/0">
           <Button type="submit" form="transaction-form" disabled={isSubmitting}>
             <Save /> Save
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Footer>
+      </Content>
+    </Root>
   )
 }

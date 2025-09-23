@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { TxnInfo } from "./components/txn-info"
 import { Transaction } from "./components/columns"
@@ -12,16 +12,16 @@ import { toast } from "sonner"
 import { TxnTable } from "./components/txn-table"
 
 export default function Page() {
-  const [data, setData] = React.useState<Transaction[]>([])
-  const [dateFrom, setDateFrom] = React.useState<Date | undefined>(
+  const [data, setData] = useState<Transaction[]>([])
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(
     subMonths(new Date(), 1)
   )
-  const [dateTo, setDateTo] = React.useState<Date | undefined>(new Date())
-  const [selectedTxn, setSelectedTxn] = React.useState<Transaction | null>(null)
-  const [txnLegs, setTxnLegs] = React.useState<TxnLeg[]>([])
-  const [expenses, setExpenses] = React.useState<Expense[]>([])
-  const [txnLoading, setTxnLoading] = React.useState(true)
-  const [detailLoading, setDetailLoading] = React.useState(false)
+  const [dateTo, setDateTo] = useState<Date | undefined>(new Date())
+  const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
+  const [txnLegs, setTxnLegs] = useState<TxnLeg[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [txnLoading, setTxnLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const handleTransactionSelect = async (transaction: Transaction | null) => {
     if (!transaction) {
@@ -61,7 +61,7 @@ export default function Page() {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchData() {
       setTxnLoading(true)
       try {

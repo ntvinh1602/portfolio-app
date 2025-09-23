@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ReactNode, useState, useMemo, useCallback } from "react"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { DataTable } from "@/components/table/data-table"
 import { columns, Transaction } from "./columns"
@@ -14,12 +14,12 @@ export function TxnTable({
   data: Transaction[]
   loading: boolean
   onTransactionSelect: (txn: Transaction | null) => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
-  const [category, setCategory] = React.useState<"trade" | "cash">("trade")
-  const [selectedTxn, setSelectedTxn] = React.useState<Transaction | null>(null)
+  const [category, setCategory] = useState<"trade" | "cash">("trade")
+  const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
 
-  const transactionCounts = React.useMemo(() => {
+  const transactionCounts = useMemo(() => {
     return data.reduce(
       (acc, transaction) => {
         if (["buy", "sell", "split"].includes(transaction.type)) {
@@ -33,14 +33,14 @@ export function TxnTable({
     )
   }, [data])
 
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (category === "trade") {
       return data.filter((t) => ["buy", "sell", "split"].includes(t.type))
     }
     return data.filter((t) => !["buy", "sell", "split"].includes(t.type))
   }, [data, category])
 
-  const handleRowClick = React.useCallback(
+  const handleRowClick = useCallback(
     (txn: Transaction) => {
       if (selectedTxn && selectedTxn.id === txn.id) {
         // Deselect if clicking the same transaction again

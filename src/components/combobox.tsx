@@ -1,25 +1,11 @@
 "use client"
 
-import * as React from "react"
-import { 
-  CheckIcon,
-  ChevronDown,
-} from "lucide-react"
+import { useState } from "react"
+import { CheckIcon, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import * as Cmd from "@/components/ui/command"
+import * as Popover from "@/components/ui/popover"
 
 export type ComboboxItem = {
   value: string
@@ -45,13 +31,13 @@ export function Combobox({
   emptyPlaceholder = "No item found.",
   className,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
 
   const selectedItem = items.find(item => item.value === value)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
         <Button
           variant="underline"
           role="combobox"
@@ -64,8 +50,8 @@ export function Combobox({
           }
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent
+      </Popover.Trigger>
+      <Popover.Content
         className="w-[--radix-popover-trigger-width] rounded-2xl bg-card/25 p-0 backdrop-blur-sm"
         onTouchMove={(e) => {
           e.stopPropagation();
@@ -74,13 +60,13 @@ export function Combobox({
           e.stopPropagation(); 
         }}
       >
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList className="max-h-52">
-            <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
-            <CommandGroup>
+        <Cmd.Root>
+          <Cmd.Input placeholder={searchPlaceholder} />
+          <Cmd.List className="max-h-52">
+            <Cmd.Empty>{emptyPlaceholder}</Cmd.Empty>
+            <Cmd.Group>
               {items.map(item => (
-                <CommandItem
+                <Cmd.Item
                   className="p-3"
                   key={item.value}
                   value={item.label}
@@ -96,12 +82,12 @@ export function Combobox({
                     )}
                   />
                   {item.label}
-                </CommandItem>
+                </Cmd.Item>
               ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+            </Cmd.Group>
+          </Cmd.List>
+        </Cmd.Root>
+      </Popover.Content>
+    </Popover.Root>
   )
 }

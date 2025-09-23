@@ -46,11 +46,7 @@ interface LiveDataContextType {
   isCryptoPriceLive: boolean
 }
 
-const LiveDataContext = createContext<LiveDataContextType | undefined>(
-  undefined
-)
-
-interface LiveDataProviderProps {children: ReactNode}
+const LiveDataContext = createContext<LiveDataContextType | undefined>(undefined)
 
 const safeBalanceSheet: BalanceSheetData = {
   assets: [],
@@ -61,7 +57,7 @@ const safeBalanceSheet: BalanceSheetData = {
   totalEquity: 0,
 }
 
-export const LiveDataProvider = ({ children }: LiveDataProviderProps) => {
+export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   const {
     balanceSheetData: bsData,
     stockData,

@@ -1,14 +1,4 @@
-"use client"
-
-import * as React from "react"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import * as Card from "@/components/ui/card"
 import Image from "next/image"
 import { Tables } from "@/types/database.types"
 import { Info } from "lucide-react"
@@ -24,28 +14,28 @@ export function AssetInfo({
 
   if (!asset) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Information</CardTitle>
-          <CardAction>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title className="text-xl">Information</Card.Title>
+          <Card.Action>
             <Info className="text-muted-foreground"/>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="flex justify-center">
+          </Card.Action>
+        </Card.Header>
+        <Card.Content className="flex justify-center">
           <span className="font-thin text-muted-foreground">No asset selected</span>
-        </CardContent>
-      </Card>
+        </Card.Content>
+      </Card.Root>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">{asset.name}</CardTitle>
-        <CardDescription>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title className="text-xl">{asset.name}</Card.Title>
+        <Card.Subtitle>
           {asset.asset_class?.replace(/\b\w/g, (c) => c.toUpperCase())}
-        </CardDescription>
-        <CardAction>
+        </Card.Subtitle>
+        <Card.Action>
           <div className="size-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center overflow-hidden">
             <Image
               src={asset.logo_url || ""}
@@ -55,9 +45,9 @@ export function AssetInfo({
               className="object-contain"
             />
           </div>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+        </Card.Action>
+      </Card.Header>
+      <Card.Content className="flex flex-col gap-3">
         <div className="h-9 grid grid-cols-4 items-center text-left text-foreground text-sm font-thin gap-2">
           <span>Asset ID</span>
           <span className="col-span-3">{asset.id}</span>
@@ -79,7 +69,7 @@ export function AssetInfo({
           onDeleted={onDeleted || (() => {})}
         />
         
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   )
 }

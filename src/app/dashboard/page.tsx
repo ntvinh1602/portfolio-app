@@ -1,18 +1,19 @@
 "use client"
 
-import * as React from "react"
 import {
   Carousel,
   CarouselContent,
   CarouselItem
 } from "@/components/ui/carousel"
-import { AssetCard } from "@/app/dashboard/components/total-assets"
+import {
+  AssetCard,
+  Portfolio,
+  EquityChart,
+  Benchmarkchart,
+  ExpenseChart,
+  TradingViewWidget
+} from "./components"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Portfolio } from "@/app/dashboard/components/portfolio"
-import TradingView from "@/app/dashboard/components/trading-view"
-import { EquityChart } from "./components/charts/equity-chart"
-import { Benchmarkchart } from "./components/charts/benchmark-chart"
-import { ExpenseChart } from "./components/charts/monthly-chart"
 
 export default function Page() {
   const isMobile = useIsMobile()
@@ -45,7 +46,7 @@ export default function Page() {
       {!isMobile && 
         <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0">
           <div className="h-[400px]">
-            <TradingView />
+            <TradingViewWidget/>
           </div>
           <ExpenseChart/>
         </div>

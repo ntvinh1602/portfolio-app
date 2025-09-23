@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { Header } from "@/components/header"
 import { useAccountData } from "@/hooks/useAccountData"
 import { Separator } from "@/components/ui/separator"
@@ -13,10 +13,8 @@ import { AssetTable } from "./components/table/asset-table"
 
 export default function Page() {
   const { assets, loading } = useAccountData()
-  const [selectedAsset, setSelectedAsset] =
-    React.useState<Tables<"assets"> | null>(null)
-  const [isCreateAssetDialogOpen, setIsCreateAssetDialogOpen] =
-    React.useState(false)
+  const [selectedAsset, setSelectedAsset] = useState<Tables<"assets"> | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleAssetSelect = async (asset: Tables<"assets"> | null) => {
     if (!asset) setSelectedAsset(null)
@@ -36,7 +34,7 @@ export default function Page() {
           >
             <Button
               variant="default"
-              onClick={() => setIsCreateAssetDialogOpen(true)}>
+              onClick={() => setIsDialogOpen(true)}>
               <Plus/>Asset
             </Button>
           </AssetTable>
@@ -50,8 +48,8 @@ export default function Page() {
       </div>
     
       <CreateAssetForm
-        open={isCreateAssetDialogOpen}
-        onOpenChange={setIsCreateAssetDialogOpen}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
       />
     </div>
   )

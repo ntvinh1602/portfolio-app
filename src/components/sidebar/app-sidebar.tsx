@@ -7,13 +7,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar"
+import * as SB from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { QuickActions } from "./quick-actions"
@@ -52,7 +46,7 @@ const data = {
   ]
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
   const router = useRouter()
   
   const handleSignOut = async () => {
@@ -62,31 +56,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
-        <SidebarMenuButton size="lg" className="pointer-events-none">
+    <SB.Root variant="inset" {...props}>
+      <SB.Header>
+        <SB.MenuButton size="lg" className="pointer-events-none">
           <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
             <TrendingUp className="size-4 text-primary-foreground"/>
           </div>
           <h1 className="text-xl">Portfolio Tracker</h1>
-        </SidebarMenuButton>
-      </SidebarHeader>
+        </SB.MenuButton>
+      </SB.Header>
       
-      <SidebarContent>
+      <SB.Content>
         <NavMenu items={data.navMenu} />
         <QuickActions/>
-      </SidebarContent>
+      </SB.Content>
 
-      <SidebarFooter>
+      <SB.Footer>
         <ConfirmDialog
           onConfirm={handleSignOut}
           message="Do you really want to log out?"
         >
-          <SidebarMenuButton>
+          <SB.MenuButton>
             <LogOut/>Logout
-          </SidebarMenuButton>
+          </SB.MenuButton>
         </ConfirmDialog>
-      </SidebarFooter>
-    </Sidebar>
+      </SB.Footer>
+    </SB.Root>
   )
 }

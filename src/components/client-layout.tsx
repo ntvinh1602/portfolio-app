@@ -1,11 +1,11 @@
 "use client"
 
 import { ReactNode } from "react"
-import { usePathname } from "next/navigation"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { Toaster } from "@/components/ui/sonner"
+import { usePathname } from "next/navigation"
+import { AppSidebar } from "./sidebar/app-sidebar"
+import { Toaster } from "./ui/sonner"
+import { Provider, Inset } from "./ui/sidebar"
 
 function ThemeProvider({
   children,
@@ -31,13 +31,13 @@ export function ClientLayout({ children }: { children: ReactNode }) {
           {children}
         </>
       ) : ( // On other pages → show sidebar layout
-        <SidebarProvider>
+        <Provider>
           <AppSidebar />
-          <SidebarInset className="md:px-4">
+          <Inset className="md:px-4">
             <Toaster />
             {children}
-          </SidebarInset>
-        </SidebarProvider>
+          </Inset>
+        </Provider>
       )}
     </ThemeProvider>
   )

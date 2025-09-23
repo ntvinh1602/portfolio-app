@@ -1,20 +1,19 @@
-import * as React from "react"
+import { useState } from "react"
 import { DailySnapshot } from "./daily-snapshot"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
+  Group,
+  GroupLabel,
+  MenuAction,
+  MenuButton,
+  MenuItem,
+  MenuSub,
+  MenuSubButton,
 } from "@/components/ui/sidebar"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { useRefreshPrices } from "@/hooks/useRefreshPrices"
 import { ChevronRight, Plus, type LucideIcon, RefreshCw } from "lucide-react"
 import { TransactionForm } from "@/components/sidebar/add-transaction/form-wrapper"
 import { createClient } from "@/lib/supabase/client"
@@ -38,37 +37,36 @@ function ActionGroup({ icon, label, items, isActive }: ActionGroupConfig) {
   return (
     <Collapsible defaultOpen={isActive}>
       <CollapsibleTrigger asChild>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild>
+        <MenuItem>
+          <MenuButton asChild>
             <div className="flex select-none font-light">
               <Icon/>
               {label}
             </div>
-          </SidebarMenuButton>
-          <SidebarMenuAction>
+          </MenuButton>
+          <MenuAction>
             <ChevronRight />
-          </SidebarMenuAction>
-        </SidebarMenuItem>
+          </MenuAction>
+        </MenuItem>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <SidebarMenuSub>
+        <MenuSub>
           {items.map(({ text, onClick }) => (
-            <SidebarMenuSubButton key={text} onClick={onClick}>
+            <MenuSubButton key={text} onClick={onClick}>
               <div className="font-light text-muted-foreground select-none">
                 {text}
               </div>
-            </SidebarMenuSubButton>
+            </MenuSubButton>
           ))}
-        </SidebarMenuSub>
+        </MenuSub>
       </CollapsibleContent>
     </Collapsible>
   )
 }
 
 export function QuickActions() {
-  const { handleRefresh } = useRefreshPrices()
-  const [isTxnFormOpen, setTxnFormOpen] = React.useState(false)
-  const [isBackfillOpen, setBackfillOpen] = React.useState(false)
+  const [isTxnFormOpen, setTxnFormOpen] = useState(false)
+  const [isBackfillOpen, setBackfillOpen] = useState(false)
 
   async function refreshAssets() {
   
@@ -96,7 +94,6 @@ export function QuickActions() {
       icon: RefreshCw,
       label: "Refresh Data",
       items: [
-        { text: "Market Prices", onClick: handleRefresh },
         { text: "Assets Quantity", onClick: refreshAssets },
         { text: "Daily Snapshots", onClick: () => setBackfillOpen(true) },
       ],
@@ -106,13 +103,13 @@ export function QuickActions() {
   ]
 
   return (
-    <SidebarGroup className="flex gap-1">
-      <SidebarGroupLabel>Actions</SidebarGroupLabel>
+    <Group className="flex gap-1">
+      <GroupLabel>Actions</GroupLabel>
       {groups.map((group) => (
         <ActionGroup key={group.label} {...group} />
       ))}
       <TransactionForm open={isTxnFormOpen} onOpenChange={setTxnFormOpen} />
       <DailySnapshot open={isBackfillOpen} onOpenChange={setBackfillOpen} />
-    </SidebarGroup>
+    </Group>
   )
 }

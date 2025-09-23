@@ -1,5 +1,3 @@
-"use client"
-
 import { Header } from "@/components/header"
 import { ImportForm } from "@/app/settings/components/import-form-content"
 

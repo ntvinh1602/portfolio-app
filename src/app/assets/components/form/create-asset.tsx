@@ -1,14 +1,8 @@
 "use client"
 
-import * as React from "react"
+import { useState, useCallback, FormEvent } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import * as Dialog from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Save } from "lucide-react"
 import { assetBlueprint } from "./blueprints"
@@ -31,10 +25,10 @@ export function CreateAssetForm({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [formState, setFormState] = React.useState<AssetFormState>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formState, setFormState] = useState<AssetFormState>({})
 
-  const handleChange = React.useCallback(
+  const handleChange = useCallback(
     <K extends keyof AssetFormState & string>(
       name: K,
       value: string | undefined
@@ -43,7 +37,7 @@ export function CreateAssetForm({
     }, []
   )
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
 
@@ -70,11 +64,11 @@ export function CreateAssetForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Create Asset</DialogTitle>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Content className="flex flex-col">
+        <Dialog.Header>
+          <Dialog.Title>Create Asset</Dialog.Title>
+        </Dialog.Header>
 
         <form id="create-asset" onSubmit={handleSubmit}>
           <SchemaForm<AssetFormState>
@@ -84,12 +78,12 @@ export function CreateAssetForm({
           />
         </form>
 
-        <DialogFooter className="sticky bottom-0 bg-card/0">
+        <Dialog.Footer className="sticky bottom-0 bg-card/0">
           <Button type="submit" form="create-asset" disabled={isSubmitting}>
             <Save />Save
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   )
 }

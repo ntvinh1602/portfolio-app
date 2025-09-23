@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState, useEffect, FormEvent } from "react"
 import { toast } from "sonner"
 import { assetBlueprint } from "./blueprints"
 import { preparePayload } from "./prepare-payload"
@@ -13,7 +13,7 @@ import { showErrorToast } from "@/components/error-toast"
 import { Tables } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
 import { Save, Shredder } from "lucide-react"
-import { Card, CardFooter } from "@/components/ui/card"
+import { Root, Footer } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/confirmation"
 
 function mapAssetToFormState(asset: Tables<"assets">) {
@@ -39,12 +39,12 @@ export function EditAssetForm({
   selectedAsset: Tables<"assets">
   onDeleted: () => void
 }) {
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [formState, setFormState] = React.useState(() =>
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formState, setFormState] = useState(() =>
     selectedAsset ? mapAssetToFormState(selectedAsset) : {}
   )
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedAsset) {
       setFormState(mapAssetToFormState(selectedAsset))
     }
@@ -54,7 +54,7 @@ export function EditAssetForm({
     setFormState((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEdit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
 
@@ -107,7 +107,7 @@ export function EditAssetForm({
   }
 
   return (
-    <Card className="p-0 border-0 flex gap-3">
+    <Root className="p-0 border-0 flex gap-3">
       <form id="edit-asset" onSubmit={handleEdit}>
         <SchemaForm
           blueprint={assetBlueprint}
@@ -115,7 +115,7 @@ export function EditAssetForm({
           onChange={handleChange}
         />
       </form>
-      <CardFooter className="flex justify-end gap-2 px-0">
+      <Footer className="flex justify-end gap-2 px-0">
         <ConfirmDialog
           message="Selected asset will be deleted. This action cannot be undone."
           onConfirm={handleDelete}
@@ -127,8 +127,8 @@ export function EditAssetForm({
         <Button type="submit" form="edit-asset" disabled={isSubmitting}>
           <Save />Save
         </Button>
-      </CardFooter>
-    </Card>
+      </Footer>
+    </Root>
   )
 }
 

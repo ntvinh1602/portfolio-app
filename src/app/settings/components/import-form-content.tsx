@@ -1,17 +1,17 @@
 "use client"
 
-import * as React from "react"
+import { useState, ChangeEvent, FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { parse as parseCsv } from "papaparse"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
+  Root,
+  Content,
+  Subtitle,
+  Header,
+  Title
 } from "@/components/ui/card"
 
 const REQUIRED_HEADERS = [
@@ -29,17 +29,17 @@ const REQUIRED_HEADERS = [
 ]
 
 export function ImportForm() {
-  const [file, setFile] = React.useState<File | null>(null)
-  const [isUploading, setIsUploading] = React.useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const router = useRouter()
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setFile(event.target.files[0])
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
 
@@ -116,14 +116,14 @@ export function ImportForm() {
   }
 
   return (
-    <Card className="col-start-2 h-fit">
-      <CardHeader>
-        <CardTitle>Import Data</CardTitle>
-        <CardDescription>
+    <Root className="col-start-2 h-fit">
+      <Header>
+        <Title>Import Data</Title>
+        <Subtitle>
           Upload transaction data for bulk processing
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Subtitle>
+      </Header>
+      <Content>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="csv-file"
@@ -139,7 +139,7 @@ export function ImportForm() {
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </Content>
+    </Root>
   )
 }

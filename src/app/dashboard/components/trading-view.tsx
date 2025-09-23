@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, memo } from "react"
 
-function TradingViewWidget() {
+function TradingViewWidgetComponent() {
   const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,4 +78,4 @@ function TradingViewWidget() {
   )
 }
 
-export default memo(TradingViewWidget)
+export const TradingViewWidget = memo(TradingViewWidgetComponent)

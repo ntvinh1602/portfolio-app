@@ -1,18 +1,8 @@
-"use client"
-
-import * as React from "react"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import * as Card from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
-import { useLiveData } from "@/context/live-data-context"
+import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { BalanceSheet } from "./balance-sheet"
 import { Loading } from "@/components/loader"
 
@@ -89,29 +79,30 @@ export function AssetCard() {
 
 
   if (loading) return (
-    <Card className="gap-0">
-      <CardHeader>
-        <CardDescription>Total Assets</CardDescription>
-      </CardHeader>
-      <CardContent className="flex justify-center items-center">
+    <Card.Root className="gap-0">
+      <Card.Header>
+        <Card.Subtitle>Total Assets</Card.Subtitle>
+        <Card.Title className="text-2xl animate-pulse">Loading...</Card.Title>
+      </Card.Header>
+      <Card.Content className="flex justify-center items-center h-45">
         <Loading/>
         <Loading/>  
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   )
 
   return (
-    <Card className="gap-0">
-      <CardHeader>
-        <CardDescription>Total Assets</CardDescription>
-        <CardTitle className="text-2xl">
+    <Card.Root className="gap-0">
+      <Card.Header>
+        <Card.Subtitle>Total Assets</Card.Subtitle>
+        <Card.Title className="text-2xl">
           {formatNum(totalAssets)}
-        </CardTitle>
-        <CardAction>
+        </Card.Title>
+        <Card.Action>
           <BalanceSheet/>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="px-0 flex w-full justify-between">
+        </Card.Action>
+      </Card.Header>
+      <Card.Content className="px-0 flex w-full justify-between">
         <Piechart
           data={assetChartData}
           chartConfig={assetChartCfg}
@@ -141,7 +132,7 @@ export function AssetCard() {
           valueFormatter={(value) => formatNum(value)}
 
         />
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   )
 }

@@ -1,15 +1,15 @@
-import * as React from "react"
+import { useState } from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useLiveData } from "@/context/live-data-context"
+import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function EquityChart() {
   const { totalEquity } = useLiveData()
   const { pnlData, equityData, isLoading } = useDelayedData()
 
-  const [dateRange, setDateRange] = React.useState("1y")
+  const [dateRange, setDateRange] = useState("1y")
 
   if (isLoading || !pnlData || !equityData)
     return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ReactNode, useState, useMemo, useCallback } from "react"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { DataTable } from "@/components/table/data-table"
 import { columns } from "./columns"
@@ -15,13 +15,13 @@ export function AssetTable({
   data: Tables<"assets">[]
   loading: boolean
   onAssetSelect: (asset: Tables<"assets"> | null) => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
-  const [category, setCategory] = React.useState<"stock" | "other">("stock")
+  const [category, setCategory] = useState<"stock" | "other">("stock")
   const [selectedAsset, setSelectedAsset] =
-    React.useState<Tables<"assets"> | null>(null)
+    useState<Tables<"assets"> | null>(null)
 
-  const assetCounts = React.useMemo(() => {
+  const assetCounts = useMemo(() => {
     return data.reduce(
       (acc, asset) => {
         if (asset.asset_class === "stock") {
@@ -35,14 +35,14 @@ export function AssetTable({
     )
   }, [data])
 
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (category === "stock") {
       return data.filter((t) => ["stock"].includes(t.asset_class))
     }
     return data.filter((t) => !["stock"].includes(t.asset_class))
   }, [data, category])
 
-  const handleRowClick = React.useCallback(
+  const handleRowClick = useCallback(
     (asset: Tables<"assets">) => {
       if (selectedAsset && selectedAsset.id === asset.id) {
         setSelectedAsset(null)

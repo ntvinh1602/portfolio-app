@@ -1,12 +1,12 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Root,
+  Content,
+  Trigger,
 } from "@/components/ui/popover"
 import { ChevronRight, Calendar1 } from "lucide-react"
 import { Calendar } from "./ui/calendar"
@@ -24,19 +24,19 @@ function DateRange({
   onDateFromChange,
   onDateToChange,
 }: DateRangeProps) {
-  const [openFrom, setOpenFrom] = React.useState(false)
-  const [openTo, setOpenTo] = React.useState(false)
+  const [openFrom, setOpenFrom] = useState(false)
+  const [openTo, setOpenTo] = useState(false)
 
   return (
     <div className="flex items-center">
       <Calendar1 className="stroke-1 size-4 h-9 border-b" />
-      <Popover open={openFrom} onOpenChange={setOpenFrom}>
-        <PopoverTrigger asChild>
+      <Root open={openFrom} onOpenChange={setOpenFrom}>
+        <Trigger asChild>
           <Button variant="underline" className="flex-1 px-3" id="dates">
             {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Select date"}
           </Button>
-        </PopoverTrigger>
-        <PopoverContent
+        </Trigger>
+        <Content
           className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
           align="start"
         >
@@ -51,16 +51,16 @@ function DateRange({
               setOpenFrom(false)
             }}
           />
-        </PopoverContent>
-      </Popover>
+        </Content>
+      </Root>
       <ChevronRight className="stroke-1 size-4 h-9 border-b" />
-      <Popover open={openTo} onOpenChange={setOpenTo}>
-        <PopoverTrigger asChild>
+      <Root open={openTo} onOpenChange={setOpenTo}>
+        <Trigger asChild>
           <Button variant="underline" className="flex-1 px-3" id="dates">
             {dateTo ? format(dateTo, "dd/MM/yyyy") : "Select date"}
           </Button>
-        </PopoverTrigger>
-        <PopoverContent
+        </Trigger>
+        <Content
           className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
           align="start"
         >
@@ -75,8 +75,8 @@ function DateRange({
               setOpenTo(false)
             }}
           />
-        </PopoverContent>
-      </Popover>
+        </Content>
+      </Root>
     </div>
   )
 }
@@ -90,18 +90,18 @@ function SingleDate({
   onSelect: (date: Date | undefined) => void
   dateFormat?: string
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="flex items-center">
       <Calendar1 className="stroke-1 size-4 h-9 border-b" />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+      <Root open={open} onOpenChange={setOpen}>
+        <Trigger asChild>
           <Button variant="underline" className="flex-1 px-2" id="dates">
             {selected ? format(selected, dateFormat) : "Select date"}
           </Button>
-        </PopoverTrigger>
-        <PopoverContent
+        </Trigger>
+        <Content
           className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
           align="start"
         >
@@ -116,8 +116,8 @@ function SingleDate({
               setOpen(false)
             }}
           />
-        </PopoverContent>
-      </Popover>
+        </Content>
+      </Root>
     </div>
   )
 }

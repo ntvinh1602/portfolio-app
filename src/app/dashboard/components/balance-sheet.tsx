@@ -1,27 +1,13 @@
+import * as TT from "@/components/ui/tooltip"
+import * as Card from "@/components/ui/card"
+import * as Sheet from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet"
-import { ChevronRight } from "lucide-react"
-import { useIsMobile } from "@/hooks/use-mobile"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardDescription,
-  CardAction,
-} from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { AssetItem } from "../types/dashboard-data"
+import { useLiveData } from "../context/live-data-context"
+import { PanelRightOpen } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { formatNum } from "@/lib/utils"
-import { AssetItem } from "@/app/dashboard/types/dashboard-data"
-import { useLiveData } from "@/context/live-data-context"
 import { Loading } from "@/components/loader"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -39,17 +25,17 @@ function BSItem({
   ...props
 }: BSItemProps) {
   return (
-    <Card
+    <Card.Root
       className={`border-0 py-3 rounded-md ${header && "bg-muted"} ${className}`}
       {...props}
     >
-      <CardHeader className="flex px-4 justify-between">
+      <Card.Header className="flex px-4 justify-between">
         <span className="text-sm font-thin">{label}</span>
-        <CardAction className="font-thin text-sm">
+        <Card.Action className="font-thin text-sm">
           {value ? formatNum(value) : 0}
-        </CardAction>
-      </CardHeader>
-    </Card>
+        </Card.Action>
+      </Card.Header>
+    </Card.Root>
   )
 }
 
@@ -63,25 +49,31 @@ export function BalanceSheet() {
   if (loading || !bs) return <Loading/>
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <span className="font-light">Balance Sheet</span>
-          <ChevronRight />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side={isMobile ? "bottom" : "right"}>
-        <SheetHeader>
-          <SheetTitle className="font-light text-xl">
+    <Sheet.Root>
+      <TT.Root>
+        <TT.Trigger asChild>
+          <Sheet.Trigger asChild>
+            <Button variant="ghost" size="sm">
+              <PanelRightOpen />
+            </Button>
+          </Sheet.Trigger>
+        </TT.Trigger>
+        <TT.Content>
+          View balance sheet
+        </TT.Content>
+      </TT.Root>
+      <Sheet.Content side={isMobile ? "bottom" : "right"}>
+        <Sheet.Header>
+          <Sheet.Title className="font-light text-xl">
             Balance Sheet
-          </SheetTitle>
-          <SheetDescription className="font-light">
+          </Sheet.Title>
+          <Sheet.Subtitle className="font-light">
             Summary of fund assets by its origins and allocation
-          </SheetDescription>
-        </SheetHeader>
-        <Card className="h-fit gap-3 border-0 py-0">
-          <CardContent className="flex flex-col gap-2">
-            <CardDescription>Total Assets</CardDescription>
+          </Sheet.Subtitle>
+        </Sheet.Header>
+        <Card.Root className="h-fit gap-3 border-0 py-0">
+          <Card.Content className="flex flex-col gap-2">
+            <Card.Subtitle>Total Assets</Card.Subtitle>
             <div className="flex flex-col">
               <BSItem header label="Assets" value={bs.totalAssets}/>
               {bs.assets.map((item: AssetItem) => (
@@ -91,7 +83,7 @@ export function BalanceSheet() {
 
             <Separator className="mt-2 mb-4" />
 
-            <CardDescription>Total Liabilities</CardDescription>
+            <Card.Subtitle>Total Liabilities</Card.Subtitle>
             <div className="flex flex-col gap-3">
               <div className="flex flex-col">
                 <BSItem header label="Liabilities" value={bs.totalLiabilities}/>
@@ -106,14 +98,14 @@ export function BalanceSheet() {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <SheetFooter>
-          <SheetClose asChild>
+          </Card.Content>
+        </Card.Root>
+        <Sheet.Footer>
+          <Sheet.Close asChild>
             <Button variant="outline">Close</Button>
-          </SheetClose>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </Sheet.Close>
+        </Sheet.Footer>
+      </Sheet.Content>
+    </Sheet.Root>
   )
 }

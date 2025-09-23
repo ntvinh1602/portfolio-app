@@ -2,13 +2,13 @@
 
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+  Root,
+  Action,
+  Content,
+  Subtitle,
+  Footer,
+  Header,
+  Title,
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
@@ -87,14 +87,14 @@ function ChartCard<
   }
 
   return (
-    <Card className="flex flex-col gap-0 h-full">
-      <CardHeader className="px-4 items-center">
-        <CardDescription>{description}</CardDescription>
-        <CardTitle className="text-2xl">
+    <Root className="flex flex-col gap-0 h-full">
+      <Header className="px-4 items-center">
+        <Subtitle>{description}</Subtitle>
+        <Title className="text-2xl">
           {majorValue && majorValueFormatter(majorValue)}
-        </CardTitle>
+        </Title>
         {minorValue1 && minorValue2 && (
-          <CardAction className="flex items-center gap-4">
+          <Action className="flex items-center gap-4">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
                 {minorValue1 !== null && minorValue1 < 0
@@ -103,7 +103,7 @@ function ChartCard<
                 }
                 {minorValue1 !== null && minorValue1Formatter?.(Math.abs(minorValue1))}
               </div>
-              <CardDescription className="text-xs">{minorText1}</CardDescription>
+              <Subtitle className="text-xs">{minorText1}</Subtitle>
             </div>
             <Separator
               orientation="vertical"
@@ -117,12 +117,12 @@ function ChartCard<
                 }
                 {minorValue2 !== null && minorValue2Formatter?.(Math.abs(minorValue2))}
               </div>
-              <CardDescription className="text-xs">{minorText2}</CardDescription>
+              <Subtitle className="text-xs">{minorText2}</Subtitle>
             </div>
-          </CardAction>
+          </Action>
         )}
-      </CardHeader>
-      <CardContent className="px-4 flex flex-col gap-1 h-full">
+      </Header>
+      <Content className="px-4 flex flex-col gap-1 h-full">
         {dateRange && onDateRangeChange && (
           <TabSwitcher
             value={dateRange}
@@ -149,32 +149,32 @@ function ChartCard<
           yAxisTickFormatter={yAxisTickFormatter}
           valueFormatter={tooltipValueFormatter}
         />
-      </CardContent>
-    </Card>
+      </Content>
+    </Root>
   )
 }
 
 function ChartCardSkeleton({ cardClassName, chartHeight }: { cardClassName?: string, chartHeight: string }) {
   return (
-    <Card className={`gap-4 h-full ${cardClassName}`}>
-      <CardHeader className="px-4">
-        <CardDescription className="flex items-center w-fit">
+    <Root className={`gap-4 h-full ${cardClassName}`}>
+      <Header className="px-4">
+        <Subtitle className="flex items-center w-fit">
           <Skeleton className="h-4 w-24" />
-        </CardDescription>
-        <CardTitle className="text-2xl">
+        </Subtitle>
+        <Title className="text-2xl">
           <Skeleton className="h-8 w-32" />
-        </CardTitle>
-        <CardAction className="flex flex-col gap-1 items-end">
+        </Title>
+        <Action className="flex flex-col gap-1 items-end">
           <Skeleton className="h-4 w-16" />
-          <CardDescription className="text-xs">
+          <Subtitle className="text-xs">
             <Skeleton className="h-3 w-20" />
-          </CardDescription>
-        </CardAction>
-      </CardHeader>
-      <CardFooter className="px-4">
+          </Subtitle>
+        </Action>
+      </Header>
+      <Footer className="px-4">
         <Skeleton className={`w-full ${chartHeight}`} />
-      </CardFooter>
-    </Card>
+      </Footer>
+    </Root>
   )
 }
 

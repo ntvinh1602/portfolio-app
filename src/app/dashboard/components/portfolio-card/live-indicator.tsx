@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { isTradingHours } from "@/lib/utils"
 
 export function LiveIndicator({
@@ -21,7 +20,7 @@ export function LiveIndicator({
   }
 
   return (
-    <Badge variant="outline" className="mx-2">
+    <div className="mx-2 text-xs text-muted-foreground">
       {status === "realtime" && (
         <div className="flex items-center gap-1">
           <div className="relative flex size-2">
@@ -43,6 +42,6 @@ export function LiveIndicator({
           <span>Closed</span>
         </div>
       )}
-    </Badge>
+    </div>
   )
 }

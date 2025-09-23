@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader
+  Root,
+  Content,
+  Subtitle,
+  Header
 } from "@/components/ui/card"
 import { TurnstileWidget } from "./turnstile"
 
@@ -48,16 +48,16 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="border-none bg-card/0">
-        <CardHeader className="px-0 flex flex-col items-center">
+      <Root className="border-none bg-card/0">
+        <Header className="px-0 flex flex-col items-center">
           <h1 className="text-2xl text-accent-foreground">
             Hello there!
           </h1>
-          <CardDescription>
+          <Subtitle>
             Enter your credentials below to login
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
+          </Subtitle>
+        </Header>
+        <Content className="px-0">
           <form onSubmit={handleLogin}>
             <div className="grid gap-6">
               <div className="grid gap-3">
@@ -107,8 +107,8 @@ export function LoginForm({
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </Content>
+      </Root>
     </div>
   )
 }

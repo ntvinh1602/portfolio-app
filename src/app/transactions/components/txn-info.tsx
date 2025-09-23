@@ -1,13 +1,6 @@
 "use client"
 
-import * as React from "react"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import * as Card from "@/components/ui/card"
 import { Transaction } from "./columns"
 import { formatNum } from "@/lib/utils"
 import { Loading } from "@/components/loader"
@@ -99,14 +92,14 @@ export function TxnInfo({
 }) {
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl animate-pulse">Loading</CardTitle>
-          <CardAction>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title className="text-xl animate-pulse">Loading</Card.Title>
+          <Card.Action>
             <NotepadText className="stroke-1 text-muted-foreground" />
-          </CardAction>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6 font-thin">
+          </Card.Action>
+        </Card.Header>
+        <Card.Content className="flex flex-col gap-6 font-thin">
           <div className="grid grid-cols-4 text-end">
             <span className="border-b col-span-2 text-start">Assets</span>
             <span className="col-span-1 col-start-3 w-full border-b">Debit</span>
@@ -115,24 +108,24 @@ export function TxnInfo({
               <Loading/>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card.Content>
+      </Card.Root>
     )
   }
 
   if (!transaction) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Transaction</CardTitle>
-          <CardAction>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title className="text-xl">Transaction</Card.Title>
+          <Card.Action>
             <NotepadText className="stroke-1 text-muted-foreground" />
-          </CardAction>
-        </CardHeader>
-        <CardContent className="flex justify-center">
+          </Card.Action>
+        </Card.Header>
+        <Card.Content className="flex justify-center">
           <span className="font-thin">No transaction selected</span>
-        </CardContent>
-      </Card>
+        </Card.Content>
+      </Card.Root>
     )
   }
 
@@ -144,14 +137,14 @@ export function TxnInfo({
     })
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">{transaction.description}</CardTitle>
-        <CardAction>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title className="text-xl">{transaction.description}</Card.Title>
+        <Card.Action>
           <NotepadText className="stroke-1 text-muted-foreground" />
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6 font-thin">
+        </Card.Action>
+      </Card.Header>
+      <Card.Content className="flex flex-col gap-6 font-thin">
         {associatedExpenses.length > 0 && (
           <div className="flex flex-col gap-2"> 
             <AssociatedExpenses expenses={associatedExpenses} />
@@ -172,7 +165,7 @@ export function TxnInfo({
             ))}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   )
 }

@@ -1,4 +1,4 @@
-import * as React from "react"
+import { useState } from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
@@ -7,7 +7,7 @@ import { useDelayedData } from "@/hooks/useDelayedData"
 export function Benchmarkchart() {
   const { twrData, benchmarkData, isLoading } = useDelayedData()
 
-  const [dateRange, setDateRange] = React.useState("1y")
+  const [dateRange, setDateRange] = useState("1y")
 
   if (isLoading || !twrData || !benchmarkData)
     return <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" />
@@ -19,7 +19,7 @@ export function Benchmarkchart() {
 
    return (
      <div className="flex-1">
-        <ChartCard
+      <ChartCard
         description="Total Return"
         majorValue={twrData.all_time}
         majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
@@ -49,7 +49,7 @@ export function Benchmarkchart() {
         tooltipValueFormatter={(value) => formatNum(value, 1)}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
-        />
+      />
     </div>
   )
 }
