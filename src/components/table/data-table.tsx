@@ -32,6 +32,7 @@ interface DataTableProps<TData, TValue = unknown> {
   skeletonRows?: number
   noDataMessage?: string
   rowId: (row: TData) => string | number
+  defaultSorting?: SortingState
 }
 
 export function DataTable<TData, TValue>({
@@ -43,8 +44,9 @@ export function DataTable<TData, TValue>({
   skeletonRows = 10,
   noDataMessage = "No results.",
   rowId,
+  defaultSorting
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>(defaultSorting ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
   const table = useReactTable({

@@ -42,6 +42,6 @@ export const assetBlueprint: FieldConfig[] = [
   {
     name: "is_active",
     type: "checkbox",
-    label: "Fetching",
+    label: "Active Asset",
   },
 ]

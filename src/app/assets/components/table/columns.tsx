@@ -2,14 +2,10 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Tables } from "@/types/database.types"
-import { ArrowUpDown } from "lucide-react"
+import { MoveDown, MoveUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Root,
-  Content,
-  Trigger,
-} from "@/components/ui/tooltip"
+import * as TT from "@/components/ui/tooltip"
 
 export const columns: ColumnDef<Tables<"assets">>[] = [
   {
@@ -19,10 +15,13 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-foreground gap-1"
+          className="text-foreground gap-0 font-light"
         >
           Ticker
-          <ArrowUpDown className="size-4 stroke-1" />
+          {column.getIsSorted() === "asc"
+              ? <MoveUp className="size-4 stroke-1" />
+              : <MoveDown className="size-4 stroke-1" />
+          }
         </Button>
       )
     },
@@ -32,11 +31,6 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
   {
     accessorKey: "asset_class",
     header: "Asset Class",
-    filterFn: (row, id, value: string[]) => {
-      if (!value || value.length === 0) return true
-      const set = new Set(value) // O(1) lookups
-      return set.has(row.getValue(id))
-    },
     size: 60,
     cell: ({ row }) => {
       const value = row.getValue("asset_class") as string
@@ -52,14 +46,14 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
     accessorKey: "is_active",
     header: () => (
       <div className="flex justify-center items-center">
-        <Root>
-          <Trigger>
-            <span className="border-b-1 border-foreground/40 border-dashed py-0.5">Fetching</span>
-          </Trigger>
-          <Content>
-            Disabled assets are excluded from price fetching and saving
-          </Content>
-        </Root>
+        <TT.Root>
+          <TT.Trigger className="border-b-1 border-foreground/80 border-dashed">
+            Status
+          </TT.Trigger>
+          <TT.Content>
+            Daily data saving will be suspended for inactive assets
+          </TT.Content>
+        </TT.Root>
       </div>
     ),
     size: 80,
@@ -68,7 +62,7 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
       return (
         <div className="flex justify-center items-center">
           <Badge variant={value ? "inbound" : "outbound"}>
-            {value ? "Enabled" : "Disabled"}
+            {value ? "Active" : "Inactive"}
           </Badge>
         </div>
       )

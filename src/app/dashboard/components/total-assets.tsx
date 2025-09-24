@@ -92,7 +92,7 @@ export function AssetCard() {
   )
 
   return (
-    <Card.Root className="gap-0">
+    <Card.Root className="gap-1">
       <Card.Header>
         <Card.Subtitle>Total Assets</Card.Subtitle>
         <Card.Title className="text-2xl">
@@ -102,7 +102,7 @@ export function AssetCard() {
           <BalanceSheet/>
         </Card.Action>
       </Card.Header>
-      <Card.Content className="px-0 flex w-full justify-between">
+      <Card.Content className="px-0 -ml-4 flex w-full justify-between">
         <Piechart
           data={assetChartData}
           chartConfig={assetChartCfg}

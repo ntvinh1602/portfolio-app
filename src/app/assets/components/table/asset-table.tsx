@@ -77,6 +77,7 @@ export function AssetTable({
         onRowClick={handleRowClick}
         rowId={(row) => row.id}
         noDataMessage="No transactions found."
+        defaultSorting={[{ id: "ticker", desc: false }]}
       />
     </div>
   )
