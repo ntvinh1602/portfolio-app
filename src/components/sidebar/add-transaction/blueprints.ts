@@ -13,7 +13,7 @@ export function useBlueprintMap() {
     }))
 
   const cashAssets = assets
-    .filter((asset) => ["cash"].includes(asset.asset_class))
+    .filter((asset) => ["cash", "crypto", "fund"].includes(asset.asset_class))
     .map((asset) => ({ value: asset.id,
       label: asset.ticker }))
 

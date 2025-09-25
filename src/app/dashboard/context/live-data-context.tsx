@@ -83,9 +83,8 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
 
   const cryptoSymbols = useMemo(
     () =>
-      cryptoData?.filter((crypto) => crypto.ticker !== "USDT")
-        .map((crypto) => crypto.ticker) ??
-      [],
+      cryptoData?.filter((crypto) => crypto.currency_code !== "USD")
+        .map((crypto) => crypto.ticker) ?? [],
     [cryptoData]
   )
   const {
@@ -143,11 +142,11 @@ const processedCryptoData = useMemo(() => {
 
   return cryptoData
     .map((crypto) => {
-      const isUSDT = crypto.ticker === "USDT"
+      const isStableCoin = crypto.currency_code === "USD"
       const liveInfo = liveCryptoPrices[`${crypto.ticker}USDT`]
 
       // Extract price + prevPrice from liveInfo if available
-      const livePrice = isUSDT
+      const livePrice = isStableCoin
         ? crypto.latest_usd_rate
         : liveInfo?.price
           ? parseFloat(liveInfo.price)
@@ -157,7 +156,7 @@ const processedCryptoData = useMemo(() => {
         ? parseFloat(liveInfo.prevPrice)
         : null
 
-      const totalAmount = isUSDT
+      const totalAmount = isStableCoin
         ? crypto.quantity * crypto.latest_usd_rate
         : liveInfo?.price
           ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
