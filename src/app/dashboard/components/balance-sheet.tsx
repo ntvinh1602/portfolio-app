@@ -1,4 +1,3 @@
-import * as TT from "@/components/ui/tooltip"
 import * as Card from "@/components/ui/card"
 import * as Sheet from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -40,44 +39,55 @@ function BSItem({
 }
 
 export function BalanceSheet() {
-  const {
-    balanceSheet: bs,
-    loading
-  } = useLiveData()
+  const { balanceSheet: bs, loading } = useLiveData()
   const isMobile = useIsMobile()
 
-  if (loading || !bs) return <Loading/>
+  if (loading || !bs) return <Loading />
 
   return (
     <Sheet.Root>
-      <TT.Root>
-        <TT.Trigger asChild>
-          <Sheet.Trigger asChild>
-            <Button variant="ghost" size="sm">
-              <PanelRightOpen />
-            </Button>
-          </Sheet.Trigger>
-        </TT.Trigger>
-        <TT.Content>
-          View balance sheet
-        </TT.Content>
-      </TT.Root>
+      <Sheet.Trigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="group relative overflow-hidden transition-all"
+        >
+          <PanelRightOpen className="transition-transform duration-300 group-hover:translate-x-1" />
+          <span className="ml-0 w-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:w-[100px] group-hover:opacity-100">
+            Balance Sheet
+          </span>
+        </Button>
+      </Sheet.Trigger>
       <Sheet.Content side={isMobile ? "bottom" : "right"}>
         <Sheet.Header>
-          <Sheet.Title className="font-light text-xl">
-            Balance Sheet
-          </Sheet.Title>
+          <Sheet.Title className="font-light text-xl">Balance Sheet</Sheet.Title>
           <Sheet.Subtitle className="font-light">
             Summary of fund assets by its origins and allocation
           </Sheet.Subtitle>
         </Sheet.Header>
+
         <Card.Root className="h-fit gap-3 border-0 py-0">
           <Card.Content className="flex flex-col gap-2">
             <Card.Subtitle>Total Assets</Card.Subtitle>
             <div className="flex flex-col">
-              <BSItem header label="Assets" value={bs.totalAssets}/>
+              <Card.Root className="border-0 py-3 rounded-md bg-muted">
+                <Card.Header className="flex px-4 justify-between">
+                  <span className="text-sm font-thin">Assets</span>
+                  <Card.Action className="font-thin text-sm">
+                    {formatNum(bs.totalAssets)}
+                  </Card.Action>
+                </Card.Header>
+              </Card.Root>
+
               {bs.assets.map((item: AssetItem) => (
-                <BSItem key={item.type} label={item.type} value={item.totalAmount}/>
+                <Card.Root key={item.type} className="border-0 py-3 rounded-md">
+                  <Card.Header className="flex px-4 justify-between">
+                    <span className="text-sm font-thin">{item.type}</span>
+                    <Card.Action className="font-thin text-sm">
+                      {formatNum(item.totalAmount)}
+                    </Card.Action>
+                  </Card.Header>
+                </Card.Root>
               ))}
             </div>
 
@@ -100,6 +110,7 @@ export function BalanceSheet() {
             </div>
           </Card.Content>
         </Card.Root>
+
         <Sheet.Footer>
           <Sheet.Close asChild>
             <Button variant="outline">Close</Button>

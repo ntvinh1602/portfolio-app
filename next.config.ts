@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
-  env: {
-    DEMO_USER_ID: process.env.NEXT_PUBLIC_DEMO_USER_ID,
-  },
+  env: {},
   allowedDevOrigins: ['192.168.100.5'],
   images: {
     remotePatterns: [

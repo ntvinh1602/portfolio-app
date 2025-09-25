@@ -3,11 +3,6 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { refreshData } from "@/lib/refresh"
-import {
-  Root,
-  Content,
-  Trigger
-} from "@/components/ui/tooltip"
 
 export function RefreshPricesButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -39,21 +34,15 @@ export function RefreshPricesButton() {
   }
 
   return (
-  <Root>
-    <Trigger asChild>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleRefresh}
-        disabled={isRefreshing}
-      >
-        <RefreshCw className={isRefreshing ? "animate-spin" : ""} />
-        <span className="sr-only">Refresh Prices</span>
-      </Button>
-    </Trigger>
-    <Content>
-      Fetch latest stock, crypto and VN-Index prices from Yahoo Finance
-    </Content>
-  </Root>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleRefresh}
+      disabled={isRefreshing}
+      className="group relative overflow-hidden transition-all"
+    >
+      <RefreshCw className={`transition-transform duration-300 group-hover:translate-x-1 ${isRefreshing && "animate-spin"}`} />
+      <span className="ml-0 w-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:w-[100px] group-hover:opacity-100">Refresh Prices</span>
+    </Button>
   )
 }

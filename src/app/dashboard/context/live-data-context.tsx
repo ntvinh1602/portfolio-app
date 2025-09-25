@@ -59,7 +59,7 @@ const safeBalanceSheet: BalanceSheetData = {
 
 export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   const {
-    balanceSheetData: bsData,
+    bsData,
     stockData,
     cryptoData,
   } = useDelayedData()

@@ -17,33 +17,31 @@ export function EquityChart() {
   const chartData = equityData[dateRange as keyof typeof equityData]
 
   return (
-    <div className="flex-1">
-      <ChartCard
-        description="Total Equity"
-        majorValue={totalEquity}
-        majorValueFormatter={(value) => formatNum(value)}
-        minorValue1={pnlData.mtd}
-        minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
-        minorText1="this month"
-        minorValue2={pnlData.ytd}
-        minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
-        minorText2="this year"
-        chartComponent={Areachart}
-        chartData={chartData}
-        chartConfig={{
-          net_equity_value: {
-            label: "Equity",
-            color: "var(--chart-1)",
-          },
-        }}
-        chartClassName="h-full w-full"
-        xAxisDataKey="snapshot_date"
-        chartDataKeys={["net_equity_value"]}
-        yAxisTickFormatter={(value) => compactNum(Number(value))}
-        tooltipValueFormatter={(value) => formatNum(value)}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-      />
-    </div>
+    <ChartCard
+      description="Total Equity"
+      majorValue={totalEquity}
+      majorValueFormatter={(value) => formatNum(value)}
+      minorValue1={pnlData.mtd}
+      minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorText1="this month"
+      minorValue2={pnlData.ytd}
+      minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorText2="this year"
+      chartComponent={Areachart}
+      chartData={chartData}
+      chartConfig={{
+        net_equity_value: {
+          label: "Equity",
+          color: "var(--chart-1)",
+        },
+      }}
+      chartClassName="h-full w-full"
+      xAxisDataKey="snapshot_date"
+      chartDataKeys={["net_equity_value"]}
+      yAxisTickFormatter={(value) => compactNum(Number(value))}
+      tooltipValueFormatter={(value) => formatNum(value)}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+    />
   )
 }
