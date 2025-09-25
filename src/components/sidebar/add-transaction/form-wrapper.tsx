@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, FormEvent } from "react"
 import { formatISO } from "date-fns"
+import { refreshData } from "@/lib/refresh"
 import { Button } from "@/components/ui/button"
 import {
   Root,
@@ -90,8 +91,7 @@ export function TransactionForm({
 
       setFormState({})
       // 🔄 refresh dashboard data
-      const { refreshData } = await import("@/lib/refresh")
-      await refreshData("dashboard", "/api/gateway/dashboard")
+      await refreshData("dashboard", "api/gateway/dashboard")
 
       toast.success("Transaction saved successfully!")
       onOpenChange(false)
