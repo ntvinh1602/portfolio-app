@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/card"
 import Image from 'next/image'
 import {
-  Leaf,
   TrendingUp,
   TrendingDown,
   Coins,
+  ShoppingBag,
 } from "lucide-react"
 import { formatNum, compactNum } from "@/lib/utils"
 
@@ -71,7 +71,7 @@ export function Asset({
             </Subtitle>
             {<Subtitle className="flex items-center gap-1 truncate pt-1">
                 <Badge variant="outline" className="font-thin text-foreground">
-                  <Leaf />
+                  <Coins className="stroke-1"  />
                   {quantity
                     ? type === 'stock'
                       ? <>{formatNum(quantity)}</>
@@ -92,7 +92,7 @@ export function Asset({
                         : ""
                   }`}
                 >
-                  <Coins />
+                  <ShoppingBag className="stroke-1" />
                   {price
                     ? type === 'stock'
                       ? formatNum(price, 2)

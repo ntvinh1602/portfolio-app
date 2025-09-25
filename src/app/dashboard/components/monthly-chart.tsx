@@ -30,45 +30,43 @@ export function ExpenseChart() {
   const avgAllTimePnL = totalPnL / AllTimeData.length
 
   return (
-    <div className="flex-1">
-      <ChartCard
-        description="Total Income"
-        majorValue={totalPnL}
-        majorValueFormatter={(value) => formatNum(value)}
-        minorValue1={avgLast12MPnL}
-        minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
-        minorText1="avg. last 12M"
-        minorValue2={avgAllTimePnL}
-        minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
-        minorText2="avg. all time"
-        chartComponent={ChartBarStacked}
-        chartData={last12MData}
-        chartConfig={{
-          tax: {
-            label: "Tax",
-            color: "var(--chart-1)",
-          },
-          fee: {
-            label: "Fee",
-            color: "var(--chart-2)",
-          },
-          interest: {
-            label: "Interest",
-            color: "var(--chart-3)",
-          },
-          revenue: {
-              label: "Revenue",
-              color: "var(--chart-4)",
-          }
-        }}
-        chartClassName="h-full w-full"
-        xAxisDataKey="snapshot_date"
-        chartDataKeys={["tax", "fee", "interest", "revenue"]}
-        dateRange="1y"
-        yAxisTickFormatter={(value) => compactNum(Number(value))}
-        xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
-        tooltipValueFormatter={(value) => formatNum(value)}
-      />
-    </div>
+    <ChartCard
+      description="Total Income"
+      majorValue={totalPnL}
+      majorValueFormatter={(value) => formatNum(value)}
+      minorValue1={avgLast12MPnL}
+      minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorText1="avg. last 12M"
+      minorValue2={avgAllTimePnL}
+      minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorText2="avg. all time"
+      chartComponent={ChartBarStacked}
+      chartData={last12MData}
+      chartConfig={{
+        tax: {
+          label: "Tax",
+          color: "var(--chart-1)",
+        },
+        fee: {
+          label: "Fee",
+          color: "var(--chart-2)",
+        },
+        interest: {
+          label: "Interest",
+          color: "var(--chart-3)",
+        },
+        revenue: {
+            label: "Revenue",
+            color: "var(--chart-4)",
+        }
+      }}
+      chartClassName="h-full w-full"
+      xAxisDataKey="snapshot_date"
+      chartDataKeys={["tax", "fee", "interest", "revenue"]}
+      dateRange="1y"
+      yAxisTickFormatter={(value) => compactNum(Number(value))}
+      xAxisTickFormatter={(value) => format(new Date(value), "MMM yy")}
+      tooltipValueFormatter={(value) => formatNum(value)}
+    />
   )
 }

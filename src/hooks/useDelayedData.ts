@@ -44,7 +44,7 @@ export function useDelayedData() {
     pnlData: data?.pnlData,
     equityData: data?.equityData,
     benchmarkData: data?.benchmarkData,
-    balanceSheetData: data?.balanceSheetData,
+    bsData: data?.balanceSheetData,
     stockData: data?.stockData,
     cryptoData: data?.cryptoData,
     monthlyData: data?.monthlyData,
