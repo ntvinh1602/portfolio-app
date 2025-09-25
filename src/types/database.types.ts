@@ -617,6 +617,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           cost_basis: number
+          currency_code: string
           latest_price: number
           latest_usd_rate: number
           logo_url: string

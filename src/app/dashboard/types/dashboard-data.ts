@@ -24,6 +24,7 @@ export interface StockData {
 
 export interface CryptoData extends StockData {
   latest_usd_rate: number
+  currency_code: string
 }
 
 export type EquityChartData = {

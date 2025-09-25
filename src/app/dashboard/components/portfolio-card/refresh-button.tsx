@@ -25,8 +25,8 @@ export function RefreshPricesButton() {
         return
       }
 
-      await refreshData("dashboard", "api/gateway/dashboard")
-
+      await refreshData("dashboard", "/api/gateway/dashboard")
+ 
       toast.success(data.message, {
         id: toastId,
         description: `Stocks: ${data.stocks}, Cryptos: ${data.cryptos}, Indices: ${data.indices}`,
