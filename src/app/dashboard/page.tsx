@@ -19,10 +19,14 @@ export default function Page() {
         <EquityChart/>
         <Benchmarkchart/>
       </div>
-      <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0">
-        <AssetCard/>
-        <Portfolio/>
+
+      <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full overflow-hidden">
+        <AssetCard />
+        <div className="flex-1 overflow-hidden">
+          <Portfolio />
+        </div>
       </div>
+
       {!isMobile && 
         <div className="flex flex-col col-span-1 gap-2 h-full">
         <div className="flex-1"><TradingViewWidget/></div>
