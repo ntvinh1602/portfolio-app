@@ -67,6 +67,7 @@ export function AssetTable({
             { label: "Stocks", value: "stock", number: assetCounts.stock },
             { label: "Others", value: "other", number: assetCounts.other },
           ]}
+          triggerClassName="w-40 h-10"
         />
       </div>
       <DataTable

@@ -32,7 +32,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
         </>
       ) : ( // On other pages → show sidebar layout
         <Provider>
-          <AppSidebar />
+          <AppSidebar collapsible="icon" />
           <Inset className="md:px-4">
             <Toaster />
             {children}

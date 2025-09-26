@@ -14,6 +14,7 @@ type TabSwitcherProps = {
     label: string
     icon?: React.ElementType
     number?: number
+    customBadge?: React.ReactNode
   }[]
   onValueChange: (value: string) => void
   value: string
@@ -36,15 +37,14 @@ const variantStyles: Record<
   content: {
     tab: "ml-auto",
     trigger:
-      "w-30 border-b rounded-none data-[state=active]:border-primary data-[state=active]:text-primary text-md",
-    indicator: "bg-none",
-    list: "flex border-0",
+      "w-30 border-b rounded-none data-[state=active]:text-primary text-md",
+    indicator: "border-b border-primary rounded-none",
+    list: "flex border-0 bg-0",
   },
   switch: {
-    tab: "flex flex-col justify-center",
-    trigger:
-      "px-3 py-1 text-sm rounded-md data-[state=active]:bg-muted data-[state=active]:text-foreground",
-    indicator: "hidden",
+    tab: "ml-auto",
+    trigger: "w-30",
+    indicator: "bg-muted",
     list: "flex border-0",
   },
 }
@@ -57,7 +57,7 @@ export function TabSwitcher({
   variant = "content",
   tabClassName,
   triggerClassName,
-  indicatorClassName,
+  indicatorClassName
 }: TabSwitcherProps) {
   const styles = variantStyles[variant]
 
@@ -78,6 +78,7 @@ export function TabSwitcher({
             value={option.value}
             className={cn(styles.trigger, triggerClassName)}
           >
+            {option.customBadge && option.customBadge}
             {option.icon && <option.icon />}
             {option.label}
             {option.number !== undefined && option.number > 0 && (

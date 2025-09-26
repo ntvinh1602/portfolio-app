@@ -7,7 +7,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   return (
     <LiveDataProvider>
-      <div className="flex flex-col h-svh pb-4">
+      <div className="flex flex-col md:h-svh pb-4">
         <Header title="Dashboard"/>
         {children}
       </div>

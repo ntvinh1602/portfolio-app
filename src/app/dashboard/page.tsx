@@ -15,9 +15,9 @@ export default function Page() {
  
   return (
     <div className="grid grid-cols-3 px-0 gap-2 flex-1 overflow-hidden">
-      <div className="flex flex-col col-span-1 gap-2 h-full">
+      <div className="flex flex-col col-span-3 md:col-span-1 gap-2 px-2 md:px-0 h-full">
         <EquityChart/>
-        <Benchmarkchart/>
+        {!isMobile && <Benchmarkchart/>}
       </div>
 
       <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full overflow-hidden">
@@ -29,8 +29,12 @@ export default function Page() {
 
       {!isMobile && 
         <div className="flex flex-col col-span-1 gap-2 h-full">
-        <div className="flex-1"><TradingViewWidget/></div>
-        <div className="flex-1"><ExpenseChart/></div>
+          <div className="flex-1">
+            <TradingViewWidget/>
+          </div>
+          <div className="flex-1">
+            <ExpenseChart/>
+          </div>
         </div>
       }
     </div>
