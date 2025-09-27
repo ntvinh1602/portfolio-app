@@ -1,14 +1,15 @@
 import { useState } from "react"
-import { Loading } from "@/components/loader"
 import * as Card from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import {
   LiveIndicator,
   RefreshPricesButton,
-  Asset
+  Asset,
+  AssetSkeleton
 } from "./portfolio-card"
 import { TabSwitcher } from "@/components/tab-switcher"
+import { RefreshCw } from "lucide-react"
 
 export function Portfolio() {
   const [category, setCategory] = useState<"stock" | "crypto">("stock")
@@ -17,24 +18,42 @@ export function Portfolio() {
     processedStockData,
     isCryptoPriceLive,
     isStockPriceLive,
-    loading
+    isLoading,
   } = useLiveData()
   
-  if (loading) {
+  if (isLoading) {
     return (
       <Card.Root className="gap-2 h-full flex flex-col">
         <Card.Header>
           <Card.Title className="text-xl">Portfolio</Card.Title>
           <Card.Action>
-            <RefreshPricesButton />
+            <RefreshCw className="size-4 mx-4 m-2 text-muted-foreground animate-spin"/>
           </Card.Action>
         </Card.Header>
-        {/* Scroll wrapper with full height */}
-        <ScrollArea className="flex-1">
-          <Card.Content className="h-full flex items-center justify-center">
-            <Loading />
-          </Card.Content>
-        </ScrollArea>
+        <Card.Content className="h-full flex flex-col items-center gap-3">
+          <TabSwitcher
+            variant="content"
+            value={category}
+            onValueChange={(value) => setCategory(value as "stock" | "crypto")}
+            options={[
+              {
+                label: "Stocks",
+                value: "stock",
+                customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
+              },
+              {
+                label: "Crypto",
+                value: "crypto",
+                customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
+              },
+            ]}
+            tabClassName="w-full"
+            triggerClassName="text-sm font-light h-10"
+          />
+          <div className="flex flex-col gap-2 w-full">
+            {[...Array(3)].map((_, i) => (<AssetSkeleton key={i}/>))}
+          </div>
+        </Card.Content>
       </Card.Root>
     )
   }
@@ -47,7 +66,7 @@ export function Portfolio() {
           <RefreshPricesButton />
         </Card.Action>
       </Card.Header>
-      <Card.Content className="h-full flex flex-col px-0 gap-3">
+      <Card.Content className="h-full flex flex-col gap-3">
         <TabSwitcher
           variant="content"
           value={category}
@@ -64,12 +83,12 @@ export function Portfolio() {
               customBadge: <LiveIndicator is247={true} source={isCryptoPriceLive}/>
             },
           ]}
-          tabClassName="w-full px-4"
+          tabClassName="w-full"
           triggerClassName="text-sm font-light h-10"
         />
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full w-full">
-            <div className="flex flex-col px-2 md:px-4 pb-4">
+            <div className="flex flex-col pb-4">
               {category === "stock" ? (
                 <Card.Root className="border-0 py-0 gap-1">
                   <Card.Content className="flex flex-col px-0 gap-1">
@@ -90,7 +109,9 @@ export function Portfolio() {
                         />
                       ))
                     ) : (
-                      <span className="self-center py-20">No stock holdings.</span>
+                      <span className="self-center py-20 text-muted-foreground">
+                        No stock holdings.
+                      </span>
                     )}
                   </Card.Content>
                 </Card.Root>
@@ -114,7 +135,9 @@ export function Portfolio() {
                         />
                       ))
                     ) : (
-                      <span className="self-center py-20">No crypto holdings.</span>
+                      <span className="self-center py-20 text-muted-foreground">
+                        No crypto holdings.
+                      </span>
                     )}
                   </Card.Content>
                 </Card.Root>

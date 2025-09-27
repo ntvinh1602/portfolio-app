@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard, ChartCardSkeleton } from "./chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { useDelayedData } from "@/hooks/useDelayedData"
@@ -10,8 +10,16 @@ export function ExpenseChart() {
     isLoading
   } = useDelayedData()
 
-  if (isLoading || !AllTimeData)
-    return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />
+  if (isLoading)
+    return (
+    <ChartCardSkeleton
+      description="Total Income"
+      minorText1="avg. last 12M"
+      minorText2="avg. all time"
+      cardClassName="gap-4 h-full"
+      tabswitch={false}
+    />
+  )
 
   const last12MData = AllTimeData
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

@@ -1,16 +1,21 @@
 import { useState } from "react"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard, ChartCardSkeleton } from "./chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function Benchmarkchart() {
   const { twrData, benchmarkData, isLoading } = useDelayedData()
-
   const [dateRange, setDateRange] = useState("1y")
 
-  if (isLoading || !twrData || !benchmarkData)
-    return <ChartCardSkeleton cardClassName="gap-2 h-full" chartHeight="h-full" />
+  if (isLoading) return (
+    <ChartCardSkeleton
+      description="Total Return"
+      minorText1="this year"
+      minorText2="annualized"
+      cardClassName="gap-4 h-full"
+    />
+  )
 
   const chartData = benchmarkData[dateRange as keyof typeof benchmarkData]
 

@@ -7,7 +7,6 @@ import { useLiveData } from "../context/live-data-context"
 import { PanelRightOpen } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { formatNum } from "@/lib/utils"
-import { Loading } from "@/components/loader"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: boolean
@@ -39,10 +38,8 @@ function BSItem({
 }
 
 export function BalanceSheet() {
-  const { balanceSheet: bs, loading } = useLiveData()
+  const { balanceSheet: bs } = useLiveData()
   const isMobile = useIsMobile()
-
-  if (loading || !bs) return <Loading />
 
   return (
     <Sheet.Root>

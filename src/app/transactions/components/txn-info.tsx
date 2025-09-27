@@ -3,11 +3,11 @@
 import * as Card from "@/components/ui/card"
 import { Transaction } from "./columns"
 import { formatNum } from "@/lib/utils"
-import { Loading } from "@/components/loader"
 import { Badge } from "@/components/ui/badge"
 import { NotepadText, DollarSign } from "lucide-react"
 import Image from "next/image"
 import { TxnLeg, Expense } from "../types/data"
+import { Skeleton } from "@/components/ui/skeleton"
 
 function AssociatedExpenses({ expenses }: { expenses: Expense[] }) {
   const transactionFee = expenses.find(
@@ -90,23 +90,33 @@ export function TxnInfo({
   associatedExpenses: Expense[]
   loading: boolean
 }) {
-  if (loading) {
+  if (!loading) {
     return (
       <Card.Root>
         <Card.Header>
-          <Card.Title className="text-xl animate-pulse">Loading</Card.Title>
-          <Card.Action>
-            <NotepadText className="stroke-1 text-muted-foreground" />
-          </Card.Action>
+          <Card.Title><Skeleton className="h-5 w-40" /></Card.Title>
+          <Card.Action><Skeleton className="h-5 w-5 rounded" /></Card.Action>
         </Card.Header>
+
         <Card.Content className="flex flex-col gap-6 font-thin">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+
           <div className="grid grid-cols-4 text-end">
-            <span className="border-b col-span-2 text-start">Assets</span>
-            <span className="col-span-1 col-start-3 w-full border-b">Debit</span>
-            <span className="col-span-1 col-start-4 w-full border-b">Credit</span>
-            <div className="col-span-4 flex flex-col gap-4 pt-2">
-              <Loading/>
-            </div>
+            {[
+              { label: "Assets", className: "col-span-2 text-start", w: "w-28" },
+              { label: "Debit", className: "col-start-3 text-end", w: "w-12 ml-auto" },
+              { label: "Credit", className: "col-start-4 text-end", w: "w-12 ml-auto" },
+            ].map(({ label, className, w }) => (
+              <div key={label} className={`flex flex-col gap-3 ${className}`}>
+                <span className="border-b">{label}</span>
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className={`h-4 ${w}`} />
+                ))}
+              </div>
+            ))}
           </div>
         </Card.Content>
       </Card.Root>

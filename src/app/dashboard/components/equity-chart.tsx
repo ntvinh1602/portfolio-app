@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard, ChartCardSkeleton } from "./chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useLiveData } from "@/app/dashboard/context/live-data-context"
@@ -8,11 +8,16 @@ import { useDelayedData } from "@/hooks/useDelayedData"
 export function EquityChart() {
   const { totalEquity } = useLiveData()
   const { pnlData, equityData, isLoading } = useDelayedData()
-
   const [dateRange, setDateRange] = useState("1y")
 
-  if (isLoading || !pnlData || !equityData)
-    return <ChartCardSkeleton cardClassName="gap-4 h-full" chartHeight="h-full" />
+  if (isLoading) return (
+    <ChartCardSkeleton
+      description="Total Equity"
+      minorText1="this month"
+      minorText2="this year"
+      cardClassName="gap-4 h-full"
+    />
+  )
     
   const chartData = equityData[dateRange as keyof typeof equityData]
 

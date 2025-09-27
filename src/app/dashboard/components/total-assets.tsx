@@ -4,20 +4,17 @@ import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
 import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { BalanceSheet } from "./balance-sheet"
-import { Loading } from "@/components/loader"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function AssetCard() {
   const {
     totalAssets,
     totalEquity,
     balanceSheet: bs,
-    loading
+    isLoading
   } = useLiveData()
 
   const assetChartCfg = {
-    allocation: {
-      label: "Allocation",
-    },
     cash: {
       label: "Cash",
       color: "var(--chart-1)",
@@ -45,9 +42,6 @@ export function AssetCard() {
   }))
 
   const liabilityChartCfg = {
-    allocation: {
-      label: "Allocation",
-    },
     equity: {
       label: "Equity",
       color: "var(--chart-1)",
@@ -78,15 +72,23 @@ export function AssetCard() {
   const liquidity = ( totalEquity - fund ) / totalEquity * 100
 
 
-  if (loading) return (
+  if (isLoading) return (
     <Card.Root className="gap-0">
       <Card.Header>
         <Card.Subtitle>Total Assets</Card.Subtitle>
-        <Card.Title className="text-2xl animate-pulse">Loading...</Card.Title>
+        <Skeleton className="h-8 w-40"/>
       </Card.Header>
-      <Card.Content className="flex justify-center items-center h-45">
-        <Loading/>
-        <Loading/>  
+      <Card.Content className="grid grid-cols-2 items-center h-45">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <Skeleton className="size-40 aspect-square rounded-full" />
+            <div className="flex flex-col w-full gap-2">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-4 w-10" />
+              ))}
+            </div>
+          </div>
+        ))}
       </Card.Content>
     </Card.Root>
   )
@@ -115,7 +117,7 @@ export function AssetCard() {
           margin_tb={0}
           centerText="Liquidity"
           centerValue={`${formatNum(liquidity, 1)}%`}
-          valueFormatter={(value) => formatNum(value)}
+          valueFormatter={(v) => `${formatNum(v / bs.totalAssets * 100, 1)}%`}
         />
         <Piechart
           data={liabilityChartData}
@@ -129,7 +131,7 @@ export function AssetCard() {
           margin_tb={0}
           centerText="Leverage"
           centerValue={leverage}
-          valueFormatter={(value) => formatNum(value)}
+          valueFormatter={(v) => `${formatNum(v / bs.totalAssets * 100, 1)}%`}
 
         />
       </Card.Content>

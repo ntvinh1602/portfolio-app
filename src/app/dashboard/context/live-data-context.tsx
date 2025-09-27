@@ -34,7 +34,7 @@ export interface LiveCryptoData extends CryptoData {
 }
 
 interface LiveDataContextType {
-  loading: boolean
+  isLoading: boolean
   totalAssets: number
   setTotalAssets: (value: number) => void
   totalEquity: number
@@ -48,20 +48,12 @@ interface LiveDataContextType {
 
 const LiveDataContext = createContext<LiveDataContextType | undefined>(undefined)
 
-const safeBalanceSheet: BalanceSheetData = {
-  assets: [],
-  equity: [],
-  liabilities: [],
-  totalAssets: 0,
-  totalLiabilities: 0,
-  totalEquity: 0,
-}
-
 export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   const {
     bsData,
     stockData,
     cryptoData,
+    isLoading
   } = useDelayedData()
 
   const [totalStockValue, setTotalStockValue] = useState(0)
@@ -70,14 +62,13 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   const [totalEquity, setTotalEquity] = useState(0)
   const [unrealizedPnL, setUnrealizedPnL] = useState(0)
 
-  const loading = !bsData || !stockData || !cryptoData
-
   const stockSymbols = useMemo(
     () => stockData?.map((stock) => stock.ticker) ?? [],
     [stockData]
   )
   const {
     data: marketData,
+    loading: isStockDataLoading,
     error: stockError
   } = useDNSEData(stockSymbols)
 
@@ -93,13 +84,12 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
     error: cryptoError
   } = useBinanceData(cryptoSymbols)
 
-  const isStockDataLoading = stockSymbols.length > 0 && Object.keys(marketData).length === 0 && !stockError;
-
   const isStockPriceLive = !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
   const isCryptoPriceLive = !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
 
   const processedStockData = useMemo(() => {
-    if (!stockData) return []
+    if (isLoading) return []
+
     return stockData
       .map((stock) => {
         const liveEntry = marketData[stock.ticker]
@@ -125,7 +115,7 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
         }
       })
       .sort((a, b) => b.totalAmount - a.totalAmount)
-  }, [stockData, marketData])
+  }, [isLoading, stockData, marketData])
 
   useEffect(() => {
     if (processedStockData) {
@@ -138,7 +128,7 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   }, [processedStockData])
 
 const processedCryptoData = useMemo(() => {
-  if (!cryptoData) return []
+  if (isLoading) return []
 
   return cryptoData
     .map((crypto) => {
@@ -178,7 +168,7 @@ const processedCryptoData = useMemo(() => {
       }
     })
     .sort((a, b) => b.totalAmount - a.totalAmount)
-}, [cryptoData, liveCryptoPrices])
+}, [isLoading, cryptoData, liveCryptoPrices])
 
   useEffect(() => {
     if (processedCryptoData) {
@@ -217,7 +207,7 @@ const processedCryptoData = useMemo(() => {
   ])
 
   const balanceSheet = useMemo(() => {
-    if (loading || !bsData) return safeBalanceSheet
+    if (isLoading) return bsData
 
     return {
       ...bsData,
@@ -239,7 +229,7 @@ const processedCryptoData = useMemo(() => {
       totalEquity,
     }
   }, [
-    loading,
+    isLoading,
     bsData,
     totalStockValue,
     totalCryptoValue,
@@ -251,7 +241,7 @@ const processedCryptoData = useMemo(() => {
   return (
     <LiveDataContext.Provider
       value={{
-        loading,
+        isLoading,
         totalAssets,
         setTotalAssets,
         totalEquity,

@@ -32,22 +32,55 @@ interface DelayedDataApiResponse {
   cryptoData: CryptoData[]
 }
 
+const fallback: DelayedDataApiResponse = {
+  twrData: {
+    all_time: 0,
+    ytd: 0
+  },
+  pnlData: {
+    all_time: 0,
+    ytd: 0,
+    mtd: 0
+  },
+  equityData: { all_time: [], "1y": [], "6m": [], "3m": [] },
+  benchmarkData: { all_time: [], "1y": [], "6m": [], "3m": [] },
+  balanceSheetData: {
+    assets: [],
+    totalAssets: 0,
+    liabilities: [],
+    totalLiabilities: 0,
+    equity: [],
+    totalEquity: 0
+  },
+  stockData: [],
+  cryptoData: [],
+  monthlyData: [],
+}
+
 export function useDelayedData() {
   const { data, error, isLoading } = useSWR<DelayedDataApiResponse>(
     "/api/gateway/dashboard",
     fetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  )
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      fallbackData: fallback,
+    }
+  ) as {
+    data: DelayedDataApiResponse
+    error: unknown
+    isLoading: boolean
+  }
  
   return {
-    twrData: data?.twrData,
-    pnlData: data?.pnlData,
-    equityData: data?.equityData,
-    benchmarkData: data?.benchmarkData,
-    bsData: data?.balanceSheetData,
-    stockData: data?.stockData,
-    cryptoData: data?.cryptoData,
-    monthlyData: data?.monthlyData,
+    twrData: data.twrData,
+    pnlData: data.pnlData,
+    equityData: data.equityData,
+    benchmarkData: data.benchmarkData,
+    bsData: data.balanceSheetData,
+    stockData: data.stockData,
+    cryptoData: data.cryptoData,
+    monthlyData: data.monthlyData,
     isLoading,
     error,
   }

@@ -12,6 +12,8 @@ interface PriceData {
 export function useDNSEData(symbols: string[] = []) {
   const [data, setData] = useState<Record<string, PriceData>>({})
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+
   const symbolString = useMemo(() => symbols.join(","), [symbols])
 
   useEffect(() => {
@@ -23,21 +25,26 @@ export function useDNSEData(symbols: string[] = []) {
 
     const connectStream = async () => {
       try {
+        setLoading(true)
+
         // 1. Fetch token from cached API
         const authRes = await fetch("/api/external/dnse/auth")
         if (authRes.status === 403) {
           setError("Market is closed.")
+          setLoading(false)
           eventSource?.close()
           if (reconnectTimer) clearTimeout(reconnectTimer)
           return
         }
         if (!authRes.ok) {
           setError("Authentication failed.")
+          setLoading(false)
           return
         }
         const { token } = await authRes.json()
         if (!token) {
           setError("No token received from server.")
+          setLoading(false)
           return
         }
 
@@ -51,6 +58,7 @@ export function useDNSEData(symbols: string[] = []) {
           try {
             const priceData: PriceData = JSON.parse(event.data)
             if (!isMounted) return
+
             setData((prevData) => {
               const prevPrice = prevData[priceData.symbol]?.price
               return {
@@ -58,6 +66,9 @@ export function useDNSEData(symbols: string[] = []) {
                 [priceData.symbol]: { ...priceData, prevPrice },
               }
             })
+
+            // stop loading once first message arrives
+            setLoading(false)
           } catch (e) {
             console.error("Failed to parse SSE message:", e)
           }
@@ -65,7 +76,8 @@ export function useDNSEData(symbols: string[] = []) {
 
         eventSource.onerror = (e) => {
           console.error("SSE connection failed:", e)
-          setError("Market data stream disconnected.") // Removed "Retrying..."
+          setError("Market data stream disconnected.")
+          setLoading(true) // show loading again while reconnecting
           eventSource?.close()
 
           // reconnect after 5s
@@ -77,6 +89,7 @@ export function useDNSEData(symbols: string[] = []) {
       } catch (e) {
         console.error("Stream connection error:", e)
         setError("Network error.")
+        setLoading(true)
       }
     }
 
@@ -89,5 +102,5 @@ export function useDNSEData(symbols: string[] = []) {
     }
   }, [symbolString, symbols.length])
 
-  return { data, error }
+  return { data, error, loading }
 }

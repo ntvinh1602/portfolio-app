@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import {
-  Root,
-  Content,
-  Subtitle,
-  Title
-} from "@/components/ui/card"
+import * as Card from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import Image from 'next/image'
 import {
   TrendingUp,
@@ -54,8 +50,8 @@ export function Asset({
   }, [price, prevPrice])
 
   return (
-    <Root className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
-      <Content className="flex items-center gap-3 px-3">
+    <Card.Root className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
+      <Card.Content className="flex items-center gap-3 px-3">
         <Image
           src={logoUrl}
           alt={name}
@@ -65,11 +61,11 @@ export function Asset({
         />
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col gap-1 max-w-[180px]">
-            <Title>{ticker}</Title>
-            <Subtitle className="text-xs truncate">
+            <Card.Title>{ticker}</Card.Title>
+            <Card.Subtitle className="text-xs truncate">
               {name}
-            </Subtitle>
-            {<Subtitle className="flex items-center gap-1 truncate pt-1">
+            </Card.Subtitle>
+            {<Card.Subtitle className="flex items-center gap-1 truncate pt-1">
                 <Badge variant="outline" className="font-thin text-foreground">
                   <Coins className="stroke-1"  />
                   {quantity
@@ -100,13 +96,13 @@ export function Asset({
                     : 0
                   }
                 </Badge>
-              </Subtitle>}
+              </Card.Subtitle>}
           </div>
           <div className="flex flex-col justify-end pr-2">
-            <Title className="text-right text-sm">
+            <Card.Title className="text-right text-sm">
               {formatNum(totalAmount)}
-            </Title>
-            <Subtitle className="flex items-center justify-end text-xs gap-1">
+            </Card.Title>
+            <Card.Subtitle className="flex items-center justify-end text-xs gap-1">
               <div className="[&_svg]:size-4 [&_svg]:stroke-2 flex gap-1">
                 {pnlNet !== null && pnlNet < 0
                   ? <TrendingDown className="text-red-700" />
@@ -115,10 +111,49 @@ export function Asset({
                 {compactNum(Math.abs(pnlNet))}
                 {` (${formatNum(Math.abs(pnlPct), 1)}%)`}
               </div>
-            </Subtitle>
+            </Card.Subtitle>
           </div>
         </div>
-      </Content>
-    </Root>
+      </Card.Content>
+    </Card.Root>
+  )
+}
+
+export function AssetSkeleton() {
+  return (
+    <Card.Root className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
+      <Card.Content className="flex items-center gap-3 px-3">
+        
+        {/* Logo */}
+        <Skeleton className="size-14 aspect-square rounded-full" />
+
+        <div className="flex justify-between w-full items-center">
+          <div className="flex flex-col gap-1 max-w-[180px]">
+            
+            {/* Ticker */}
+            <Skeleton className="h-4 w-16" />
+            
+            {/* Name */}
+            <Skeleton className="h-3 w-28" />
+
+            {/* Quantity + Price badges */}
+            <div className="flex items-center gap-2 pt-1">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-end pr-2">
+            {/* Total Amount */}
+            <Skeleton className="h-4 w-20 self-end" />
+
+            {/* PnL */}
+            <div className="flex items-center justify-end gap-1 mt-1">
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+      </Card.Content>
+    </Card.Root>
   )
 }
