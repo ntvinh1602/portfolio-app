@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase
       .from("debts")
       .select()
-      .eq("is_active", true)
+      .is("repay_txn_id", null)
 
     if (error) {
       console.error("Supabase RPC error:", error)

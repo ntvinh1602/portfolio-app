@@ -93,12 +93,11 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
     'sell',
     'deposit',
     'withdraw',
-    'expense',
     'income',
-    'dividend',
-    'debt_payment',
-    'split',
-    'borrow'
+    'expense',
+    'borrow',
+    'repay',
+    'split'
 );
 
 
@@ -116,27 +115,25 @@ DECLARE
 BEGIN
   -- 1. Get debts asset
   v_debts_asset_id := public.get_asset_id_from_ticker('DEBTS');
+
+  -- 2. Create the transaction
+  INSERT INTO public.transactions (transaction_date, type, description, created_at)
+  VALUES (
+    p_transaction_date,
+    'borrow',
+    p_description,
+    p_created_at
+  ) RETURNING id INTO v_transaction_id;
   
-  -- 2. Create the debt record
-  INSERT INTO public.debts (lender_name, principal_amount, currency_code, interest_rate, start_date, is_active)
+  -- 3. Create the debt record
+  INSERT INTO public.debts (lender_name, principal_amount, currency_code, interest_rate, borrow_txn_id)
   VALUES (
     p_lender_name,
     p_principal_amount,
     'VND',
     p_interest_rate,
-    p_transaction_date,
-    true
+    v_transaction_id
   ) RETURNING id INTO v_debt_id;
-
-  -- 3. Create the transaction
-  INSERT INTO public.transactions (transaction_date, type, description, related_debt_id, created_at)
-  VALUES (
-    p_transaction_date,
-    'borrow',
-    p_description,
-    v_debt_id,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
 
   -- 4. Create the transaction legs
   INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
@@ -309,63 +306,6 @@ $$;
 
 
 ALTER FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_debt_payment_transaction"("p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_transaction_id uuid;
-  v_total_payment numeric;
-  v_owner_capital_asset_id uuid;
-  v_debts_asset_id uuid;
-BEGIN
-  -- 1. Look up user-specific asset IDs
-  v_debts_asset_id := public.get_asset_id_from_ticker('DEBTS');
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-
-  -- 2. Calculate the total payment amount
-  v_total_payment := p_principal_payment + p_interest_payment;
-
-  -- 3. Create a new transactions record
-  INSERT INTO public.transactions (transaction_date, type, description, related_debt_id, created_at)
-  VALUES (
-    p_transaction_date,
-    'debt_payment',
-    p_description,
-    p_debt_id,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-VALUES
-  -- Credit: Decrease cash from the paying account
-  (v_transaction_id,
-  p_cash_asset_id,
-  v_total_payment * -1,
-  v_total_payment * -1,
-  'VND'),
-  -- Debit: Decrease the "Debts Principal" for principal portion
-  (v_transaction_id,
-  v_debts_asset_id,
-  p_principal_payment,
-  p_principal_payment,
-  'VND'),
-  -- Debit: Decrease Owner Capital for interest portion
-  (v_transaction_id,
-  v_owner_capital_asset_id,
-  p_interest_payment,
-  p_interest_payment,
-  'VND');
-
-  -- 5. Mark the debt as paid
-  UPDATE public.debts SET is_active = false WHERE id = p_debt_id;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_debt_payment_transaction"("p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
@@ -666,6 +606,62 @@ $$;
 
 
 ALTER FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_transaction_id uuid;
+  v_total_payment numeric;
+  v_owner_capital_asset_id uuid;
+  v_debts_asset_id uuid;
+BEGIN
+  -- 1. Look up user-specific asset IDs
+  v_debts_asset_id := public.get_asset_id_from_ticker('DEBTS');
+  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
+
+  -- 2. Calculate the total payment amount
+  v_total_payment := p_paid_principal + p_paid_interest;
+
+  -- 3. Create a new transactions record
+  INSERT INTO public.transactions (transaction_date, type, description, created_at)
+  VALUES (
+    p_txn_date,
+    'repay',
+    p_description,
+    p_created_at
+  ) RETURNING id INTO v_transaction_id;
+
+INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
+VALUES
+  -- Credit: Decrease cash from the paying account
+  (v_transaction_id,
+  p_cash_asset_id,
+  v_total_payment * -1,
+  v_total_payment * -1,
+  'VND'),
+  -- Debit: Decrease the "Debts Principal" for principal portion
+  (v_transaction_id,
+  v_debts_asset_id,
+  p_paid_principal,
+  p_paid_principal,
+  'VND'),
+  -- Debit: Decrease Owner Capital for interest portion
+  (v_transaction_id,
+  v_owner_capital_asset_id,
+  p_paid_interest,
+  p_paid_interest,
+  'VND');
+
+  -- 5. Mark the debt as paid
+  UPDATE public.debts SET repay_txn_id = v_transaction_id WHERE id = p_debt_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
@@ -1147,7 +1143,7 @@ BEGIN
       JOIN public.transaction_legs tl ON t.id = tl.transaction_id
       JOIN public.assets a ON tl.asset_id = a.id
       WHERE t.transaction_date BETWEEN v_month_start AND v_month_end
-        AND t.type = 'debt_payment'
+        AND t.type = 'repay'
         AND a.ticker IN ('EARNINGS', 'CAPITAL')
     ),
     -- 3. Margin + cash advance interest
@@ -1201,77 +1197,65 @@ BEGIN
     -- Skip weekends
     IF EXTRACT(ISODOW FROM loop_date) IN (6, 7) THEN CONTINUE;
     END IF;
+
     -- Calculate total assets value for the day
     WITH user_assets AS (
       SELECT
         a.id,
-        a.asset_class,
         a.currency_code,
-        SUM(tl.quantity) as total_quantity
+        SUM(tl.quantity) AS total_quantity
       FROM transaction_legs tl
       JOIN transactions t ON tl.transaction_id = t.id
       JOIN assets a ON tl.asset_id = a.id
       WHERE t.transaction_date <= loop_date
         AND a.asset_class NOT IN ('equity', 'liability')
-      GROUP BY a.id, a.asset_class, a.currency_code
+      GROUP BY a.id, a.currency_code
     )
     SELECT COALESCE(SUM(
-      CASE
-        WHEN ua.asset_class = 'stock' THEN ua.total_quantity * sdp.price
-        WHEN ua.asset_class = 'crypto' THEN ua.total_quantity * COALESCE(dcp.price, 1) * COALESCE(er_usd.rate, 1)
-        ELSE ua.total_quantity * COALESCE(er.rate, 1)
-      END
+      ua.total_quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)
     ), 0)
     INTO v_total_assets_value
     FROM user_assets ua
     LEFT JOIN LATERAL (
-      SELECT price FROM daily_stock_prices
+      SELECT price FROM public.daily_security_prices
       WHERE asset_id = ua.id AND date <= loop_date
-      ORDER BY date DESC LIMIT 1
-    ) sdp ON ua.asset_class = 'stock'
+      ORDER BY date DESC
+      LIMIT 1
+    ) sp ON TRUE
     LEFT JOIN LATERAL (
-      SELECT price FROM daily_crypto_prices
-      WHERE asset_id = ua.id AND date <= loop_date
-      ORDER BY date DESC LIMIT 1
-    ) dcp ON ua.asset_class = 'crypto'
-    LEFT JOIN LATERAL (
-      SELECT rate FROM daily_exchange_rates
+      SELECT rate FROM public.daily_exchange_rates
       WHERE currency_code = ua.currency_code AND date <= loop_date
-      ORDER BY date DESC LIMIT 1
-    ) er ON ua.asset_class NOT IN ('stock', 'crypto')
-    LEFT JOIN LATERAL (
-      SELECT rate FROM daily_exchange_rates
-      WHERE currency_code = 'USD' AND date <= loop_date
-      ORDER BY date DESC LIMIT 1
-    ) er_usd ON ua.asset_class = 'crypto';
+      ORDER BY date DESC
+      LIMIT 1
+    ) er ON TRUE;
+
     -- Calculate total liabilities value for the day
     WITH historical_debt_balances AS (
       SELECT
         d.id,
         d.principal_amount,
         d.interest_rate,
-        d.start_date,
-        (
-          SELECT COALESCE(SUM(tl.amount), 0)
-          FROM transaction_legs tl
-          JOIN transactions t ON tl.transaction_id = t.id
-          JOIN assets a ON tl.asset_id = a.id
-          WHERE t.related_debt_id = d.id
-            AND t.transaction_date <= loop_date
-            AND a.ticker = 'DEBTS'
-        ) AS balance_at_date
+        tb.transaction_date AS start_date,
+        tr.transaction_date AS end_date,
+        CASE
+          WHEN tr.transaction_date IS NOT NULL AND tr.transaction_date <= loop_date THEN 0
+          ELSE d.principal_amount
+        END AS balance_at_date
       FROM debts d
-      WHERE d.start_date <= loop_date
+      JOIN transactions tb ON tb.id = d.borrow_txn_id
+      LEFT JOIN transactions tr ON tr.id = d.repay_txn_id
+      WHERE tb.transaction_date <= loop_date
     )
     SELECT COALESCE(SUM(
       CASE
-        WHEN hdb.balance_at_date < 0 THEN
-          ABS(hdb.balance_at_date) + (hdb.principal_amount * (POWER(1 + (hdb.interest_rate / 100 / 365), (loop_date - hdb.start_date)) - 1))
+        WHEN hdb.balance_at_date > 0 THEN
+          hdb.balance_at_date * POWER(1 + (hdb.interest_rate / 100 / 365), (loop_date - hdb.start_date))
         ELSE 0
       END
     ), 0)
     INTO v_total_liabilities_value
     FROM historical_debt_balances hdb;
+
     -- Calculate net cash flow for the day
     SELECT COALESCE(SUM(tl.amount), 0)
     INTO v_net_cash_flow
@@ -1280,7 +1264,7 @@ BEGIN
     JOIN assets a ON tl.asset_id = a.id
     WHERE t.transaction_date = loop_date
       AND t.type IN ('deposit', 'withdraw')
-      AND a.asset_class IN ('cash', 'fund');
+      AND a.asset_class IN ('cash', 'fund', 'crypto');
     v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
     -- Calculate Equity Index
     SELECT net_equity_value, equity_index
@@ -1419,9 +1403,9 @@ BEGIN
       a.asset_class,
       SUM(
         CASE
-          WHEN a.asset_class = 'stock' THEN a.current_quantity * COALESCE(public.get_latest_stock_price(a.id), 0)
-          WHEN a.asset_class = 'crypto' THEN a.current_quantity * COALESCE(public.get_latest_crypto_price(a.id), 0) * COALESCE(public.get_latest_exchange_rate('USD'), 1)
-          ELSE a.current_quantity * COALESCE(public.get_latest_exchange_rate(a.currency_code), 1)
+          WHEN a.asset_class = 'stock' THEN a.current_quantity * public.get_latest_stock_price(a.id)
+          WHEN a.asset_class = 'crypto' THEN a.current_quantity * public.get_latest_crypto_price(a.id) * public.get_latest_exchange_rate('USD')
+          ELSE a.current_quantity * public.get_latest_exchange_rate(a.currency_code)
         END
       ) AS total
     FROM public.assets a
@@ -1443,10 +1427,18 @@ BEGIN
   FROM public.assets a
   WHERE a.ticker = 'DEBTS';
   -- Calculate accrued interest using daily compounding
-  SELECT COALESCE(SUM(d.principal_amount * (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)), 0)
+  SELECT COALESCE(SUM(
+    d.principal_amount * (
+      POWER(1 + (d.interest_rate / 100 / 365),
+        (CURRENT_DATE - tb.transaction_date)
+      ) - 1
+    )
+  ), 0)
   INTO accrued_interest
   FROM public.debts d
-  WHERE d.is_active;
+  JOIN public.transactions tb ON tb.id = d.borrow_txn_id
+  LEFT JOIN public.transactions tr ON tr.id = d.repay_txn_id
+  WHERE tr.id IS NULL OR tr.transaction_date > CURRENT_DATE;
   liability_total := debts_principal + accrued_interest;
   -- Calculate equity values
   SELECT a.current_quantity * -1 INTO owner_capital
@@ -1520,7 +1512,7 @@ $$;
 ALTER FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric, "total_amount" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "currency_code" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric, "total_amount" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1529,7 +1521,7 @@ BEGIN
   WITH latest_data AS (
     SELECT
       a.id AS asset_id,
-      public.get_latest_crypto_price(a.id) AS latest_price,
+      public.get_security_price(a.id) AS latest_price,
       public.get_latest_exchange_rate('USD') AS latest_usd_rate
     FROM public.assets a
     WHERE a.asset_class = 'crypto'
@@ -1537,7 +1529,8 @@ BEGIN
   SELECT
     a.ticker,
     a.name,
-    a.logo_url AS logo_url,
+    a.logo_url,
+    a.currency_code::text,
     SUM(tl.quantity) AS quantity,
     SUM(tl.amount) AS cost_basis,
     ld.latest_price,
@@ -1547,7 +1540,7 @@ BEGIN
   JOIN public.transaction_legs tl ON a.id = tl.asset_id
   JOIN latest_data ld ON ld.asset_id = a.id
   WHERE a.asset_class = 'crypto'
-  GROUP BY a.id, a.ticker, a.name, a.logo_url, ld.latest_price, ld.latest_usd_rate
+  GROUP BY a.id, a.ticker, a.name, a.logo_url, a.currency_code, ld.latest_price, ld.latest_usd_rate
   HAVING SUM(tl.quantity) > 0;
 END;
 $$;
@@ -1592,66 +1585,21 @@ $$;
 ALTER FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") RETURNS numeric
-    LANGUAGE "plpgsql" STABLE
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  latest_price NUMERIC;
-BEGIN
-  SELECT price INTO latest_price
-  FROM public.daily_crypto_prices
-  WHERE asset_id = p_asset_id
-  ORDER BY date DESC
-  LIMIT 1;
-  RETURN latest_price;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") RETURNS numeric
-    LANGUAGE "plpgsql" STABLE
+    LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  latest_rate NUMERIC;
-BEGIN
-  SELECT rate
-  INTO latest_rate
-  FROM public.daily_exchange_rates
-  WHERE currency_code = p_currency_code
-  ORDER BY date DESC
-  LIMIT 1;
-  RETURN latest_rate;
-END;
+  SELECT COALESCE(
+    (SELECT rate
+     FROM public.daily_exchange_rates
+     WHERE currency_code = p_currency_code
+     ORDER BY date DESC
+     LIMIT 1), 1
+  );
 $$;
 
 
 ALTER FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") RETURNS numeric
-    LANGUAGE "plpgsql" STABLE
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  latest_price NUMERIC;
-BEGIN
-  SELECT price
-  INTO latest_price
-  FROM public.daily_stock_prices
-  WHERE asset_id = p_asset_id
-  ORDER BY date DESC
-  LIMIT 1;
-  RETURN latest_price;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_pnl"() RETURNS TABLE("range_label" "text", "pnl" numeric)
@@ -1685,6 +1633,23 @@ $$;
 ALTER FUNCTION "public"."get_pnl"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_security_price"("p_asset_id" "uuid") RETURNS numeric
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT COALESCE(
+    (SELECT price
+     FROM public.daily_security_prices
+     WHERE asset_id = p_asset_id
+     ORDER BY date DESC
+     LIMIT 1), 1
+  );
+$$;
+
+
+ALTER FUNCTION "public"."get_security_price"("p_asset_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "total_amount" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1694,7 +1659,7 @@ BEGIN
   WITH latest_prices AS (
     SELECT 
       a.id AS asset_id, 
-      public.get_latest_stock_price(a.id) AS latest_price
+      public.get_security_price(a.id) AS latest_price
     FROM public.assets a
   )
   SELECT
@@ -1783,9 +1748,8 @@ CREATE OR REPLACE FUNCTION "public"."get_transactions"("p_start_date" "date", "p
     t.description
   FROM transactions AS t
   WHERE t.transaction_date BETWEEN p_start_date AND p_end_date
-    AND t.description NOT IN ('Income tax', 'Transaction fee')
-  ORDER BY t.transaction_date DESC, t.created_at DESC
-  LIMIT 200;
+    AND t.linked_txn is NULL
+  ORDER BY t.created_at DESC;
 $$;
 
 
@@ -1822,13 +1786,13 @@ $$;
 ALTER FUNCTION "public"."get_twr"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."import_transactions"("p_transactions_data" "jsonb", "p_start_date" "date") RETURNS "void"
+CREATE OR REPLACE FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-  v_transaction_record jsonb;
-  v_transaction_type text;
+  v_txn_record jsonb;
+  v_txn_type text;
   v_asset_id uuid;
   v_cash_asset_id uuid;
   v_debt_id uuid;
@@ -1836,131 +1800,111 @@ DECLARE
   v_cash_asset_ticker text;
   v_lender_name text;
 BEGIN
-  IF NOT jsonb_typeof(p_transactions_data) = 'array' THEN
+  IF NOT jsonb_typeof(p_txn_data) = 'array' THEN
     RAISE EXCEPTION 'Input must be a JSON array of transactions.';
   END IF;
 
   -- Temporarily disable all user-defined triggers on the transactions table
   ALTER TABLE public.transactions DISABLE TRIGGER USER;
 
-  FOR v_transaction_record IN SELECT * FROM jsonb_array_elements(p_transactions_data)
+  FOR v_txn_record IN SELECT * FROM jsonb_array_elements(p_txn_data)
   LOOP
-    v_transaction_type := v_transaction_record->>'type';
+    v_txn_type := v_txn_record->>'type';
 
-    v_asset_ticker := v_transaction_record->>'asset_ticker';
+    v_asset_ticker := v_txn_record->>'asset_ticker';
     IF v_asset_ticker IS NOT NULL THEN
       v_asset_id := public.get_asset_id_from_ticker(v_asset_ticker);
     END IF;
 
-    v_cash_asset_ticker := v_transaction_record->>'cash_asset_ticker';
+    v_cash_asset_ticker := v_txn_record->>'cash_asset_ticker';
     IF v_cash_asset_ticker IS NOT NULL THEN
       v_cash_asset_id := public.get_asset_id_from_ticker(v_cash_asset_ticker);
     END IF;
 
-    CASE v_transaction_type
+    CASE v_txn_type
       WHEN 'buy' THEN PERFORM "public"."add_buy_transaction"(
-        (v_transaction_record->>'date')::date,
+        (v_txn_record->>'date')::date,
         v_asset_id,
         v_cash_asset_id,
-        (v_transaction_record->>'quantity')::numeric,
-        (v_transaction_record->>'price')::numeric,
-        v_transaction_record->>'description',
-        (v_transaction_record->>'created_at')::timestamptz
+        (v_txn_record->>'quantity')::numeric,
+        (v_txn_record->>'price')::numeric,
+        v_txn_record->>'description',
+        (v_txn_record->>'created_at')::timestamptz
       );
       WHEN 'sell' THEN PERFORM "public"."add_sell_transaction"(
         v_asset_id,
-        (v_transaction_record->>'quantity')::numeric,
-        (v_transaction_record->>'price')::numeric,
-        (v_transaction_record->>'date')::date,
+        (v_txn_record->>'quantity')::numeric,
+        (v_txn_record->>'price')::numeric,
+        (v_txn_record->>'date')::date,
         v_cash_asset_id,
-        v_transaction_record->>'description',
-        (v_transaction_record->>'created_at')::timestamptz
+        v_txn_record->>'description',
+        (v_txn_record->>'created_at')::timestamptz
       );
       WHEN 'deposit' THEN PERFORM "public"."add_deposit_transaction"(
-        (v_transaction_record->>'date')::date,
-        (v_transaction_record->>'quantity')::numeric,
-        v_transaction_record->>'description',
+        (v_txn_record->>'date')::date,
+        (v_txn_record->>'quantity')::numeric,
+        v_txn_record->>'description',
         v_asset_id,
-        (v_transaction_record->>'created_at')::timestamptz
+        (v_txn_record->>'created_at')::timestamptz
       );
       WHEN 'withdraw' THEN PERFORM "public"."add_withdraw_transaction"(
-        (v_transaction_record->>'date')::date,
-        (v_transaction_record->>'quantity')::numeric,
-        v_transaction_record->>'description',
+        (v_txn_record->>'date')::date,
+        (v_txn_record->>'quantity')::numeric,
+        v_txn_record->>'description',
         v_asset_id,
-        (v_transaction_record->>'created_at')::timestamptz
+        (v_txn_record->>'created_at')::timestamptz
       );
-      WHEN 'debt_payment' THEN
-        v_lender_name := v_transaction_record->>'counterparty';
+      WHEN 'repay' THEN
+        v_lender_name := v_txn_record->>'counterparty';
         SELECT id INTO v_debt_id
         FROM public.debts
-        WHERE lender_name = v_lender_name AND is_active;
+        WHERE lender_name = v_lender_name AND repay_txn_id is null;
         IF v_debt_id IS NULL THEN
           RAISE EXCEPTION 'Active debt for lender % not found.', v_lender_name;
         END IF;
-        PERFORM "public"."add_debt_payment_transaction"(
+        PERFORM "public"."add_repay_transaction"(
           v_debt_id,
-          (v_transaction_record->>'principal')::numeric,
-          (v_transaction_record->>'interest')::numeric,
-          (v_transaction_record->>'date')::date,
+          (v_txn_record->>'principal')::numeric,
+          (v_txn_record->>'interest')::numeric,
+          (v_txn_record->>'date')::date,
           v_cash_asset_id,
-          v_transaction_record->>'description',
-          (v_transaction_record->>'created_at')::timestamptz
+          v_txn_record->>'description',
+          (v_txn_record->>'created_at')::timestamptz
         );
       WHEN 'income' THEN
         PERFORM "public"."add_income_transaction"(
-          (v_transaction_record->>'date')::date,
-          (v_transaction_record->>'quantity')::numeric,
-          v_transaction_record->>'description',
+          (v_txn_record->>'date')::date,
+          (v_txn_record->>'quantity')::numeric,
+          v_txn_record->>'description',
           v_cash_asset_id,
           'income',
-          (v_transaction_record->>'created_at')::timestamptz
+          (v_txn_record->>'created_at')::timestamptz
         );
-      WHEN 'dividend' THEN
-        IF v_asset_ticker = 'EPF' THEN
-          PERFORM "public"."add_income_transaction"(
-            (v_transaction_record->>'date')::date,
-            (v_transaction_record->>'quantity')::numeric,
-            v_transaction_record->>'description',
-            v_asset_id,
-            'dividend',
-            (v_transaction_record->>'created_at')::timestamptz
-          );
-        ELSE
-          PERFORM "public"."add_income_transaction"(
-            (v_transaction_record->>'date')::date,
-            (v_transaction_record->>'quantity')::numeric,
-            v_transaction_record->>'description',
-            v_cash_asset_id,
-            'dividend',
-            (v_transaction_record->>'created_at')::timestamptz
-          );
-        END IF;
       WHEN 'expense' THEN PERFORM "public"."add_expense_transaction"(
-        (v_transaction_record->>'date')::date,
-        (v_transaction_record->>'quantity')::numeric,
-        v_transaction_record->>'description',
+        (v_txn_record->>'date')::date,
+        (v_txn_record->>'quantity')::numeric,
+        v_txn_record->>'description',
         v_asset_id,
-        (v_transaction_record->>'created_at')::timestamptz
+        (v_txn_record->>'created_at')::timestamptz
       );
       WHEN 'borrow' THEN PERFORM "public"."add_borrow_transaction"(
-        v_transaction_record->>'counterparty',
-        (v_transaction_record->>'principal')::numeric,
-        (v_transaction_record->>'interest_rate')::numeric,
-        (v_transaction_record->>'date')::date,
+        v_txn_record->>'counterparty',
+        (v_txn_record->>'principal')::numeric,
+        (v_txn_record->>'interest_rate')::numeric,
+        (v_txn_record->>'date')::date,
         v_cash_asset_id,
-        v_transaction_record->>'description',
-        (v_transaction_record->>'created_at')::timestamptz
+        v_txn_record->>'description',
+        (v_txn_record->>'created_at')::timestamptz
       );
       WHEN 'split' THEN PERFORM "public"."add_split_transaction"(
         v_asset_id,
-        (v_transaction_record->>'quantity')::numeric,
-        (v_transaction_record->>'date')::date,
-        v_transaction_record->>'description',
-        (v_transaction_record->>'created_at')::timestamptz
+        (v_txn_record->>'quantity')::numeric,
+        (v_txn_record->>'date')::date,
+        v_txn_record->>'description',
+        (v_txn_record->>'created_at')::timestamptz
       );
       ELSE
-        RAISE EXCEPTION 'Unknown transaction type: %', v_transaction_type;
+        RAISE EXCEPTION 'Unknown transaction type: %', v_txn_type;
     END CASE;
   END LOOP;
 
@@ -1973,7 +1917,7 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."import_transactions"("p_transactions_data" "jsonb", "p_start_date" "date") OWNER TO "postgres";
+ALTER FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_dnse_orders"() RETURNS "void"
@@ -2065,11 +2009,16 @@ BEGIN
   SET current_quantity = CASE
     WHEN a.ticker = 'INTERESTS' THEN COALESCE((
       SELECT SUM(
-        d.principal_amount *
-        (POWER(1 + (d.interest_rate / 100 / 365), (CURRENT_DATE - d.start_date)) - 1)
+          d.principal_amount * (
+            POWER(1 + (d.interest_rate / 100 / 365),
+              (CURRENT_DATE - tb.transaction_date)
+            ) - 1
+          )
       )
       FROM public.debts d
-      WHERE d.is_active
+      JOIN public.transactions tb ON tb.id = d.borrow_txn_id
+      LEFT JOIN public.transactions tr ON tr.id = d.repay_txn_id
+      WHERE tr.id IS NULL OR tr.transaction_date > CURRENT_DATE
     ), 0)
     ELSE COALESCE((
       SELECT SUM(quantity)
@@ -2374,16 +2323,6 @@ CREATE TABLE IF NOT EXISTS "public"."currencies" (
 ALTER TABLE "public"."currencies" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."daily_crypto_prices" (
-    "asset_id" "uuid" NOT NULL,
-    "date" "date" NOT NULL,
-    "price" numeric NOT NULL
-);
-
-
-ALTER TABLE "public"."daily_crypto_prices" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
     "currency_code" character varying(10) NOT NULL,
     "date" "date" NOT NULL,
@@ -2415,14 +2354,14 @@ CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
 ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."daily_stock_prices" (
+CREATE TABLE IF NOT EXISTS "public"."daily_security_prices" (
     "asset_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
     "price" numeric NOT NULL
 );
 
 
-ALTER TABLE "public"."daily_stock_prices" OWNER TO "postgres";
+ALTER TABLE "public"."daily_security_prices" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."debts" (
@@ -2431,8 +2370,8 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
     "principal_amount" numeric(16,4) NOT NULL,
     "currency_code" character varying(10) NOT NULL,
     "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
-    "start_date" "date" NOT NULL,
-    "is_active" boolean DEFAULT true NOT NULL
+    "borrow_txn_id" "uuid",
+    "repay_txn_id" "uuid"
 );
 
 
@@ -2514,7 +2453,6 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "transaction_date" "date" NOT NULL,
     "type" "public"."transaction_type" NOT NULL,
     "description" "text",
-    "related_debt_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "price" numeric(16,4),
     "linked_txn" "uuid"
@@ -2539,18 +2477,13 @@ ALTER TABLE ONLY "public"."currencies"
 
 
 
-ALTER TABLE ONLY "public"."daily_crypto_prices"
-    ADD CONSTRAINT "daily_crypto_prices_pkey" PRIMARY KEY ("asset_id", "date");
-
-
-
 ALTER TABLE ONLY "public"."daily_performance_snapshots"
     ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("date");
 
 
 
-ALTER TABLE ONLY "public"."daily_stock_prices"
-    ADD CONSTRAINT "daily_stock_prices_pkey" PRIMARY KEY ("asset_id", "date");
+ALTER TABLE ONLY "public"."daily_security_prices"
+    ADD CONSTRAINT "daily_security_prices_pkey" PRIMARY KEY ("asset_id", "date");
 
 
 
@@ -2627,15 +2560,7 @@ CREATE INDEX "transaction_legs_transaction_id_idx" ON "public"."transaction_legs
 
 
 
-CREATE INDEX "transactions_related_debt_id_idx" ON "public"."transactions" USING "btree" ("related_debt_id");
-
-
-
 CREATE OR REPLACE TRIGGER "refresh_assets_after_new_txn" AFTER INSERT OR DELETE OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."assets_quantity_trigger"();
-
-
-
-CREATE OR REPLACE TRIGGER "revalidate_after_new_crypto_prices" AFTER INSERT OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_crypto_prices"}', '{}', '5000');
 
 
 
@@ -2643,7 +2568,7 @@ CREATE OR REPLACE TRIGGER "revalidate_after_new_fx_rate" AFTER INSERT OR UPDATE 
 
 
 
-CREATE OR REPLACE TRIGGER "revalidate_after_new_stock_prices" AFTER INSERT OR UPDATE ON "public"."daily_stock_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_stock_prices"}', '{}', '5000');
+CREATE OR REPLACE TRIGGER "revalidate_after_new_prices" AFTER INSERT OR UPDATE ON "public"."daily_security_prices" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://portapp-vinh.vercel.app/api/revalidate', 'POST', '{"Content-type":"application/json","x-secret-token":"8PuQYxYnnEH80AvU1HePoSCuorsEFc9d","x-table-name":"daily_stock_prices"}', '{}', '5000');
 
 
 
@@ -2651,15 +2576,11 @@ CREATE OR REPLACE TRIGGER "revalidate_after_new_txn" AFTER INSERT OR UPDATE ON "
 
 
 
-CREATE OR REPLACE TRIGGER "snapshot_after_new_crypto_prices" AFTER INSERT OR UPDATE ON "public"."daily_crypto_prices" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
-
-
-
 CREATE OR REPLACE TRIGGER "snapshot_after_new_fx_rate" AFTER INSERT OR UPDATE ON "public"."daily_exchange_rates" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
 
 
 
-CREATE OR REPLACE TRIGGER "snapshot_after_new_stock_price" AFTER INSERT OR UPDATE ON "public"."daily_stock_prices" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
+CREATE OR REPLACE TRIGGER "snapshot_after_new_prices" AFTER INSERT OR UPDATE ON "public"."daily_security_prices" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
 
 
 
@@ -2672,18 +2593,23 @@ ALTER TABLE ONLY "public"."assets"
 
 
 
-ALTER TABLE ONLY "public"."daily_crypto_prices"
-    ADD CONSTRAINT "daily_crypto_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."daily_security_prices"
+    ADD CONSTRAINT "daily_security_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
 
 
 
-ALTER TABLE ONLY "public"."daily_stock_prices"
-    ADD CONSTRAINT "daily_stock_prices_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_borrow_txn_id_fkey" FOREIGN KEY ("borrow_txn_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."debts"
     ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
+
+
+
+ALTER TABLE ONLY "public"."debts"
+    ADD CONSTRAINT "debts_repay_txn_id_fkey" FOREIGN KEY ("repay_txn_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
 
 
@@ -2732,15 +2658,6 @@ ALTER TABLE ONLY "public"."transaction_legs"
 
 
 
-ALTER TABLE ONLY "public"."transactions"
-    ADD CONSTRAINT "transactions_related_debt_id_fkey" FOREIGN KEY ("related_debt_id") REFERENCES "public"."debts"("id") ON DELETE SET NULL;
-
-
-
-CREATE POLICY "Authenticated users can access crypto prices" ON "public"."daily_crypto_prices" TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Authenticated users can access exchange rates" ON "public"."daily_exchange_rates" TO "authenticated" USING (true);
 
 
@@ -2749,7 +2666,7 @@ CREATE POLICY "Authenticated users can access market indices" ON "public"."daily
 
 
 
-CREATE POLICY "Authenticated users can access stock prices" ON "public"."daily_stock_prices" TO "authenticated" USING (true);
+CREATE POLICY "Authenticated users can access stock prices" ON "public"."daily_security_prices" TO "authenticated" USING (true);
 
 
 
@@ -2799,9 +2716,6 @@ ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."daily_crypto_prices" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."daily_exchange_rates" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2811,7 +2725,7 @@ ALTER TABLE "public"."daily_market_indices" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."daily_stock_prices" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."daily_security_prices" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
@@ -3042,12 +2956,6 @@ GRANT ALL ON FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date"
 
 
 
-GRANT ALL ON FUNCTION "public"."add_debt_payment_transaction"("p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_debt_payment_transaction"("p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_debt_payment_transaction"("p_debt_id" "uuid", "p_principal_payment" numeric, "p_interest_payment" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
 GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
@@ -3063,6 +2971,12 @@ GRANT ALL ON FUNCTION "public"."add_expense_transaction"("p_transaction_date" "d
 GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "anon";
 GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
 
 
 
@@ -3156,27 +3070,21 @@ GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_latest_crypto_price"("p_asset_id" "uuid") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_latest_stock_price"("p_asset_id" "uuid") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_pnl"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_pnl"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_pnl"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_security_price"("p_asset_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_security_price"("p_asset_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_security_price"("p_asset_id" "uuid") TO "service_role";
 
 
 
@@ -3204,9 +3112,9 @@ GRANT ALL ON FUNCTION "public"."get_twr"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_transactions_data" "jsonb", "p_start_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_transactions_data" "jsonb", "p_start_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_transactions_data" "jsonb", "p_start_date" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "service_role";
 
 
 
@@ -3273,12 +3181,6 @@ GRANT ALL ON TABLE "public"."currencies" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "anon";
-GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_crypto_prices" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
@@ -3297,9 +3199,9 @@ GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_stock_prices" TO "anon";
-GRANT ALL ON TABLE "public"."daily_stock_prices" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_stock_prices" TO "service_role";
+GRANT ALL ON TABLE "public"."daily_security_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_security_prices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_security_prices" TO "service_role";
 
 
 

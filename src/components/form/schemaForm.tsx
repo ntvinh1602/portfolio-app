@@ -16,7 +16,7 @@ export function SchemaForm<T extends Record<string, string | undefined>>({
 }: SchemaFormProps<T>) {
   return (
     <div className="flex flex-col gap-3">
-      {blueprint.map((field) => {
+      {blueprint?.map((field) => {
         const Renderer = typeToRenderer[field.type]
         if (!Renderer) {
           console.warn(`No renderer found for field type: ${field.type}`)

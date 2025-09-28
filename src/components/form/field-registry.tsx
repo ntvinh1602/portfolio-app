@@ -1,16 +1,15 @@
-import React from "react"
+import React, { useState } from "react"
+import { Calendar1 } from "lucide-react"
 import { FieldConfig } from "./field-types"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { SingleDate } from "@/components/date-picker"
+import { format } from "date-fns"
 import { Combobox } from "@/components/combobox"
+
+import * as Select from "@/components/ui/select"
+import * as Popover from "@/components/ui/popover"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Calendar } from "@/components/ui/calendar"
+import { Button } from "@/components/ui/button"
 
 interface FieldRendererProps<T extends string | number | boolean | Date | undefined> {
   field: FieldConfig
@@ -31,18 +30,18 @@ const InputField: React.FC<FieldRendererProps<string | undefined>> = ({ field, v
 const SelectField: React.FC<FieldRendererProps<string | undefined>> = ({ field, value, onChange }) => {
 
   return (
-    <Select onValueChange={onChange} value={value}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={field.placeholder} />
-      </SelectTrigger>
-      <SelectContent>
+    <Select.Root onValueChange={onChange} value={value}>
+      <Select.Trigger className="w-full">
+        <Select.Value placeholder={field.placeholder} />
+      </Select.Trigger>
+      <Select.Content>
         {field.options?.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <Select.Item key={option.value} value={option.value}>
             {option.label}
-          </SelectItem>
+          </Select.Item>
         ))}
-      </SelectContent>
-    </Select>
+      </Select.Content>
+    </Select.Root>
   )
 }
 
@@ -59,15 +58,45 @@ const ComboboxField: React.FC<FieldRendererProps<string | undefined>> = ({ field
 }
 
 const DateField: React.FC<FieldRendererProps<string | undefined>> = ({ value, onChange }) => {
-  const dateValue = value ? new Date(value) : undefined;
+  const dateValue = value ? new Date(value) : undefined
+  const [open, setOpen] = useState(false)
   return (
-    <SingleDate
-      selected={dateValue}
-      onSelect={(date) => onChange(date?.toISOString())}
-      dateFormat="iiii, dd MMMM yyyy"
-    />
-  );
-};
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <Button
+          id="dates"
+          variant="underline"
+          className="w-full has-[>svg]:px-0 justify-between"
+        >
+          {dateValue ? format(dateValue, "iiii, dd MMMM yyyy") : "Select date"}
+          <Calendar1 className="stroke-1 size-4" />
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content
+        className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
+        align="start"
+      >
+        <Calendar
+          mode="single"
+          captionLayout="dropdown"
+          numberOfMonths={1}
+          defaultMonth={dateValue}
+          weekStartsOn={1}
+          startMonth={new Date(2021, 1)}
+          disabled={{
+            before: new Date(2021, 11, 1),
+            dayOfWeek: [0, 6]
+          }}
+          selected={dateValue}
+          onSelect={(value) => {
+            onChange(value ? format(value, "iiii, dd MMMM yyyy") : undefined)
+            setOpen(false)
+          }}
+        />
+      </Popover.Content>
+    </Popover.Root>
+  )
+}
 
 const CheckboxField: React.FC<FieldRendererProps<string | undefined>> = ({ value, onChange }) => (
   <Checkbox

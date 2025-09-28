@@ -78,14 +78,14 @@ Deno.serve(async () => {
         tickerFormatter: (t) => `${t}.VN`,
         rowBuilder: (a, price) => ({ asset_id: a.id, date: today, price }),
         targetRows: [],
-        tableName: "daily_stock_prices",
+        tableName: "daily_security_prices",
         conflictColumns: "asset_id,date",
       },
       crypto: {
         tickerFormatter: (t) => `${t}-USD`,
         rowBuilder: (a, price) => ({ asset_id: a.id, date: today, price }),
         targetRows: [],
-        tableName: "daily_crypto_prices",
+        tableName: "daily_security_prices",
         conflictColumns: "asset_id,date",
       },
       index: {

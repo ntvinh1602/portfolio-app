@@ -194,14 +194,14 @@ function SelectScrollDownButton({
 }
 
 export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
+  Select as Root,
+  SelectContent as Content,
+  SelectGroup as Group,
+  SelectItem as Item,
+  SelectLabel as Label,
+  SelectScrollDownButton as ScrollDownBtn,
+  SelectScrollUpButton as ScrollUpBtn,
+  SelectSeparator as Separator,
+  SelectTrigger as Trigger,
+  SelectValue as Value,
 }

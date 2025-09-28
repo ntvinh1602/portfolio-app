@@ -72,10 +72,9 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
     error: stockError
   } = useDNSEData(stockSymbols)
 
-  const cryptoSymbols = useMemo(
-    () =>
-      cryptoData?.filter((crypto) => crypto.currency_code !== "USD")
-        .map((crypto) => crypto.ticker) ?? [],
+  const cryptoSymbols = useMemo(() =>
+    cryptoData?.filter((crypto) => crypto.ticker !== "USDT")
+      .map((crypto) => crypto.ticker) ?? [],
     [cryptoData]
   )
   const {
@@ -90,31 +89,29 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
   const processedStockData = useMemo(() => {
     if (isLoading) return []
 
-    return stockData
-      .map((stock) => {
-        const liveEntry = marketData[stock.ticker]
-        const livePrice = liveEntry?.price
-        const prevPrice = liveEntry?.prevPrice   // <--- add this
+    return stockData.map((stock) => {
+      const liveEntry = marketData[stock.ticker]
+      const livePrice = liveEntry?.price
+      const prevPrice = liveEntry?.prevPrice   // <--- add this
 
-        const totalAmount = livePrice
-          ? livePrice * stock.quantity * 1000
-          : stock.total_amount
-        const pnlNet = totalAmount - stock.cost_basis - totalAmount * 0.00127
-        const pnlPct =
-          stock.cost_basis > 0
-            ? (totalAmount * 0.99873 / stock.cost_basis - 1) * 100
-            : 0
+      const totalAmount = livePrice
+        ? livePrice * stock.quantity * 1000
+        : stock.total_amount
+      const pnlNet = totalAmount - stock.cost_basis - totalAmount * 0.00127
+      const pnlPct =
+        stock.cost_basis > 0
+          ? (totalAmount * 0.99873 / stock.cost_basis - 1) * 100
+          : 0
 
-        return {
-          ...stock,
-          totalAmount,
-          pnlNet,
-          pnlPct,
-          price: livePrice ?? stock.latest_price / 1000,
-          prevPrice, // <--- include it here
-        }
-      })
-      .sort((a, b) => b.totalAmount - a.totalAmount)
+      return {
+        ...stock,
+        totalAmount,
+        pnlNet,
+        pnlPct,
+        price: livePrice ?? stock.latest_price / 1000,
+        prevPrice, // <--- include it here
+      }
+    }).sort((a, b) => b.totalAmount - a.totalAmount)
   }, [isLoading, stockData, marketData])
 
   useEffect(() => {
@@ -127,30 +124,24 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
     }
   }, [processedStockData])
 
-const processedCryptoData = useMemo(() => {
-  if (isLoading) return []
+  const processedCryptoData = useMemo(() => {
+    if (isLoading) return []
 
-  return cryptoData
-    .map((crypto) => {
-      const isStableCoin = crypto.currency_code === "USD"
+    return cryptoData.map((crypto) => {
       const liveInfo = liveCryptoPrices[`${crypto.ticker}USDT`]
 
       // Extract price + prevPrice from liveInfo if available
-      const livePrice = isStableCoin
-        ? crypto.latest_usd_rate
-        : liveInfo?.price
-          ? parseFloat(liveInfo.price)
-          : crypto.latest_price
+      const livePrice = liveInfo?.price
+        ? parseFloat(liveInfo.price)
+        : crypto.latest_price
 
       const prevPrice = liveInfo?.prevPrice
         ? parseFloat(liveInfo.prevPrice)
         : null
 
-      const totalAmount = isStableCoin
-        ? crypto.quantity * crypto.latest_usd_rate
-        : liveInfo?.price
-          ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
-          : crypto.total_amount
+      const totalAmount = liveInfo?.price
+        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
+        : crypto.total_amount
 
       const pnlNet = totalAmount - crypto.cost_basis
       const pnlPct =
@@ -166,9 +157,8 @@ const processedCryptoData = useMemo(() => {
         price: livePrice,
         prevPrice, // 👈 added this
       }
-    })
-    .sort((a, b) => b.totalAmount - a.totalAmount)
-}, [isLoading, cryptoData, liveCryptoPrices])
+    }).sort((a, b) => b.totalAmount - a.totalAmount)
+  }, [isLoading, cryptoData, liveCryptoPrices])
 
   useEffect(() => {
     if (processedCryptoData) {

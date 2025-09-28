@@ -90,36 +90,53 @@ export function TxnInfo({
   associatedExpenses: Expense[]
   loading: boolean
 }) {
-  if (!loading) {
+  if (loading) {
     return (
-      <Card.Root>
-        <Card.Header>
-          <Card.Title><Skeleton className="h-5 w-40" /></Card.Title>
-          <Card.Action><Skeleton className="h-5 w-5 rounded" /></Card.Action>
-        </Card.Header>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title className="text-xl">
+          <Skeleton className="h-5 w-40" />
+        </Card.Title>
+        <Card.Action>
+          <NotepadText className="stroke-1 text-muted-foreground"/>
+        </Card.Action>
+      </Card.Header>
 
-        <Card.Content className="flex flex-col gap-6 font-thin">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-24" />
-          </div>
+      <Card.Content className="flex flex-col gap-6 font-thin">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-40" />
+        </div>
 
-          <div className="grid grid-cols-4 text-end">
-            {[
-              { label: "Assets", className: "col-span-2 text-start", w: "w-28" },
-              { label: "Debit", className: "col-start-3 text-end", w: "w-12 ml-auto" },
-              { label: "Credit", className: "col-start-4 text-end", w: "w-12 ml-auto" },
-            ].map(({ label, className, w }) => (
-              <div key={label} className={`flex flex-col gap-3 ${className}`}>
-                <span className="border-b">{label}</span>
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className={`h-4 ${w}`} />
-                ))}
+        <div className="grid grid-cols-4 text-end">
+          <span className="border-b col-span-2 text-start">
+            Assets
+          </span>
+          <span className="col-span-1 col-start-3 w-full border-b">
+            Debit
+          </span>
+          <span className="col-span-1 col-start-4 w-full border-b">
+            Credit
+          </span>
+
+          <div className="col-span-4 flex flex-col gap-4 pt-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="grid grid-cols-4 text-sm">
+                <div className="col-span-2 flex items-center gap-3">
+                  <Skeleton className="size-9 aspect-square rounded-full" />
+                  <div className="flex flex-col w-full text-start gap-1 justify-center truncate">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-20 ml-auto col-start-3" />
+                <Skeleton className="h-4 w-20 ml-auto col-start-4" />
               </div>
             ))}
           </div>
-        </Card.Content>
-      </Card.Root>
+        </div>
+      </Card.Content>
+    </Card.Root>
     )
   }
 

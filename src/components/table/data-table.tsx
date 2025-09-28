@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table"
-import { Pagination } from "@/components/table-pagination"
+import { Pagination } from "./pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface DataTableProps<TData, TValue = unknown> {

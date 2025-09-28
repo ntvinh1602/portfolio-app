@@ -108,9 +108,13 @@ function SingleDate({
           <Calendar
             mode="single"
             captionLayout="dropdown"
+            startMonth={new Date(2021, 1)}
             weekStartsOn={1}
             selected={selected}
             defaultMonth={selected}
+            disabled={{
+              before: new Date(2021, 11, 1),
+            }}
             onSelect={(date) => {
               onSelect(date)
               setOpen(false)

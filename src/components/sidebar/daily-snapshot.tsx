@@ -2,16 +2,9 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-
+import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
-import {
-  Root,
-  Content,
-  Subtitle,
-  Header,
-  Title,
-} from "@/components/ui/dialog"
-import { SingleDate } from "@/components/date-picker"
+import * as Dialog from "@/components/ui/dialog"
 import { refreshData } from "@/lib/refresh"
 
 export function DailySnapshot({
@@ -21,7 +14,7 @@ export function DailySnapshot({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [startDate, setStartDate] = useState<Date | undefined>()
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date())
 
   const handleBackfill = async () => {
     if (!startDate) {
@@ -58,23 +51,36 @@ export function DailySnapshot({
   }
 
   return (
-    <Root open={open} onOpenChange={onOpenChange}>
-      <Content
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Content
         onOpenAutoFocus={(e) => e.preventDefault()}
         showCloseButton={false}
-        className="w-100"
+        className="w-fit"
       >
-        <Header>
-          <Title>Generate Snapshots</Title>
-          <Subtitle>
-            Initialize or recalculate daily portfolio snapshots data from a specific date.
-          </Subtitle>
-        </Header>
-        <SingleDate selected={startDate} onSelect={setStartDate} />
-        <Button variant="outline" onClick={handleBackfill}>
-          Generate
-        </Button>
-      </Content>
-    </Root>
+        <Dialog.Header>
+          <Dialog.Title>Daily Snapshots</Dialog.Title>
+          <Dialog.Subtitle className="w-80">
+            Calculate daily portfolio snapshots from a chosen date. Earliest date available is 10th Nov 2021.
+          </Dialog.Subtitle>
+        </Dialog.Header>
+        <Calendar
+          mode="single"
+          captionLayout="dropdown"
+          numberOfMonths={1}
+          defaultMonth={startDate}
+          weekStartsOn={1}
+          startMonth={new Date(2021, 10)}
+          disabled={{ before: new Date(2021, 10, 10) }}
+          selected={startDate}
+          onSelect={setStartDate}
+          className="rounded-lg border w-80 bg-transparent"
+        />
+        <Dialog.Footer>
+          <Button onClick={handleBackfill}>
+            Generate
+          </Button>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   )
 }

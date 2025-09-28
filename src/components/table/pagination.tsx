@@ -8,11 +8,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Root,
+  Content,
+  Item,
+  Trigger,
+  Value,
 } from "@/components/ui/select"
 
 export function Pagination<TData>({ table }: { table: Table<TData> }) {
@@ -22,23 +22,23 @@ export function Pagination<TData>({ table }: { table: Table<TData> }) {
         <Label htmlFor="rows-per-page" className="text-sm text-muted-foreground font-light">
           Rows per page
         </Label>
-        <Select
+        <Root
           value={`${table.getState().pagination.pageSize}`}
           onValueChange={(value) => {
             table.setPageSize(Number(value))
           }}
         >
-          <SelectTrigger className="w-20" id="rows-per-page" variant="default">
-            <SelectValue placeholder={table.getState().pagination.pageSize}/>
-          </SelectTrigger>
-          <SelectContent side="top">
+          <Trigger className="w-20" id="rows-per-page" variant="default">
+            <Value placeholder={table.getState().pagination.pageSize}/>
+          </Trigger>
+          <Content side="top">
             {[10, 20, 30, 40, 50].map((pageSize) => (
-              <SelectItem key={pageSize} value={`${pageSize}`}>
+              <Item key={pageSize} value={`${pageSize}`}>
                 {pageSize}
-              </SelectItem>
+              </Item>
             ))}
-          </SelectContent>
-        </Select>
+          </Content>
+        </Root>
       </div>
       <div className="flex gap-8">
         <div className="flex gap-2">

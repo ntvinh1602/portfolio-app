@@ -14,26 +14,28 @@ export function useBlueprintMap() {
 
   const cashAssets = assets
     .filter((asset) => ["cash", "crypto", "fund"].includes(asset.asset_class))
-    .map((asset) => ({ value: asset.id,
-      label: asset.ticker }))
+    .map((asset) => ({
+      value: asset.id,
+      label: `${asset.ticker} - ${asset.name}`
+    }))
 
   const tradableAssets = assets
     .filter((asset) => ["stock", "crypto"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
-      label: `${asset.ticker} - ${asset.name}`,
+      label: `${asset.ticker} - ${asset.name}`
     }))
 
   const stockAssets = assets
     .filter((asset) => ["stock"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
-      label: `${asset.ticker} - ${asset.name}`,
+      label: `${asset.ticker} - ${asset.name}`
     }))
 
   const debtAssets = debts.map((debt) => ({
     value: debt.id,
-    label: `${debt.lender_name} - ${formatNum(debt.principal_amount)}`,
+    label: `${debt.lender_name} - ${formatNum(debt.principal_amount)}`
   }))
 
   // blueprints
@@ -53,12 +55,14 @@ export function useBlueprintMap() {
       name: "cash_asset_id",
       type: "select",
       label: "Cash",
+      placeholder: "Select cash account",
       options: cashAssets
     },
     {
       name: "asset",
       type: "combobox",
       label: "Asset",
+      placeholder: "Select asset to buy or sell",
       options: tradableAssets
     },
     {
@@ -120,6 +124,7 @@ export function useBlueprintMap() {
       name: "asset",
       type: "select",
       label: "Account",
+      placeholder: "Select cash account",
       options: cashAssets
     },
     {
@@ -132,7 +137,8 @@ export function useBlueprintMap() {
     {
       name: "description",
       type: "input",
-      label: "Description"
+      label: "Description",
+      placeholder: "Mandatory for income or expense transactions",
     },
   ]
 
@@ -151,13 +157,15 @@ export function useBlueprintMap() {
     {
       name: "cash_asset_id",
       type: "select",
-      label: "Cash Account",
+      label: "Account",
+      placeholder: "Select cash account receiving the fund",
       options: cashAssets
     },
     {
       name: "lender",
       type: "input",
       label: "Lender",
+      placeholder: "Input name of lender with unique identifier",
       inputMode: "text"
     },
     {
@@ -192,12 +200,14 @@ export function useBlueprintMap() {
       name: "debt",
       type: "select",
       label: "Debt",
+      placeholder: "Select debt",
       options: debtAssets
     },
     {
       name: "cash_asset_id",
       type: "select",
-      label: "Cash Account",
+      label: "Account",
+      placeholder: "Select cash account funding the payment",
       options: cashAssets
     },
     {

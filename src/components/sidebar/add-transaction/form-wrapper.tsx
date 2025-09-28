@@ -88,13 +88,10 @@ export function TransactionForm({
       if (!response.ok) {
         throw new Error(result.error || "An unknown error occurred.")
       }
-
-      setFormState({})
+      onOpenChange(false)
       // 🔄 refresh dashboard data
       await refreshData("dashboard", "api/gateway/dashboard")
-
       toast.success("Transaction saved successfully!")
-      onOpenChange(false)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "An unexpected error occurred."

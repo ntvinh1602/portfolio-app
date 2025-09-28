@@ -60,7 +60,7 @@ export function Asset({
           className="rounded-full bg-background"
         />
         <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col gap-1 max-w-[180px]">
+          <div className="flex flex-col gap-1 max-w-[250px]">
             <Card.Title>{ticker}</Card.Title>
             <Card.Subtitle className="text-xs truncate">
               {name}
@@ -92,7 +92,7 @@ export function Asset({
                   {price
                     ? type === 'stock'
                       ? formatNum(price, 2)
-                      : formatNum(price)
+                      : formatNum(price, ticker === 'BTC' ? 2 : 4)
                     : 0
                   }
                 </Badge>
