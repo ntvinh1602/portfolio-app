@@ -73,32 +73,6 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_crypto_prices: {
-        Row: {
-          asset_id: string
-          date: string
-          price: number
-        }
-        Insert: {
-          asset_id: string
-          date: string
-          price: number
-        }
-        Update: {
-          asset_id?: string
-          date?: string
-          price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_crypto_prices_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       daily_exchange_rates: {
         Row: {
           currency_code: string
@@ -164,7 +138,7 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_stock_prices: {
+      daily_security_prices: {
         Row: {
           asset_id: string
           date: string
@@ -182,7 +156,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "daily_stock_prices_asset_id_fkey"
+            foreignKeyName: "daily_security_prices_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
@@ -192,39 +166,53 @@ export type Database = {
       }
       debts: {
         Row: {
+          borrow_txn_id: string | null
           currency_code: string
           id: string
           interest_rate: number
-          is_active: boolean
           lender_name: string
           principal_amount: number
-          start_date: string
+          repay_txn_id: string | null
         }
         Insert: {
+          borrow_txn_id?: string | null
           currency_code: string
           id?: string
           interest_rate?: number
-          is_active?: boolean
           lender_name: string
           principal_amount: number
-          start_date: string
+          repay_txn_id?: string | null
         }
         Update: {
+          borrow_txn_id?: string | null
           currency_code?: string
           id?: string
           interest_rate?: number
-          is_active?: boolean
           lender_name?: string
           principal_amount?: number
-          start_date?: string
+          repay_txn_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "debts_borrow_txn_id_fkey"
+            columns: ["borrow_txn_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "debts_currency_code_fkey"
             columns: ["currency_code"]
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "debts_repay_txn_id_fkey"
+            columns: ["repay_txn_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -433,7 +421,6 @@ export type Database = {
           id: string
           linked_txn: string | null
           price: number | null
-          related_debt_id: string | null
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
         }
@@ -443,7 +430,6 @@ export type Database = {
           id?: string
           linked_txn?: string | null
           price?: number | null
-          related_debt_id?: string | null
           transaction_date: string
           type: Database["public"]["Enums"]["transaction_type"]
         }
@@ -453,19 +439,10 @@ export type Database = {
           id?: string
           linked_txn?: string | null
           price?: number | null
-          related_debt_id?: string | null
           transaction_date?: string
           type?: Database["public"]["Enums"]["transaction_type"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_related_debt_id_fkey"
-            columns: ["related_debt_id"]
-            isOneToOne: false
-            referencedRelation: "debts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -618,13 +595,13 @@ export type Database = {
         Returns: {
           cost_basis: number
           currency_code: string
-          latest_price: number
-          latest_usd_rate: number
+          fx_rate: number
           logo_url: string
+          market_value: number
           name: string
+          price: number
           quantity: number
           ticker: string
-          total_amount: number
         }[]
       }
       get_equity_chart_data: {
@@ -635,16 +612,8 @@ export type Database = {
           snapshot_date: string
         }[]
       }
-      get_latest_crypto_price: {
-        Args: { p_asset_id: string }
-        Returns: number
-      }
-      get_latest_exchange_rate: {
-        Args: { p_currency_code: string }
-        Returns: number
-      }
-      get_latest_stock_price: {
-        Args: { p_asset_id: string }
+      get_fx_rate: {
+        Args: { p_currency_code: string; p_date?: string }
         Returns: number
       }
       get_pnl: {
@@ -654,16 +623,20 @@ export type Database = {
           range_label: string
         }[]
       }
+      get_security_price: {
+        Args: { p_asset_id: string }
+        Returns: number
+      }
       get_stock_holdings: {
         Args: Record<PropertyKey, never>
         Returns: {
           cost_basis: number
-          latest_price: number
           logo_url: string
+          market_value: number
           name: string
+          price: number
           quantity: number
           ticker: string
-          total_amount: number
         }[]
       }
       get_transaction_details: {
