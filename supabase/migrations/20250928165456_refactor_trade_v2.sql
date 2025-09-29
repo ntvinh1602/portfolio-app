@@ -1395,6 +1395,7 @@ BEGIN
     WHERE a.asset_class NOT IN ('equity', 'liability')
     GROUP BY a.asset_class
   ) as cb_totals;
+
   -- Calculate market value totals by asset class (excluding equity/liability)
   SELECT COALESCE(jsonb_object_agg(mv_totals.asset_class, mv_totals.total), '{}'::jsonb)
   INTO asset_mv_by_class
@@ -1402,16 +1403,27 @@ BEGIN
     SELECT
       a.asset_class,
       SUM(
-        CASE
-          WHEN a.asset_class = 'stock' THEN a.current_quantity * public.get_latest_stock_price(a.id)
-          WHEN a.asset_class = 'crypto' THEN a.current_quantity * public.get_latest_crypto_price(a.id) * public.get_latest_exchange_rate('USD')
-          ELSE a.current_quantity * public.get_latest_exchange_rate(a.currency_code)
-        END
+        a.current_quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)
       ) AS total
     FROM public.assets a
+    LEFT JOIN LATERAL (
+      SELECT price
+      FROM public.daily_security_prices
+      WHERE asset_id = a.id
+      ORDER BY date DESC
+      LIMIT 1
+    ) sp ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT rate
+      FROM public.daily_exchange_rates
+      WHERE currency_code = a.currency_code
+      ORDER BY date DESC
+      LIMIT 1
+    ) er ON TRUE
     WHERE a.asset_class NOT IN ('equity', 'liability')
     GROUP BY a.asset_class
-  ) as mv_totals;
+  ) mv_totals;
+
   -- Calculate total asset cost basis
   total_assets_cb := (coalesce((asset_cb_by_class->>'cash')::numeric, 0)) +
     (coalesce((asset_cb_by_class->>'stock')::numeric, 0)) +
@@ -1512,7 +1524,7 @@ $$;
 ALTER FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "currency_code" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "latest_usd_rate" numeric, "total_amount" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "currency_code" "text", "quantity" numeric, "cost_basis" numeric, "price" numeric, "fx_rate" numeric, "market_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1521,8 +1533,8 @@ BEGIN
   WITH latest_data AS (
     SELECT
       a.id AS asset_id,
-      public.get_security_price(a.id) AS latest_price,
-      public.get_latest_exchange_rate('USD') AS latest_usd_rate
+      public.get_security_price(a.id) AS price,
+      public.get_fx_rate(a.currency_code) AS fx_rate
     FROM public.assets a
     WHERE a.asset_class = 'crypto'
   )
@@ -1530,17 +1542,17 @@ BEGIN
     a.ticker,
     a.name,
     a.logo_url,
-    a.currency_code::text,
+    a.currency_code,
     SUM(tl.quantity) AS quantity,
     SUM(tl.amount) AS cost_basis,
-    ld.latest_price,
-    ld.latest_usd_rate,
-    SUM(tl.quantity) * ld.latest_price * ld.latest_usd_rate AS total_amount
+    ld.price,
+    ld.fx_rate,
+    SUM(tl.quantity) * ld.price * ld.fx_rate AS market_value
   FROM public.assets a
   JOIN public.transaction_legs tl ON a.id = tl.asset_id
   JOIN latest_data ld ON ld.asset_id = a.id
   WHERE a.asset_class = 'crypto'
-  GROUP BY a.id, a.ticker, a.name, a.logo_url, a.currency_code, ld.latest_price, ld.latest_usd_rate
+  GROUP BY a.id, a.ticker, a.name, a.logo_url, a.currency_code, ld.price, ld.fx_rate
   HAVING SUM(tl.quantity) > 0;
 END;
 $$;
@@ -1585,21 +1597,22 @@ $$;
 ALTER FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") RETURNS numeric
+CREATE OR REPLACE FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date" DEFAULT CURRENT_DATE) RETURNS numeric
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
     AS $$
   SELECT COALESCE(
-    (SELECT rate
-     FROM public.daily_exchange_rates
-     WHERE currency_code = p_currency_code
-     ORDER BY date DESC
-     LIMIT 1), 1
+    (
+      SELECT rate FROM public.daily_exchange_rates
+      WHERE currency_code = p_currency_code AND date <= p_date
+      ORDER BY date DESC
+      LIMIT 1
+    ), 1
   );
 $$;
 
 
-ALTER FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") OWNER TO "postgres";
+ALTER FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_pnl"() RETURNS TABLE("range_label" "text", "pnl" numeric)
@@ -1650,17 +1663,18 @@ $$;
 ALTER FUNCTION "public"."get_security_price"("p_asset_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "latest_price" numeric, "total_amount" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_stock_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "quantity" numeric, "cost_basis" numeric, "price" numeric, "market_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 BEGIN
   RETURN QUERY
-  WITH latest_prices AS (
+  WITH latest_data AS (
     SELECT 
       a.id AS asset_id, 
-      public.get_security_price(a.id) AS latest_price
+      public.get_security_price(a.id) AS price
     FROM public.assets a
+    WHERE a.asset_class = 'stock'
   )
   SELECT
     a.ticker,
@@ -1668,13 +1682,13 @@ BEGIN
     a.logo_url,
     SUM(tl.quantity) AS quantity,
     SUM(tl.amount) AS cost_basis,
-    lp.latest_price,
-    SUM(tl.quantity) * lp.latest_price AS total_amount
+    ld.price,
+    SUM(tl.quantity) * ld.price AS market_value
   FROM public.assets a
   JOIN public.transaction_legs tl ON a.id = tl.asset_id
-  JOIN latest_prices lp ON lp.asset_id = a.id
+  JOIN latest_data ld ON ld.asset_id = a.id
   WHERE a.asset_class = 'stock'
-  GROUP BY a.id, a.ticker, a.name, a.logo_url, lp.latest_price
+  GROUP BY a.id, a.ticker, a.name, a.logo_url, ld.price
   HAVING SUM(tl.quantity) > 0;
 END;
 $$;
@@ -2304,7 +2318,7 @@ CREATE TABLE IF NOT EXISTS "public"."assets" (
     "asset_class" "public"."asset_class" NOT NULL,
     "ticker" "text" NOT NULL,
     "name" "text" NOT NULL,
-    "currency_code" character varying(3) NOT NULL,
+    "currency_code" "text" NOT NULL,
     "logo_url" "text",
     "is_active" boolean DEFAULT true NOT NULL
 );
@@ -2314,7 +2328,7 @@ ALTER TABLE "public"."assets" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
-    "code" character varying(10) NOT NULL,
+    "code" "text" NOT NULL,
     "name" "text" NOT NULL,
     "type" "public"."currency_type" NOT NULL
 );
@@ -2324,7 +2338,7 @@ ALTER TABLE "public"."currencies" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
-    "currency_code" character varying(10) NOT NULL,
+    "currency_code" "text" NOT NULL,
     "date" "date" NOT NULL,
     "rate" numeric(14,2) NOT NULL
 );
@@ -2368,7 +2382,7 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "lender_name" "text" NOT NULL,
     "principal_amount" numeric(16,4) NOT NULL,
-    "currency_code" character varying(10) NOT NULL,
+    "currency_code" "text" NOT NULL,
     "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
     "borrow_txn_id" "uuid",
     "repay_txn_id" "uuid"
@@ -2441,7 +2455,7 @@ CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "asset_id" "uuid" NOT NULL,
     "quantity" numeric(20,8) NOT NULL,
     "amount" numeric(16,4) NOT NULL,
-    "currency_code" character varying(10) NOT NULL
+    "currency_code" "text" NOT NULL
 );
 
 
@@ -3070,9 +3084,9 @@ GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO
 
 
 
-GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_latest_exchange_rate"("p_currency_code" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "service_role";
 
 
 

@@ -96,7 +96,7 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
 
       const totalAmount = livePrice
         ? livePrice * stock.quantity * 1000
-        : stock.total_amount
+        : stock.market_value
       const pnlNet = totalAmount - stock.cost_basis - totalAmount * 0.00127
       const pnlPct =
         stock.cost_basis > 0
@@ -108,7 +108,7 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
         totalAmount,
         pnlNet,
         pnlPct,
-        price: livePrice ?? stock.latest_price / 1000,
+        price: livePrice ?? stock.price / 1000,
         prevPrice, // <--- include it here
       }
     }).sort((a, b) => b.totalAmount - a.totalAmount)
@@ -133,15 +133,15 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
       // Extract price + prevPrice from liveInfo if available
       const livePrice = liveInfo?.price
         ? parseFloat(liveInfo.price)
-        : crypto.latest_price
+        : crypto.price
 
       const prevPrice = liveInfo?.prevPrice
         ? parseFloat(liveInfo.prevPrice)
         : null
 
       const totalAmount = liveInfo?.price
-        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.latest_usd_rate
-        : crypto.total_amount
+        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.fx_rate
+        : crypto.market_value
 
       const pnlNet = totalAmount - crypto.cost_basis
       const pnlPct =
