@@ -18,12 +18,12 @@ export interface StockData {
   logo_url: string
   quantity: number
   cost_basis: number
-  latest_price: number
-  total_amount: number
+  price: number
+  market_value: number
 }
 
 export interface CryptoData extends StockData {
-  latest_usd_rate: number
+  fx_rate: number
   currency_code: string
 }
 
