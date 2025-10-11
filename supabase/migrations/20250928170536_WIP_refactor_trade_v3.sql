@@ -1,3 +1,18 @@
+CREATE OR REPLACE FUNCTION public.is_base_asset(p_asset_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.assets a
+    WHERE a.id = p_asset_id
+      AND a.asset_class = 'cash'
+      AND a.currency_code = 'VND'
+  );
+$$;
+
+
 CREATE OR REPLACE FUNCTION "public"."add_buy_transaction"(
   "p_txn_date" "date",
   "p_to_asset_id" "uuid",
@@ -19,20 +34,18 @@ DECLARE
 
   -- FX Gain/Loss variables
   v_from_asset_cost_basis_spent numeric := 0; -- in VND
-  v_realized_gain_loss_vnd numeric;
+  v_realized_pnl numeric;
   v_remaining_quantity_to_spend numeric;
   v_lot record;
   v_quantity_from_lot numeric;
   v_cost_basis_from_lot numeric;
   v_from_asset_leg_id uuid;
-  v_owner_capital_asset_id uuid;
+  v_capital_asset_id uuid;
 BEGIN
-  -- 1. Get assets information
-  -- Get currency codes for to asset and from asset
+  -- 1. Get meta data
+  v_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
   v_to_asset_currency := public.get_asset_currency(p_to_asset_id);
   v_from_asset_currency := public.get_asset_currency(p_from_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
 
   -- 2. Calculate from quantity
   p_price_in_from_unit := p_from_quantity / p_to_quantity;
@@ -47,9 +60,9 @@ BEGIN
     p_created_at
   ) RETURNING id INTO v_txn_id;
 
-  -- 4. Handle FX Gain/Loss if from asset is not in VND
-  IF v_from_asset_currency != 'VND' THEN
-    -- Get exchange rate to VND
+  -- 4. Calculate gain/loss if from asset has cost basis
+  IF NOT public.is_base_asset(p_from_asset_id) THEN
+    -- Get exchange rate
     v_from_asset_fx_rate := public.get_fx_rate(v_from_asset_currency, p_txn_date)
     
     v_to_asset_cost_basis := p_from_quantity * v_from_asset_fx_rate;
@@ -75,7 +88,7 @@ BEGIN
       RAISE EXCEPTION 'Not enough cash for purchase. Tried to spend %, but only % was available.', p_from_quantity, (p_from_quantity - v_remaining_quantity_to_spend);
     END IF;
     -- Calculate realized gain/loss
-    v_realized_gain_loss_vnd := v_to_asset_cost_basis - v_from_asset_cost_basis_spent;
+    v_realized_pnl := v_to_asset_cost_basis - v_from_asset_cost_basis_spent;
     -- Create transaction legs
     -- Credit the from asset at its cost basis
     INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
@@ -97,13 +110,13 @@ BEGIN
       v_to_asset_currency
     );
     -- Credit/Debit Owner Capital with the realized FX gain/loss
-    IF v_realized_gain_loss_vnd != 0 THEN
+    IF v_realized_pnl != 0 THEN
       INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
       VALUES (
         v_txn_id,
-        v_owner_capital_asset_id,
-        v_realized_gain_loss_vnd * -1,
-        v_realized_gain_loss_vnd * -1,
+        v_capital_asset_id,
+        v_realized_pnl * -1,
+        v_realized_pnl * -1,
         'VND'
       );
     END IF;

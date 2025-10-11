@@ -48,7 +48,14 @@ export function TransactionForm({
       name: K,
       value: string | undefined
     ) => {
-      setFormState((prev) => ({ ...prev, [name]: value }))
+      if (name === "transaction_date" && value) {
+        const formattedDate = formatISO(new Date(value), {
+          representation: "date",
+        })
+        setFormState((prev) => ({ ...prev, [name]: formattedDate }))
+      } else {
+        setFormState((prev) => ({ ...prev, [name]: value }))
+      }
     },
     []
   )

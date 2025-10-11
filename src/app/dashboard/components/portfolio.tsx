@@ -119,21 +119,23 @@ export function Portfolio() {
                 <Card.Root className="border-0 py-0 gap-1">
                   <Card.Content className="flex flex-col px-0 gap-1">
                     {processedCryptoData.length > 0 ? (
-                      processedCryptoData.map((crypto) => (
-                        <Asset
-                          key={crypto.ticker}
-                          ticker={crypto.ticker}
-                          name={crypto.name}
-                          logoUrl={crypto.logo_url}
-                          quantity={crypto.quantity}
-                          totalAmount={crypto.totalAmount}
-                          pnlPct={crypto.pnlPct}
-                          pnlNet={crypto.pnlNet}
-                          price={crypto.price}
-                          prevPrice={crypto.prevPrice}
-                          type="crypto"
-                        />
-                      ))
+                      processedCryptoData
+                        .filter(asset => asset.totalAmount > 50000)
+                        .map((crypto) => (
+                          <Asset
+                            key={crypto.ticker}
+                            ticker={crypto.ticker}
+                            name={crypto.name}
+                            logoUrl={crypto.logo_url}
+                            quantity={crypto.quantity}
+                            totalAmount={crypto.totalAmount}
+                            pnlPct={crypto.pnlPct}
+                            pnlNet={crypto.pnlNet}
+                            price={crypto.price}
+                            prevPrice={crypto.prevPrice}
+                            type="crypto"
+                          />
+                        ))
                     ) : (
                       <span className="self-center py-20 text-muted-foreground">
                         No crypto holdings.
