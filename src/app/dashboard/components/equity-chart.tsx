@@ -26,11 +26,11 @@ export function EquityChart() {
       description="Total Equity"
       majorValue={totalEquity}
       majorValueFormatter={(value) => formatNum(value)}
-      minorValue1={pnlData.mtd}
-      minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorValue1={pnlData.mtd ?? 0}
+      minorValue1Formatter={(value) => compactNum(value)}
       minorText1="this month"
-      minorValue2={pnlData.ytd}
-      minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorValue2={pnlData.ytd ?? 0}
+      minorValue2Formatter={(value) => compactNum(value)}
       minorText2="this year"
       chartComponent={Areachart}
       chartData={chartData}

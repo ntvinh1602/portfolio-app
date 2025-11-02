@@ -85,7 +85,7 @@ function ChartCard<
         <Card.Title className="text-2xl">
           {majorValue && majorValueFormatter(majorValue)}
         </Card.Title>
-        {minorValue1 && minorValue2 && (
+        {minorValue1 != null && minorValue2 != null && (
           <Card.Action className="flex items-center gap-4">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
