@@ -33,21 +33,20 @@ export function ExpenseChart() {
       snapshot_date: d.date
     }))
   const totalPnL = AllTimeData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const last12MPnL = last12MData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const avgLast12MPnL = last12MPnL / 12
-  const avgAllTimePnL = totalPnL / AllTimeData.length
+  const avg12MPnl = last12MData.reduce((acc, curr) => acc + curr.pnl, 0) / 12
+  const avg12MExpenses = -last12MData.reduce((acc, curr) => acc + curr.revenue - curr.pnl, 0) / 12
 
   return (
     <ChartCard
       description="Total Income"
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
-      minorValue1={avgLast12MPnL}
+      minorValue1={avg12MPnl}
       minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText1="avg. last 12M"
-      minorValue2={avgAllTimePnL}
+      minorText1="avg. income"
+      minorValue2={avg12MExpenses}
       minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText2="avg. all time"
+      minorText2="avg. expenses"
       chartComponent={ChartBarStacked}
       chartData={last12MData}
       chartConfig={{
