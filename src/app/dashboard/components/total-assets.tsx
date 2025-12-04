@@ -46,9 +46,13 @@ export function AssetCard() {
       label: "Equity",
       color: "var(--chart-1)",
     },
-    liabilities: {
+    debts: {
       label: "Debts",
       color: "var(--chart-2)",
+    },
+    margin: {
+      label: "Margin",
+      color: "var(--chart-3)",
     }
   } satisfies ChartConfig
 
@@ -59,10 +63,15 @@ export function AssetCard() {
       fill: "var(--chart-1)",
     },
     {
-      liability: "liabilities",
-      allocation: bs.totalLiabilities,
+      liability: "debts",
+      allocation: (bs.liabilities.find(a => a.type === "Debts Principal")?.totalAmount || 0) + (bs.liabilities.find(a => a.type === "Accrued Interest")?.totalAmount || 0),
       fill: "var(--chart-2)",
     },
+    {
+      liability: "margin",
+      allocation: bs.liabilities.find(a => a.type === "Margin")?.totalAmount || 0,
+      fill: "var(--chart-3)",
+    }
   ].filter((d) => d.allocation > 0)
 
   const leverage = bs && bs.totalEquity !== 0

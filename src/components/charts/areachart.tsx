@@ -66,10 +66,10 @@ export function Areachart({
           tickMargin={8}
           tickFormatter={yAxisTickFormatter}
           domain={[
-            (dataMin: number) => Number(dataMin) * 0.99,
-            (dataMax: number) => Number(dataMax) * 1.01,
+            (dataMin: number) => Number(dataMin) * 0.95,
+            (dataMax: number) => Number(dataMax) * 1.05,
           ]}
-          allowDataOverflow={true}
+          allowDataOverflow={false}
           scale="linear"
           className="font-light"
         />

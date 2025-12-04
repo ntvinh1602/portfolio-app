@@ -30,6 +30,7 @@ export interface CryptoData extends StockData {
 export type EquityChartData = {
   snapshot_date: string
   net_equity_value: number
+  total_cashflow: number
 }
 
 export type BenchmarkChartData = {

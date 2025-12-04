@@ -37,12 +37,17 @@ export function EquityChart() {
       chartConfig={{
         net_equity_value: {
           label: "Equity",
+          color: "var(--chart-2)",
+        },
+        total_cashflow: {
+          label: "Paid-in Capital",
           color: "var(--chart-1)",
         },
       }}
       chartClassName="h-full w-full"
       xAxisDataKey="snapshot_date"
-      chartDataKeys={["net_equity_value"]}
+      chartDataKeys={["net_equity_value", "total_cashflow"]}
+      legend={true}
       yAxisTickFormatter={(value) => compactNum(Number(value))}
       tooltipValueFormatter={(value) => formatNum(value)}
       dateRange={dateRange}
