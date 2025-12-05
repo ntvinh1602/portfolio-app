@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChartCard, ChartCardSkeleton } from "./chart-card"
+import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useDelayedData } from "@/hooks/useDelayedData"

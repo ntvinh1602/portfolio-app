@@ -55,48 +55,45 @@ export function Asset({
         <Image
           src={logoUrl}
           alt={name}
-          width={56}
-          height={56}
+          width={48}
+          height={48}
           className="rounded-full bg-background"
         />
         <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col gap-1 max-w-[250px]">
-            <Card.Title>{ticker}</Card.Title>
-            <Card.Subtitle className="text-xs truncate">
-              {name}
+          <div className="flex flex-col max-w-[250px]">
+            <Card.Title className="text-sm truncate">{name}</Card.Title>
+            <Card.Subtitle className="flex items-center gap-1 truncate pt-1">
+              <Badge variant="outline" className="font-thin text-foreground">
+                <Coins className="stroke-1"  />
+                {quantity
+                  ? type === 'stock'
+                    ? <>{formatNum(quantity)}</>
+                    : <>{formatNum(
+                        quantity,
+                        ticker === "BTC" ? 8 : 2
+                      )}</>
+                  : 0
+                }
+              </Badge>
+              <Badge
+                variant="outline"
+                className={`font-thin text-foreground ${
+                  priceChanged === "up"
+                    ? "animate-flash-green"
+                    : priceChanged === "down"
+                      ? "animate-flash-red"
+                      : ""
+                }`}
+              >
+                <ShoppingBag className="stroke-1" />
+                {price
+                  ? type === 'stock'
+                    ? formatNum(price, 2)
+                    : formatNum(price, ticker === 'BTC' ? 2 : 4)
+                  : 0
+                }
+              </Badge>
             </Card.Subtitle>
-            {<Card.Subtitle className="flex items-center gap-1 truncate pt-1">
-                <Badge variant="outline" className="font-thin text-foreground">
-                  <Coins className="stroke-1"  />
-                  {quantity
-                    ? type === 'stock'
-                      ? <>{formatNum(quantity)}</>
-                      : <>{formatNum(
-                          quantity,
-                          ticker === "BTC" ? 8 : 2
-                        )}</>
-                    : 0
-                  }
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={`font-thin text-foreground ${
-                    priceChanged === "up"
-                      ? "animate-flash-green"
-                      : priceChanged === "down"
-                        ? "animate-flash-red"
-                        : ""
-                  }`}
-                >
-                  <ShoppingBag className="stroke-1" />
-                  {price
-                    ? type === 'stock'
-                      ? formatNum(price, 2)
-                      : formatNum(price, ticker === 'BTC' ? 2 : 4)
-                    : 0
-                  }
-                </Badge>
-              </Card.Subtitle>}
           </div>
           <div className="flex flex-col justify-end pr-2">
             <Card.Title className="text-right text-sm">

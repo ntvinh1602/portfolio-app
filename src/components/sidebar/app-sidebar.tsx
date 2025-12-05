@@ -29,6 +29,10 @@ const data = {
           title: "Transactions",
           url: "/transactions",
         },
+        {
+          title: "Annual Reports",
+          url: "/reports",
+        },
       ],
     },
     {
