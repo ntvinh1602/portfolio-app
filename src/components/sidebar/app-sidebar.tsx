@@ -30,7 +30,7 @@ const data = {
           url: "/transactions",
         },
         {
-          title: "Annual Reports",
+          title: "Reports",
           url: "/reports",
         },
       ],

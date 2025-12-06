@@ -11,20 +11,17 @@ export function ExpenseChart({ year }: { year: string }) {
   if (isLoading) return (
     <Card.Root className="gap-0">
       <Card.Header>
-        <Card.Subtitle>Total Assets</Card.Subtitle>
-        <Skeleton className="h-8 w-40"/>
+        <Card.Title>Expenses</Card.Title>
       </Card.Header>
-      <Card.Content className="grid grid-cols-2 items-center h-45">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="flex items-center gap-4">
-            <Skeleton className="size-40 aspect-square rounded-full" />
-            <div className="flex flex-col w-full gap-2">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-4 w-10" />
-              ))}
-            </div>
+      <Card.Content className="px-0 flex w-full justify-between">
+        <div className="flex w-full justify-between">
+          <Skeleton className="size-40 aspect-square rounded-full" />
+          <div className="flex flex-col w-full gap-2">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-4 w-10" />
+            ))}
           </div>
-        ))}
+        </div>
       </Card.Content>
     </Card.Root>
   )
@@ -83,7 +80,7 @@ export function ExpenseChart({ year }: { year: string }) {
   return (
     <Card.Root className="gap-0">
       <Card.Header>
-        <Card.Subtitle>Expenses</Card.Subtitle>
+        <Card.Title>Expenses</Card.Title>
       </Card.Header>
       <Card.Content className="px-0 -ml-4 flex w-full justify-between">
         <Piechart
@@ -94,8 +91,9 @@ export function ExpenseChart({ year }: { year: string }) {
           className="h-[200px] w-full"
           innerRadius={70}
           legend="right"
-          label={false}
-          margin_tb={0}
+          label={true}
+          label_pos={2.2}
+          margin_tb={1}
           centerText="Total Expenses"
           centerValue={compactNum(totalExpenses)}
         />

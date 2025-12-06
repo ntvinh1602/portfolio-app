@@ -1187,9 +1187,11 @@ DECLARE
   v_total_assets_value numeric;
   v_total_liabilities_value numeric;
   v_net_cash_flow numeric;
+  v_total_cashflow numeric;
   v_net_equity_value numeric;
   v_previous_equity_value numeric;
   v_previous_equity_index numeric;
+  v_previous_total_cashflow numeric;
   v_daily_return numeric;
   v_equity_index numeric;
 BEGIN
@@ -1265,43 +1267,97 @@ BEGIN
     WHERE t.transaction_date = loop_date
       AND t.type IN ('deposit', 'withdraw')
       AND a.asset_class IN ('cash', 'fund', 'crypto');
-    v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
-    -- Calculate Equity Index
-    SELECT net_equity_value, equity_index
-    INTO v_previous_equity_value, v_previous_equity_index
+
+    -- Retrieve previous day's data
+    SELECT net_equity_value, equity_index, total_cashflow
+    INTO v_previous_equity_value, v_previous_equity_index, v_previous_total_cashflow
     FROM daily_performance_snapshots
     WHERE date < loop_date
     ORDER BY date DESC
     LIMIT 1;
-    
-    IF v_previous_equity_value IS NULL THEN
-      v_equity_index := 100; -- The first snapshot for the user
+
+    -- Calculate equity value
+    v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
+
+    -- Calculate cumulative cashflow
+    IF v_previous_total_cashflow IS NULL THEN
+      v_total_cashflow := v_net_cash_flow;
     ELSE
-      -- Calculate daily return and chain the index
+      v_total_cashflow := v_previous_total_cashflow + v_net_cash_flow;
+    END IF;
+
+    -- Calculate Equity Index
+    IF v_previous_equity_value IS NULL THEN
+      v_equity_index := 100; -- first snapshot
+    ELSE
       IF v_previous_equity_value = 0 THEN
-        v_daily_return := 0; -- Avoid division by zero
+        v_daily_return := 0;
       ELSE
         v_daily_return := (v_net_equity_value - v_net_cash_flow - v_previous_equity_value) / v_previous_equity_value;
       END IF;
       v_equity_index := v_previous_equity_index * (1 + v_daily_return);
     END IF;
+
     -- Insert or update the snapshot for the day
-    INSERT INTO daily_performance_snapshots (date, net_equity_value, net_cash_flow, equity_index)
+    INSERT INTO daily_performance_snapshots (date, net_equity_value, net_cash_flow, total_cashflow, equity_index)
     VALUES (
       loop_date,
       v_net_equity_value,
       v_net_cash_flow,
-      v_equity_index)
+      v_total_cashflow,
+      v_equity_index
+    )
     ON CONFLICT (date) DO UPDATE
-    SET net_equity_value = excluded.net_equity_value,
-      net_cash_flow = excluded.net_cash_flow,
-      equity_index = excluded.equity_index;
+    SET net_equity_value = EXCLUDED.net_equity_value,
+        net_cash_flow = EXCLUDED.net_cash_flow,
+        total_cashflow = EXCLUDED.total_cashflow,
+        equity_index = EXCLUDED.equity_index;
   END LOOP;
 END;
 $$;
 
 
 ALTER FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid" DEFAULT 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid") RETURNS TABLE("asset_id" "uuid", "ticker" "text", "year" integer, "total_pnl" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  RETURN QUERY
+  WITH capital_legs AS (
+    SELECT
+      tl.transaction_id,
+      tl.amount AS capital_amount,
+      t.transaction_date
+    FROM transaction_legs tl
+    JOIN transactions t ON t.id = tl.transaction_id
+    WHERE tl.asset_id = p_owner_capital_id
+  ),
+  stock_legs AS (
+    SELECT
+      tl.transaction_id,
+      tl.asset_id AS stock_id
+    FROM transaction_legs tl
+    JOIN assets a ON a.id = tl.asset_id
+    WHERE a.asset_class = 'stock'
+  )
+  SELECT
+    a.id AS asset_id,
+    a.ticker,
+    EXTRACT(YEAR FROM c.transaction_date)::int AS year,
+    -SUM(c.capital_amount) AS total_pnl
+  FROM capital_legs c
+  JOIN stock_legs s ON s.transaction_id = c.transaction_id
+  JOIN assets a ON a.id = s.stock_id
+  GROUP BY a.id, a.ticker, EXTRACT(YEAR FROM c.transaction_date)
+  ORDER BY year DESC, total_pnl DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") RETURNS numeric
@@ -1376,6 +1432,7 @@ DECLARE
   total_assets_mv numeric;
   
   -- Liability values
+  margin numeric;
   debts_principal numeric;
   accrued_interest numeric;
   liability_total numeric;
@@ -1435,6 +1492,7 @@ BEGIN
     (coalesce((asset_mv_by_class->>'fund')::numeric, 0)) +
     (coalesce((asset_mv_by_class->>'crypto')::numeric, 0));
   -- Calculate liability values
+  margin := 0 - LEAST(coalesce((asset_mv_by_class->>'cash')::numeric, 0), 0);
   SELECT a.current_quantity * -1 INTO debts_principal
   FROM public.assets a
   WHERE a.ticker = 'DEBTS';
@@ -1451,7 +1509,7 @@ BEGIN
   JOIN public.transactions tb ON tb.id = d.borrow_txn_id
   LEFT JOIN public.transactions tr ON tr.id = d.repay_txn_id
   WHERE tr.id IS NULL OR tr.transaction_date > CURRENT_DATE;
-  liability_total := debts_principal + accrued_interest;
+  liability_total := margin + debts_principal + accrued_interest;
   -- Calculate equity values
   SELECT a.current_quantity * -1 INTO owner_capital
   FROM public.assets a
@@ -1462,13 +1520,23 @@ BEGIN
   -- Build the result JSON
   SELECT json_build_object(
     'assets', json_build_array(
-      json_build_object('type', 'Cash', 'totalAmount', coalesce((asset_mv_by_class->>'cash')::numeric, 0)),
-      json_build_object('type', 'Stocks', 'totalAmount', coalesce((asset_mv_by_class->>'stock')::numeric, 0)),
-      json_build_object('type', 'Fund', 'totalAmount', coalesce((asset_mv_by_class->>'fund')::numeric, 0)),
-      json_build_object('type', 'Crypto', 'totalAmount', coalesce((asset_mv_by_class->>'crypto')::numeric, 0))
+      json_build_object(
+        'type', 'Cash',
+        'totalAmount', GREATEST(coalesce((asset_mv_by_class->>'cash')::numeric, 0), 0)
+      ),
+      json_build_object(
+        'type', 'Stocks',
+        'totalAmount', coalesce((asset_mv_by_class->>'stock')::numeric, 0)),
+      json_build_object(
+        'type', 'Fund',
+        'totalAmount', coalesce((asset_mv_by_class->>'fund')::numeric, 0)),
+      json_build_object(
+        'type', 'Crypto',
+        'totalAmount', coalesce((asset_mv_by_class->>'crypto')::numeric, 0))
     ),
     'totalAssets', total_assets_mv,
     'liabilities', json_build_array(
+      json_build_object('type', 'Margin', 'totalAmount', margin),
       json_build_object('type', 'Debts Principal', 'totalAmount', debts_principal),
       json_build_object('type', 'Accrued Interest', 'totalAmount', accrued_interest)
     ),
@@ -1561,7 +1629,7 @@ $$;
 ALTER FUNCTION "public"."get_crypto_holdings"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "net_equity_value" numeric)
+CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "net_equity_value" numeric, "total_cashflow" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1582,12 +1650,13 @@ BEGIN
       WHEN '3m' THEN start_date := end_date - INTERVAL '3 months';
     END CASE;
 
-    -- Call the single-range function and attach the label
+    -- Call sampling_equity_data() and include total_cashflow
     RETURN QUERY
     SELECT
-      label,
+      label AS range_label,
       s.date AS snapshot_date,
-      s.net_equity_value
+      s.net_equity_value,
+      s.total_cashflow
     FROM public.sampling_equity_data(start_date, end_date, p_threshold) s;
   END LOOP;
 END;
@@ -2188,13 +2257,12 @@ $$;
 ALTER FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric)
+CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric, "total_cashflow" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 DECLARE
   data_count INT;
-  -- LTTB implementation variables
   data RECORD;
   result_data RECORD;
   avg_x NUMERIC;
@@ -2208,62 +2276,88 @@ DECLARE
   i INT;
   a INT := 0;
 BEGIN
-  -- Create a temporary table to hold the raw data, casting the value to numeric
+  -- Create temp table with both equity and total_cashflow
   CREATE TEMP TABLE raw_data AS
   SELECT
     dps.date,
-    dps.net_equity_value::numeric as net_equity_value,
-    ROW_NUMBER() OVER (ORDER BY dps.date) as rn
+    dps.net_equity_value::numeric AS net_equity_value,
+    dps.total_cashflow::numeric AS total_cashflow,
+    ROW_NUMBER() OVER (ORDER BY dps.date) AS rn
   FROM public.daily_performance_snapshots dps
   WHERE dps.date >= p_start_date AND dps.date <= p_end_date
   ORDER BY dps.date;
+
   SELECT COUNT(*) INTO data_count FROM raw_data;
-  -- If the data count is below the threshold, return all points
+
+  -- If data below threshold, return all
   IF data_count <= p_threshold THEN
-    RETURN QUERY SELECT rd.date, rd.net_equity_value FROM raw_data rd;
+    RETURN QUERY
+    SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+    FROM raw_data rd;
     DROP TABLE raw_data;
     RETURN;
   END IF;
-  -- LTTB Downsampling
+
+  -- Temporary result table
   CREATE TEMP TABLE result_data_temp (
     date DATE,
-    net_equity_value NUMERIC
+    net_equity_value NUMERIC,
+    total_cashflow NUMERIC
   );
-  -- Always add the first point
-  INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = 1;
+
+  -- Always add first point
+  INSERT INTO result_data_temp
+  SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+  FROM raw_data rd
+  WHERE rn = 1;
+
   every := (data_count - 2.0) / (p_threshold - 2.0);
+
   FOR i IN 0..p_threshold - 3 LOOP
-    -- Calculate average for the next bucket
     range_start := floor(a * every) + 2;
     range_end := floor((a + 1) * every) + 1;
-    SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x
+
+    -- Compute average for the next bucket
+    SELECT
+      AVG(EXTRACT(EPOCH FROM rd.date)),
+      AVG(rd.net_equity_value)
+    INTO avg_x, avg_y
     FROM raw_data rd
     WHERE rn >= range_start AND rn <= range_end;
-    SELECT AVG(rd.net_equity_value) INTO avg_y
-    FROM raw_data rd
-    WHERE rn >= range_start AND rn <= range_end;
-    -- Find the point with the largest triangle area
+
     max_area := -1;
-    -- Get the last point added to the results
     SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
-    FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
+
+    FOR data IN
+      SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end
+    LOOP
       point_area := abs(
         (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
         (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
       ) * 0.5;
+
       IF point_area > max_area THEN
         max_area := point_area;
         point_to_add := data;
       END IF;
     END LOOP;
-    -- Add the selected point to the results
-    INSERT INTO result_data_temp (date, net_equity_value)
-    VALUES (point_to_add.date, point_to_add.net_equity_value);
+
+    INSERT INTO result_data_temp (date, net_equity_value, total_cashflow)
+    VALUES (point_to_add.date, point_to_add.net_equity_value, point_to_add.total_cashflow);
+
     a := a + 1;
   END LOOP;
-  -- Always add the last point
-  INSERT INTO result_data_temp SELECT rd.date, rd.net_equity_value FROM raw_data rd WHERE rn = data_count;
-  RETURN QUERY SELECT * FROM result_data_temp ORDER BY date;
+
+  -- Always add last point
+  INSERT INTO result_data_temp
+  SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+  FROM raw_data rd
+  WHERE rn = data_count;
+
+  -- Return the final sampled points
+  RETURN QUERY
+  SELECT * FROM result_data_temp ORDER BY date;
+
   DROP TABLE raw_data;
   DROP TABLE result_data_temp;
 END;
@@ -2361,7 +2455,8 @@ CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
     "date" "date" NOT NULL,
     "net_equity_value" numeric(16,4) NOT NULL,
     "net_cash_flow" numeric(16,4) NOT NULL,
-    "equity_index" numeric(8,2)
+    "equity_index" numeric(8,2),
+    "total_cashflow" numeric
 );
 
 
@@ -3042,6 +3137,12 @@ GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "
 
 
 
+GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") TO "service_role";
@@ -3321,7 +3422,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
-RESET ALL;
 
 --
 -- Dumped schema changes for auth and storage
