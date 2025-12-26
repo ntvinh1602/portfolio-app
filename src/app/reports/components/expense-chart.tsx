@@ -5,7 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import { useDelayedData } from "@/hooks/useDelayedData"
 
-export function ExpenseChart({ year }: { year: string }) {
+export function ExpenseChart({
+  year,
+  className
+}: {
+  year: string
+  className?: string
+}) {
   const { monthlyData: AllTimeData, isLoading } = useDelayedData()
 
   if (isLoading) return (
@@ -29,6 +35,7 @@ export function ExpenseChart({ year }: { year: string }) {
   // Filter and process chart data by selected year
   const filteredData = AllTimeData
     .filter((d) => {
+      if (year === "All Time") return true
       const dataYear = new Date(d.date).getFullYear()
       return dataYear === Number(year)
     })
@@ -78,7 +85,7 @@ export function ExpenseChart({ year }: { year: string }) {
   const totalExpenses = filteredData.reduce((acc, curr) => acc - curr.fee - curr.tax - curr.interest, 0)
 
   return (
-    <Card.Root className="gap-0">
+    <Card.Root className={`gap-0 ${className}`}>
       <Card.Header>
         <Card.Title>Expenses</Card.Title>
       </Card.Header>

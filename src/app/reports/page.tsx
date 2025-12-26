@@ -9,6 +9,7 @@ import { ExpenseChart } from "./components/expense-chart"
 import { StockLeaderboard } from "./components/stock-leaderboard"
 import { Trophy } from "lucide-react"
 import * as Card from "@/components/ui/card"
+import { Cashflow } from "./components/cashflow"
 
 export default function Page() {
   const [year, setYear] = useState("2025")
@@ -26,22 +27,25 @@ export default function Page() {
           {/* Left column — charts */}
           <div className="flex flex-col col-span-6 gap-2">
             <MonthlyChart year={year} />
-            <ExpenseChart year={year} />
+            <div className="grid grid-cols-2 gap-2">
+              <ExpenseChart year={year} />
+              <Cashflow year={year} />
+            </div>
           </div>
 
           {/* Right column — stock leaderboard */}
           <Card.Root className="col-span-4">
             <Card.Header>
-              <Card.Title>Top Performers</Card.Title>
+              <Card.Title>Top 10 Performers</Card.Title>
               <Card.Subtitle>
-                By total realized P/L of the year
+                Based on total realized P/L
               </Card.Subtitle>
               <Card.Action>
                 <Trophy className="stroke-1 size-5"/>
               </Card.Action>
             </Card.Header>
             <Card.Content>
-              <StockLeaderboard year={Number(year)} />
+              <StockLeaderboard year={year} />
             </Card.Content>
           </Card.Root>
         </div>

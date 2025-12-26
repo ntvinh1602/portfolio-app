@@ -21,6 +21,7 @@ export function MonthlyChart({ year }: { year: string }) {
   // Filter and process chart data by selected year
   const filteredData = AllTimeData
     .filter((d) => {
+      if (year === "All Time") return true
       const dataYear = new Date(d.date).getFullYear()
       return dataYear === Number(year)
     })

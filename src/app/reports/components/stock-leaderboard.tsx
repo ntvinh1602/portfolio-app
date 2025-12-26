@@ -1,16 +1,17 @@
 "use client"
 
 import { Asset, AssetSkeleton } from "@/app/reports/components/stock-item"
-import { useStockPnLData } from "@/hooks/useStockPnLData"
-import { useAccountData } from "@/hooks/useAccountData"
+import { useReportsData } from "@/hooks/useReportsData"
 import * as Card from "@/components/ui/card"
+import { StockPnLItem } from "@/hooks/useReportsData"
 
-export function StockLeaderboard({ year }: { year?: number }) {
-  const { pnlByYear, isLoading: isPnLLoading, error: pnlError } = useStockPnLData(year)
-  const { assets, loading: isAssetsLoading, error: assetsError } = useAccountData()
-
-  const isLoading = isPnLLoading || isAssetsLoading
-  const error = pnlError || assetsError
+export function StockLeaderboard({ year }: { year?: string | number }) {
+  const {
+    stockPnL,
+    assets,
+    isLoading,
+    error,
+  } = useReportsData(year)
 
   // Loading state
   if (isLoading) {
@@ -32,8 +33,26 @@ export function StockLeaderboard({ year }: { year?: number }) {
     )
   }
 
-  const yearKey = year?.toString() || Object.keys(pnlByYear)[0]
-  const pnlList = pnlByYear[yearKey] || []
+  let pnlList: StockPnLItem[] = []
+  const yearKey = year?.toString()
+
+  if (yearKey === "All Time") {
+    // Merge all years for "All Time"
+    const mergedPnL: Record<string, StockPnLItem> = {}
+    Object.values(stockPnL).forEach((yearData) => {
+      yearData.forEach((item) => {
+        if (!mergedPnL[item.ticker]) {
+          mergedPnL[item.ticker] = { ...item }
+        } else {
+          mergedPnL[item.ticker].total_pnl += item.total_pnl
+        }
+      })
+    })
+    pnlList = Object.values(mergedPnL)
+  } else {
+    const activeYearKey = yearKey || Object.keys(stockPnL)[0]
+    pnlList = stockPnL[activeYearKey] || []
+  }
 
   if (pnlList.length === 0) {
     return (
@@ -43,7 +62,7 @@ export function StockLeaderboard({ year }: { year?: number }) {
     )
   }
 
-  // Combine PnL records with asset metadata
+  // Combine PnL records with asset metadata (now directly from gateway)
   const stockAssets = assets.filter((a) => a.asset_class === "stock")
   const combined = pnlList.map((pnl) => {
     const asset = stockAssets.find((a) => a.ticker === pnl.ticker)
@@ -54,14 +73,25 @@ export function StockLeaderboard({ year }: { year?: number }) {
     }
   })
 
-  // Sort by total profit/loss descending
-  const sorted = combined.sort((a, b) => b.total_pnl - a.total_pnl)
+  // Filter for gainers (positive PnL) and sort by total profit/loss descending
+  const topPerformers = combined
+    .sort((a, b) => b.total_pnl - a.total_pnl)
+    .slice(0, 10)
+
+  if (topPerformers.length === 0) {
+    return (
+      <Card.Root className="p-4 text-center text-muted-foreground">
+        No stock found for {yearKey || "selected year"}.
+      </Card.Root>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-2">
-      {sorted.map((stock) => (
+      {topPerformers.map((stock, index) => (
         <Asset
           key={stock.asset_id}
+          rank={index + 1}
           ticker={stock.ticker}
           name={stock.name}
           logoUrl={stock.logoUrl}

@@ -21,6 +21,9 @@ export function YearSelect({
         <Select.Value placeholder="Select year" />
       </Select.Trigger>
       <Select.Content>
+        <Select.Item value="All Time">
+          All Time
+        </Select.Item>
         {years
           .slice()
           .reverse() // optional: show newest year first

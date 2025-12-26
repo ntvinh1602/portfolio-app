@@ -13,7 +13,7 @@ export function ExpenseChart() {
   if (isLoading)
     return (
     <ChartCardSkeleton
-      description="Net Income (last 12M)"
+      description="Last 12M Income"
       minorText1="avg. income"
       minorText2="avg. expenses"
       cardClassName="gap-4 h-full"
@@ -38,7 +38,7 @@ export function ExpenseChart() {
 
   return (
     <ChartCard
-      description="Net Income (last 12M)"
+      description="Last 12M Income"
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
       minorValue1={avg12MPnl}
