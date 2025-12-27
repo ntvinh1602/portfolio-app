@@ -61,7 +61,7 @@ export function Cashflow({
   return (
     <Card.Root className={`gap-4 ${className}`}>
       <Card.Header>
-        <Card.Title>Cashflow</Card.Title>
+        <Card.Title className="text-xl">Cashflow</Card.Title>
         {year === "All Time" && (
           <p className="text-xs text-muted-foreground">All Years Combined</p>
         )}

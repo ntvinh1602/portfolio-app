@@ -23,20 +23,20 @@ export default function Page() {
         {/* Year selector controls the entire report year */}
         <YearSelect value={year} onChange={setYear} startYear={2022} />
 
-        <div className="grid grid-cols-10 gap-2">
+        <div className="grid grid-cols-10 gap-6">
           {/* Left column — charts */}
           <div className="flex flex-col col-span-6 gap-2">
             <MonthlyChart year={year} />
-            <div className="grid grid-cols-2 gap-2">
-              <ExpenseChart year={year} />
-              <Cashflow year={year} />
+            <div className="grid grid-cols-2 gap-4">
+              <ExpenseChart year={year} className="rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl"/>
+              <Cashflow year={year} className="rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl"/>
             </div>
           </div>
 
           {/* Right column — stock leaderboard */}
-          <Card.Root className="col-span-4">
+          <Card.Root className="col-span-4 h-full rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl">
             <Card.Header>
-              <Card.Title>Top 10 Performers</Card.Title>
+              <Card.Title className="text-xl">Best Performers</Card.Title>
               <Card.Subtitle>
                 Based on total realized P/L
               </Card.Subtitle>

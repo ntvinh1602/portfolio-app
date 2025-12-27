@@ -103,9 +103,9 @@ export function AssetCard() {
   )
 
   return (
-<Card.Root
-  className="relative flex flex-col gap-0 rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl"
->
+    <Card.Root
+      className="relative flex flex-col gap-0 rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl"
+    >
       <Card.Header>
         <Card.Subtitle>Total Assets</Card.Subtitle>
         <Card.Title className="text-2xl">

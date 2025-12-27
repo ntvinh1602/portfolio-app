@@ -43,9 +43,9 @@ const variantStyles: Record<
   },
   switch: {
     tab: "ml-auto",
-    trigger: "w-30",
-    indicator: "bg-muted",
-    list: "flex border-0",
+    trigger: "w-30 data-[state=active]:text-cyan-300 hover:text-white",
+    indicator: "rounded-full bg-cyan-400/20 shadow-[inset_0_0_10px_rgba(0,255,255,0.3)]",
+    list: "flex gap-1 p-0 rounded-full backdrop-blur-md bg-white/5 border border-white/10 shadow-inner",
   },
 }
 

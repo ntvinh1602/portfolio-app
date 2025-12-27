@@ -87,7 +87,7 @@ export function ExpenseChart({
   return (
     <Card.Root className={`gap-0 ${className}`}>
       <Card.Header>
-        <Card.Title>Expenses</Card.Title>
+        <Card.Title className="text-xl">Expenses</Card.Title>
       </Card.Header>
       <Card.Content className="px-0 -ml-4 flex w-full justify-between">
         <Piechart

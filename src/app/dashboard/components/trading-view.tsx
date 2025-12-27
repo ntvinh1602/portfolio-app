@@ -12,8 +12,7 @@ function TradingViewWidgetComponent() {
     container.current.innerHTML = ""
 
     const script = document.createElement("script")
-    script.src =
-      "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
     script.type = "text/javascript"
     script.async = true
     script.innerHTML = JSON.stringify({
@@ -70,7 +69,7 @@ function TradingViewWidgetComponent() {
   }, [])
 
   return (
-    <div className="tradingview-widget-container" ref={container}>
+    <div className="shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl tradingview-widget-container" ref={container}>
       <div className="tradingview-widget-container__widget"></div>
     </div>
   )
