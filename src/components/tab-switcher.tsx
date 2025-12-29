@@ -44,7 +44,7 @@ const variantStyles: Record<
   switch: {
     tab: "ml-auto",
     trigger: "w-30 data-[state=active]:text-primary data-[state=active]:font-normal hover:text-white hover:font-normal",
-    indicator: "rounded-2xl bg-primary/20 shadow-[inset_0_0_10px_oklch(from_var(--primary)_l_c_h_/0.3)]",
+    indicator: "rounded-2xl bg-primary-foreground/20 shadow-[inset_0_0_10px_oklch(from_var(--primary-foreground)_l_c_h_/0.3)]",
     list: "flex gap-1 p-0 rounded-2xl backdrop-blur-md bg-muted border",
   },
 }
