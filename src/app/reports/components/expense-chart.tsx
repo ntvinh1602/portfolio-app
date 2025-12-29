@@ -85,7 +85,7 @@ export function ExpenseChart({
   const totalExpenses = filteredData.reduce((acc, curr) => acc - curr.fee - curr.tax - curr.interest, 0)
 
   return (
-    <Card.Root className={`gap-0 ${className}`}>
+    <Card.Root variant="glow" className={`gap-0 ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Expenses</Card.Title>
       </Card.Header>

@@ -59,18 +59,16 @@ export function Portfolio() {
   }
 
   return (
-    <Card.Root
-      className="relative flex flex-col gap-0 h-full rounded-2xl backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,100,0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/40 before:to-transparent before:rounded-t-2xl"
-    >
+    <Card.Root variant="glow" className="relative flex flex-col gap-4 h-full">
       <Card.Header>
         <Card.Title className="text-xl">Portfolio</Card.Title>
         <Card.Action>
           <RefreshPricesButton />
         </Card.Action>
       </Card.Header>
-      <Card.Content className="h-full flex flex-col gap-3">
+      <Card.Content className="h-full flex flex-col gap-4">
         <TabSwitcher
-          variant="content"
+          variant="switch"
           value={category}
           onValueChange={(value) => setCategory(value as "stock" | "crypto")}
           options={[
@@ -93,7 +91,7 @@ export function Portfolio() {
             <div className="flex flex-col pb-4">
               {category === "stock" ? (
                 <Card.Root className="border-0 py-0 gap-1">
-                  <Card.Content className="flex flex-col px-0 gap-1">
+                  <Card.Content className="flex flex-col px-0 gap-2">
                     {processedStockData.length > 0 ? (
                       processedStockData.map((stock) => (
                         <Asset
@@ -119,7 +117,7 @@ export function Portfolio() {
                 </Card.Root>
               ) : (
                 <Card.Root className="border-0 py-0 gap-1">
-                  <Card.Content className="flex flex-col px-0 gap-1">
+                  <Card.Content className="flex flex-col px-0 gap-2">
                     {processedCryptoData.length > 0 ? (
                       processedCryptoData
                         .filter(asset => asset.totalAmount > 50000)

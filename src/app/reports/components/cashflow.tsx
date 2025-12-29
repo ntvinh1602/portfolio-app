@@ -59,7 +59,7 @@ export function Cashflow({
   const net = inflow - outflow
 
   return (
-    <Card.Root className={`gap-4 ${className}`}>
+    <Card.Root variant="glow" className={`gap-4 ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Cashflow</Card.Title>
         {year === "All Time" && (
