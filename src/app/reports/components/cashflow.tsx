@@ -62,15 +62,13 @@ export function Cashflow({
     <Card.Root variant="glow" className={`gap-4 ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Cashflow</Card.Title>
-        {year === "All Time" && (
-          <p className="text-xs text-muted-foreground">All Years Combined</p>
-        )}
+        <Card.Action></Card.Action>
       </Card.Header>
       <Card.Content className="px-6 pb-6 flex flex-col gap-4">
         {/* Deposits */}
         <div className="flex font-light items-center justify-between group">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500/20 transition-colors">
+            <div className="p-2 rounded-full bg-primary text-primary-foreground">
               <ArrowDownCircle className="size-5" />
             </div>
             <p className="text-sm text-muted-foreground">Deposits</p>
@@ -83,7 +81,7 @@ export function Cashflow({
         {/* Withdrawals */}
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-rose-500/10 text-rose-500 group-hover:bg-rose-500/20 transition-colors">
+            <div className="p-2 rounded-full bg-foreground text-muted">
               <ArrowUpCircle className="size-5" />
             </div>
             <p className="text-sm text-muted-foreground">Withdrawals</p>

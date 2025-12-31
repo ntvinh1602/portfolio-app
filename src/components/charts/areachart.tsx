@@ -32,19 +32,19 @@ export function Areachart({
 }) {
   return (
     <ChartContainer config={config} className={cn(className)}>
-      <AreaChart data={data} margin={{ left: -10 }}>
+      <AreaChart data={data} margin={{ left: -15 }}>
         <defs>
           {dataKeys.map((key) => (
             <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
                 stopColor={`var(--color-${key})`}
-                stopOpacity={0.8}
+                stopOpacity={0.5}
               />
               <stop
-                offset="50%"
+                offset="100%"
                 stopColor={`var(--color-${key})`}
-                stopOpacity={0.1}
+                stopOpacity={0}
               />
             </linearGradient>
           ))}

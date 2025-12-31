@@ -12,7 +12,7 @@ export function EquityChart() {
 
   if (isLoading) return (
     <ChartCardSkeleton
-      description="Total Equity"
+      description="Equity"
       minorText1="this month"
       minorText2="this year"
       cardClassName="gap-4 h-full"
@@ -23,7 +23,7 @@ export function EquityChart() {
 
   return (
     <ChartCard
-      description="Total Equity"
+      description="Equity"
       majorValue={totalEquity}
       majorValueFormatter={(value) => formatNum(value)}
       minorValue1={pnlData.mtd ?? 0}

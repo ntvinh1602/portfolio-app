@@ -99,7 +99,7 @@ export function ExpenseChart({
           innerRadius={70}
           legend="right"
           label={true}
-          label_pos={2.2}
+          label_pos={2.3}
           margin_tb={1}
           centerText="Total Expenses"
           centerValue={compactNum(totalExpenses)}

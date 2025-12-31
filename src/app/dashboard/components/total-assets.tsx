@@ -84,7 +84,7 @@ export function AssetCard() {
   if (isLoading) return (
     <Card.Root className="gap-0">
       <Card.Header>
-        <Card.Subtitle>Total Assets</Card.Subtitle>
+        <Card.Subtitle>Assets</Card.Subtitle>
         <Skeleton className="h-8 w-40"/>
       </Card.Header>
       <Card.Content className="grid grid-cols-2 items-center h-45">
@@ -105,7 +105,7 @@ export function AssetCard() {
   return (
     <Card.Root variant="glow" className="relative flex flex-col gap-0" >
       <Card.Header>
-        <Card.Subtitle>Total Assets</Card.Subtitle>
+        <Card.Subtitle>Assets</Card.Subtitle>
         <Card.Title className="text-2xl">
           {formatNum(totalAssets)}
         </Card.Title>

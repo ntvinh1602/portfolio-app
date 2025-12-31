@@ -164,7 +164,7 @@ function ChartCardSkeleton({
 }) {
   return (
     <Card.Root className={`gap-4 h-full ${cardClassName}`}>
-      <Card.Header className="px-4">
+      <Card.Header className="px-6">
         <Card.Subtitle className="flex items-center w-fit">
           {description}
         </Card.Subtitle>

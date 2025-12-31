@@ -13,9 +13,9 @@ export function ExpenseChart() {
   if (isLoading)
     return (
     <ChartCardSkeleton
-      description="Last 12M Income"
-      minorText1="avg. income"
-      minorText2="avg. expenses"
+      description="Last 1-year Profit"
+      minorText1="avg. profit"
+      minorText2="avg. cost"
       cardClassName="gap-4 h-full"
       tabswitch={false}
     />
@@ -38,33 +38,33 @@ export function ExpenseChart() {
 
   return (
     <ChartCard
-      description="Last 12M Income"
+      description="Last 1-year Profit"
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
       minorValue1={avg12MPnl}
       minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText1="avg. income"
+      minorText1="avg. profit"
       minorValue2={avg12MExpenses}
       minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText2="avg. expenses"
+      minorText2="avg. cost"
       chartComponent={ChartBarStacked}
       chartData={last12MData}
       chartConfig={{
         tax: {
           label: "Tax",
-          color: "var(--chart-1)",
+          color: "var(--chart-4)",
         },
         fee: {
           label: "Fee",
-          color: "var(--chart-2)",
+          color: "var(--chart-3)",
         },
         interest: {
           label: "Interest",
-          color: "var(--chart-3)",
+          color: "var(--chart-1)",
         },
         revenue: {
             label: "Revenue",
-            color: "var(--chart-4)",
+            color: "var(--chart-2)",
         }
       }}
       chartClassName="h-full w-full"

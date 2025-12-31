@@ -10,9 +10,9 @@ export function MonthlyChart({ year }: { year: string }) {
   if (isLoading)
     return (
       <ChartCardSkeleton
-        description="Total Income"
-        minorText1="avg. last 12M"
-        minorText2="avg. all time"
+        description="Net Profit"
+        minorText1="avg. profit"
+        minorText2="avg. cost"
         cardClassName="gap-4 h-full"
         tabswitch={false}
       />
@@ -42,33 +42,33 @@ export function MonthlyChart({ year }: { year: string }) {
 
   return (
     <ChartCard
-      description="Net Income"
+      description="Net Profit"
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
       minorValue1={avgPnl}
       minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText1="avg. income"
+      minorText1="avg. profit"
       minorValue2={avgExpenses}
       minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
-      minorText2="avg. expenses"
+      minorText2="avg. cost"
       chartComponent={ChartBarStacked}
       chartData={filteredData}
       chartConfig={{
         tax: {
           label: "Tax",
-          color: "var(--chart-1)",
+          color: "var(--chart-4)",
         },
         fee: {
           label: "Fee",
-          color: "var(--chart-2)",
+          color: "var(--chart-3)",
         },
         interest: {
           label: "Interest",
-          color: "var(--chart-3)",
+          color: "var(--chart-1)",
         },
         revenue: {
           label: "Revenue",
-          color: "var(--chart-4)",
+          color: "var(--chart-2)",
         },
       }}
       chartClassName="h-full w-full"
