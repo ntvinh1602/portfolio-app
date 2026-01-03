@@ -3,8 +3,11 @@
 import {
   Settings,
   TrendingUp,
-  FolderSearch,
   LogOut,
+  TvMinimal,
+  PiggyBank,
+  Handshake,
+  Newspaper
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import * as SB from "@/components/ui/sidebar"
@@ -16,39 +19,33 @@ import { ConfirmDialog } from "../confirmation"
 const data = {
   navMenu: [
     {
-      title: "Database",
-      url: "#",
-      icon: FolderSearch,
-      isActive: true,
-      items: [
-        {
-          title: "Assets",
-          url: "/assets",
-        },
-        {
-          title: "Transactions",
-          url: "/transactions",
-        },
-        {
-          title: "Reports",
-          url: "/reports",
-        },
-      ],
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: TvMinimal,
     },
     {
-      title: "Configuration",
-      url: "#",
+      title: "Assets",
+      url: "/assets",
+      icon: PiggyBank,
+    },
+    {
+      title: "Transactions",
+      url: "/transactions",
+      icon: Handshake,
+    },
+    {
+      title: "Reports",
+      url: "/reports",
+      icon: Newspaper,
+    },
+    {
+      title: "Settings",
+      url: "/settings",
       icon: Settings,
-      isActive: true,
-      items: [
-        {
-          title: "Settings",
-          url: "/settings",
-        },
-      ]
-    }
-  ]
+    },
+  ],
 }
+
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
   const router = useRouter()
@@ -66,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
           <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
             <TrendingUp className="size-4 text-primary-foreground"/>
           </div>
-          <h1 className="text-xl">Portfolio Tracker</h1>
+          <h1 className="text-xl font-normal text-foreground">Portfolio Tracker</h1>
         </SB.MenuButton>
       </SB.Header>
       

@@ -1,20 +1,14 @@
+"use client"
+
 import { useState } from "react"
 import { DailySnapshot } from "./daily-snapshot"
 import {
   Group,
   GroupLabel,
-  MenuAction,
   MenuButton,
   MenuItem,
-  MenuSub,
-  MenuSubButton,
 } from "@/components/ui/sidebar"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { ChevronRight, Plus, type LucideIcon, RefreshCw } from "lucide-react"
+import { Plus, RefreshCw, type LucideIcon } from "lucide-react"
 import { TransactionForm } from "@/components/sidebar/add-transaction/form-wrapper"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -22,46 +16,8 @@ import { refreshData } from "@/lib/refresh"
 
 type ActionItem = {
   text: string
-  onClick: () => void
-}
-
-type ActionGroupConfig = {
   icon: LucideIcon
-  label: string
-  items: ActionItem[]
-  isActive: boolean
-}
-
-function ActionGroup({ icon, label, items, isActive }: ActionGroupConfig) {
-  const Icon = icon
-  return (
-    <Collapsible defaultOpen={isActive}>
-      <CollapsibleTrigger asChild>
-        <MenuItem>
-          <MenuButton asChild>
-            <div className="flex select-none font-light">
-              <Icon/>
-              {label}
-            </div>
-          </MenuButton>
-          <MenuAction>
-            <ChevronRight />
-          </MenuAction>
-        </MenuItem>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <MenuSub>
-          {items.map(({ text, onClick }) => (
-            <MenuSubButton key={text} onClick={onClick}>
-              <div className="font-light text-muted-foreground select-none">
-                {text}
-              </div>
-            </MenuSubButton>
-          ))}
-        </MenuSub>
-      </CollapsibleContent>
-    </Collapsible>
-  )
+  onClick: () => void
 }
 
 export function QuickActions() {
@@ -69,7 +25,6 @@ export function QuickActions() {
   const [isBackfillOpen, setBackfillOpen] = useState(false)
 
   async function refreshAssets() {
-  
     const supabase = createClient()
     const { error } = await supabase.rpc("refresh_assets_quantity")
     if (error) {
@@ -81,32 +36,39 @@ export function QuickActions() {
     }
   }
 
-  const groups: ActionGroupConfig[] = [
+  // Flattened list of actions
+  const actions: ActionItem[] = [
     {
       icon: Plus,
-      label: "Manual Inputs",
-      items: [
-        { text: "Add Transaction", onClick: () => setTxnFormOpen(true) }
-      ],
-      isActive: true
+      text: "Add Transaction",
+      onClick: () => setTxnFormOpen(true),
     },
     {
       icon: RefreshCw,
-      label: "Refresh Data",
-      items: [
-        { text: "Assets Quantity", onClick: refreshAssets },
-        { text: "Daily Snapshots", onClick: () => setBackfillOpen(true) },
-      ],
-      isActive: true
+      text: "Refresh Assets",
+      onClick: refreshAssets,
     },
-    // You can add more groups here later without touching JSX
+    {
+      icon: RefreshCw,
+      text: "Refresh Snapshots",
+      onClick: () => setBackfillOpen(true),
+    },
   ]
 
   return (
-    <Group className="flex gap-1">
-      <GroupLabel>Actions</GroupLabel>
-      {groups.map((group) => (
-        <ActionGroup key={group.label} {...group} />
+    <Group className="gap-2">
+      <GroupLabel className="relative text-xs font-light text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
+        Actions
+      </GroupLabel>
+      {actions.map(({ icon: Icon, text, onClick }) => (
+        <MenuItem key={text}>
+          <MenuButton asChild onClick={onClick}>
+            <div className="flex items-center gap-3">
+              <Icon className="size-4" />
+              <span className="font-light">{text}</span>
+            </div>
+          </MenuButton>
+        </MenuItem>
       ))}
       <TransactionForm open={isTxnFormOpen} onOpenChange={setTxnFormOpen} />
       <DailySnapshot open={isBackfillOpen} onOpenChange={setBackfillOpen} />

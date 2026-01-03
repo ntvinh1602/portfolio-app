@@ -1,88 +1,51 @@
 "use client"
 
-import { ChevronRight, Monitor, type LucideIcon } from "lucide-react"
-
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { type LucideIcon } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   Group,
   GroupLabel,
   Menu,
-  MenuAction,
   MenuButton,
   MenuItem,
-  MenuSub,
-  MenuSubButton,
-  MenuSubItem,
 } from "@/components/ui/sidebar"
-import Link from "next/link"
 
-export function NavMenu({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
-}) {
+type NavItem = {
+  title: string
+  url: string
+  icon: LucideIcon
+}
+
+export function NavMenu({ items }: { items: NavItem[] }) {
+  const pathname = usePathname()
+
   return (
-    <Group>
-      <GroupLabel>Pages</GroupLabel>
+    <Group className="gap-2">
+      <GroupLabel className="relative text-xs font-light text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
+        Pages
+      </GroupLabel>
       <Menu>
-        <MenuButton tooltip="Dashboard">
-          <Link href="/" className="flex items-center gap-2">
-            <Monitor className="size-4"/>
-            <span className="font-light">Dashboard</span>
-          </Link>
-        </MenuButton>
-        {items.map((item) => (
-          <Collapsible key={item.title} defaultOpen={item.isActive}>
-            <CollapsibleTrigger asChild>
-              <MenuItem>
-                <MenuButton asChild tooltip={item.title}>
-                  <div className="flex select-none">
-                    <item.icon/>
-                    <span className="font-light">{item.title}</span>
-                  </div>
-                </MenuButton>
-                {item.items?.length ?
-                  <MenuAction>
-                    <ChevronRight />
-                    <span className="sr-only">Toggle</span>
-                  </MenuAction>
-                 : null}
-              </MenuItem>
-            </CollapsibleTrigger>
-            {item.items?.length ? (
-              <CollapsibleContent>
-                <MenuSub>
-                  {item.items?.map((subItem) => (
-                    <MenuSubItem key={subItem.title}>
-                      <MenuSubButton asChild>
-                        <a href={subItem.url}>
-                          <span className="font-light text-muted-foreground">
-                            {subItem.title}
-                          </span>
-                        </a>
-                      </MenuSubButton>
-                    </MenuSubItem>
-                  ))}
-                </MenuSub>
-              </CollapsibleContent>
-            ) : null}
-          </Collapsible>
-        ))}
+        {items.map((item) => {
+          const isActive =
+            item.url !== "#" &&
+            (pathname === item.url || pathname.startsWith(item.url + "/"))
+
+          return (
+            <MenuItem key={item.title}>
+              <MenuButton asChild tooltip={item.title} isActive={isActive} size="lg">
+                <Link
+                  href={item.url}
+                  className="flex items-center gap-3"
+                >
+                  <item.icon className="transition duration-300 data-[active=true]:text-amber-400 data-[active=true]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)] hover:text-amber-400 hover:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
+                  <span className="font-light">{item.title}</span>
+                </Link>
+              </MenuButton>
+            </MenuItem>
+          )
+        })}
       </Menu>
     </Group>
   )
 }
-
