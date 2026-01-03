@@ -59,11 +59,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
   return (
     <SB.Root variant="inset" {...props}>
       <SB.Header>
-        <SB.MenuButton size="lg" className="pointer-events-none">
+        <SB.MenuButton size="sm" variant="nohover">
           <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
             <TrendingUp className="size-4 text-primary-foreground"/>
           </div>
-          <h1 className="text-xl font-normal text-foreground">Portfolio Tracker</h1>
+          <h1 className="text-xl font-normal text-foreground truncate">
+            Portfolio Tracker
+          </h1>
         </SB.MenuButton>
       </SB.Header>
       
@@ -78,7 +80,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
           message="Do you really want to log out?"
         >
           <SB.MenuButton>
-            <LogOut/>Logout
+            <LogOut/>
+            <span className="font-light">Logout</span>
           </SB.MenuButton>
         </ConfirmDialog>
       </SB.Footer>

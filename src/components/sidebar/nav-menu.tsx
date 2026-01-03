@@ -23,7 +23,7 @@ export function NavMenu({ items }: { items: NavItem[] }) {
   return (
     <Group className="gap-2">
       <GroupLabel className="relative text-xs font-light text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
-        Pages
+        Navigation
       </GroupLabel>
       <Menu>
         {items.map((item) => {

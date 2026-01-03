@@ -262,7 +262,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon className="stroke-1"/>
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -471,9 +471,6 @@ const sidebarMenuButtonVariants = cva(
     // Flat shape
     "rounded-none",
 
-    // Transparent-glass base layer that blends with sidebar
-    "bg-[oklch(20%_0.03_100/0.05)] backdrop-blur-[1px]",
-
     // Icon & text styling with active glow
     "relative flex items-center gap-2 [&>svg]:size-4 [&>svg]:shrink-0 [&>span:last-child]:truncate",
     "[&>svg]:transition [&>svg]:duration-300",
@@ -503,7 +500,7 @@ const sidebarMenuButtonVariants = cva(
     "disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
 
     // Collapsed icon-only mode
-    "group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0",
+    "group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-7",
   ],
   {
     variants: {
@@ -511,8 +508,10 @@ const sidebarMenuButtonVariants = cva(
         default: "",
         glass:
           "bg-[oklch(15%_0.02_100/0.15)] hover:bg-[oklch(18%_0.03_100/0.2)] backdrop-blur-sm",
-        outline:
-          "border border-amber-400/20 hover:border-amber-300/40 shadow-[0_0_8px_rgba(255,200,0,0.1)]",
+        nohover: [
+          "hover:bg-transparent hover:text-inherit hover:from-transparent hover:to-transparent [&>svg]:hover:drop-shadow-none",
+          "hover:before:opacity-0 before:shadow-none",
+        ].join(" "),
       },
       size: {
         sm: "h-8 text-xs",

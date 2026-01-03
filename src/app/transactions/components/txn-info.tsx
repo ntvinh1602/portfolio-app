@@ -92,7 +92,7 @@ export function TxnInfo({
 }) {
   if (loading) {
     return (
-    <Card.Root>
+    <Card.Root variant="glow">
       <Card.Header>
         <Card.Title className="text-xl">
           <Skeleton className="h-5 w-40" />
@@ -142,7 +142,7 @@ export function TxnInfo({
 
   if (!transaction) {
     return (
-      <Card.Root>
+      <Card.Root variant="glow">
         <Card.Header>
           <Card.Title className="text-xl">Transaction</Card.Title>
           <Card.Action>
@@ -164,7 +164,7 @@ export function TxnInfo({
     })
 
   return (
-    <Card.Root>
+    <Card.Root variant="glow">
       <Card.Header>
         <Card.Title className="text-xl">{transaction.description}</Card.Title>
         <Card.Action>

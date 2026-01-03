@@ -8,7 +8,7 @@ import {
   MenuButton,
   MenuItem,
 } from "@/components/ui/sidebar"
-import { Plus, RefreshCw, type LucideIcon } from "lucide-react"
+import { Plus, RefreshCw, ListRestart, type LucideIcon } from "lucide-react"
 import { TransactionForm } from "@/components/sidebar/add-transaction/form-wrapper"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -49,7 +49,7 @@ export function QuickActions() {
       onClick: refreshAssets,
     },
     {
-      icon: RefreshCw,
+      icon: ListRestart,
       text: "Refresh Snapshots",
       onClick: () => setBackfillOpen(true),
     },
