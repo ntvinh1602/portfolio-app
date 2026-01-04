@@ -128,9 +128,9 @@ function ChartCard<
               { label: "1Y", value: "1y" },
               { label: "All", value: "all_time" }
             ]}
-            variant="switch"
+            variant="content"
             tabClassName="ml-auto"
-            triggerClassName="w-[50px]"
+            triggerClassName="w-[50px] h-10"
           />
         )}
         <ChartComponent

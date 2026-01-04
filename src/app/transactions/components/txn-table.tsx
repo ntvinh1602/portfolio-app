@@ -66,6 +66,7 @@ export function TxnTable({
             { label: "Cashflow", value: "cash", number: transactionCounts.cash },
             { label: "Trades", value: "trade", number: transactionCounts.trade },
           ]}
+          triggerClassName="w-[200px] h-10"
         />
       </div>
       <DataTable

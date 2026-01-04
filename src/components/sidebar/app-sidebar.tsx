@@ -59,10 +59,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
   return (
     <SB.Root variant="inset" {...props}>
       <SB.Header>
-        <SB.MenuButton size="sm" variant="nohover">
-          <div className="bg-primary aspect-square flex size-8 items-center justify-center rounded-lg">
-            <TrendingUp className="size-4 text-primary-foreground"/>
+        <SB.MenuButton size="sm" variant="nohover" className="gap-4">
+          <div
+            className="
+              aspect-square flex size-8 items-center justify-center rounded-lg
+              border-2 border-primary [animation:glowPulse_3s_ease-in-out_infinite]
+              shadow-[inset_0_0_6px_rgba(251,191,36,0.25)]
+            "
+          >
+            <TrendingUp className="size-4 text-primary" />
           </div>
+
           <h1 className="text-xl font-normal text-foreground truncate">
             Portfolio Tracker
           </h1>

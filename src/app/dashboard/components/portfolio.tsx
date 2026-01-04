@@ -68,7 +68,7 @@ export function Portfolio() {
       </Card.Header>
       <Card.Content className="h-full flex flex-col gap-4">
         <TabSwitcher
-          variant="switch"
+          variant="content"
           value={category}
           onValueChange={(value) => setCategory(value as "stock" | "crypto")}
           options={[

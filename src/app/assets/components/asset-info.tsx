@@ -14,7 +14,7 @@ export function AssetInfo({
 
   if (!asset) {
     return (
-      <Card.Root>
+      <Card.Root variant="glow">
         <Card.Header>
           <Card.Title className="text-xl">Information</Card.Title>
           <Card.Action>
@@ -29,7 +29,7 @@ export function AssetInfo({
   }
 
   return (
-    <Card.Root>
+    <Card.Root variant="glow">
       <Card.Header>
         <Card.Title className="text-xl">{asset.name}</Card.Title>
         <Card.Subtitle>
