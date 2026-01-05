@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import yahooFinance from "https://esm.sh/yahoo-finance2@2.13.3"
+import YahooFinance from "https://esm.sh/yahoo-finance2@@3.11.2" // ✅ upgraded import
 
 interface Asset {
   id: string
@@ -19,33 +19,35 @@ interface IndexData {
   close: number
 }
 
+// --- Initialize Supabase client ---
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 )
 
+// --- Telegram alert helper ---
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")
 const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID")
 
 async function sendTelegramMessage(message: string) {
-  if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-    try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-      })
-    } catch (err) {
-      console.error("Failed to send Telegram message:", err)
-    }
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
+    })
+  } catch (err) {
+    console.error("Failed to send Telegram message:", err)
   }
 }
 
+// --- Main function ---
 Deno.serve(async () => {
   const today = new Date().toISOString().split("T")[0]
 
   try {
-    // 1. Fetch all active assets
+    // 1️⃣ Fetch all active assets
     const { data: assets, error: assetError } = await supabase
       .from("assets")
       .select("id, ticker, asset_class")
@@ -63,7 +65,7 @@ Deno.serve(async () => {
       return new Response(JSON.stringify({ message: "No active assets" }), { status: 200 })
     }
 
-    // 2. Asset config mapping
+    // 2️⃣ Asset configuration
     const assetConfig: Record<
       string,
       {
@@ -97,17 +99,19 @@ Deno.serve(async () => {
       },
     }
 
-    // 3. Map assets to Yahoo tickers
+    // 3️⃣ Map assets to Yahoo tickers
     const tickers = assets.map((a) => assetConfig[a.asset_class]?.tickerFormatter(a.ticker) || a.ticker)
 
-    // 4. Fetch batch quotes
-    yahooFinance.suppressNotices(["yahooSurvey"])
-    const results = await yahooFinance.quote(tickers)
+    // 4️⃣ Initialize Yahoo Finance client (v3)
+    const yahooFinance = new YahooFinance({
+      suppressNotices: ["yahooSurvey"],
+    })
 
-    // Ensure results is always an array
-    const quotes = Array.isArray(results) ? results : [results]
+    // 5️⃣ Fetch batch quotes
+    const result = await yahooFinance.quote(tickers)
+    const quotes = Array.isArray(result) ? result : [result]
 
-    // 5. Build rows dynamically
+    // 6️⃣ Build price rows
     for (const asset of assets) {
       const config = assetConfig[asset.asset_class]
       if (!config) continue
@@ -119,7 +123,7 @@ Deno.serve(async () => {
       config.targetRows.push(config.rowBuilder(asset, match.regularMarketPrice))
     }
 
-    // 6. Upsert rows per asset class
+    // 7️⃣ Upsert into Supabase
     for (const key of Object.keys(assetConfig)) {
       const { targetRows, tableName, conflictColumns } = assetConfig[key]
       if (targetRows.length === 0) continue
@@ -133,6 +137,7 @@ Deno.serve(async () => {
       }
     }
 
+    // ✅ Return success silently
     return new Response(
       JSON.stringify({
         message: "✅ Prices refreshed successfully",

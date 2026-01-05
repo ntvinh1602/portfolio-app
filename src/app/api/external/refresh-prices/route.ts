@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import yahooFinance from "yahoo-finance2"
+import YahooFinance from "yahoo-finance2" // ✅ new import
 
 interface Asset {
   id: string
@@ -22,9 +22,10 @@ interface IndexData {
 
 export async function POST() {
   const supabase = await createClient()
-  const today = new Date().toISOString().split("T")[0] // YYYY-MM-DD
+  const today = new Date().toISOString().split("T")[0]
 
   try {
+
     // 1. Fetch active assets
     const { data: assets, error: assetError } = await supabase
       .from("assets")
@@ -78,18 +79,23 @@ export async function POST() {
     // 3. Map assets to Yahoo tickers
     const tickers = assets.map((a) => assetConfig[a.asset_class]?.tickerFormatter(a.ticker) || a.ticker)
 
-    // 4. Fetch batch quotes
-    yahooFinance.suppressNotices(["yahooSurvey"])
-    const results = await yahooFinance.quote(tickers)
+    // ✅ Instantiate YahooFinance client (v3)
+    const yahooFinance = new YahooFinance({
+      suppressNotices: ["yahooSurvey"],
+    })
 
-    // 5. Build rows
+    // Fetch batch quotes (can be array or single quote)
+    const result = await yahooFinance.quote(tickers)
+    const quotesArray = Array.isArray(result) ? result : [result]
+
+    // 6️⃣ Build rows dynamically
     for (const asset of assets) {
       const config = assetConfig[asset.asset_class]
       if (!config) continue
 
       const symbol = config.tickerFormatter(asset.ticker)
-      const match = results.find((r) => r.symbol === symbol)
-      if (!match?.regularMarketPrice) continue
+      const match = quotesArray.find((q) => typeof q.symbol === "string" && q.symbol === symbol)
+      if (!match || typeof match.regularMarketPrice !== "number") continue
 
       config.targetRows.push(config.rowBuilder(asset, match.regularMarketPrice))
     }
