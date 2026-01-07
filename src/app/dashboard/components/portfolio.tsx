@@ -23,33 +23,35 @@ export function Portfolio() {
   
   if (isLoading) {
     return (
-      <Card.Root className="gap-2 h-full flex flex-col">
+      <Card.Root variant="glow" className="relative flex flex-col gap-2 h-full">
         <Card.Header>
           <Card.Title className="text-xl">Portfolio</Card.Title>
           <Card.Action>
             <RefreshCw className="size-4 mx-4 m-2 text-muted-foreground animate-spin"/>
           </Card.Action>
         </Card.Header>
-        <Card.Content className="h-full flex flex-col items-center gap-3">
-          <TabSwitcher
-            variant="content"
-            value={category}
-            onValueChange={(value) => setCategory(value as "stock" | "crypto")}
-            options={[
-              {
-                label: "Stocks",
-                value: "stock",
-                customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
-              },
-              {
-                label: "Crypto",
-                value: "crypto",
-                customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
-              },
-            ]}
-            tabClassName="w-full"
-            triggerClassName="text-sm font-light h-10"
-          />
+        <Card.Content className="h-full flex flex-col gap-4">
+          <div className="flex w-full">
+            <TabSwitcher
+              variant="content"
+              value={category}
+              onValueChange={(value) => setCategory(value as "stock" | "crypto")}
+              options={[
+                {
+                  label: "Stocks",
+                  value: "stock",
+                  customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
+                },
+                {
+                  label: "Crypto",
+                  value: "crypto",
+                  customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
+                },
+              ]}
+              tabClassName="w-full"
+              triggerClassName="h-10 data-[state=active]:after:opacity-0 data-[state=active]:bg-none hover:bg-none"
+            />
+          </div>
           <div className="flex flex-col gap-2 w-full">
             {[...Array(3)].map((_, i) => (<AssetSkeleton key={i}/>))}
           </div>
@@ -59,7 +61,7 @@ export function Portfolio() {
   }
 
   return (
-    <Card.Root variant="glow" className="relative flex flex-col gap-4 h-full">
+    <Card.Root variant="glow" className="relative flex flex-col gap-2 h-full">
       <Card.Header>
         <Card.Title className="text-xl">Portfolio</Card.Title>
         <Card.Action>
@@ -67,27 +69,29 @@ export function Portfolio() {
         </Card.Action>
       </Card.Header>
       <Card.Content className="h-full flex flex-col gap-4">
-        <TabSwitcher
-          variant="content"
-          value={category}
-          onValueChange={(value) => setCategory(value as "stock" | "crypto")}
-          options={[
-            {
-              label: "Stocks",
-              value: "stock",
-              customBadge: <LiveIndicator is247={false} source={isStockPriceLive}/>
-            },
-            {
-              label: "Crypto",
-              value: "crypto",
-              customBadge: <LiveIndicator is247={true} source={isCryptoPriceLive}/>
-            },
-          ]}
-          tabClassName="w-full"
-          triggerClassName="text-sm font-light h-10"
-        />
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full w-full">
+        <div className="flex w-full">
+          <TabSwitcher
+            variant="content"
+            value={category}
+            onValueChange={(value) => setCategory(value as "stock" | "crypto")}
+            options={[
+              {
+                label: "Stocks",
+                value: "stock",
+                customBadge: <LiveIndicator is247={false} source={isStockPriceLive}/>
+              },
+              {
+                label: "Crypto",
+                value: "crypto",
+                customBadge: <LiveIndicator is247={true} source={isCryptoPriceLive}/>
+              },
+            ]}
+            tabClassName="w-full"
+            triggerClassName="h-10 data-[state=active]:after:opacity-0 data-[state=active]:bg-none hover:bg-none"
+          />
+        </div>
+          <div className="flex-1 overflow-hidden w-full">
+            <ScrollArea className="h-full w-full">
             <div className="flex flex-col pb-4">
               {category === "stock" ? (
                 <Card.Root className="border-0 py-0 gap-1">
