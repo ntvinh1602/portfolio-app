@@ -39,10 +39,16 @@ export function RefreshPricesButton() {
       size="sm"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="group relative overflow-hidden transition-all"
+      className="relative flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
     >
-      <RefreshCw className={`transition-transform duration-300 group-hover:translate-x-1 ${isRefreshing && "animate-spin"}`} />
-      <span className="ml-0 w-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:w-[100px] group-hover:opacity-100">Refresh Prices</span>
+      <div
+        className={`flex items-center justify-center rounded-full p-1 transition-transform ${
+          isRefreshing ? "animate-spin" : "group-hover:rotate-6"
+        }`}
+      >
+        <RefreshCw className="size-4" />
+      </div>
     </Button>
   )
+
 }

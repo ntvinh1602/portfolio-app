@@ -47,12 +47,9 @@ export function BalanceSheet() {
         <Button
           variant="ghost"
           size="sm"
-          className="group relative overflow-hidden transition-all"
+          className="relative flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
         >
-          <PanelRightOpen className="transition-transform duration-300 group-hover:translate-x-1" />
-          <span className="ml-0 w-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:w-[100px] group-hover:opacity-100">
-            Balance Sheet
-          </span>
+          <PanelRightOpen className="size-4" />
         </Button>
       </Sheet.Trigger>
       <Sheet.Content side={isMobile ? "bottom" : "right"}>
