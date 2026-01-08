@@ -50,8 +50,8 @@ export function Asset({
   }, [price, prevPrice])
 
   return (
-    <Card.Root variant="highlight" className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
-      <Card.Content className="flex items-center gap-3 px-3">
+    <Card.Root variant="highlight" className="border-0 text-card-foreground bg-gradient-to-r from-ring/10 to-transparent backdrop-blur-sm rounded-full py-3">
+      <Card.Content className="flex items-center gap-3 px-4">
         <Image
           src={logoUrl}
           alt={name}
@@ -105,8 +105,8 @@ export function Asset({
                   ? <TrendingDown className="text-red-700" />
                   : <TrendingUp className="text-green-500" />
                 }
-                {compactNum(Math.abs(pnlNet))}
-                {` (${formatNum(Math.abs(pnlPct), 1)}%)`}
+                <span>{compactNum(Math.abs(pnlNet))}</span>
+                <span>{`${formatNum((pnlPct), 1)}%`}</span>
               </div>
             </Card.Subtitle>
           </div>
