@@ -50,7 +50,7 @@ export function Asset({
   }, [price, prevPrice])
 
   return (
-    <Card.Root variant="highlight" className="border-0 text-card-foreground bg-gradient-to-r from-ring/10 to-transparent backdrop-blur-sm rounded-full py-3">
+    <Card.Root variant="highlight" className="rounded-full py-3">
       <Card.Content className="flex items-center gap-3 px-4">
         <Image
           src={logoUrl}

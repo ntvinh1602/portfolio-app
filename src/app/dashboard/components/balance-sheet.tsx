@@ -1,11 +1,9 @@
 import * as Card from "@/components/ui/card"
-import * as Sheet from "@/components/ui/sheet"
+import * as Popover from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { AssetItem } from "../types/dashboard-data"
 import { useLiveData } from "../context/live-data-context"
 import { PanelRightOpen } from "lucide-react"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { formatNum } from "@/lib/utils"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -24,12 +22,13 @@ function BSItem({
 }: BSItemProps) {
   return (
     <Card.Root
-      className={`border-0 py-3 rounded-md ${header && "bg-muted"} ${className}`}
+      variant={`${header ? "highlight" : "normal"}`}
+      className={`border-0 py-3 rounded-md ${header && "rounded-full text-primary"} ${className}`}
       {...props}
     >
       <Card.Header className="flex px-4 justify-between">
-        <span className="text-sm font-thin">{label}</span>
-        <Card.Action className="font-thin text-sm">
+        <span className={`text-sm ${header ? "font-light" : "font-thin"}`}>{label}</span>
+        <Card.Action className={`${header ? "font-light" : "font-thin"} text-sm`}>
           {value ? formatNum(value) : 0}
         </Card.Action>
       </Card.Header>
@@ -39,11 +38,10 @@ function BSItem({
 
 export function BalanceSheet() {
   const { balanceSheet: bs } = useLiveData()
-  const isMobile = useIsMobile()
 
   return (
-    <Sheet.Root>
-      <Sheet.Trigger asChild>
+    <Popover.Root>
+      <Popover.Trigger asChild>
         <Button
           variant="ghost"
           size="sm"
@@ -51,66 +49,41 @@ export function BalanceSheet() {
         >
           <PanelRightOpen className="size-4" />
         </Button>
-      </Sheet.Trigger>
-      <Sheet.Content side={isMobile ? "bottom" : "right"}>
-        <Sheet.Header>
-          <Sheet.Title className="font-light text-xl">Balance Sheet</Sheet.Title>
-          <Sheet.Subtitle className="font-light">
-            Summary of fund assets by its origins and allocation
-          </Sheet.Subtitle>
-        </Sheet.Header>
-
-        <Card.Root className="h-fit gap-3 border-0 py-0">
-          <Card.Content className="flex flex-col gap-2">
-            <Card.Subtitle>Total Assets</Card.Subtitle>
+      </Popover.Trigger>
+      <Popover.Content align="end" className="rounded-2xl bg-background/80 backdrop-blur-sm w-auto max-w-[90vw] max-h-[80vh] overflow-y-auto">
+        <Card.Root className="flex flex-row px-2 py-4 border-0 bg-transparent">
+          <div className="flex flex-col min-w-[300px]">
+            <Card.Header className="pb-4 justify-center text-xl font-thin">Total Assets</Card.Header>
+            <BSItem header label="Assets" value={bs.totalAssets} />
+            {bs.assets.map((item: AssetItem) => (
+              <BSItem key={item.type} label={item.type} value={item.totalAmount} />
+            ))}
+          </div>
+          <div className="relative flex items-center">
+            <div
+              className="
+                relative w-[1px] h-full rounded-full
+                bg-gradient-to-b from-transparent via-ring/70 to-transparent
+              "
+            />
+          </div>
+          <div className="flex flex-col gap-4 min-w-[300px]">
             <div className="flex flex-col">
-              <Card.Root className="border-0 py-3 rounded-md bg-muted">
-                <Card.Header className="flex px-4 justify-between">
-                  <span className="text-sm font-thin">Assets</span>
-                  <Card.Action className="font-thin text-sm">
-                    {formatNum(bs.totalAssets)}
-                  </Card.Action>
-                </Card.Header>
-              </Card.Root>
-
-              {bs.assets.map((item: AssetItem) => (
-                <Card.Root key={item.type} className="border-0 py-3 rounded-md">
-                  <Card.Header className="flex px-4 justify-between">
-                    <span className="text-sm font-thin">{item.type}</span>
-                    <Card.Action className="font-thin text-sm">
-                      {formatNum(item.totalAmount)}
-                    </Card.Action>
-                  </Card.Header>
-                </Card.Root>
+              <Card.Header className="pb-4 justify-center text-xl font-thin">Total Liabilities</Card.Header>
+              <BSItem header label="Liabilities" value={bs.totalLiabilities} />
+              {bs.liabilities.map((item: AssetItem) => (
+                <BSItem key={item.type} label={item.type} value={item.totalAmount} />
               ))}
             </div>
-
-            <Separator className="mt-2 mb-4" />
-
-            <Card.Subtitle>Total Liabilities</Card.Subtitle>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col">
-                <BSItem header label="Liabilities" value={bs.totalLiabilities}/>
-                {bs.liabilities.map((item: AssetItem) => (
-                  <BSItem key={item.type} label={item.type} value={item.totalAmount}/>
-                ))}
-              </div>
-              <div className="flex flex-col">
-                <BSItem header label="Equities" value={bs.totalEquity}/>
-                {bs.equity.map((item: AssetItem) => (
-                  <BSItem key={item.type} label={item.type} value={item.totalAmount}/>
-                ))}
-              </div>
+            <div>
+              <BSItem header label="Equities" value={bs.totalEquity} />
+              {bs.equity.map((item: AssetItem) => (
+                <BSItem key={item.type} label={item.type} value={item.totalAmount} />
+              ))}
             </div>
-          </Card.Content>
+          </div>
         </Card.Root>
-
-        <Sheet.Footer>
-          <Sheet.Close asChild>
-            <Button variant="outline">Close</Button>
-          </Sheet.Close>
-        </Sheet.Footer>
-      </Sheet.Content>
-    </Sheet.Root>
+      </Popover.Content>
+    </Popover.Root>
   )
 }

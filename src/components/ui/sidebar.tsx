@@ -478,7 +478,6 @@ const sidebarMenuButtonVariants = cva(
     "data-[active=true]:[&>svg]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]",
     "hover:[&>svg]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]",
 
-
     // Smooth background fade from left glow → transparent right
     "hover:bg-gradient-to-r hover:from-amber-400/15 hover:to-transparent",
 
