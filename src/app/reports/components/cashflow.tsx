@@ -4,7 +4,6 @@ import { compactNum } from "@/lib/utils"
 import { useDelayedData } from "@/hooks/useDelayedData"
 import { useReportsData } from "@/hooks/useReportsData"
 import { TrendingUp, TrendingDown, ArrowDownCircle, ArrowLeftRight, ArrowUpCircle } from "lucide-react"
-import { formatNum } from "@/lib/utils"
 
 export function Cashflow({
   year,

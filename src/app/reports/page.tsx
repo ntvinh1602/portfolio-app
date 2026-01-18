@@ -8,7 +8,7 @@ import { ExpenseChart } from "./components/expense-chart"
 import { StockLeaderboard } from "./components/stock-leaderboard"
 import { Cashflow } from "./components/cashflow"
 import { Return } from "./components/return"
-import { Benchmarkchart } from "./components/total-return"
+import { ReturnChart } from "./components/return-chart"
 
 export default function Page() {
   const [year, setYear] = useState(new Date().getFullYear().toString())
@@ -26,7 +26,7 @@ export default function Page() {
           </div>
           <div className="flex md:col-span-4 h-full flex-col gap-2 min-w-0">
               <MonthlyChart year={year} />
-              <Benchmarkchart year={year} />
+              <ReturnChart year={year} />
           </div>
           <div className="flex md:col-span-3 flex-col gap-2 min-w-0 h-full">
             <ExpenseChart year={year} />

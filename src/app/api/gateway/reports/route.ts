@@ -26,11 +26,6 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    // Forward query params
-    const searchParams = request.url.includes("?")
-      ? "?" + request.url.split("?")[1]
-      : ""
-
     // Parallel fetches
     const [
       stockPnLResponse,
@@ -38,10 +33,10 @@ export async function GET(request: NextRequest) {
       cashflowResponse,
       annualReturnResponse,
     ] = await Promise.all([
-      fetch(`${baseURL}/api/internal/pnl-by-stock${searchParams}`, fetchOptions),
+      fetch(`${baseURL}/api/internal/pnl-by-stock`, fetchOptions),
       fetch(`${baseURL}/api/internal/assets`, fetchOptions),
-      fetch(`${baseURL}/api/internal/cashflow${searchParams}`, fetchOptions),
-      fetch(`${baseURL}/api/internal/annual-return`, fetchOptions), // internal returns full table
+      fetch(`${baseURL}/api/internal/cashflow`, fetchOptions),
+      fetch(`${baseURL}/api/internal/annual-return`, fetchOptions),
     ])
 
     // Validate responses
