@@ -1,5 +1,6 @@
 
 
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -1320,6 +1321,23 @@ $$;
 ALTER FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_annual_cashflow"() RETURNS TABLE("year" integer, "deposits" numeric, "withdrawals" numeric)
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT
+    EXTRACT(YEAR FROM date)::int AS year,
+    SUM(CASE WHEN net_cash_flow > 0 THEN net_cash_flow ELSE 0 END) AS deposits,
+    SUM(CASE WHEN net_cash_flow < 0 THEN net_cash_flow ELSE 0 END) AS withdrawals
+  FROM public.daily_performance_snapshots
+  GROUP BY year
+  ORDER BY year;
+$$;
+
+
+ALTER FUNCTION "public"."get_annual_cashflow"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid" DEFAULT 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid") RETURNS TABLE("asset_id" "uuid", "ticker" "text", "year" integer, "total_pnl" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1358,6 +1376,78 @@ $$;
 
 
 ALTER FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_annual_return"() RETURNS TABLE("yr" "text", "equity_ret" numeric, "vn_ret" numeric)
+    LANGUAGE "sql"
+    AS $$
+with equity_data as (
+    select extract(year from date) as yr, date as dps_date, equity_index
+    from public.daily_performance_snapshots
+    where equity_index is not null
+),
+equity_end_of_year as (
+    select yr, max(dps_date) as last_date
+    from equity_data
+    group by yr
+),
+equity_with_prev as (
+    select e.yr, eoy.last_date, e.equity_index as end_value,
+           lag(e.equity_index) over (order by e.yr) as start_value
+    from equity_end_of_year eoy
+    join equity_data e on e.dps_date = eoy.last_date
+),
+vnindex_data as (
+    select extract(year from date) as yr, date as dmi_date, close
+    from public.daily_market_indices
+    where symbol = 'VNINDEX' and close is not null
+),
+vnindex_end_of_year as (
+    select yr, max(dmi_date) as last_date
+    from vnindex_data
+    group by yr
+),
+vnindex_with_prev as (
+    select v.yr, voy.last_date, v.close as end_value,
+           lag(v.close) over (order by v.yr) as start_value
+    from vnindex_end_of_year voy
+    join vnindex_data v on v.dmi_date = voy.last_date
+),
+yearly as (
+    select coalesce(e.yr, v.yr)::text as yr,
+           round(((e.end_value - e.start_value)/e.start_value)*100,2) as equity_ret,
+           round(((v.end_value - v.start_value)/v.start_value)*100,2) as vn_ret
+    from equity_with_prev e
+    full outer join vnindex_with_prev v on e.yr = v.yr
+    where e.start_value is not null or v.start_value is not null
+),
+all_time as (
+    select 'All-Time'::text as yr,
+           round(((last_equity - first_equity) / first_equity) * 100, 2) as equity_ret,
+           round(((last_vnindex - first_vnindex) / first_vnindex) * 100, 2) as vn_ret
+    from (
+        select
+            (select equity_index from public.daily_performance_snapshots 
+             order by date asc limit 1) as first_equity,
+            (select equity_index from public.daily_performance_snapshots 
+             order by date desc limit 1) as last_equity,
+            (select close from public.daily_market_indices 
+             where symbol='VNINDEX' order by date asc limit 1) as first_vnindex,
+            (select close from public.daily_market_indices 
+             where symbol='VNINDEX' order by date desc limit 1) as last_vnindex
+    ) sub
+)
+select *
+from (
+    select * from yearly
+    union all
+    select * from all_time
+) t
+order by case when yr='All-Time' then 9999 else yr::int end;
+$$;
+
+
+ALTER FUNCTION "public"."get_annual_return"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") RETURNS numeric
@@ -3137,9 +3227,21 @@ GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "
 
 
 
+GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "service_role";
 
 
 
@@ -3392,6 +3494,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
 
 
 

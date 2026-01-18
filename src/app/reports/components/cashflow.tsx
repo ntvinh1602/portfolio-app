@@ -13,7 +13,7 @@ export function Cashflow({
   className?: string
 }) {
   const { isLoading: isDelayedLoading } = useDelayedData()
-  const { cashflow, isLoading: isReportsLoading } = useReportsData(year)
+  const { cashflow, isLoading: isReportsLoading } = useReportsData()
 
   const isLoading = isDelayedLoading || isReportsLoading
 
@@ -65,12 +65,9 @@ export function Cashflow({
         <Card.Action></Card.Action>
       </Card.Header>
       <Card.Content className="px-6 pb-6 flex flex-col gap-4">
-        {/* Deposits */}
         <div className="flex font-light items-center justify-between group">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary text-primary-foreground">
-              <ArrowDownCircle className="size-5" />
-            </div>
+            <ArrowDownCircle className="size-5 stroke-1" />
             <p className="text-sm text-muted-foreground">Deposits</p>
           </div>
           <p className="text-md tracking-tight text-emerald-500">
@@ -78,12 +75,9 @@ export function Cashflow({
           </p>
         </div>
 
-        {/* Withdrawals */}
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-foreground text-muted">
-              <ArrowUpCircle className="size-5" />
-            </div>
+            <ArrowUpCircle className="size-5 stroke-1" />
             <p className="text-sm text-muted-foreground">Withdrawals</p>
           </div>
           <p className="text-md tracking-tight text-rose-500">
@@ -91,7 +85,6 @@ export function Cashflow({
           </p>
         </div>
 
-        {/* Net Cashflow */}
         <div className="pt-4 border-t border-dashed">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Net Cashflow</p>

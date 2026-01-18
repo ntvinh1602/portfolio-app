@@ -15,49 +15,56 @@ export async function GET(request: NextRequest) {
 
     const baseURL = request.url.split("/api")[0]
 
-    // --- Shared fetch options ---
+    // Shared fetch options
     const fetchOptions = {
       headers: {
         Authorization: `Bearer ${expectedSecret}`,
       },
       next: {
-        revalidate: 600, // cache 10 minutes
-        tags: ["stock-profit-loss", "assets", "cashflow"],
+        revalidate: 600,
+        tags: ["stock-profit-loss", "assets", "cashflow", "annual-return"],
       },
     }
 
-    // --- Forward query params (?year=2025, etc.) ---
+    // Forward query params
     const searchParams = request.url.includes("?")
       ? "?" + request.url.split("?")[1]
       : ""
 
-    // --- Parallel internal API requests ---
-    const [stockPnLResponse, assetsResponse, cashflowResponse] = await Promise.all([
+    // Parallel fetches
+    const [
+      stockPnLResponse,
+      assetsResponse,
+      cashflowResponse,
+      annualReturnResponse,
+    ] = await Promise.all([
       fetch(`${baseURL}/api/internal/pnl-by-stock${searchParams}`, fetchOptions),
       fetch(`${baseURL}/api/internal/assets`, fetchOptions),
       fetch(`${baseURL}/api/internal/cashflow${searchParams}`, fetchOptions),
+      fetch(`${baseURL}/api/internal/annual-return`, fetchOptions), // internal returns full table
     ])
 
-    // --- Validate responses ---
-    for (const response of [stockPnLResponse, assetsResponse, cashflowResponse]) {
+    // Validate responses
+    for (const response of [stockPnLResponse, assetsResponse, cashflowResponse, annualReturnResponse]) {
       if (!response.ok) {
         const result = await response.json().catch(() => ({}))
         throw new Error(result.error || "Internal fetch failed")
       }
     }
 
-    // --- Parse JSON responses ---
-    const [stockPnL, assets, cashflow] = await Promise.all([
+    // Parse JSON
+    const [stockPnL, assets, cashflow, annualReturn] = await Promise.all([
       stockPnLResponse.json(),
       assetsResponse.json(),
       cashflowResponse.json(),
+      annualReturnResponse.json(),
     ])
 
-    // --- Aggregate and return ---
     return NextResponse.json({
       stockPnL,
       assets: (assets as Tables<"assets">[]) || [],
       cashflow: cashflow || [],
+      annualReturn: annualReturn || {},
     })
   } catch (error) {
     console.error("Gateway error:", error)

@@ -89,7 +89,7 @@ export function ExpenseChart({
       <Card.Header>
         <Card.Title className="text-xl">Expenses</Card.Title>
       </Card.Header>
-      <Card.Content className="px-0 -ml-4 flex w-full justify-between">
+      <Card.Content className="px-0 flex w-full justify-between">
         <Piechart
           data={expenseChartData}
           chartConfig={expenseChartCfg}
@@ -97,7 +97,7 @@ export function ExpenseChart({
           nameKey="liability"
           className="h-[200px] w-full"
           innerRadius={70}
-          legend="right"
+          legend="bottom"
           label={true}
           label_pos={2.3}
           margin_tb={1}

@@ -28,7 +28,7 @@ export function Asset({
         : "text-foreground"
 
   return (
-    <Card.Root variant="highlight" className="relative border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
+    <Card.Root variant="highlight" className="relative border-0 text-card-foreground backdrop-blur-sm rounded-full py-3">
       <Card.Content className="flex items-center gap-3 px-3">
         <div className="w-6 flex justify-center">
           {rank <= 3 ? (

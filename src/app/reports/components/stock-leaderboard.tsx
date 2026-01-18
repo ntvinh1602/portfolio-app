@@ -11,7 +11,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     assets,
     isLoading,
     error,
-  } = useReportsData(year)
+  } = useReportsData()
 
   // Loading state
   if (isLoading) {

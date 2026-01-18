@@ -19,10 +19,17 @@ export interface CashflowItem {
   withdrawals: number
 }
 
+// Frontend-friendly type
+export interface AnnualReturnItem {
+  equity_return: number | null
+  vnindex_return: number | null
+}
+
 export interface GatewayReportResponse {
   stockPnL: Record<string, StockPnLItem[]>
   assets: Tables<"assets">[]
   cashflow: CashflowItem[]
+  annualReturn: Record<string, AnnualReturnItem>
 }
 
 // ----------------------------
@@ -33,36 +40,32 @@ const fallback: GatewayReportResponse = {
   stockPnL: {},
   assets: [],
   cashflow: [],
+  annualReturn: {},
 }
 
 // ----------------------------
 // Hook Definition
 // ----------------------------
 
-export function useReportsData(year?: string | number) {
-  const endpoint =
-    year && year !== "All Time"
-      ? `/api/gateway/reports?year=${year}`
-      : `/api/gateway/reports`
-
+export function useReportsData() {
   const { data, error, isLoading } = useSWR<GatewayReportResponse>(
-    endpoint,
+    "/api/gateway/reports",
     fetcher,
     {
+      fallbackData: fallback,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      fallbackData: fallback,
     }
-  ) as {
-    data: GatewayReportResponse
-    error: unknown
-    isLoading: boolean
-  }
+  )
+
+  // Annual return is already an object keyed by year; just fallback safely
+  const annualReturn: Record<string, AnnualReturnItem> = data?.annualReturn || {}
 
   return {
-    stockPnL: data.stockPnL || {},
-    assets: data.assets || [],
-    cashflow: data.cashflow || [],
+    stockPnL: data?.stockPnL || {},
+    assets: data?.assets || [],
+    cashflow: data?.cashflow || [],
+    annualReturn,
     isLoading,
     error,
   }
