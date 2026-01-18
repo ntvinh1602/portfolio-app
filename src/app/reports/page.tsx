@@ -2,54 +2,36 @@
 
 import { useState } from "react"
 import { Header } from "@/components/header"
-import { YearSelect } from "@/components/year-select"
+import { YearSelect } from "./components/year-select"
 import { MonthlyChart } from "./components/monthly-chart"
 import { ExpenseChart } from "./components/expense-chart"
 import { StockLeaderboard } from "./components/stock-leaderboard"
-import { Trophy } from "lucide-react"
-import * as Card from "@/components/ui/card"
 import { Cashflow } from "./components/cashflow"
 import { Return } from "./components/return"
+import { Benchmarkchart } from "./components/total-return"
 
 export default function Page() {
   const [year, setYear] = useState(new Date().getFullYear().toString())
 
   return (
-    <div className="flex flex-col pb-4">
+    <div className="flex flex-col md:h-svh pb-4 overflow-hidden">
       <Header title="Reports" />
 
-      <div className="flex w-full gap-6 px-0">
-        <div className="w-48 shrink-0">
-          <YearSelect value={year} onChange={setYear} startYear={2022} />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 flex-1 overflow-hidden px-2 md:px-0">
+        <YearSelect value={year} onChange={setYear} startYear={2022} />
 
-        <div className="flex-1 flex flex-col gap-2">
-          <div className="grid grid-cols-10 gap-6">
-            <div className="flex flex-col col-span-6 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-10 gap-6 flex-1 overflow-hidden">
+          <div className="flex md:col-span-3 flex-col h-full">
+            <StockLeaderboard year={year} />
+          </div>
+          <div className="flex md:col-span-4 h-full flex-col gap-2 min-w-0">
               <MonthlyChart year={year} />
-              <div className="grid grid-cols-3 gap-2">
-                <ExpenseChart year={year} />
-                <Cashflow year={year} />
-                <Return year={year} />
-              </div>
-            </div>
-
-            <div className="flex flex-col col-span-4 gap-2">
-              <Card.Root variant="glow" className="col-span-4 h-full">
-                <Card.Header>
-                  <Card.Title className="text-xl">Best Performers</Card.Title>
-                  <Card.Subtitle>
-                    Based on total realized P/L
-                  </Card.Subtitle>
-                  <Card.Action>
-                    <Trophy className="stroke-1 size-5"/>
-                  </Card.Action>
-                </Card.Header>
-                <Card.Content>
-                  <StockLeaderboard year={year} />
-                </Card.Content>
-              </Card.Root>
-            </div>
+              <Benchmarkchart year={year} />
+          </div>
+          <div className="flex md:col-span-3 flex-col gap-2 min-w-0 h-full">
+            <ExpenseChart year={year} />
+            <Cashflow year={year} />
+            <Return year={year} />
           </div>
         </div>
       </div>

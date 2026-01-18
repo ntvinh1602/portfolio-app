@@ -4,6 +4,7 @@ import { ChartConfig } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import { useDelayedData } from "@/hooks/useDelayedData"
+import { HandCoins } from "lucide-react"
 
 export function ExpenseChart({
   year,
@@ -15,7 +16,7 @@ export function ExpenseChart({
   const { monthlyData: AllTimeData, isLoading } = useDelayedData()
 
   if (isLoading) return (
-    <Card.Root className="gap-0">
+    <Card.Root className="gap-0 h-full">
       <Card.Header>
         <Card.Title>Expenses</Card.Title>
       </Card.Header>
@@ -85,21 +86,24 @@ export function ExpenseChart({
   const totalExpenses = filteredData.reduce((acc, curr) => acc - curr.fee - curr.tax - curr.interest, 0)
 
   return (
-    <Card.Root variant="glow" className={`gap-0 ${className}`}>
+    <Card.Root variant="glow" className={`gap-0 h-full ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Expenses</Card.Title>
+        <Card.Action>
+          <HandCoins className="size-5 stroke-1"/>
+        </Card.Action>
       </Card.Header>
-      <Card.Content className="px-0 flex w-full justify-between">
+      <Card.Content className="px-0 flex h-full justify-between">
         <Piechart
           data={expenseChartData}
           chartConfig={expenseChartCfg}
           dataKey={"allocation"}
           nameKey="liability"
-          className="h-[200px] w-full"
+          className="h-full"
           innerRadius={70}
           legend="bottom"
           label={true}
-          label_pos={2.3}
+          label_pos={2.5}
           margin_tb={1}
           centerText="Total Expenses"
           centerValue={compactNum(totalExpenses)}

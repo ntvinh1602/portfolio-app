@@ -4,40 +4,56 @@ import { Asset, AssetSkeleton } from "@/app/reports/components/stock-item"
 import { useReportsData } from "@/hooks/useReportsData"
 import * as Card from "@/components/ui/card"
 import { StockPnLItem } from "@/hooks/useReportsData"
+import { Trophy } from "lucide-react"
 
 export function StockLeaderboard({ year }: { year?: string | number }) {
-  const {
-    stockPnL,
-    assets,
-    isLoading,
-    error,
-  } = useReportsData()
+  const { stockPnL, assets, isLoading, error } = useReportsData()
+
+  const yearKey = year?.toString()
+
+  const renderHeader = () => (
+    <Card.Header>
+      <Card.Title className="text-xl">Best Performers</Card.Title>
+      <Card.Subtitle>Based on total realized P/L</Card.Subtitle>
+      <Card.Action>
+        <Trophy className="stroke-1 size-5" />
+      </Card.Action>
+    </Card.Header>
+  )
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <AssetSkeleton key={i} />
-        ))}
-      </div>
+      <Card.Root variant="glow" className="h-full">
+        {renderHeader()}
+        <Card.Content>
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <AssetSkeleton key={i} />
+            ))}
+          </div>
+        </Card.Content>
+      </Card.Root>
     )
   }
 
   // Error state
   if (error) {
     return (
-      <Card.Root className="p-4 text-center text-destructive">
-        Failed to load stock data.
+      <Card.Root variant="glow" className="h-full">
+        {renderHeader()}
+        <Card.Content>
+          <div className="p-4 text-center text-destructive">
+            Failed to load stock data.
+          </div>
+        </Card.Content>
       </Card.Root>
     )
   }
 
   let pnlList: StockPnLItem[] = []
-  const yearKey = year?.toString()
 
   if (yearKey === "All Time") {
-    // Merge all years for "All Time"
     const mergedPnL: Record<string, StockPnLItem> = {}
     Object.values(stockPnL).forEach((yearData) => {
       yearData.forEach((item) => {
@@ -56,13 +72,17 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
 
   if (pnlList.length === 0) {
     return (
-      <Card.Root className="p-4 text-center text-muted-foreground">
-        No realized profit/loss data for {yearKey || "selected year"}.
+      <Card.Root variant="glow" className="h-full">
+        {renderHeader()}
+        <Card.Content>
+          <div className="p-4 text-center text-muted-foreground">
+            No realized profit/loss data for {yearKey || "selected year"}.
+          </div>
+        </Card.Content>
       </Card.Root>
     )
   }
 
-  // Combine PnL records with asset metadata (now directly from gateway)
   const stockAssets = assets.filter((a) => a.asset_class === "stock")
   const combined = pnlList.map((pnl) => {
     const asset = stockAssets.find((a) => a.ticker === pnl.ticker)
@@ -73,31 +93,40 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     }
   })
 
-  // Filter for gainers (positive PnL) and sort by total profit/loss descending
   const topPerformers = combined
     .sort((a, b) => b.total_pnl - a.total_pnl)
     .slice(0, 10)
 
   if (topPerformers.length === 0) {
     return (
-      <Card.Root className="p-4 text-center text-muted-foreground">
-        No stock found for {yearKey || "selected year"}.
+      <Card.Root variant="glow" className="h-full">
+        {renderHeader()}
+        <Card.Content>
+          <div className="p-4 text-center text-muted-foreground">
+            No stock found for {yearKey || "selected year"}.
+          </div>
+        </Card.Content>
       </Card.Root>
     )
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {topPerformers.map((stock, index) => (
-        <Asset
-          key={stock.asset_id}
-          rank={index + 1}
-          ticker={stock.ticker}
-          name={stock.name}
-          logoUrl={stock.logoUrl}
-          totalAmount={stock.total_pnl}
-        />
-      ))}
-    </div>
+    <Card.Root variant="glow" className="h-full">
+      {renderHeader()}
+      <Card.Content>
+        <div className="flex flex-col gap-2">
+          {topPerformers.map((stock, index) => (
+            <Asset
+              key={stock.asset_id}
+              rank={index + 1}
+              ticker={stock.ticker}
+              name={stock.name}
+              logoUrl={stock.logoUrl}
+              totalAmount={stock.total_pnl}
+            />
+          ))}
+        </div>
+      </Card.Content>
+    </Card.Root>
   )
 }

@@ -3,7 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import { useDelayedData } from "@/hooks/useDelayedData"
 import { useReportsData } from "@/hooks/useReportsData"
-import { ArrowDownCircle, ArrowUpCircle } from "lucide-react"
+import { TrendingUp, TrendingDown, ArrowDownCircle, ArrowLeftRight, ArrowUpCircle } from "lucide-react"
+import { formatNum } from "@/lib/utils"
 
 export function Cashflow({
   year,
@@ -19,9 +20,12 @@ export function Cashflow({
 
   if (isLoading)
     return (
-      <Card.Root className="gap-0">
+      <Card.Root className="gap-0 h-full">
         <Card.Header>
           <Card.Title>Cashflow</Card.Title>
+          <Card.Action>
+            <ArrowLeftRight className="size-5 stroke-1"/>
+          </Card.Action>
         </Card.Header>
         <Card.Content className="px-6 pb-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -59,43 +63,46 @@ export function Cashflow({
   const net = inflow - outflow
 
   return (
-    <Card.Root variant="glow" className={`gap-4 ${className}`}>
+    <Card.Root variant="glow" className={`gap-6 h-full ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Cashflow</Card.Title>
-        <Card.Action></Card.Action>
+        <Card.Action>
+          <ArrowLeftRight className="size-5 stroke-1"/>
+        </Card.Action>
       </Card.Header>
       <Card.Content className="px-6 pb-6 flex flex-col gap-4">
         <div className="flex font-light items-center justify-between group">
           <div className="flex items-center gap-3">
             <ArrowDownCircle className="size-5 stroke-1" />
-            <p className="text-sm text-muted-foreground">Deposits</p>
+            <p className="text-muted-foreground">Deposits</p>
           </div>
-          <p className="text-md tracking-tight text-emerald-500">
-            +{compactNum(inflow)}
-          </p>
+          <div className="flex items-center gap-1 font-thin [&_svg]:size-5">
+            <TrendingUp className="text-green-500" />
+            {compactNum(inflow)}
+          </div>
         </div>
 
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-3">
             <ArrowUpCircle className="size-5 stroke-1" />
-            <p className="text-sm text-muted-foreground">Withdrawals</p>
+            <p className="text-muted-foreground">Withdrawals</p>
           </div>
-          <p className="text-md tracking-tight text-rose-500">
-            -{compactNum(outflow)}
-          </p>
+          <div className="flex items-center gap-1 font-thin [&_svg]:size-5">
+            <TrendingDown className="text-red-700" />
+            {compactNum(outflow)}
+          </div>
         </div>
 
         <div className="pt-4 border-t border-dashed">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Net Cashflow</p>
-            <p
-              className={`text-md ${
-                net >= 0 ? "text-emerald-500" : "text-rose-500"
-              }`}
-            >
-              {net >= 0 ? "+" : ""}
-              {compactNum(net)}
-            </p>
+            <p className="text-muted-foreground">Net Cashflow</p>
+            <div className="flex items-center gap-1 font-thin [&_svg]:size-5">
+              {net !== null && net < 0
+                ? <TrendingDown className="text-red-700" />
+                : <TrendingUp className="text-green-500" />
+              }
+              {net !== null && `${compactNum(Math.abs(net))}`}
+            </div>
           </div>
         </div>
       </Card.Content>
