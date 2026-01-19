@@ -88,34 +88,38 @@ function ChartCard<
         <Card.Title className="text-2xl">
           {majorValue && majorValueFormatter(majorValue)}
         </Card.Title>
-        {minorValue1 != null && minorValue2 != null && (
           <Card.Action className="flex items-center gap-4">
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-                {minorValue1 !== null && minorValue1 < 0
-                  ? <TrendingDown className="text-red-700" />
-                  : <TrendingUp className="text-green-500" />
-                }
-                {minorValue1 !== null && minorValue1Formatter?.(Math.abs(minorValue1))}
+            {minorValue1 && (
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+                  {minorValue1 !== null && minorValue1 < 0
+                    ? <TrendingDown className="text-red-700" />
+                    : <TrendingUp className="text-green-500" />
+                  }
+                  {minorValue1 !== null && minorValue1Formatter?.(Math.abs(minorValue1))}
+                </div>
+                <Card.Subtitle className="text-xs">{minorText1}</Card.Subtitle>
               </div>
-              <Card.Subtitle className="text-xs">{minorText1}</Card.Subtitle>
-            </div>
-            <Separator
-              orientation="vertical"
-              className="data-[orientation=vertical]:h-8 -mr-1"
-            />
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-                {minorValue2 !== null && minorValue2 < 0
-                  ? <TrendingDown className="text-red-700" />
-                  : <TrendingUp className="text-green-500" />
-                }
-                {minorValue2 !== null && minorValue2Formatter?.(Math.abs(minorValue2))}
+            )}
+            {minorValue2 && (
+              <Separator
+                orientation="vertical"
+                className="data-[orientation=vertical]:h-8 -mr-1"
+              />
+            )}
+            {minorValue2 && (
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+                  {minorValue2 !== null && minorValue2 < 0
+                    ? <TrendingDown className="text-red-700" />
+                    : <TrendingUp className="text-green-500" />
+                  }
+                  {minorValue2 !== null && minorValue2Formatter?.(Math.abs(minorValue2))}
+                </div>
+                <Card.Subtitle className="text-xs">{minorText2}</Card.Subtitle>
               </div>
-              <Card.Subtitle className="text-xs">{minorText2}</Card.Subtitle>
-            </div>
+            )}
           </Card.Action>
-        )}
       </Card.Header>
       <Card.Content className="flex flex-col gap-4 h-full">
         {dateRange && onDateRangeChange && (
@@ -157,8 +161,8 @@ function ChartCardSkeleton({
   tabswitch = true
 }: {
   description: string,
-  minorText1: string,
-  minorText2: string,
+  minorText1?: string,
+  minorText2?: string,
   cardClassName?: string,
   tabswitch?: boolean
 }) {
@@ -172,22 +176,24 @@ function ChartCardSkeleton({
           <Skeleton className="h-8 w-32" />
         </Card.Title>
         <Card.Action className="flex gap-3 items-end">
-          <div className="flex flex-col gap-1 items-end">
-            <Skeleton className="h-4 w-10" />
-            <Card.Subtitle className="text-xs">
-              {minorText1}
-            </Card.Subtitle>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col gap-1 items-end">
-            <Skeleton className="h-4 w-10" />
-            <Card.Subtitle className="text-xs">
-              {minorText2}
-            </Card.Subtitle>
-          </div>
+          {minorText1 && (
+            <div className="flex flex-col gap-1 items-end">
+              <Skeleton className="h-4 w-10" />
+              <Card.Subtitle className="text-xs">{minorText1}</Card.Subtitle>
+            </div>
+          )}
+          {minorText2 && (
+            <Separator
+              orientation="vertical"
+              className="data-[orientation=vertical]:h-8 -mr-1"
+            />
+          )}
+          {minorText2 && (
+            <div className="flex flex-col gap-1 items-end">
+              <Skeleton className="h-4 w-10" />
+              <Card.Subtitle className="text-xs">{minorText2}</Card.Subtitle>
+            </div>
+          )}
         </Card.Action>
       </Card.Header>
       <Card.Content className="px-4 flex flex-col gap-1 h-full">

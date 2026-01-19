@@ -19,7 +19,7 @@ export function Cashflow({
 
   if (isLoading)
     return (
-      <Card.Root className="gap-0 h-full">
+      <Card.Root className="gap-0 h-fit">
         <Card.Header>
           <Card.Title>Cashflow</Card.Title>
           <Card.Action>
@@ -62,7 +62,7 @@ export function Cashflow({
   const net = inflow - outflow
 
   return (
-    <Card.Root variant="glow" className={`gap-6 h-full ${className}`}>
+    <Card.Root variant="glow" className={`gap-6 h-fit ${className}`}>
       <Card.Header>
         <Card.Title className="text-xl">Cashflow</Card.Title>
         <Card.Action>
