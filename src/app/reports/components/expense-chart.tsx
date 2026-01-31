@@ -52,16 +52,16 @@ export function ExpenseChart({
 
   const expenseChartCfg = {
     tax: {
-      label: "Taxes",
-      color: "var(--chart-1)",
+      label: "Tax",
+      color: "var(--chart-4)",
     },
     fee: {
       label: "Fee",
-      color: "var(--chart-2)",
+      color: "var(--chart-3)",
     },
     interest: {
       label: "Interest",
-      color: "var(--chart-3)",
+      color: "var(--chart-1)",
     }
   } satisfies ChartConfig
 
@@ -69,17 +69,17 @@ export function ExpenseChart({
     {
       liability: "tax",
       allocation: filteredData.reduce((acc, curr) => acc - curr.tax, 0),
-      fill: "var(--chart-1)",
+      fill: "var(--chart-4)",
     },
     {
       liability: "fee",
       allocation: filteredData.reduce((acc, curr) => acc - curr.fee, 0),
-      fill: "var(--chart-2)",
+      fill: "var(--chart-3)",
     },
     {
       liability: "interest",
       allocation: filteredData.reduce((acc, curr) => acc - curr.interest, 0),
-      fill: "var(--chart-3)",
+      fill: "var(--chart-1)",
     }
   ].filter((d) => d.allocation > 0)
 
@@ -100,10 +100,10 @@ export function ExpenseChart({
           dataKey={"allocation"}
           nameKey="liability"
           className="w-full"
-          innerRadius={70}
+          innerRadius={60}
           legend="bottom"
           label={true}
-          label_pos={2.5}
+          label_pos={1.5}
           margin_tb={1}
           centerText="Total Expenses"
           centerValue={compactNum(totalExpenses)}

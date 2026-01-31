@@ -1,11 +1,13 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import * as Card from "@/components/ui/card"
-import { useEffect, useState } from "react"
 import { useReportsData } from "@/hooks/useReportsData"
+import { useDelayedData } from "@/hooks/useDelayedData"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { format } from "date-fns"
 
 interface ReturnChartProps {
   year?: string | number
@@ -19,19 +21,27 @@ interface ChartPoint extends Record<string, string | number> {
 
 export function ReturnChart({ year }: ReturnChartProps) {
   const [data, setData] = useState<ChartPoint[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
   const { annualReturn, isLoading: isReportsLoading } = useReportsData()
+  const { benchmarkData, isLoading: isDelayedDataLoading } = useDelayedData()
 
   useEffect(() => {
     if (!year) return
-
-    const controller = new AbortController()
-
-    const fetchData = async () => {
-      setIsLoading(true)
+    // If "All Time", directly use benchmarkData from hook
+    if (year === "All Time") {
+      setData(benchmarkData.all_time as ChartPoint[])
       setError(null)
+      setIsFetching(false)
+      return
+    }
 
+    // Otherwise, fetch yearly data from API
+    const controller = new AbortController()
+    const fetchData = async () => {
+      setIsFetching(true)
+      setError(null)
       try {
         const res = await fetch(`/api/gateway/annual-chart?year=${year}`, {
           signal: controller.signal,
@@ -71,24 +81,25 @@ export function ReturnChart({ year }: ReturnChartProps) {
         })
 
         setData(jsonData)
-      } catch (error: unknown) {
-        console.error(error)
-        const message =
-          error instanceof Error ? error.message : "Internal Server Error"
+      } catch (err: unknown) {
+        console.error(err)
+        const message = err instanceof Error ? err.message : "Internal Server Error"
         setError(message)
       } finally {
-        setIsLoading(false)
+        setIsFetching(false)
       }
     }
 
     fetchData()
     return () => controller.abort()
-  }, [year])
+  }, [year, benchmarkData])
 
-  if (isLoading || isReportsLoading) {
+  const isLoading = isFetching || isReportsLoading || isDelayedDataLoading
+
+  if (isLoading) {
     return (
       <ChartCardSkeleton
-        description="Equity Return"
+        title="Equity Return"
         minorText1="VN-Index"
         tabswitch={false}
       />
@@ -128,7 +139,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
 
   return (
     <ChartCard
-      description="Equity Return"
+      title="Equity Return"
       majorValue={equityReturn}
       majorValueFormatter={(value) => `${formatNum(value, 1)}%`}
       minorValue1={vnIndexReturn}
@@ -150,15 +161,12 @@ export function ReturnChart({ year }: ReturnChartProps) {
       xAxisDataKey="snapshot_date"
       chartDataKeys={["portfolio_value", "vni_value"]}
       legend={true}
-      xAxisTickFormatter={(value: string | number) => {
-        if (!value) return ""
-        const strValue = typeof value === "string" ? value : String(value)
-        const date = new Date(strValue)
-        return isNaN(date.getTime())
-          ? strValue
-          : date.toLocaleString("en-US", { month: "short", year: "2-digit" })
-      }}
       yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}
+      xAxisTickFormatter={(value: string | number) => {
+        const date = new Date(value)
+        if (isNaN(date.getTime())) return String(value)
+        return year === "All Time" ? format(date, "MMM yyyy") : format(date, "dd MMM")
+      }}
       tooltipValueFormatter={(value) => formatNum(value, 1)}
     />
   )

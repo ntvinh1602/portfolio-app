@@ -10,7 +10,7 @@ export function Benchmarkchart() {
 
   if (isLoading) return (
     <ChartCardSkeleton
-      description="Year-to-Date Return"
+      title="Year-to-Date Return"
       minorText1="all time"
       minorText2="annualized"
       cardClassName="gap-4 h-full"
@@ -24,9 +24,10 @@ export function Benchmarkchart() {
 
    return (
     <ChartCard
-      description="Year-to-Date Return"
+      title="Return"
       majorValue={twrData.ytd}
       majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
+      description="this year"
       minorValue1={twrData.all_time}
       minorValue1Formatter={(value) => `${formatNum(value * 100, 1)}%`}
       minorText1="all time"

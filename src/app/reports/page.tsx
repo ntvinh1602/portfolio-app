@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Header } from "@/components/header"
 import { YearSelect } from "./components/year-select"
-import { MonthlyChart } from "./components/monthly-chart"
+import { ProfitChart } from "./components/profit-chart"
 import { ExpenseChart } from "./components/expense-chart"
 import { StockLeaderboard } from "./components/stock-leaderboard"
 import { Cashflow } from "./components/cashflow"
@@ -24,7 +24,7 @@ export default function Page() {
             <StockLeaderboard year={year} />
           </div>
           <div className="flex md:col-span-4 h-full flex-col gap-2 min-w-0">
-            <MonthlyChart year={year} />
+            <ProfitChart year={year} />
             <ReturnChart year={year} />
           </div>
           <div className="flex md:col-span-3 flex-col gap-2 min-w-0 h-full">

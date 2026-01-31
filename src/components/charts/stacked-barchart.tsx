@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/chart"
 import { compactNum } from "@/lib/utils"
 
-export function ChartBarStacked<TData extends object>({
+export function ChartBarStacked<
+  TData extends Record<string, string | number | undefined>
+>({
   data,
   config,
   className,
@@ -35,13 +37,9 @@ export function ChartBarStacked<TData extends object>({
   xAxisDataKey: string
   valueFormatter?: (value: number) => string
 }) {
-
   return (
-    <ChartContainer
-      config={config}
-      className={className}
-    >
-      <BarChart 
+    <ChartContainer config={config} className={className}>
+      <BarChart
         accessibilityLayer
         data={data}
         layout="horizontal"
@@ -68,9 +66,7 @@ export function ChartBarStacked<TData extends object>({
         />
         <ChartTooltip
           cursor={true}
-          content={
-            <ChartTooltipContent valueFormatter={valueFormatter}/>
-          }
+          content={<ChartTooltipContent valueFormatter={valueFormatter} />}
         />
         <ChartLegend
           content={<ChartLegendContent />}

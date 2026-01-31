@@ -13,7 +13,7 @@ export function ExpenseChart() {
   if (isLoading)
     return (
     <ChartCardSkeleton
-      description="Last 1-year Profit"
+      title="Last 1-year Profit"
       minorText1="avg. profit"
       minorText2="avg. cost"
       cardClassName="gap-4 h-full"
@@ -38,9 +38,10 @@ export function ExpenseChart() {
 
   return (
     <ChartCard
-      description="Last 1-year Profit"
+      title="Net Profit"
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
+      description="last 1y"
       minorValue1={avg12MPnl}
       minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
       minorText1="avg. profit"
