@@ -42,8 +42,8 @@ function TradingViewWidgetComponent() {
       "changeMode": "price-and-percent",
       symbols: [
         ["Bitcoin", "BINANCE:BTCUSDT|1D"],
-        ["S&P 500", "FOREXCOM:SPXUSD|1M"],
         ["Gold", "CAPITALCOM:GOLD|1M"],
+        ["Silver", "CAPITALCOM:SILVER|1M"],
       ],
       dateRanges: [
         "1d|5",
