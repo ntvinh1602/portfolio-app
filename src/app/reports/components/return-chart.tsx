@@ -10,7 +10,7 @@ import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { format } from "date-fns"
 
 interface ReturnChartProps {
-  year?: string | number
+  year: string
 }
 
 interface ChartPoint extends Record<string, string | number> {
@@ -24,7 +24,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { annualReturn, isLoading: isReportsLoading } = useReportsData()
+  const { yearly, isLoading: isReportsLoading } = useReportsData()
   const { benchmarkData, isLoading: isDelayedDataLoading } = useDelayedData()
 
   useEffect(() => {
@@ -117,25 +117,10 @@ export function ReturnChart({ year }: ReturnChartProps) {
     )
   }
 
-  const key = year === "All Time" ? "All-Time" : String(year)
-  const currentData =
-    annualReturn[key] ??
-    Object.entries(annualReturn)
-      .sort((a, b) => {
-        const aNum = a[0] === "All-Time" ? Infinity : Number(a[0])
-        const bNum = b[0] === "All-Time" ? Infinity : Number(b[0])
-        return bNum - aNum
-      })[0]?.[1] ??
-    null
-
-  const equityReturn =
-    typeof currentData?.equity_return === "number"
-      ? currentData.equity_return
-      : null
-  const vnIndexReturn =
-    typeof currentData?.vnindex_return === "number"
-      ? currentData.vnindex_return
-      : null
+  const yearNum = year === "All Time" ? "All-Time" : year
+  const yearData = yearly.find((item) => item.year === yearNum)
+  const equityReturn = yearData?.equity_return ?? 0
+  const vnIndexReturn = yearData?.vnindex_return ?? 0
 
   return (
     <ChartCard

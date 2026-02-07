@@ -1014,7 +1014,7 @@ ALTER FUNCTION "public"."assets_quantity_trigger"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
-    LANGUAGE "plpgsql" SECURITY DEFINER
+    LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
 DECLARE
@@ -1029,6 +1029,7 @@ BEGIN
   WHERE date < p_start_date
   ORDER BY date DESC
   LIMIT 1;
+
   -- If no prior snapshot, this is the first month.
   -- Use the opening equity of the first day as the starting equity.
   IF v_start_equity IS NULL THEN
@@ -1038,18 +1039,22 @@ BEGIN
     ORDER BY date ASC
     LIMIT 1;
   END IF;
+
   -- Get ending equity (closing equity of the end date)
   SELECT net_equity_value INTO v_end_equity
   FROM public.daily_performance_snapshots
   WHERE date <= p_end_date
   ORDER BY date DESC
   LIMIT 1;
+
   -- Get net cash flow for the period
   SELECT COALESCE(SUM(net_cash_flow), 0) INTO v_cash_flow
   FROM public.daily_performance_snapshots
   WHERE date >= p_start_date AND date <= p_end_date;
+
   -- Calculate PnL
   v_pnl := (COALESCE(v_end_equity, 0) - COALESCE(v_start_equity, 0)) - v_cash_flow;
+
   RETURN v_pnl;
 END;
 $$;
@@ -1094,89 +1099,6 @@ $$;
 
 
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."generate_monthly_snapshots"() RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_start_date DATE := DATE '2021-11-01';
-  v_end_date DATE := CURRENT_DATE;
-  v_month_start DATE;
-  v_month_end DATE;
-  v_pnl NUMERIC;
-BEGIN
-  FOR v_month_start IN
-    SELECT date_trunc('month', dd)::DATE
-    FROM generate_series(v_start_date, v_end_date, '1 month'::interval) dd
-  LOOP
-    -- last day of the month (or today if current month)
-    IF date_trunc('month', v_month_start) = date_trunc('month', v_end_date) THEN
-      v_month_end := v_end_date;
-    ELSE
-      v_month_end := (v_month_start + INTERVAL '1 month - 1 day')::DATE;
-    END IF;
-
-    -- Calculate PnL
-    SELECT public.calculate_pnl(v_month_start, v_month_end) INTO v_pnl;
-
-    -- Calculate expenses directly
-    INSERT INTO public.monthly_snapshots (date, pnl, interest, tax, fee)
-    WITH
-    -- 1. Trading fees + taxes
-    trading_costs AS (
-      SELECT
-        COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%fee%'), 0) AS total_fees,
-        COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%tax%'), 0) AS total_taxes
-      FROM public.transactions t
-      JOIN public.transaction_legs tl ON t.id = tl.transaction_id
-      JOIN public.assets a ON tl.asset_id = a.id
-      WHERE t.transaction_date BETWEEN v_month_start AND v_month_end
-        AND t.type = 'expense'
-        AND a.ticker IN ('EARNINGS', 'CAPITAL')
-    ),
-    -- 2. Loan interest
-    loan_interest_costs AS (
-      SELECT
-        COALESCE(SUM(tl.amount), 0) AS total_interest
-      FROM public.transactions t
-      JOIN public.transaction_legs tl ON t.id = tl.transaction_id
-      JOIN public.assets a ON tl.asset_id = a.id
-      WHERE t.transaction_date BETWEEN v_month_start AND v_month_end
-        AND t.type = 'repay'
-        AND a.ticker IN ('EARNINGS', 'CAPITAL')
-    ),
-    -- 3. Margin + cash advance interest
-    other_interest_costs AS (
-      SELECT
-        COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Margin%'), 0) AS margin_interest,
-        COALESCE(SUM(tl.amount) FILTER (WHERE t.description ILIKE '%Cash advance%'), 0) AS cash_advance_interest
-      FROM public.transactions t
-      JOIN public.transaction_legs tl ON t.id = tl.transaction_id
-      JOIN public.assets a ON tl.asset_id = a.id
-      WHERE t.transaction_date BETWEEN v_month_start AND v_month_end
-        AND t.type = 'expense'
-        AND a.ticker IN ('EARNINGS', 'CAPITAL')
-    )
-    SELECT
-      v_month_start,
-      v_pnl,
-      (lic.total_interest + oic.margin_interest + oic.cash_advance_interest) AS interest,
-      tc.total_taxes,
-      tc.total_fees
-    FROM trading_costs tc, loan_interest_costs lic, other_interest_costs oic
-    ON CONFLICT (date) DO UPDATE
-      SET pnl = EXCLUDED.pnl,
-          interest = EXCLUDED.interest,
-          tax = EXCLUDED.tax,
-          fee = EXCLUDED.fee;
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."generate_monthly_snapshots"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") RETURNS "void"
@@ -1319,135 +1241,6 @@ $$;
 
 
 ALTER FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_annual_cashflow"() RETURNS TABLE("year" integer, "deposits" numeric, "withdrawals" numeric)
-    LANGUAGE "sql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-  SELECT
-    EXTRACT(YEAR FROM date)::int AS year,
-    SUM(CASE WHEN net_cash_flow > 0 THEN net_cash_flow ELSE 0 END) AS deposits,
-    SUM(CASE WHEN net_cash_flow < 0 THEN net_cash_flow ELSE 0 END) AS withdrawals
-  FROM public.daily_performance_snapshots
-  GROUP BY year
-  ORDER BY year;
-$$;
-
-
-ALTER FUNCTION "public"."get_annual_cashflow"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid" DEFAULT 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid") RETURNS TABLE("asset_id" "uuid", "ticker" "text", "year" integer, "total_pnl" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-BEGIN
-  RETURN QUERY
-  WITH capital_legs AS (
-    SELECT
-      tl.transaction_id,
-      tl.amount AS capital_amount,
-      t.transaction_date
-    FROM transaction_legs tl
-    JOIN transactions t ON t.id = tl.transaction_id
-    WHERE tl.asset_id = p_owner_capital_id
-  ),
-  stock_legs AS (
-    SELECT
-      tl.transaction_id,
-      tl.asset_id AS stock_id
-    FROM transaction_legs tl
-    JOIN assets a ON a.id = tl.asset_id
-    WHERE a.asset_class = 'stock'
-  )
-  SELECT
-    a.id AS asset_id,
-    a.ticker,
-    EXTRACT(YEAR FROM c.transaction_date)::int AS year,
-    -SUM(c.capital_amount) AS total_pnl
-  FROM capital_legs c
-  JOIN stock_legs s ON s.transaction_id = c.transaction_id
-  JOIN assets a ON a.id = s.stock_id
-  GROUP BY a.id, a.ticker, EXTRACT(YEAR FROM c.transaction_date)
-  ORDER BY year DESC, total_pnl DESC;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_annual_return"() RETURNS TABLE("yr" "text", "equity_ret" numeric, "vn_ret" numeric)
-    LANGUAGE "sql"
-    AS $$
-with equity_data as (
-    select extract(year from date) as yr, date as dps_date, equity_index
-    from public.daily_performance_snapshots
-    where equity_index is not null
-),
-equity_end_of_year as (
-    select yr, max(dps_date) as last_date
-    from equity_data
-    group by yr
-),
-equity_with_prev as (
-    select e.yr, eoy.last_date, e.equity_index as end_value,
-           lag(e.equity_index) over (order by e.yr) as start_value
-    from equity_end_of_year eoy
-    join equity_data e on e.dps_date = eoy.last_date
-),
-vnindex_data as (
-    select extract(year from date) as yr, date as dmi_date, close
-    from public.daily_market_indices
-    where symbol = 'VNINDEX' and close is not null
-),
-vnindex_end_of_year as (
-    select yr, max(dmi_date) as last_date
-    from vnindex_data
-    group by yr
-),
-vnindex_with_prev as (
-    select v.yr, voy.last_date, v.close as end_value,
-           lag(v.close) over (order by v.yr) as start_value
-    from vnindex_end_of_year voy
-    join vnindex_data v on v.dmi_date = voy.last_date
-),
-yearly as (
-    select coalesce(e.yr, v.yr)::text as yr,
-           round(((e.end_value - e.start_value)/e.start_value)*100,2) as equity_ret,
-           round(((v.end_value - v.start_value)/v.start_value)*100,2) as vn_ret
-    from equity_with_prev e
-    full outer join vnindex_with_prev v on e.yr = v.yr
-    where e.start_value is not null or v.start_value is not null
-),
-all_time as (
-    select 'All-Time'::text as yr,
-           round(((last_equity - first_equity) / first_equity) * 100, 2) as equity_ret,
-           round(((last_vnindex - first_vnindex) / first_vnindex) * 100, 2) as vn_ret
-    from (
-        select
-            (select equity_index from public.daily_performance_snapshots 
-             order by date asc limit 1) as first_equity,
-            (select equity_index from public.daily_performance_snapshots 
-             order by date desc limit 1) as last_equity,
-            (select close from public.daily_market_indices 
-             where symbol='VNINDEX' order by date asc limit 1) as first_vnindex,
-            (select close from public.daily_market_indices 
-             where symbol='VNINDEX' order by date desc limit 1) as last_vnindex
-    ) sub
-)
-select *
-from (
-    select * from yearly
-    union all
-    select * from all_time
-) t
-order by case when yr='All-Time' then 9999 else yr::int end;
-$$;
-
-
-ALTER FUNCTION "public"."get_annual_return"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_asset_balance"("p_asset_id" "uuid") RETURNS numeric
@@ -2481,7 +2274,6 @@ BEGIN
   -- Run both snapshot generators
   IF v_date IS NOT NULL THEN
     PERFORM public.generate_performance_snapshots(v_date, CURRENT_DATE);
-    PERFORM public.generate_monthly_snapshots();
   END IF;
 
   RETURN NEW;
@@ -2605,35 +2397,6 @@ CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
 ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."monthly_snapshots" (
-    "date" "date" NOT NULL,
-    "pnl" numeric NOT NULL,
-    "interest" numeric NOT NULL,
-    "tax" numeric NOT NULL,
-    "fee" numeric NOT NULL
-);
-
-
-ALTER TABLE "public"."monthly_snapshots" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "creation_transaction_id" "uuid" NOT NULL,
-    "creation_date" "date" NOT NULL,
-    "original_quantity" numeric(20,8) NOT NULL,
-    "cost_basis" numeric(16,4) DEFAULT 0 NOT NULL,
-    "remaining_quantity" numeric(20,8) NOT NULL,
-    CONSTRAINT "tax_lots_cost_basis_check" CHECK ((("cost_basis")::numeric >= (0)::numeric)),
-    CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
-    CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
-);
-
-
-ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "transaction_id" "uuid" NOT NULL,
@@ -2659,6 +2422,226 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
 
 
 ALTER TABLE "public"."transactions" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on') AS
+ WITH "month_ranges" AS (
+         SELECT ("date_trunc"('month'::"text", "dd"."dd"))::"date" AS "month_start",
+            LEAST((("date_trunc"('month'::"text", "dd"."dd") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
+           FROM "generate_series"(('2021-11-01'::"date")::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "dd"("dd")
+        )
+ SELECT "m"."month_start" AS "date",
+    "public"."calculate_pnl"("m"."month_start", "m"."month_end") AS "pnl",
+    ((COALESCE("lic"."total_interest", (0)::numeric) + COALESCE("oic"."margin_interest", (0)::numeric)) + COALESCE("oic"."cash_advance_interest", (0)::numeric)) AS "interest",
+    COALESCE("tc"."total_taxes", (0)::numeric) AS "tax",
+    COALESCE("tc"."total_fees", (0)::numeric) AS "fee"
+   FROM ((("month_ranges" "m"
+     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%fee%'::"text")) AS "total_fees",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%tax%'::"text")) AS "total_taxes"
+           FROM (("public"."transactions" "t"
+             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
+             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'expense'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "tc" ON (true))
+     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") AS "total_interest"
+           FROM (("public"."transactions" "t"
+             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
+             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'repay'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "lic" ON (true))
+     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Margin%'::"text")) AS "margin_interest",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Cash advance%'::"text")) AS "cash_advance_interest"
+           FROM (("public"."transactions" "t"
+             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
+             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'expense'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "oic" ON (true));
+
+
+ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
+ WITH "capital_legs" AS (
+         SELECT "tl"."transaction_id",
+            "tl"."amount" AS "capital_amount",
+            "t"."transaction_date"
+           FROM ("public"."transaction_legs" "tl"
+             JOIN "public"."transactions" "t" ON (("t"."id" = "tl"."transaction_id")))
+          WHERE ("tl"."asset_id" = 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid")
+        ), "stock_legs" AS (
+         SELECT "tl"."transaction_id",
+            "tl"."asset_id" AS "stock_id"
+           FROM ("public"."transaction_legs" "tl"
+             JOIN "public"."assets" "a_1" ON (("a_1"."id" = "tl"."asset_id")))
+          WHERE ("a_1"."asset_class" = 'stock'::"public"."asset_class")
+        )
+ SELECT "a"."id" AS "asset_id",
+    "a"."ticker",
+    (EXTRACT(year FROM "c"."transaction_date"))::integer AS "year",
+    (- "sum"("c"."capital_amount")) AS "total_pnl"
+   FROM (("capital_legs" "c"
+     JOIN "stock_legs" "s" ON (("s"."transaction_id" = "c"."transaction_id")))
+     JOIN "public"."assets" "a" ON (("a"."id" = "s"."stock_id")))
+  GROUP BY "a"."id", "a"."ticker", (EXTRACT(year FROM "c"."transaction_date"))
+  ORDER BY ((EXTRACT(year FROM "c"."transaction_date"))::integer) DESC, (- "sum"("c"."capital_amount")) DESC;
+
+
+ALTER VIEW "public"."stock_annual_pnl" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "creation_transaction_id" "uuid" NOT NULL,
+    "creation_date" "date" NOT NULL,
+    "original_quantity" numeric(20,8) NOT NULL,
+    "cost_basis" numeric(16,4) DEFAULT 0 NOT NULL,
+    "remaining_quantity" numeric(20,8) NOT NULL,
+    CONSTRAINT "tax_lots_cost_basis_check" CHECK ((("cost_basis")::numeric >= (0)::numeric)),
+    CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
+    CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
+);
+
+
+ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on') AS
+ WITH "annual_cashflow" AS (
+         SELECT (EXTRACT(year FROM "daily_performance_snapshots"."date"))::integer AS "year",
+            "sum"(
+                CASE
+                    WHEN ("daily_performance_snapshots"."net_cash_flow" > (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    ELSE (0)::numeric
+                END) AS "deposits",
+            "sum"(
+                CASE
+                    WHEN ("daily_performance_snapshots"."net_cash_flow" < (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    ELSE (0)::numeric
+                END) AS "withdrawals"
+           FROM "public"."daily_performance_snapshots"
+          GROUP BY (EXTRACT(year FROM "daily_performance_snapshots"."date"))
+        ), "equity_data" AS (
+         SELECT EXTRACT(year FROM "daily_performance_snapshots"."date") AS "yr",
+            "daily_performance_snapshots"."date" AS "dps_date",
+            "daily_performance_snapshots"."equity_index"
+           FROM "public"."daily_performance_snapshots"
+          WHERE ("daily_performance_snapshots"."equity_index" IS NOT NULL)
+        ), "equity_end_of_year" AS (
+         SELECT "equity_data"."yr",
+            "max"("equity_data"."dps_date") AS "last_date"
+           FROM "equity_data"
+          GROUP BY "equity_data"."yr"
+        ), "equity_with_prev" AS (
+         SELECT "e"."yr",
+            "eoy"."last_date",
+            "e"."equity_index" AS "end_value",
+            "lag"("e"."equity_index") OVER (ORDER BY "e"."yr") AS "start_value"
+           FROM ("equity_end_of_year" "eoy"
+             JOIN "equity_data" "e" ON (("e"."dps_date" = "eoy"."last_date")))
+        ), "vnindex_data" AS (
+         SELECT EXTRACT(year FROM "daily_market_indices"."date") AS "yr",
+            "daily_market_indices"."date" AS "dmi_date",
+            "daily_market_indices"."close"
+           FROM "public"."daily_market_indices"
+          WHERE (("daily_market_indices"."symbol" = 'VNINDEX'::"text") AND ("daily_market_indices"."close" IS NOT NULL))
+        ), "vnindex_end_of_year" AS (
+         SELECT "vnindex_data"."yr",
+            "max"("vnindex_data"."dmi_date") AS "last_date"
+           FROM "vnindex_data"
+          GROUP BY "vnindex_data"."yr"
+        ), "vnindex_with_prev" AS (
+         SELECT "v"."yr",
+            "voy"."last_date",
+            "v"."close" AS "end_value",
+            "lag"("v"."close") OVER (ORDER BY "v"."yr") AS "start_value"
+           FROM ("vnindex_end_of_year" "voy"
+             JOIN "vnindex_data" "v" ON (("v"."dmi_date" = "voy"."last_date")))
+        ), "yearly_returns" AS (
+         SELECT (COALESCE("e"."yr", "v"."yr"))::integer AS "year",
+            "round"(((("e"."end_value" - "e"."start_value") / "e"."start_value") * (100)::numeric), 2) AS "equity_ret",
+            "round"(((("v"."end_value" - "v"."start_value") / "v"."start_value") * (100)::numeric), 2) AS "vn_ret"
+           FROM ("equity_with_prev" "e"
+             FULL JOIN "vnindex_with_prev" "v" ON (("e"."yr" = "v"."yr")))
+          WHERE (("e"."start_value" IS NOT NULL) OR ("v"."start_value" IS NOT NULL))
+        ), "all_time_cashflow" AS (
+         SELECT "sum"(
+                CASE
+                    WHEN ("daily_performance_snapshots"."net_cash_flow" > (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    ELSE (0)::numeric
+                END) AS "deposits",
+            "sum"(
+                CASE
+                    WHEN ("daily_performance_snapshots"."net_cash_flow" < (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    ELSE (0)::numeric
+                END) AS "withdrawals"
+           FROM "public"."daily_performance_snapshots"
+        ), "scalar_values" AS (
+         SELECT ( SELECT "daily_performance_snapshots"."equity_index"
+                   FROM "public"."daily_performance_snapshots"
+                  ORDER BY "daily_performance_snapshots"."date"
+                 LIMIT 1) AS "first_equity",
+            ( SELECT "daily_performance_snapshots"."equity_index"
+                   FROM "public"."daily_performance_snapshots"
+                  ORDER BY "daily_performance_snapshots"."date" DESC
+                 LIMIT 1) AS "last_equity",
+            ( SELECT "daily_market_indices"."close"
+                   FROM "public"."daily_market_indices"
+                  WHERE ("daily_market_indices"."symbol" = 'VNINDEX'::"text")
+                  ORDER BY "daily_market_indices"."date"
+                 LIMIT 1) AS "first_vnindex",
+            ( SELECT "daily_market_indices"."close"
+                   FROM "public"."daily_market_indices"
+                  WHERE ("daily_market_indices"."symbol" = 'VNINDEX'::"text")
+                  ORDER BY "daily_market_indices"."date" DESC
+                 LIMIT 1) AS "last_vnindex"
+        ), "all_time" AS (
+         SELECT 9999 AS "year",
+            "round"(((("sv"."last_equity" - "sv"."first_equity") / "sv"."first_equity") * (100)::numeric), 2) AS "equity_ret",
+            "round"(((("sv"."last_vnindex" - "sv"."first_vnindex") / "sv"."first_vnindex") * (100)::numeric), 2) AS "vn_ret",
+            "ac"."deposits",
+            "ac"."withdrawals"
+           FROM ("scalar_values" "sv"
+             CROSS JOIN "all_time_cashflow" "ac")
+        ), "yearly_combined" AS (
+         SELECT "yr"."year",
+            "cf"."deposits",
+            "cf"."withdrawals",
+            "yr"."equity_ret",
+            "yr"."vn_ret"
+           FROM ("yearly_returns" "yr"
+             LEFT JOIN "annual_cashflow" "cf" ON (("yr"."year" = "cf"."year")))
+        ), "combined" AS (
+         SELECT "yearly_combined"."year",
+            "yearly_combined"."deposits",
+            "yearly_combined"."withdrawals",
+            "yearly_combined"."equity_ret",
+            "yearly_combined"."vn_ret"
+           FROM "yearly_combined"
+        UNION ALL
+         SELECT "all_time"."year",
+            "all_time"."deposits",
+            "all_time"."withdrawals",
+            "all_time"."equity_ret",
+            "all_time"."vn_ret"
+           FROM "all_time"
+        )
+ SELECT
+        CASE
+            WHEN ("year" = 9999) THEN 'All-Time'::"text"
+            ELSE ("year")::"text"
+        END AS "year",
+    "deposits",
+    "withdrawals",
+    "equity_ret",
+    "vn_ret"
+   FROM "combined"
+  ORDER BY
+        CASE
+            WHEN ("year" = 9999) THEN 9999
+            ELSE "year"
+        END;
+
+
+ALTER VIEW "public"."yearly_snapshots" OWNER TO "postgres";
 
 
 ALTER TABLE ONLY "public"."assets"
@@ -2708,11 +2691,6 @@ ALTER TABLE ONLY "public"."lot_consumptions"
 
 ALTER TABLE ONLY "public"."daily_market_indices"
     ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
-
-
-
-ALTER TABLE ONLY "public"."monthly_snapshots"
-    ADD CONSTRAINT "monthly_snapshots_pkey" PRIMARY KEY ("date");
 
 
 
@@ -2885,10 +2863,6 @@ CREATE POLICY "Logged in users can access lot consumptions" ON "public"."lot_con
 
 
 
-CREATE POLICY "Logged in users can access monthly snapshots" ON "public"."monthly_snapshots" TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Logged in users can access performance snapshots" ON "public"."daily_performance_snapshots" TO "authenticated" USING (true);
 
 
@@ -2934,9 +2908,6 @@ ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."monthly_snapshots" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
@@ -3215,33 +3186,9 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
-GRANT ALL ON FUNCTION "public"."generate_monthly_snapshots"() TO "anon";
-GRANT ALL ON FUNCTION "public"."generate_monthly_snapshots"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."generate_monthly_snapshots"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_annual_cashflow"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_annual_pnl_by_stock"("p_owner_capital_id" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_annual_return"() TO "service_role";
 
 
 
@@ -3440,18 +3387,6 @@ GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."monthly_snapshots" TO "anon";
-GRANT ALL ON TABLE "public"."monthly_snapshots" TO "authenticated";
-GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
-GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
-GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
@@ -3461,6 +3396,30 @@ GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
 GRANT ALL ON TABLE "public"."transactions" TO "anon";
 GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
 GRANT ALL ON TABLE "public"."transactions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."monthly_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."monthly_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "anon";
+GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "authenticated";
+GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
+GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
+GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."yearly_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."yearly_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."yearly_snapshots" TO "service_role";
 
 
 

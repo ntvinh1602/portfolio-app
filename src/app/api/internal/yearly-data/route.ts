@@ -14,42 +14,31 @@ export async function GET(req: NextRequest) {
     // --- Supabase client ---
     const supabase = await createClient()
 
-    // --- Optional query param (e.g. /api/get-yearly-cashflow-summary?year=2025) ---
-    const { searchParams } = new URL(req.url)
-    const yearParam = searchParams.get("year")
-
-    // --- Call the RPC function ---
-    const { data, error } = await supabase.rpc("get_annual_cashflow")
+    // --- Query the new view directly ---
+    const { data, error } = await supabase
+      .from("yearly_snapshots")
+      .select("*")
 
     if (error) {
-      console.error("Supabase RPC error:", error)
+      console.error("Supabase query error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return NextResponse.json({ message: "No data found" }, { status: 200 })
     }
 
-    // --- Optional: filter client-side by year ---
-    const filteredData = yearParam
-      ? data.filter((row: { year: number }) => row.year === Number(yearParam))
-      : data
-
-    // --- Normalize output structure ---
-    const formatted = filteredData.map(
-      (row: {
-        year: number
-        deposits: number
-        withdrawals: number
-      }) => ({
-        year: row.year,
-        deposits: Number(row.deposits),
-        withdrawals: Number(row.withdrawals),
-      })
-    )
+    // --- Normalize output types ---
+    const formatted = data.map((row) => ({
+      year: row.year,
+      deposits: Number(row.deposits ?? 0),
+      withdrawals: Number(row.withdrawals ?? 0),
+      equity_return: Number(row.equity_ret ?? 0),
+      vnindex_return: Number(row.vn_ret ?? 0),
+    }))
 
     // --- Respond ---
-    return NextResponse.json(formatted)
+    return NextResponse.json(formatted, { status: 200 })
   } catch (e) {
     console.error("Unexpected error:", e)
     const message = e instanceof Error ? e.message : "Internal Server Error"

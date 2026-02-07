@@ -14,25 +14,22 @@ export async function GET(req: NextRequest) {
     // Supabase client
     const supabase = await createClient()
 
-    // Optional query param (e.g., /api/get-stock-profit-loss?year=2025)
-    const { searchParams } = new URL(req.url)
-    const yearParam = searchParams.get("year")
-
-    // Call RPC function
-    const { data, error } = await supabase.rpc("get_annual_pnl_by_stock")
+    // Fetch all data from the view
+    const { data, error } = await supabase
+      .from("stock_annual_pnl")
+      .select("*")
 
     if (error) {
-      console.error("Supabase RPC error:", error)
+      console.error("Supabase query error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If year filter is provided, filter client-side
-    const filteredData = yearParam
-      ? data.filter((item: { year: number }) => item.year === Number(yearParam))
-      : data
+    if (!data || data.length === 0) {
+      return NextResponse.json({ message: "No data found" }, { status: 200 })
+    }
 
     // Group by year for structured output
-    const groupedData = filteredData.reduce(
+    const groupedData = data.reduce(
       (
         acc: {
           [key: string]: Array<{

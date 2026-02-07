@@ -13,23 +13,18 @@ export interface StockPnLItem {
   total_pnl: number
 }
 
-export interface CashflowItem {
-  year: number
+export interface YearlyItem {
+  year: string
   deposits: number
   withdrawals: number
-}
-
-// Frontend-friendly type
-export interface AnnualReturnItem {
-  equity_return: number | null
-  vnindex_return: number | null
+  equity_return: number
+  vnindex_return: number
 }
 
 export interface GatewayReportResponse {
   stockPnL: Record<string, StockPnLItem[]>
   assets: Tables<"assets">[]
-  cashflow: CashflowItem[]
-  annualReturn: Record<string, AnnualReturnItem>
+  yearly: YearlyItem[]
 }
 
 // ----------------------------
@@ -39,8 +34,7 @@ export interface GatewayReportResponse {
 const fallback: GatewayReportResponse = {
   stockPnL: {},
   assets: [],
-  cashflow: [],
-  annualReturn: {},
+  yearly: []
 }
 
 // ----------------------------
@@ -58,14 +52,10 @@ export function useReportsData() {
     }
   )
 
-  // Annual return is already an object keyed by year; just fallback safely
-  const annualReturn: Record<string, AnnualReturnItem> = data?.annualReturn || {}
-
   return {
     stockPnL: data?.stockPnL || {},
     assets: data?.assets || [],
-    cashflow: data?.cashflow || [],
-    annualReturn,
+    yearly: data?.yearly || [],
     isLoading,
     error,
   }

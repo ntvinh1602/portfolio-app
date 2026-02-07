@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       },
       next: {
         revalidate: 600,
-        tags: ["stock-profit-loss", "assets", "cashflow", "annual-return"],
+        tags: ["stock-profit-loss", "assets", "yearly"],
       },
     }
 
@@ -30,17 +30,15 @@ export async function GET(request: NextRequest) {
     const [
       stockPnLResponse,
       assetsResponse,
-      cashflowResponse,
-      annualReturnResponse,
+      yearlyResponse
     ] = await Promise.all([
       fetch(`${baseURL}/api/internal/pnl-by-stock`, fetchOptions),
       fetch(`${baseURL}/api/internal/assets`, fetchOptions),
-      fetch(`${baseURL}/api/internal/cashflow`, fetchOptions),
-      fetch(`${baseURL}/api/internal/annual-return`, fetchOptions),
+      fetch(`${baseURL}/api/internal/yearly-data`, fetchOptions),
     ])
 
     // Validate responses
-    for (const response of [stockPnLResponse, assetsResponse, cashflowResponse, annualReturnResponse]) {
+    for (const response of [stockPnLResponse, assetsResponse, yearlyResponse]) {
       if (!response.ok) {
         const result = await response.json().catch(() => ({}))
         throw new Error(result.error || "Internal fetch failed")
@@ -48,18 +46,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse JSON
-    const [stockPnL, assets, cashflow, annualReturn] = await Promise.all([
+    const [stockPnL, assets, yearly] = await Promise.all([
       stockPnLResponse.json(),
       assetsResponse.json(),
-      cashflowResponse.json(),
-      annualReturnResponse.json(),
+      yearlyResponse.json(),
     ])
 
     return NextResponse.json({
       stockPnL,
       assets: (assets as Tables<"assets">[]) || [],
-      cashflow: cashflow || [],
-      annualReturn: annualReturn || {},
+      yearly: yearly || [],
     })
   } catch (error) {
     console.error("Gateway error:", error)
