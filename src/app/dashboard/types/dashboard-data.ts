@@ -4,12 +4,9 @@ export interface AssetItem {
 }
 
 export interface BalanceSheetData {
-  assets: AssetItem[]
-  totalAssets: number
-  liabilities: AssetItem[]
-  totalLiabilities: number
-  equity: AssetItem[]
-  totalEquity: number
+  account: string
+  type: "asset" | "liability" | "equity"
+  amount: number
 }
 
 export interface StockData {

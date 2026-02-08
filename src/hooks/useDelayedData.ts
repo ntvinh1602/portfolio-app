@@ -27,7 +27,7 @@ interface DelayedDataApiResponse {
     "6m": BenchmarkChartData[]
     "3m": BenchmarkChartData[]
   }
-  balanceSheetData: BalanceSheetData
+  balanceSheetData: BalanceSheetData[]
   stockData: StockData[]
   cryptoData: CryptoData[]
 }
@@ -44,14 +44,7 @@ const fallback: DelayedDataApiResponse = {
   },
   equityData: { all_time: [], "1y": [], "6m": [], "3m": [] },
   benchmarkData: { all_time: [], "1y": [], "6m": [], "3m": [] },
-  balanceSheetData: {
-    assets: [],
-    totalAssets: 0,
-    liabilities: [],
-    totalLiabilities: 0,
-    equity: [],
-    totalEquity: 0
-  },
+  balanceSheetData: [],
   stockData: [],
   cryptoData: [],
   monthlyData: [],

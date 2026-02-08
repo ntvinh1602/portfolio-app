@@ -9,9 +9,8 @@ import {
   useMemo,
 } from "react"
 import {
-  BalanceSheetData,
   StockData,
-  CryptoData
+  CryptoData,
 } from "@/app/dashboard/types/dashboard-data"
 import { useDNSEData } from "@/hooks/useDNSEData"
 import { useBinanceData } from "@/hooks/useBinanceData"
@@ -33,216 +32,215 @@ export interface LiveCryptoData extends CryptoData {
   prevPrice?: number | null
 }
 
+export interface BalanceSheetRow {
+  account: string
+  type: "asset" | "liability" | "equity"
+  amount: number
+}
+
 interface LiveDataContextType {
   isLoading: boolean
   totalAssets: number
   setTotalAssets: (value: number) => void
   totalEquity: number
   setTotalEquity: (value: number) => void
+  totalLiabilities: number
   processedStockData: LiveStockData[]
   processedCryptoData: LiveCryptoData[]
-  balanceSheet: BalanceSheetData
+  balanceSheet: BalanceSheetRow[]
   isStockPriceLive: boolean
   isCryptoPriceLive: boolean
 }
 
 const LiveDataContext = createContext<LiveDataContextType | undefined>(undefined)
 
-export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
-  const {
-    bsData,
-    stockData,
-    cryptoData,
-    isLoading
-  } = useDelayedData()
+export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
+  const { bsData, stockData, cryptoData, isLoading } = useDelayedData()
 
   const [totalStockValue, setTotalStockValue] = useState(0)
   const [totalCryptoValue, setTotalCryptoValue] = useState(0)
   const [totalAssets, setTotalAssets] = useState(0)
   const [totalEquity, setTotalEquity] = useState(0)
+  const [totalLiabilities, setTotalLiabilities] = useState(0)
   const [unrealizedPnL, setUnrealizedPnL] = useState(0)
 
+  // ===== Live Market Data =====
   const stockSymbols = useMemo(
-    () => stockData?.map((stock) => stock.ticker) ?? [],
+    () => stockData?.map((s) => s.ticker) ?? [],
     [stockData]
   )
-  const {
-    data: marketData,
-    loading: isStockDataLoading,
-    error: stockError
-  } = useDNSEData(stockSymbols)
+  const { data: marketData, loading: isStockDataLoading, error: stockError } =
+    useDNSEData(stockSymbols)
 
-  const cryptoSymbols = useMemo(() =>
-    cryptoData?.filter((crypto) => crypto.ticker !== "USDT")
-      .map((crypto) => crypto.ticker) ?? [],
+  const cryptoSymbols = useMemo(
+    () =>
+      cryptoData?.filter((c) => c.ticker !== "USDT").map((c) => c.ticker) ?? [],
     [cryptoData]
   )
   const {
     prices: liveCryptoPrices,
     loading: isCryptoDataLoading,
-    error: cryptoError
+    error: cryptoError,
   } = useBinanceData(cryptoSymbols)
 
-  const isStockPriceLive = !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
-  const isCryptoPriceLive = !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
+  const isStockPriceLive =
+    !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
+  const isCryptoPriceLive =
+    !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
 
+  // ===== Stock Data =====
   const processedStockData = useMemo(() => {
     if (isLoading) return []
 
-    return stockData.map((stock) => {
-      const liveEntry = marketData[stock.ticker]
-      const livePrice = liveEntry?.price
-      const prevPrice = liveEntry?.prevPrice   // <--- add this
+    return stockData
+      .map((stock) => {
+        const live = marketData[stock.ticker]
+        const livePrice = live?.price
+        const prevPrice = live?.prevPrice
 
-      const totalAmount = livePrice
-        ? livePrice * stock.quantity * 1000
-        : stock.market_value
-      const pnlNet = totalAmount - stock.cost_basis - totalAmount * 0.00127
-      const pnlPct =
-        stock.cost_basis > 0
-          ? (totalAmount * 0.99873 / stock.cost_basis - 1) * 100
-          : 0
+        const totalAmount = livePrice
+          ? livePrice * stock.quantity * 1000
+          : stock.market_value
 
-      return {
-        ...stock,
-        totalAmount,
-        pnlNet,
-        pnlPct,
-        price: livePrice ?? stock.price / 1000,
-        prevPrice, // <--- include it here
-      }
-    }).sort((a, b) => b.totalAmount - a.totalAmount)
+        const pnlNet = totalAmount - stock.cost_basis - totalAmount * 0.00127
+        const pnlPct =
+          stock.cost_basis > 0
+            ? (totalAmount * 0.99873 / stock.cost_basis - 1) * 100
+            : 0
+
+        return {
+          ...stock,
+          totalAmount,
+          pnlNet,
+          pnlPct,
+          price: livePrice ?? stock.price / 1000,
+          prevPrice,
+        }
+      })
+      .sort((a, b) => b.totalAmount - a.totalAmount)
   }, [isLoading, stockData, marketData])
 
   useEffect(() => {
-    if (processedStockData) {
-      const newTotalStockValue = processedStockData.reduce(
-        (acc, stock) => acc + stock.totalAmount,
-        0
-      )
-      setTotalStockValue(newTotalStockValue)
-    }
+    const total = processedStockData.reduce(
+      (acc, s) => acc + s.totalAmount,
+      0
+    )
+    setTotalStockValue(total)
   }, [processedStockData])
 
+  // ===== Crypto Data =====
   const processedCryptoData = useMemo(() => {
     if (isLoading) return []
 
-    return cryptoData.map((crypto) => {
-      const liveInfo = liveCryptoPrices[`${crypto.ticker}USDT`]
+    return cryptoData
+      .map((crypto) => {
+        const live = liveCryptoPrices[`${crypto.ticker}USDT`]
+        const livePrice = live?.price ? parseFloat(live.price) : crypto.price
+        const prevPrice = live?.prevPrice
+          ? parseFloat(live.prevPrice)
+          : null
 
-      // Extract price + prevPrice from liveInfo if available
-      const livePrice = liveInfo?.price
-        ? parseFloat(liveInfo.price)
-        : crypto.price
+        const totalAmount = live?.price
+          ? crypto.quantity * parseFloat(live.price) * crypto.fx_rate
+          : crypto.market_value
 
-      const prevPrice = liveInfo?.prevPrice
-        ? parseFloat(liveInfo.prevPrice)
-        : null
+        const pnlNet = totalAmount - crypto.cost_basis
+        const pnlPct =
+          crypto.cost_basis > 0
+            ? (totalAmount / crypto.cost_basis - 1) * 100
+            : 0
 
-      const totalAmount = liveInfo?.price
-        ? crypto.quantity * parseFloat(liveInfo.price) * crypto.fx_rate
-        : crypto.market_value
-
-      const pnlNet = totalAmount - crypto.cost_basis
-      const pnlPct =
-        crypto.cost_basis > 0
-          ? (totalAmount / crypto.cost_basis - 1) * 100
-          : 0
-
-      return {
-        ...crypto,
-        totalAmount,
-        pnlNet,
-        pnlPct,
-        price: livePrice,
-        prevPrice, // 👈 added this
-      }
-    }).sort((a, b) => b.totalAmount - a.totalAmount)
+        return {
+          ...crypto,
+          totalAmount,
+          pnlNet,
+          pnlPct,
+          price: livePrice,
+          prevPrice,
+        }
+      })
+      .sort((a, b) => b.totalAmount - a.totalAmount)
   }, [isLoading, cryptoData, liveCryptoPrices])
 
   useEffect(() => {
-    if (processedCryptoData) {
-      const newTotalCryptoValue = processedCryptoData.reduce(
-        (acc, crypto) => acc + crypto.totalAmount,
-        0
-      )
-      setTotalCryptoValue(newTotalCryptoValue)
-    }
+    const total = processedCryptoData.reduce(
+      (acc, c) => acc + c.totalAmount,
+      0
+    )
+    setTotalCryptoValue(total)
   }, [processedCryptoData])
 
+  // ===== Combine Balances =====
   useEffect(() => {
-    if (bsData) {
-      const cash =
-        bsData.assets.find((a) => a.type === "Cash")?.totalAmount ?? 0
-      const fund =
-        bsData.assets.find((a) => a.type === "Fund")?.totalAmount ?? 0
-      const accruedInterest =
-        bsData.assets.find((a) => a.type === "Accrued Interest")?.totalAmount ??
-        0
-      const stockPnL =
-        processedStockData?.reduce((acc, stock) => acc + stock.pnlNet, 0) ?? 0
-      const cryptoPnL =
-        processedCryptoData?.reduce((acc, crypto) => acc + crypto.pnlNet, 0) ?? 0
-      setUnrealizedPnL(stockPnL + cryptoPnL - accruedInterest)
-      setTotalAssets(totalStockValue + totalCryptoValue + cash + fund)
-      setTotalEquity(totalAssets - bsData.totalLiabilities)
-    }
+    if (!bsData) return
+
+    // Grouping totals from the flat array
+    const assets = bsData.filter((r) => r.type === "asset")
+    const liabilities = bsData.filter((r) => r.type === "liability")
+    const equity = bsData.filter((r) => r.type === "equity")
+
+    const totalAssetsValue =
+      assets.reduce((acc, r) => acc + (r.amount || 0), 0) +
+      totalStockValue +
+      totalCryptoValue
+
+    const totalLiabilitiesValue = liabilities.reduce(
+      (acc, r) => acc + (r.amount || 0),
+      0
+    )
+
+    const totalEquityValue = equity.reduce(
+      (acc, r) => acc + (r.amount || 0),
+      0
+    )
+
+    const stockPnL =
+      processedStockData.reduce((acc, s) => acc + s.pnlNet, 0) ?? 0
+    const cryptoPnL =
+      processedCryptoData.reduce((acc, c) => acc + c.pnlNet, 0) ?? 0
+
+    setUnrealizedPnL(stockPnL + cryptoPnL)
+    setTotalAssets(totalAssetsValue)
+    setTotalLiabilities(totalLiabilitiesValue)
+    setTotalEquity(totalEquityValue)
   }, [
     bsData,
-    totalStockValue,
-    totalCryptoValue,
-    totalAssets,
     processedStockData,
     processedCryptoData,
-  ])
-
-  const balanceSheet = useMemo(() => {
-    if (isLoading) return bsData
-
-    return {
-      ...bsData,
-      assets: bsData.assets.map((asset) => {
-        if (asset.type === "Stocks")
-          return { ...asset, totalAmount: totalStockValue }
-        if (asset.type === "Crypto")
-          return { ...asset, totalAmount: totalCryptoValue }
-        return asset
-      }),
-      totalAssets,
-      equity: bsData.equity.map((equityItem) => {
-        if (equityItem.type === "Unrealized P/L")
-          return { ...equityItem, totalAmount: unrealizedPnL }
-        if (equityItem.type === "Owner Capital")
-          return { ...equityItem, totalAmount: totalEquity - unrealizedPnL }
-        return equityItem
-      }),
-      totalEquity,
-    }
-  }, [
-    isLoading,
-    bsData,
     totalStockValue,
     totalCryptoValue,
-    totalAssets,
-    totalEquity,
-    unrealizedPnL,
   ])
 
+  // ===== Memoized value =====
+  const contextValue = useMemo(
+    () => ({
+      isLoading,
+      totalAssets,
+      setTotalAssets,
+      totalEquity,
+      setTotalEquity,
+      totalLiabilities,
+      processedStockData,
+      processedCryptoData,
+      balanceSheet: bsData ?? [],
+      isStockPriceLive,
+      isCryptoPriceLive,
+    }),
+    [
+      isLoading,
+      totalAssets,
+      totalEquity,
+      totalLiabilities,
+      processedStockData,
+      processedCryptoData,
+      bsData,
+      isStockPriceLive,
+      isCryptoPriceLive,
+    ]
+  )
+
   return (
-    <LiveDataContext.Provider
-      value={{
-        isLoading,
-        totalAssets,
-        setTotalAssets,
-        totalEquity,
-        setTotalEquity,
-        processedStockData,
-        processedCryptoData,
-        balanceSheet,
-        isStockPriceLive,
-        isCryptoPriceLive,
-      }}
-    >
+    <LiveDataContext.Provider value={contextValue}>
       {children}
     </LiveDataContext.Provider>
   )
@@ -251,7 +249,7 @@ export const LiveDataProvider = ({ children }: {children: ReactNode}) => {
 export const useLiveData = () => {
   const context = useContext(LiveDataContext)
   if (context === undefined) {
-    throw new Error("useAssetData must be used within a AssetDataProvider")
+    throw new Error("useLiveData must be used within a LiveDataProvider")
   }
   return context
 }
