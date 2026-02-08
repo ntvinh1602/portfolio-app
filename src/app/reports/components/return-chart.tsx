@@ -5,7 +5,6 @@ import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import * as Card from "@/components/ui/card"
 import { useReportsData } from "@/hooks/useReportsData"
-import { useDelayedData } from "@/hooks/useDelayedData"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { format } from "date-fns"
 
@@ -25,25 +24,20 @@ export function ReturnChart({ year }: ReturnChartProps) {
   const [error, setError] = useState<string | null>(null)
 
   const { yearlyData, isLoading: isReportsLoading } = useReportsData()
-  const { benchmarkData, isLoading: isDelayedDataLoading } = useDelayedData()
 
   useEffect(() => {
     if (!year) return
-    // If "All Time", directly use benchmarkData from hook
-    if (year === "All Time") {
-      setData(benchmarkData.all_time as ChartPoint[])
-      setError(null)
-      setIsFetching(false)
-      return
-    }
 
-    // Otherwise, fetch yearly data from API
     const controller = new AbortController()
     const fetchData = async () => {
       setIsFetching(true)
       setError(null)
+
       try {
-        const res = await fetch(`/api/gateway/annual-chart?year=${year}`, {
+        // Determine parameter for API
+        const timeParam = year === "All Time" ? "all" : year
+
+        const res = await fetch(`/api/gateway/return-chart-data?time=${timeParam}`, {
           signal: controller.signal,
         })
 
@@ -92,9 +86,9 @@ export function ReturnChart({ year }: ReturnChartProps) {
 
     fetchData()
     return () => controller.abort()
-  }, [year, benchmarkData])
+  }, [year])
 
-  const isLoading = isFetching || isReportsLoading || isDelayedDataLoading
+  const isLoading = isFetching || isReportsLoading
 
   if (isLoading) {
     return (
