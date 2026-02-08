@@ -3,8 +3,17 @@ import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
-import { useDelayedData } from "@/hooks/useDelayedData"
 import { HandCoins } from "lucide-react"
+import { useReportsData } from "@/hooks/useReportsData"
+
+// ---------- Types ----------
+interface RawData {
+  date: string
+  pnl: number
+  fee: number
+  interest: number
+  tax: number
+}
 
 export function ExpenseChart({
   year,
@@ -13,7 +22,7 @@ export function ExpenseChart({
   year: string
   className?: string
 }) {
-  const { monthlyData: AllTimeData, isLoading } = useDelayedData()
+  const { monthlyData, isLoading } = useReportsData()
 
   if (isLoading) return (
     <Card.Root className="gap-0 h-fit">
@@ -34,13 +43,12 @@ export function ExpenseChart({
   )
 
   // Filter and process chart data by selected year
-  const filteredData = AllTimeData
+  const processedData = (monthlyData as RawData[])
     .filter((d) => {
       if (year === "All Time") return true
       const dataYear = new Date(d.date).getFullYear()
       return dataYear === Number(year)
     })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((d) => ({
       revenue: d.pnl + d.fee + d.interest + d.tax,
       pnl: d.pnl,
@@ -68,22 +76,22 @@ export function ExpenseChart({
   const expenseChartData = [
     {
       liability: "tax",
-      allocation: filteredData.reduce((acc, curr) => acc - curr.tax, 0),
+      allocation: processedData.reduce((acc, curr) => acc - curr.tax, 0),
       fill: "var(--chart-4)",
     },
     {
       liability: "fee",
-      allocation: filteredData.reduce((acc, curr) => acc - curr.fee, 0),
+      allocation: processedData.reduce((acc, curr) => acc - curr.fee, 0),
       fill: "var(--chart-3)",
     },
     {
       liability: "interest",
-      allocation: filteredData.reduce((acc, curr) => acc - curr.interest, 0),
+      allocation: processedData.reduce((acc, curr) => acc - curr.interest, 0),
       fill: "var(--chart-1)",
     }
   ].filter((d) => d.allocation > 0)
 
-  const totalExpenses = filteredData.reduce((acc, curr) => acc - curr.fee - curr.tax - curr.interest, 0)
+  const totalExpenses = processedData.reduce((acc, curr) => acc - curr.fee - curr.tax - curr.interest, 0)
 
   return (
     <Card.Root variant="glow" className={`gap-0 h-fit ${className}`}>

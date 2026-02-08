@@ -5,7 +5,7 @@ import {
   Portfolio,
   EquityChart,
   Benchmarkchart,
-  ExpenseChart,
+  NetProfit,
   TradingViewWidget
 } from "./components"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -33,7 +33,7 @@ export default function Page() {
             <TradingViewWidget/>
           </div>
           <div className="flex-1">
-            <ExpenseChart/>
+            <NetProfit/>
           </div>
         </div>
       }

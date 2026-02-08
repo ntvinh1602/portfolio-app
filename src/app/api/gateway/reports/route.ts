@@ -19,14 +19,20 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 600, tags: ["reports"] }
     }
     
-    const [stockPnLResponse, yearlyResponse] = await Promise.all([
+    const [
+      stockPnLResponse,
+      yearlyResponse,
+      monthlyResponse
+    ] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/stock_annual_pnl?select=*`, fetchSupabaseOptions),
       fetch(`${supabaseUrl}/rest/v1/yearly_snapshots?select=*`, fetchSupabaseOptions),
+      fetch(`${supabaseUrl}/rest/v1/monthly_snapshots?select=*`, fetchSupabaseOptions),
     ])
 
     for (const response of [
       stockPnLResponse,
       yearlyResponse,
+      monthlyResponse,
     ]) {
       if (!response.ok) {
         const result = await response.json()
@@ -37,14 +43,17 @@ export async function GET(request: NextRequest) {
     const [
       stockPnLData,
       yearlyData,
+      monthlyData
     ] = await Promise.all([
       stockPnLResponse.json(),
       yearlyResponse.json(),
+      monthlyResponse.json(),
     ])
     
     return NextResponse.json({
       stockPnLData,
       yearlyData,
+      monthlyData
     })
   } catch (error) {
     console.error("Supabase Data API Gateway Error:", error)

@@ -2,7 +2,7 @@ import { format } from "date-fns"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useDelayedData } from "@/hooks/useDelayedData"
+import { useReportsData } from "@/hooks/useReportsData"
 
 // ---------- Types ----------
 interface RawData {
@@ -20,7 +20,7 @@ interface ChartData {
   interest: number
   tax: number
   snapshot_date: string
-  [key: string]: string | number // ✅ add this line
+  [key: string]: string | number
 }
 
 // ---------- Helper: Group All Time data by year ----------
@@ -53,7 +53,7 @@ function groupByYear(data: RawData[]): ChartData[] {
 
 // ---------- Main Chart Component ----------
 export function ProfitChart({ year }: { year: string }) {
-  const { monthlyData: AllTimeData, isLoading } = useDelayedData()
+  const { monthlyData, isLoading } = useReportsData()
 
   if (isLoading)
     return (
@@ -69,9 +69,9 @@ export function ProfitChart({ year }: { year: string }) {
   let processedData: ChartData[] = []
 
   if (year === "All Time") {
-    processedData = groupByYear(AllTimeData as RawData[])
+    processedData = groupByYear(monthlyData as RawData[])
   } else {
-    processedData = (AllTimeData as RawData[])
+    processedData = (monthlyData as RawData[])
       .filter((d) => new Date(d.date).getFullYear() === Number(year))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map((d) => ({

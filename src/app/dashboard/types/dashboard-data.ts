@@ -3,12 +3,6 @@ export interface AssetItem {
   totalAmount: number
 }
 
-export interface BalanceSheetData {
-  account: string
-  type: "asset" | "liability" | "equity"
-  amount: number
-}
-
 export interface StockData {
   ticker: string
   name: string

@@ -1,7 +1,6 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import {
-  BalanceSheetData,
   EquityChartData,
   BenchmarkChartData,
   StockData,
@@ -27,7 +26,7 @@ interface DelayedDataApiResponse {
     "6m": BenchmarkChartData[]
     "3m": BenchmarkChartData[]
   }
-  balanceSheetData: BalanceSheetData[]
+  balanceSheetData: Tables<"balance_sheet">[]
   stockData: StockData[]
   cryptoData: CryptoData[]
 }

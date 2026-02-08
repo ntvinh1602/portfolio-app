@@ -4,9 +4,9 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { useDelayedData } from "@/hooks/useDelayedData"
 
-export function ExpenseChart() {
+export function NetProfit() {
   const {
-    monthlyData: AllTimeData,
+    monthlyData,
     isLoading
   } = useDelayedData()
 
@@ -21,9 +21,8 @@ export function ExpenseChart() {
     />
   )
 
-  const last12MData = AllTimeData
+  const processedData = monthlyData
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-12)
     .map(d => ({
       revenue: d.pnl + d.fee + d.interest + d.tax,
       pnl: d.pnl,
@@ -32,9 +31,9 @@ export function ExpenseChart() {
       tax: -d.tax,
       snapshot_date: d.date
     }))
-  const totalPnL = last12MData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const avg12MPnl = last12MData.reduce((acc, curr) => acc + curr.pnl, 0) / 12
-  const avg12MExpenses = -last12MData.reduce((acc, curr) => acc + curr.revenue - curr.pnl, 0) / 12
+  const totalPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0)
+  const avgPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0) / 12
+  const avgExpense = -processedData.reduce((acc, curr) => acc + curr.revenue - curr.pnl, 0) / 12
 
   return (
     <ChartCard
@@ -42,14 +41,14 @@ export function ExpenseChart() {
       majorValue={totalPnL}
       majorValueFormatter={(value) => formatNum(value)}
       description="last 1y"
-      minorValue1={avg12MPnl}
+      minorValue1={avgPnL}
       minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
       minorText1="avg. profit"
-      minorValue2={avg12MExpenses}
+      minorValue2={avgExpense}
       minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
       minorText2="avg. cost"
       chartComponent={ChartBarStacked}
-      chartData={last12MData}
+      chartData={processedData}
       chartConfig={{
         tax: {
           label: "Tax",

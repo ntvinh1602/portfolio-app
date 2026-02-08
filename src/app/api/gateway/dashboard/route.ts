@@ -44,7 +44,13 @@ export async function GET(request: NextRequest) {
       fetch(`${baseURL}/api/internal/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/internal/crypto-holdings`, fetchOptions),
       fetch(`${supabaseUrl}/rest/v1/balance_sheet?select=*`, fetchSupabaseOptions),
-      fetch(`${supabaseUrl}/rest/v1/monthly_snapshots?select=*`, fetchSupabaseOptions),
+      fetch(`${supabaseUrl}/rest/v1/monthly_snapshots?select=*`, {
+        ...fetchSupabaseOptions,
+        headers: {
+          ...fetchSupabaseOptions.headers,
+          Range: '0-11',
+        },
+      })
     ])
 
     for (const response of [

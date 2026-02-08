@@ -3,8 +3,8 @@ import { fetcher } from "@/lib/fetcher"
 import { Tables } from "@/types/database.types"
 
 interface TransactionFormData {
-  assets: Tables<"assets">[]
-  debts: Tables<"debts">[]
+  assetData: Tables<"assets">[]
+  debtData: Tables<"debts">[]
 }
 
 export function useAccountData() {
@@ -15,8 +15,8 @@ export function useAccountData() {
   )
 
   return {
-    assets: data?.assets ?? [],
-    debts: data?.debts ?? [],
+    assets: data?.assetData ?? [],
+    debts: data?.debtData ?? [],
     loading: isLoading,
     error
   }

@@ -1,55 +1,53 @@
-import { NextRequest, NextResponse } from "next/server"
-import { Tables } from "@/types/database.types"
+import { NextResponse, NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    const expectedSecret = process.env.MY_APP_SECRET
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!expectedSecret) {
-      const errorMsg = "Server misconfigured: missing MY_APP_SECRET"
-      console.error(errorMsg)
-      return NextResponse.json({ error: errorMsg }, { status: 500 })
+    if ( !supabaseUrl || !serviceRoleKey) {
+      throw new Error("Server misconfigured: missing one or more environment variables")
+    }
+
+    const fetchSupabaseOptions = {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
+      },
+      next: { revalidate: 600, tags: ["reports"] }
     }
     
-    const baseUrl = request.url.split("/api")[0]
-
-    // Prepare fetch options with the server-side secret
-    const fetchOptions = {
-      headers: {
-        Authorization: `Bearer ${expectedSecret}`,
-      },
-      next: {
-        revalidate: 600,
-        tags: [`account`],
-      },
-    }
-
-    // Fetch assets and debts in parallel
-    const [assetDataResponse, debtsResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/internal/assets`, fetchOptions),
-      fetch(`${baseUrl}/api/internal/debts`, fetchOptions),
+    const [assetResponse, debtResponse] = await Promise.all([
+      fetch(`${supabaseUrl}/rest/v1/assets?select=*`, fetchSupabaseOptions),
+      fetch(`${supabaseUrl}/rest/v1/debts?select=*&repay_txn_id=is.null`, fetchSupabaseOptions),
     ])
 
-    for (const response of [assetDataResponse, debtsResponse]) {
+    for (const response of [
+      assetResponse,
+      debtResponse,
+    ]) {
       if (!response.ok) {
         const result = await response.json()
         throw new Error(result.error)
       }
     }
 
-    const [assets, debts] = await Promise.all([
-      assetDataResponse.json(),
-      debtsResponse.json(),
+    const [
+      assetData,
+      debtData,
+    ] = await Promise.all([
+      assetResponse.json(),
+      debtResponse.json(),
     ])
-
+    
     return NextResponse.json({
-      assets: (assets as Tables<"assets">[]) || [],
-      debts: debts || [],
+      assetData,
+      debtData,
     })
   } catch (error) {
-    console.error(error)
+    console.error("Supabase Data API Gateway Error:", error)
     const message = error instanceof Error ? error.message : "Internal Server Error"
     return NextResponse.json({ error: message }, { status: 500 })
   }

@@ -123,18 +123,21 @@ export type Database = {
           equity_index: number | null
           net_cash_flow: number
           net_equity_value: number
+          total_cashflow: number | null
         }
         Insert: {
           date: string
           equity_index?: number | null
           net_cash_flow: number
           net_equity_value: number
+          total_cashflow?: number | null
         }
         Update: {
           date?: string
           equity_index?: number | null
           net_cash_flow?: number
           net_equity_value?: number
+          total_cashflow?: number | null
         }
         Relationships: []
       }
@@ -261,6 +264,13 @@ export type Database = {
             referencedRelation: "assets"
             referencedColumns: ["ticker"]
           },
+          {
+            foreignKeyName: "dnse_orders_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "stock_annual_pnl"
+            referencedColumns: ["ticker"]
+          },
         ]
       }
       lot_consumptions: {
@@ -295,30 +305,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      monthly_snapshots: {
-        Row: {
-          date: string
-          fee: number
-          interest: number
-          pnl: number
-          tax: number
-        }
-        Insert: {
-          date: string
-          fee: number
-          interest: number
-          pnl: number
-          tax: number
-        }
-        Update: {
-          date?: string
-          fee?: number
-          interest?: number
-          pnl?: number
-          tax?: number
-        }
-        Relationships: []
       }
       tax_lots: {
         Row: {
@@ -446,7 +432,44 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      balance_sheet: {
+        Row: {
+          account: string | null
+          amount: number | null
+          type: string | null
+        }
+        Relationships: []
+      }
+      monthly_snapshots: {
+        Row: {
+          date: string | null
+          fee: number | null
+          interest: number | null
+          pnl: number | null
+          tax: number | null
+        }
+        Relationships: []
+      }
+      stock_annual_pnl: {
+        Row: {
+          logo_url: string | null
+          name: string | null
+          ticker: string | null
+          total_pnl: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
+      yearly_snapshots: {
+        Row: {
+          deposits: number | null
+          equity_ret: number | null
+          vn_ret: number | null
+          withdrawals: number | null
+          year: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_borrow_transaction: {
@@ -557,30 +580,13 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
-      generate_monthly_snapshots: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       generate_performance_snapshots: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: undefined
       }
-      get_asset_balance: {
-        Args: { p_asset_id: string }
-        Returns: number
-      }
-      get_asset_currency: {
-        Args: { p_asset_id: string }
-        Returns: string
-      }
-      get_asset_id_from_ticker: {
-        Args: { p_ticker: string }
-        Returns: string
-      }
-      get_balance_sheet: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_asset_balance: { Args: { p_asset_id: string }; Returns: number }
+      get_asset_currency: { Args: { p_asset_id: string }; Returns: string }
+      get_asset_id_from_ticker: { Args: { p_ticker: string }; Returns: string }
       get_benchmark_chart_data: {
         Args: { p_threshold: number }
         Returns: {
@@ -591,7 +597,7 @@ export type Database = {
         }[]
       }
       get_crypto_holdings: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cost_basis: number
           currency_code: string
@@ -610,6 +616,7 @@ export type Database = {
           net_equity_value: number
           range_label: string
           snapshot_date: string
+          total_cashflow: number
         }[]
       }
       get_fx_rate: {
@@ -617,18 +624,15 @@ export type Database = {
         Returns: number
       }
       get_pnl: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           pnl: number
           range_label: string
         }[]
       }
-      get_security_price: {
-        Args: { p_asset_id: string }
-        Returns: number
-      }
+      get_security_price: { Args: { p_asset_id: string }; Returns: number }
       get_stock_holdings: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cost_basis: number
           logo_url: string
@@ -653,7 +657,7 @@ export type Database = {
         }[]
       }
       get_twr: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           range_label: string
           twr: number
@@ -663,14 +667,8 @@ export type Database = {
         Args: { p_start_date: string; p_txn_data: Json }
         Returns: undefined
       }
-      process_dnse_orders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      refresh_assets_quantity: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      process_dnse_orders: { Args: never; Returns: undefined }
+      refresh_assets_quantity: { Args: never; Returns: undefined }
       sampling_benchmark_data: {
         Args: { p_end_date: string; p_start_date: string; p_threshold: number }
         Returns: {
@@ -684,6 +682,7 @@ export type Database = {
         Returns: {
           date: string
           net_equity_value: number
+          total_cashflow: number
         }[]
       }
     }
