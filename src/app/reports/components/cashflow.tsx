@@ -13,7 +13,7 @@ export function Cashflow({
   className?: string
 }) {
   const { isLoading: isDelayedLoading } = useDelayedData()
-  const { yearly, isLoading: isReportsLoading } = useReportsData()
+  const { yearlyData, isLoading: isReportsLoading } = useReportsData()
 
   const isLoading = isDelayedLoading || isReportsLoading
 
@@ -41,7 +41,7 @@ export function Cashflow({
 
   // Determine which year's data to display
   const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearly.find((item) => item.year === yearNum)
+  const yearData = yearlyData.find((item) => item.year === yearNum)
   const inflow = yearData?.deposits ?? 0
   const outflow = Math.abs(yearData?.withdrawals ?? 0)
   const net = inflow - outflow

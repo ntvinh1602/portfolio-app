@@ -7,8 +7,7 @@ import { StockPnLItem } from "@/hooks/useReportsData"
 import { Trophy } from "lucide-react"
 
 export function StockLeaderboard({ year }: { year?: string | number }) {
-  const { stockPnL, assets, isLoading, error } = useReportsData()
-
+  const { stockPnLData, isLoading, error } = useReportsData()
   const yearKey = year?.toString()
 
   const renderHeader = () => (
@@ -21,7 +20,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     </Card.Header>
   )
 
-  // Loading state
+  // --- Loading state ---
   if (isLoading) {
     return (
       <Card.Root variant="glow" className="h-full">
@@ -37,7 +36,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     )
   }
 
-  // Error state
+  // --- Error state ---
   if (error) {
     return (
       <Card.Root variant="glow" className="h-full">
@@ -51,23 +50,45 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     )
   }
 
-  let pnlList: StockPnLItem[] = []
+  if (!stockPnLData || stockPnLData.length === 0) {
+    return (
+      <Card.Root variant="glow" className="h-full">
+        {renderHeader()}
+        <Card.Content>
+          <div className="p-4 text-center text-muted-foreground">
+            No realized profit/loss data available.
+          </div>
+        </Card.Content>
+      </Card.Root>
+    )
+  }
 
+  // --- Group by year ---
+  const groupedByYear = stockPnLData.reduce(
+    (acc: Record<string, StockPnLItem[]>, item) => {
+      const key = item.year.toString()
+      if (!acc[key]) acc[key] = []
+      acc[key].push(item)
+      return acc
+    },
+    {}
+  )
+
+  // --- Filter or merge data ---
+  let pnlList: StockPnLItem[] = []
   if (yearKey === "All Time") {
-    const mergedPnL: Record<string, StockPnLItem> = {}
-    Object.values(stockPnL).forEach((yearData) => {
-      yearData.forEach((item) => {
-        if (!mergedPnL[item.ticker]) {
-          mergedPnL[item.ticker] = { ...item }
-        } else {
-          mergedPnL[item.ticker].total_pnl += item.total_pnl
-        }
-      })
+    const merged: Record<string, StockPnLItem> = {}
+    stockPnLData.forEach((item) => {
+      if (!merged[item.ticker]) {
+        merged[item.ticker] = { ...item }
+      } else {
+        merged[item.ticker].total_pnl += item.total_pnl
+      }
     })
-    pnlList = Object.values(mergedPnL)
+    pnlList = Object.values(merged)
   } else {
-    const activeYearKey = yearKey || Object.keys(stockPnL)[0]
-    pnlList = stockPnL[activeYearKey] || []
+    const activeYearKey = yearKey || Object.keys(groupedByYear)[0]
+    pnlList = groupedByYear[activeYearKey] || []
   }
 
   if (pnlList.length === 0) {
@@ -83,32 +104,10 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     )
   }
 
-  const stockAssets = assets.filter((a) => a.asset_class === "stock")
-  const combined = pnlList.map((pnl) => {
-    const asset = stockAssets.find((a) => a.ticker === pnl.ticker)
-    return {
-      ...pnl,
-      name: asset?.name ?? pnl.ticker,
-      logoUrl: asset?.logo_url ?? "",
-    }
-  })
-
-  const topPerformers = combined
+  // --- Sort and select top performers ---
+  const topPerformers = [...pnlList]
     .sort((a, b) => b.total_pnl - a.total_pnl)
     .slice(0, 10)
-
-  if (topPerformers.length === 0) {
-    return (
-      <Card.Root variant="glow" className="h-full">
-        {renderHeader()}
-        <Card.Content>
-          <div className="p-4 text-center text-muted-foreground">
-            No stock found for {yearKey || "selected year"}.
-          </div>
-        </Card.Content>
-      </Card.Root>
-    )
-  }
 
   return (
     <Card.Root variant="glow" className="h-full">
@@ -117,11 +116,11 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
         <div className="flex flex-col gap-2">
           {topPerformers.map((stock, index) => (
             <Asset
-              key={stock.asset_id}
+              key={stock.ticker}
               rank={index + 1}
               ticker={stock.ticker}
               name={stock.name}
-              logoUrl={stock.logoUrl}
+              logoUrl={stock.logo_url}
               totalAmount={stock.total_pnl}
             />
           ))}

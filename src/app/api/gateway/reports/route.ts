@@ -1,66 +1,54 @@
 import { NextResponse, NextRequest } from "next/server"
-import { Tables } from "@/types/database.types"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    const expectedSecret = process.env.MY_APP_SECRET
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!expectedSecret) {
-      const errorMsg = "Server misconfigured: missing MY_APP_SECRET"
-      console.error(errorMsg)
-      return NextResponse.json({ error: errorMsg }, { status: 500 })
+    if ( !supabaseUrl || !serviceRoleKey) {
+      throw new Error("Server misconfigured: missing one or more environment variables")
     }
 
-    const baseURL = request.url.split("/api")[0]
-
-    // Shared fetch options
-    const fetchOptions = {
+    const fetchSupabaseOptions = {
       headers: {
-        Authorization: `Bearer ${expectedSecret}`,
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
       },
-      next: {
-        revalidate: 600,
-        tags: ["stock-profit-loss", "assets", "yearly"],
-      },
+      next: { revalidate: 600, tags: ["reports"] }
     }
-
-    // Parallel fetches
-    const [
-      stockPnLResponse,
-      assetsResponse,
-      yearlyResponse
-    ] = await Promise.all([
-      fetch(`${baseURL}/api/internal/pnl-by-stock`, fetchOptions),
-      fetch(`${baseURL}/api/internal/assets`, fetchOptions),
-      fetch(`${baseURL}/api/internal/yearly-data`, fetchOptions),
+    
+    const [stockPnLResponse, yearlyResponse] = await Promise.all([
+      fetch(`${supabaseUrl}/rest/v1/stock_annual_pnl?select=*`, fetchSupabaseOptions),
+      fetch(`${supabaseUrl}/rest/v1/yearly_snapshots?select=*`, fetchSupabaseOptions),
     ])
 
-    // Validate responses
-    for (const response of [stockPnLResponse, assetsResponse, yearlyResponse]) {
+    for (const response of [
+      stockPnLResponse,
+      yearlyResponse,
+    ]) {
       if (!response.ok) {
-        const result = await response.json().catch(() => ({}))
-        throw new Error(result.error || "Internal fetch failed")
+        const result = await response.json()
+        throw new Error(result.error)
       }
     }
 
-    // Parse JSON
-    const [stockPnL, assets, yearly] = await Promise.all([
+    const [
+      stockPnLData,
+      yearlyData,
+    ] = await Promise.all([
       stockPnLResponse.json(),
-      assetsResponse.json(),
       yearlyResponse.json(),
     ])
-
+    
     return NextResponse.json({
-      stockPnL,
-      assets: (assets as Tables<"assets">[]) || [],
-      yearly: yearly || [],
+      stockPnLData,
+      yearlyData,
     })
   } catch (error) {
-    console.error("Gateway error:", error)
-    const message =
-      error instanceof Error ? error.message : "Internal Server Error"
+    console.error("Supabase Data API Gateway Error:", error)
+    const message = error instanceof Error ? error.message : "Internal Server Error"
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

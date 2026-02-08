@@ -2,27 +2,6 @@ import { NextResponse, NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-/**
- * Utility function to fetch data from Supabase REST API
- */
-async function fetchSupabaseTable(table: string, serviceRoleKey: string, supabaseUrl: string) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=*`, {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      Accept: "application/json",
-    },
-    next: { revalidate: 600, tags: ["dashboard"] },
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`Supabase API error (${table}): ${err}`)
-  }
-
-  return response.json()
-}
-
 export async function GET(request: NextRequest) {
   try {
     const expectedSecret = process.env.MY_APP_SECRET
@@ -37,16 +16,17 @@ export async function GET(request: NextRequest) {
 
     const fetchOptions = {
       headers: { Authorization: `Bearer ${expectedSecret}` },
-      next: { revalidate: 600, tags: ["dashboard"] },
+      next: { revalidate: 600, tags: ["dashboard"] }
     }
 
-    // ✅ Fetch from Supabase REST API directly (both balance_sheet & monthly_snapshots)
-    const [balanceSheetData, monthlyData] = await Promise.all([
-      fetchSupabaseTable("balance_sheet", serviceRoleKey, supabaseUrl),
-      fetchSupabaseTable("monthly_snapshots", serviceRoleKey, supabaseUrl),
-    ])
+    const fetchSupabaseOptions = {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
+      },
+      next: { revalidate: 600, tags: ["dashboard"] }
+    }
 
-    // ✅ Fetch internal API data (still handled via internal endpoints)
     const [
       twrResponse,
       pnlResponse,
@@ -54,6 +34,8 @@ export async function GET(request: NextRequest) {
       benchmarkResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
+      balancesheetResponse,
+      monthlyResponse
     ] = await Promise.all([
       fetch(`${baseURL}/api/internal/twr`, fetchOptions),
       fetch(`${baseURL}/api/internal/pnl`, fetchOptions),
@@ -61,6 +43,8 @@ export async function GET(request: NextRequest) {
       fetch(`${baseURL}/api/internal/benchmark-chart`, fetchOptions),
       fetch(`${baseURL}/api/internal/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/internal/crypto-holdings`, fetchOptions),
+      fetch(`${supabaseUrl}/rest/v1/balance_sheet?select=*`, fetchSupabaseOptions),
+      fetch(`${supabaseUrl}/rest/v1/monthly_snapshots?select=*`, fetchSupabaseOptions),
     ])
 
     for (const response of [
@@ -70,6 +54,8 @@ export async function GET(request: NextRequest) {
       benchmarkResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
+      balancesheetResponse,
+      monthlyResponse
     ]) {
       if (!response.ok) {
         const result = await response.json()
@@ -84,6 +70,9 @@ export async function GET(request: NextRequest) {
       benchmarkData,
       stockData,
       cryptoData,
+      balanceSheetData,
+      monthlyData
+
     ] = await Promise.all([
       twrResponse.json(),
       pnlResponse.json(),
@@ -91,9 +80,10 @@ export async function GET(request: NextRequest) {
       benchmarkResponse.json(),
       stockHoldingsResponse.json(),
       cryptoHoldingsResponse.json(),
+      balancesheetResponse.json(),
+      monthlyResponse.json()
     ])
-
-    // ✅ Return unified dashboard payload
+    
     return NextResponse.json({
       twrData,
       pnlData,

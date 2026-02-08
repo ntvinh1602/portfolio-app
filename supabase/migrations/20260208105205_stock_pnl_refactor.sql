@@ -1300,144 +1300,6 @@ $$;
 ALTER FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_balance_sheet"() RETURNS json
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  result json;
-  -- Cost basis values
-  asset_cb_by_class jsonb;
-  total_assets_cb numeric;
-  
-  -- Market value values
-  asset_mv_by_class jsonb;
-  total_assets_mv numeric;
-  
-  -- Liability values
-  margin numeric;
-  debts_principal numeric;
-  accrued_interest numeric;
-  liability_total numeric;
-  
-  -- Equity values
-  owner_capital numeric;
-  unrealized_pl numeric;
-  equity_total numeric;
-BEGIN
-  -- Calculate cost basis totals by asset class (excluding equity/liability)
-  SELECT COALESCE(jsonb_object_agg(cb_totals.asset_class, cb_totals.total), '{}'::jsonb)
-  INTO asset_cb_by_class
-  FROM (
-    SELECT a.asset_class, sum(tl.amount) as total
-    FROM public.transaction_legs tl
-    JOIN public.assets a ON tl.asset_id = a.id
-    WHERE a.asset_class NOT IN ('equity', 'liability')
-    GROUP BY a.asset_class
-  ) as cb_totals;
-
-  -- Calculate market value totals by asset class (excluding equity/liability)
-  SELECT COALESCE(jsonb_object_agg(mv_totals.asset_class, mv_totals.total), '{}'::jsonb)
-  INTO asset_mv_by_class
-  FROM (
-    SELECT
-      a.asset_class,
-      SUM(
-        a.current_quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)
-      ) AS total
-    FROM public.assets a
-    LEFT JOIN LATERAL (
-      SELECT price
-      FROM public.daily_security_prices
-      WHERE asset_id = a.id
-      ORDER BY date DESC
-      LIMIT 1
-    ) sp ON TRUE
-    LEFT JOIN LATERAL (
-      SELECT rate
-      FROM public.daily_exchange_rates
-      WHERE currency_code = a.currency_code
-      ORDER BY date DESC
-      LIMIT 1
-    ) er ON TRUE
-    WHERE a.asset_class NOT IN ('equity', 'liability')
-    GROUP BY a.asset_class
-  ) mv_totals;
-
-  -- Calculate total asset cost basis
-  total_assets_cb := (coalesce((asset_cb_by_class->>'cash')::numeric, 0)) +
-    (coalesce((asset_cb_by_class->>'stock')::numeric, 0)) +
-    (coalesce((asset_cb_by_class->>'fund')::numeric, 0)) +
-    (coalesce((asset_cb_by_class->>'crypto')::numeric, 0));
-  -- Calculate total asset market value
-  total_assets_mv := (coalesce((asset_mv_by_class->>'cash')::numeric, 0)) +
-    (coalesce((asset_mv_by_class->>'stock')::numeric, 0)) +
-    (coalesce((asset_mv_by_class->>'fund')::numeric, 0)) +
-    (coalesce((asset_mv_by_class->>'crypto')::numeric, 0));
-  -- Calculate liability values
-  margin := 0 - LEAST(coalesce((asset_mv_by_class->>'cash')::numeric, 0), 0);
-  SELECT a.current_quantity * -1 INTO debts_principal
-  FROM public.assets a
-  WHERE a.ticker = 'DEBTS';
-  -- Calculate accrued interest using daily compounding
-  SELECT COALESCE(SUM(
-    d.principal_amount * (
-      POWER(1 + (d.interest_rate / 100 / 365),
-        (CURRENT_DATE - tb.transaction_date)
-      ) - 1
-    )
-  ), 0)
-  INTO accrued_interest
-  FROM public.debts d
-  JOIN public.transactions tb ON tb.id = d.borrow_txn_id
-  LEFT JOIN public.transactions tr ON tr.id = d.repay_txn_id
-  WHERE tr.id IS NULL OR tr.transaction_date > CURRENT_DATE;
-  liability_total := margin + debts_principal + accrued_interest;
-  -- Calculate equity values
-  SELECT a.current_quantity * -1 INTO owner_capital
-  FROM public.assets a
-  WHERE a.ticker = 'CAPITAL';
-  unrealized_pl := total_assets_mv - total_assets_cb - accrued_interest;
-  equity_total := owner_capital + unrealized_pl;
-  
-  -- Build the result JSON
-  SELECT json_build_object(
-    'assets', json_build_array(
-      json_build_object(
-        'type', 'Cash',
-        'totalAmount', GREATEST(coalesce((asset_mv_by_class->>'cash')::numeric, 0), 0)
-      ),
-      json_build_object(
-        'type', 'Stocks',
-        'totalAmount', coalesce((asset_mv_by_class->>'stock')::numeric, 0)),
-      json_build_object(
-        'type', 'Fund',
-        'totalAmount', coalesce((asset_mv_by_class->>'fund')::numeric, 0)),
-      json_build_object(
-        'type', 'Crypto',
-        'totalAmount', coalesce((asset_mv_by_class->>'crypto')::numeric, 0))
-    ),
-    'totalAssets', total_assets_mv,
-    'liabilities', json_build_array(
-      json_build_object('type', 'Margin', 'totalAmount', margin),
-      json_build_object('type', 'Debts Principal', 'totalAmount', debts_principal),
-      json_build_object('type', 'Accrued Interest', 'totalAmount', accrued_interest)
-    ),
-    'totalLiabilities', liability_total,
-    'equity', json_build_array(
-      json_build_object('type', 'Owner Capital', 'totalAmount', owner_capital),
-      json_build_object('type', 'Unrealized P/L', 'totalAmount', unrealized_pl)
-    ),
-    'totalEquity', equity_total
-  ) INTO result;
-  RETURN result;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_balance_sheet"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2303,16 +2165,6 @@ CREATE TABLE IF NOT EXISTS "public"."assets" (
 ALTER TABLE "public"."assets" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."currencies" (
-    "code" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "type" "public"."currency_type" NOT NULL
-);
-
-
-ALTER TABLE "public"."currencies" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
     "currency_code" "text" NOT NULL,
     "date" "date" NOT NULL,
@@ -2321,28 +2173,6 @@ CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
 
 
 ALTER TABLE "public"."daily_exchange_rates" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
-    "date" "date" NOT NULL,
-    "symbol" "text" NOT NULL,
-    "close" numeric
-);
-
-
-ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
-    "date" "date" NOT NULL,
-    "net_equity_value" numeric(16,4) NOT NULL,
-    "net_cash_flow" numeric(16,4) NOT NULL,
-    "equity_index" numeric(8,2),
-    "total_cashflow" numeric
-);
-
-
-ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_security_prices" (
@@ -2367,6 +2197,212 @@ CREATE TABLE IF NOT EXISTS "public"."debts" (
 
 
 ALTER TABLE "public"."debts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "transaction_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "quantity" numeric(20,8) NOT NULL,
+    "amount" numeric(16,4) NOT NULL,
+    "currency_code" "text" NOT NULL
+);
+
+
+ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."transactions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "transaction_date" "date" NOT NULL,
+    "type" "public"."transaction_type" NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "price" numeric(16,4),
+    "linked_txn" "uuid"
+);
+
+
+ALTER TABLE "public"."transactions" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
+ WITH "asset_cb" AS (
+         SELECT "a"."asset_class",
+            "sum"("tl"."amount") AS "total"
+           FROM ("public"."transaction_legs" "tl"
+             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+          WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
+          GROUP BY "a"."asset_class"
+        ), "asset_mv" AS (
+         SELECT "a"."asset_class",
+            "sum"((("a"."current_quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "total"
+           FROM (("public"."assets" "a"
+             LEFT JOIN LATERAL ( SELECT "daily_security_prices"."price"
+                   FROM "public"."daily_security_prices"
+                  WHERE ("daily_security_prices"."asset_id" = "a"."id")
+                  ORDER BY "daily_security_prices"."date" DESC
+                 LIMIT 1) "sp" ON (true))
+             LEFT JOIN LATERAL ( SELECT "daily_exchange_rates"."rate"
+                   FROM "public"."daily_exchange_rates"
+                  WHERE ("daily_exchange_rates"."currency_code" = "a"."currency_code")
+                  ORDER BY "daily_exchange_rates"."date" DESC
+                 LIMIT 1) "er" ON (true))
+          WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
+          GROUP BY "a"."asset_class"
+        ), "totals" AS (
+         SELECT COALESCE("sum"(
+                CASE
+                    WHEN ("amv"."asset_class" = 'cash'::"public"."asset_class") THEN "amv"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "cash_mv_raw",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("amv"."asset_class" = 'stock'::"public"."asset_class") THEN "amv"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "stock_mv",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("amv"."asset_class" = 'fund'::"public"."asset_class") THEN "amv"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "fund_mv",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("amv"."asset_class" = 'crypto'::"public"."asset_class") THEN "amv"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "crypto_mv",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("acb"."asset_class" = 'cash'::"public"."asset_class") THEN "acb"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "cash_cb",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("acb"."asset_class" = 'stock'::"public"."asset_class") THEN "acb"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "stock_cb",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("acb"."asset_class" = 'fund'::"public"."asset_class") THEN "acb"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "fund_cb",
+            COALESCE("sum"(
+                CASE
+                    WHEN ("acb"."asset_class" = 'crypto'::"public"."asset_class") THEN "acb"."total"
+                    ELSE NULL::numeric
+                END), (0)::numeric) AS "crypto_cb"
+           FROM ("asset_mv" "amv"
+             FULL JOIN "asset_cb" "acb" ON (("amv"."asset_class" = "acb"."asset_class")))
+        ), "assets_fixed" AS (
+         SELECT GREATEST("totals"."cash_mv_raw", (0)::numeric) AS "cash_mv",
+            "totals"."stock_mv",
+            "totals"."fund_mv",
+            "totals"."crypto_mv",
+            "totals"."cash_cb",
+            "totals"."stock_cb",
+            "totals"."fund_cb",
+            "totals"."crypto_cb",
+            "totals"."cash_mv_raw"
+           FROM "totals"
+        ), "liabilities" AS (
+         SELECT ((0)::numeric - LEAST(( SELECT "totals"."cash_mv_raw"
+                   FROM "totals"), (0)::numeric)) AS "margin",
+            ( SELECT ("a"."current_quantity" * ('-1'::integer)::numeric)
+                   FROM "public"."assets" "a"
+                  WHERE ("a"."ticker" = 'DEBTS'::"text")) AS "debts_principal",
+            COALESCE("sum"(("d"."principal_amount" * ("power"(((1)::numeric + (("d"."interest_rate" / (100)::numeric) / (365)::numeric)), ((CURRENT_DATE - "tb"."transaction_date"))::numeric) - (1)::numeric))), (0)::numeric) AS "accrued_interest"
+           FROM (("public"."debts" "d"
+             JOIN "public"."transactions" "tb" ON (("tb"."id" = "d"."borrow_txn_id")))
+             LEFT JOIN "public"."transactions" "tr" ON (("tr"."id" = "d"."repay_txn_id")))
+          WHERE (("tr"."id" IS NULL) OR ("tr"."transaction_date" > CURRENT_DATE))
+        ), "equity" AS (
+         SELECT ( SELECT ("a"."current_quantity" * ('-1'::integer)::numeric)
+                   FROM "public"."assets" "a"
+                  WHERE ("a"."ticker" = 'CAPITAL'::"text")) AS "owner_capital",
+            ((( SELECT ((("totals"."cash_mv_raw" + "totals"."stock_mv") + "totals"."fund_mv") + "totals"."crypto_mv")
+                   FROM "totals") - ( SELECT ((("totals"."cash_cb" + "totals"."stock_cb") + "totals"."fund_cb") + "totals"."crypto_cb")
+                   FROM "totals")) - ( SELECT "liabilities"."accrued_interest"
+                   FROM "liabilities")) AS "unrealized_pl"
+        )
+ SELECT 'Cash'::"text" AS "account",
+    'asset'::"text" AS "type",
+    ( SELECT "assets_fixed"."cash_mv"
+           FROM "assets_fixed") AS "amount"
+UNION ALL
+ SELECT 'Stock'::"text" AS "account",
+    'asset'::"text" AS "type",
+    ( SELECT "assets_fixed"."stock_mv"
+           FROM "assets_fixed") AS "amount"
+UNION ALL
+ SELECT 'Fund'::"text" AS "account",
+    'asset'::"text" AS "type",
+    ( SELECT "assets_fixed"."fund_mv"
+           FROM "assets_fixed") AS "amount"
+UNION ALL
+ SELECT 'Crypto'::"text" AS "account",
+    'asset'::"text" AS "type",
+    ( SELECT "assets_fixed"."crypto_mv"
+           FROM "assets_fixed") AS "amount"
+UNION ALL
+ SELECT 'Margin'::"text" AS "account",
+    'liability'::"text" AS "type",
+    ( SELECT "liabilities"."margin"
+           FROM "liabilities") AS "amount"
+UNION ALL
+ SELECT 'Debts Principal'::"text" AS "account",
+    'liability'::"text" AS "type",
+    ( SELECT "liabilities"."debts_principal"
+           FROM "liabilities") AS "amount"
+UNION ALL
+ SELECT 'Accrued Interest'::"text" AS "account",
+    'liability'::"text" AS "type",
+    ( SELECT "liabilities"."accrued_interest"
+           FROM "liabilities") AS "amount"
+UNION ALL
+ SELECT 'Owner Capital'::"text" AS "account",
+    'equity'::"text" AS "type",
+    ( SELECT "equity"."owner_capital"
+           FROM "equity") AS "amount"
+UNION ALL
+ SELECT 'Unrealized P/L'::"text" AS "account",
+    'equity'::"text" AS "type",
+    ( SELECT "equity"."unrealized_pl"
+           FROM "equity") AS "amount";
+
+
+ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."currencies" (
+    "code" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "type" "public"."currency_type" NOT NULL
+);
+
+
+ALTER TABLE "public"."currencies" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
+    "date" "date" NOT NULL,
+    "symbol" "text" NOT NULL,
+    "close" numeric
+);
+
+
+ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
+    "date" "date" NOT NULL,
+    "net_equity_value" numeric(16,4) NOT NULL,
+    "net_cash_flow" numeric(16,4) NOT NULL,
+    "equity_index" numeric(8,2),
+    "total_cashflow" numeric
+);
+
+
+ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
@@ -2395,33 +2431,6 @@ CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
 
 
 ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_id" "uuid" NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "quantity" numeric(20,8) NOT NULL,
-    "amount" numeric(16,4) NOT NULL,
-    "currency_code" "text" NOT NULL
-);
-
-
-ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."transactions" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_date" "date" NOT NULL,
-    "type" "public"."transaction_type" NOT NULL,
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "price" numeric(16,4),
-    "linked_txn" "uuid"
-);
-
-
-ALTER TABLE "public"."transactions" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on') AS
@@ -2490,15 +2499,15 @@ CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on'
              JOIN "public"."assets" "a_1" ON (("a_1"."id" = "tl"."asset_id")))
           WHERE ("a_1"."asset_class" = 'stock'::"public"."asset_class")
         )
- SELECT "a"."id" AS "asset_id",
+ SELECT (EXTRACT(year FROM "c"."transaction_date"))::integer AS "year",
     "a"."ticker",
-    (EXTRACT(year FROM "c"."transaction_date"))::integer AS "year",
+    "a"."name",
+    "a"."logo_url",
     (- "sum"("c"."capital_amount")) AS "total_pnl"
    FROM (("capital_legs" "c"
      JOIN "stock_legs" "s" ON (("s"."transaction_id" = "c"."transaction_id")))
      JOIN "public"."assets" "a" ON (("a"."id" = "s"."stock_id")))
-  GROUP BY "a"."id", "a"."ticker", (EXTRACT(year FROM "c"."transaction_date"))
-  ORDER BY ((EXTRACT(year FROM "c"."transaction_date"))::integer) DESC, (- "sum"("c"."capital_amount")) DESC;
+  GROUP BY "a"."logo_url", "a"."name", "a"."ticker", (EXTRACT(year FROM "c"."transaction_date"));
 
 
 ALTER VIEW "public"."stock_annual_pnl" OWNER TO "postgres";
@@ -3227,12 +3236,6 @@ GRANT ALL ON FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") TO 
 
 
 
-GRANT ALL ON FUNCTION "public"."get_balance_sheet"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_balance_sheet"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_balance_sheet"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "service_role";
@@ -3356,27 +3359,9 @@ GRANT ALL ON TABLE "public"."assets" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."currencies" TO "anon";
-GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
-GRANT ALL ON TABLE "public"."currencies" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 
 
 
@@ -3392,18 +3377,6 @@ GRANT ALL ON TABLE "public"."debts" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
@@ -3413,6 +3386,42 @@ GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
 GRANT ALL ON TABLE "public"."transactions" TO "anon";
 GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
 GRANT ALL ON TABLE "public"."transactions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."balance_sheet" TO "anon";
+GRANT ALL ON TABLE "public"."balance_sheet" TO "authenticated";
+GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."currencies" TO "anon";
+GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
+GRANT ALL ON TABLE "public"."currencies" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
 
 
 

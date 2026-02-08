@@ -1,15 +1,15 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
-import { Tables } from "@/types/database.types"
 
 // ----------------------------
 // Type Definitions
 // ----------------------------
 
 export interface StockPnLItem {
-  asset_id: string
-  ticker: string
   year: number
+  ticker: string
+  name: string
+  logo_url: string
   total_pnl: number
 }
 
@@ -17,14 +17,13 @@ export interface YearlyItem {
   year: string
   deposits: number
   withdrawals: number
-  equity_return: number
-  vnindex_return: number
+  equity_ret: number
+  vn_ret: number
 }
 
 export interface GatewayReportResponse {
-  stockPnL: Record<string, StockPnLItem[]>
-  assets: Tables<"assets">[]
-  yearly: YearlyItem[]
+  stockPnLData: StockPnLItem[]
+  yearlyData: YearlyItem[]
 }
 
 // ----------------------------
@@ -32,9 +31,8 @@ export interface GatewayReportResponse {
 // ----------------------------
 
 const fallback: GatewayReportResponse = {
-  stockPnL: {},
-  assets: [],
-  yearly: []
+  stockPnLData: [],
+  yearlyData: []
 }
 
 // ----------------------------
@@ -53,9 +51,8 @@ export function useReportsData() {
   )
 
   return {
-    stockPnL: data?.stockPnL || {},
-    assets: data?.assets || [],
-    yearly: data?.yearly || [],
+    stockPnLData: data?.stockPnLData || [],
+    yearlyData: data?.yearlyData || [],
     isLoading,
     error,
   }

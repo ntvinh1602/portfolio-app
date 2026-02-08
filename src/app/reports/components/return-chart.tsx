@@ -24,7 +24,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { yearly, isLoading: isReportsLoading } = useReportsData()
+  const { yearlyData, isLoading: isReportsLoading } = useReportsData()
   const { benchmarkData, isLoading: isDelayedDataLoading } = useDelayedData()
 
   useEffect(() => {
@@ -118,9 +118,9 @@ export function ReturnChart({ year }: ReturnChartProps) {
   }
 
   const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearly.find((item) => item.year === yearNum)
-  const equityReturn = yearData?.equity_return ?? 0
-  const vnIndexReturn = yearData?.vnindex_return ?? 0
+  const yearData = yearlyData.find((item) => item.year === yearNum)
+  const equityReturn = yearData?.equity_ret ?? 0
+  const vnIndexReturn = yearData?.vn_ret ?? 0
 
   return (
     <ChartCard
