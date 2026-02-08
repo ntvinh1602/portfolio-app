@@ -2429,30 +2429,47 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
          SELECT ("date_trunc"('month'::"text", "dd"."dd"))::"date" AS "month_start",
             LEAST((("date_trunc"('month'::"text", "dd"."dd") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
            FROM "generate_series"(('2021-11-01'::"date")::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "dd"("dd")
-        )
- SELECT "m"."month_start" AS "date",
-    "public"."calculate_pnl"("m"."month_start", "m"."month_end") AS "pnl",
-    ((COALESCE("lic"."total_interest", (0)::numeric) + COALESCE("oic"."margin_interest", (0)::numeric)) + COALESCE("oic"."cash_advance_interest", (0)::numeric)) AS "interest",
-    COALESCE("tc"."total_taxes", (0)::numeric) AS "tax",
-    COALESCE("tc"."total_fees", (0)::numeric) AS "fee"
-   FROM ((("month_ranges" "m"
-     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%fee%'::"text")) AS "total_fees",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%tax%'::"text")) AS "total_taxes"
-           FROM (("public"."transactions" "t"
-             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
-             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
-          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'expense'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "tc" ON (true))
-     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") AS "total_interest"
-           FROM (("public"."transactions" "t"
-             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
-             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
-          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'repay'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "lic" ON (true))
-     LEFT JOIN LATERAL ( SELECT "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Margin%'::"text")) AS "margin_interest",
+        ), "monthly_transactions" AS (
+         SELECT ("date_trunc"('month'::"text", ("t"."transaction_date")::timestamp with time zone))::"date" AS "month",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%fee%'::"text")) AS "total_fees",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%tax%'::"text")) AS "total_taxes",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."type" = 'repay'::"public"."transaction_type")) AS "repay_interest",
+            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Margin%'::"text")) AS "margin_interest",
             "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Cash advance%'::"text")) AS "cash_advance_interest"
            FROM (("public"."transactions" "t"
-             JOIN "public"."transaction_legs" "tl" ON (("t"."id" = "tl"."transaction_id")))
-             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
-          WHERE (("t"."transaction_date" >= "m"."month_start") AND ("t"."transaction_date" <= "m"."month_end") AND ("t"."type" = 'expense'::"public"."transaction_type") AND ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"])))) "oic" ON (true));
+             JOIN "public"."transaction_legs" "tl" ON (("tl"."transaction_id" = "t"."id")))
+             JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
+          WHERE ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"]))
+          GROUP BY (("date_trunc"('month'::"text", ("t"."transaction_date")::timestamp with time zone))::"date")
+        ), "monthly_pnl" AS (
+         SELECT "m_1"."month_start",
+            "m_1"."month_end",
+            "start_snapshot"."net_equity_value" AS "start_equity",
+            "end_snapshot"."net_equity_value" AS "end_equity",
+            COALESCE("sum"("dps"."net_cash_flow"), (0)::numeric) AS "cash_flow",
+            ((COALESCE("end_snapshot"."net_equity_value", (0)::numeric) - COALESCE("start_snapshot"."net_equity_value", (0)::numeric)) - COALESCE("sum"("dps"."net_cash_flow"), (0)::numeric)) AS "pnl"
+           FROM ((("month_ranges" "m_1"
+             LEFT JOIN "public"."daily_performance_snapshots" "dps" ON ((("dps"."date" >= "m_1"."month_start") AND ("dps"."date" <= "m_1"."month_end"))))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity_value"
+                   FROM "public"."daily_performance_snapshots" "s"
+                  WHERE ("s"."date" < "m_1"."month_start")
+                  ORDER BY "s"."date" DESC
+                 LIMIT 1) "start_snapshot" ON (true))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity_value"
+                   FROM "public"."daily_performance_snapshots" "s"
+                  WHERE ("s"."date" <= "m_1"."month_end")
+                  ORDER BY "s"."date" DESC
+                 LIMIT 1) "end_snapshot" ON (true))
+          GROUP BY "m_1"."month_start", "m_1"."month_end", "start_snapshot"."net_equity_value", "end_snapshot"."net_equity_value"
+        )
+ SELECT "m"."month_start" AS "date",
+    "mp"."pnl",
+    ((COALESCE("mt"."repay_interest", (0)::numeric) + COALESCE("mt"."margin_interest", (0)::numeric)) + COALESCE("mt"."cash_advance_interest", (0)::numeric)) AS "interest",
+    COALESCE("mt"."total_taxes", (0)::numeric) AS "tax",
+    COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
+   FROM (("month_ranges" "m"
+     LEFT JOIN "monthly_pnl" "mp" ON (("mp"."month_start" = "m"."month_start")))
+     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")));
 
 
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
