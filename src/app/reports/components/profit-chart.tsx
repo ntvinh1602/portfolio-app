@@ -55,7 +55,7 @@ function groupByYear(data: RawData[]): ChartData[] {
 export function ProfitChart({ year }: { year: string }) {
   const { monthlyData, isLoading } = useReportsData()
 
-  if (isLoading)
+  if (isLoading || !monthlyData )
     return (
       <ChartCardSkeleton
         title="Net Profit"

@@ -15,7 +15,7 @@ export function Cashflow({
   const { isLoading: isDelayedLoading } = useDelayedData()
   const { yearlyData, isLoading: isReportsLoading } = useReportsData()
 
-  const isLoading = isDelayedLoading || isReportsLoading
+  const isLoading = isDelayedLoading || isReportsLoading || !yearlyData
 
   if (isLoading)
     return (

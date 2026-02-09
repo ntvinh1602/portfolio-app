@@ -1,14 +1,37 @@
 "use client"
 
 import { Asset, AssetSkeleton } from "@/app/reports/components/stock-item"
-import { useReportsData } from "@/hooks/useReportsData"
 import * as Card from "@/components/ui/card"
-import { StockPnLItem } from "@/hooks/useReportsData"
 import { Trophy } from "lucide-react"
+import { useReportsData } from "@/hooks/useReportsData"
+import { Tables } from "@/types/database.types"
+
+// Original nullable Supabase type
+type RawStockPnLItem = Tables<"stock_annual_pnl">
+
+// Local normalized type (nulls handled)
+interface StockPnLItem {
+  logo_url: string
+  name: string
+  ticker: string
+  total_pnl: number
+  year: number
+}
 
 export function StockLeaderboard({ year }: { year?: string | number }) {
   const { stockPnLData, isLoading, error } = useReportsData()
   const yearKey = year?.toString()
+
+  // --- Normalize nullables ---
+  const cleanedData: StockPnLItem[] = (stockPnLData || [])
+    .filter((item): item is RawStockPnLItem => !!item) // defensive
+    .map((item) => ({
+      logo_url: item.logo_url ?? "",
+      name: item.name ?? "Unknown",
+      ticker: item.ticker ?? "N/A",
+      total_pnl: item.total_pnl ?? 0,
+      year: item.year ?? 0,
+    }))
 
   const renderHeader = () => (
     <Card.Header>
@@ -50,7 +73,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     )
   }
 
-  if (!stockPnLData || stockPnLData.length === 0) {
+  if (cleanedData.length === 0) {
     return (
       <Card.Root variant="glow" className="h-full">
         {renderHeader()}
@@ -64,7 +87,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
   }
 
   // --- Group by year ---
-  const groupedByYear = stockPnLData.reduce(
+  const groupedByYear = cleanedData.reduce(
     (acc: Record<string, StockPnLItem[]>, item) => {
       const key = item.year.toString()
       if (!acc[key]) acc[key] = []
@@ -78,11 +101,12 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
   let pnlList: StockPnLItem[] = []
   if (yearKey === "All Time") {
     const merged: Record<string, StockPnLItem> = {}
-    stockPnLData.forEach((item) => {
-      if (!merged[item.ticker]) {
-        merged[item.ticker] = { ...item }
+    cleanedData.forEach((item) => {
+      const key = item.ticker
+      if (!merged[key]) {
+        merged[key] = { ...item }
       } else {
-        merged[item.ticker].total_pnl += item.total_pnl
+        merged[key].total_pnl += item.total_pnl
       }
     })
     pnlList = Object.values(merged)

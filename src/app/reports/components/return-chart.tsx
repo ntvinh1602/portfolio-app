@@ -1,96 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import * as Card from "@/components/ui/card"
 import { useReportsData } from "@/hooks/useReportsData"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { format } from "date-fns"
+import { useReturnChartData } from "@/hooks/useReturnChartData"
 
 interface ReturnChartProps {
   year: string
 }
 
-interface ChartPoint extends Record<string, string | number> {
-  snapshot_date: string
-  portfolio_value: number
-  vni_value: number
-}
-
 export function ReturnChart({ year }: ReturnChartProps) {
-  const [data, setData] = useState<ChartPoint[]>([])
-  const [isFetching, setIsFetching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
   const { yearlyData, isLoading: isReportsLoading } = useReportsData()
 
-  useEffect(() => {
-    if (!year) return
-
-    const controller = new AbortController()
-    const fetchData = async () => {
-      setIsFetching(true)
-      setError(null)
-
-      try {
-        // Determine parameter for API
-        const timeParam = year === "All Time" ? "all" : year
-
-        const res = await fetch(`/api/gateway/return-chart-data?time=${timeParam}`, {
-          signal: controller.signal,
-        })
-
-        if (!res.ok) {
-          const errResult: unknown = await res.json().catch(() => null)
-          const errMessage =
-            typeof errResult === "object" &&
-            errResult !== null &&
-            "error" in errResult
-              ? String((errResult as { error?: string }).error)
-              : `Failed to fetch chart data (${res.status})`
-          throw new Error(errMessage)
-        }
-
-        const rawData: unknown = await res.json()
-        if (!Array.isArray(rawData)) {
-          throw new Error("Unexpected response format: expected array")
-        }
-
-        const jsonData: ChartPoint[] = rawData.map((item) => {
-          if (
-            typeof item === "object" &&
-            item !== null &&
-            "portfolio_value" in item &&
-            "vni_value" in item
-          ) {
-            const typedItem = item as Partial<ChartPoint>
-            return {
-              snapshot_date: String(typedItem.snapshot_date ?? typedItem.date ?? ""),
-              portfolio_value: Number(typedItem.portfolio_value ?? 0),
-              vni_value: Number(typedItem.vni_value ?? 0),
-            }
-          }
-          throw new Error("Invalid item in response array")
-        })
-
-        setData(jsonData)
-      } catch (err: unknown) {
-        console.error(err)
-        const message = err instanceof Error ? err.message : "Internal Server Error"
-        setError(message)
-      } finally {
-        setIsFetching(false)
-      }
-    }
-
-    fetchData()
-    return () => controller.abort()
-  }, [year])
+  // Convert UI “All Time” to backend time parameter
+  const timeParam = year === "All Time" ? "all" : year
+  const { data, isLoading: isFetching, error } = useReturnChartData({ time: timeParam })
 
   const isLoading = isFetching || isReportsLoading
 
-  if (isLoading) {
+  if (isLoading || !yearlyData) {
     return (
       <ChartCardSkeleton
         title="Equity Return"
@@ -105,11 +36,19 @@ export function ReturnChart({ year }: ReturnChartProps) {
       <Card.Root variant="glow" className="relative flex flex-col gap-4 h-full">
         <Card.Header>
           <Card.Subtitle>Error</Card.Subtitle>
-          <Card.Title className="text-red-500 text-lg">{error}</Card.Title>
+          <Card.Title className="text-red-500 text-lg">
+            {error instanceof Error ? error.message : "Internal Server Error"}
+          </Card.Title>
         </Card.Header>
       </Card.Root>
     )
   }
+
+  const chartData = (data ?? []).map((d) => ({
+    snapshot_date: d.date,
+    portfolio_value: d.portfolio_value,
+    vni_value: d.vni_value,
+  }))
 
   const yearNum = year === "All Time" ? "All-Time" : year
   const yearData = yearlyData.find((item) => item.year === yearNum)
@@ -125,7 +64,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
       minorValue1Formatter={(value) => `${formatNum(value, 1)}%`}
       minorText1="VN-Index"
       chartComponent={Areachart}
-      chartData={data}
+      chartData={chartData}
       chartConfig={{
         portfolio_value: {
           label: "Equity",

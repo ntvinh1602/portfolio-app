@@ -24,7 +24,7 @@ export function ExpenseChart({
 }) {
   const { monthlyData, isLoading } = useReportsData()
 
-  if (isLoading) return (
+  if (isLoading || !monthlyData ) return (
     <Card.Root className="gap-0 h-fit">
       <Card.Header>
         <Card.Title>Expenses</Card.Title>
