@@ -3,7 +3,7 @@ import * as Popover from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { PanelRightOpen } from "lucide-react"
 import { formatNum } from "@/lib/utils"
-import { useLiveData } from "../context/live-data-context"
+import { useDelayedData } from "@/hooks/useDelayedData"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: boolean
@@ -42,10 +42,10 @@ function BSItem({
 }
 
 export function BalanceSheet() {
-  const { balanceSheet: rows } = useLiveData() // now a flat array from Supabase view
+  const { bsData } = useDelayedData() // now a flat array from Supabase view
 
   // Safety guard for undefined data
-  const data = Array.isArray(rows) ? rows : []
+  const data = Array.isArray(bsData) ? bsData : []
 
   // Group rows by type
   const assets = data.filter((r) => r.type === "asset")
@@ -54,10 +54,7 @@ export function BalanceSheet() {
 
   // Calculate totals
   const totalAssets = assets.reduce((sum, r) => sum + (r.amount || 0), 0)
-  const totalLiabilities = liabilities.reduce(
-    (sum, r) => sum + (r.amount || 0),
-    0
-  )
+  const totalLiabilities = liabilities.reduce((sum, r) => sum + (r.amount || 0), 0)
   const totalEquity = equities.reduce((sum, r) => sum + (r.amount || 0), 0)
 
   return (
@@ -86,8 +83,8 @@ export function BalanceSheet() {
             {assets.map((item) => (
               <BSItem
                 key={item.account}
-                label={item.account}
-                value={item.amount}
+                label={item.account ?? "-"}
+                value={item.amount ?? 0}
               />
             ))}
           </div>
@@ -113,8 +110,8 @@ export function BalanceSheet() {
               {liabilities.map((item) => (
                 <BSItem
                   key={item.account}
-                  label={item.account}
-                  value={item.amount}
+                  label={item.account ?? "-"}
+                  value={item.amount ?? 0}
                 />
               ))}
             </div>
@@ -125,8 +122,8 @@ export function BalanceSheet() {
               {equities.map((item) => (
                 <BSItem
                   key={item.account}
-                  label={item.account}
-                  value={item.amount}
+                  label={item.account ?? "-"}
+                  value={item.amount ?? 0}
                 />
               ))}
             </div>

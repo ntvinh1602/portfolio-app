@@ -1,8 +1,6 @@
 import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import {
-  EquityChartData,
-  BenchmarkChartData,
   StockData,
   CryptoData,
   PnLData,
@@ -14,18 +12,6 @@ interface DelayedDataApiResponse {
   twrData: TWRData
   monthlyData: Tables<"monthly_snapshots">[]
   pnlData: PnLData
-  equityData: {
-    all_time: EquityChartData[]
-    "1y": EquityChartData[]
-    "6m": EquityChartData[]
-    "3m": EquityChartData[]
-  }
-  benchmarkData: {
-    all_time: BenchmarkChartData[]
-    "1y": BenchmarkChartData[]
-    "6m": BenchmarkChartData[]
-    "3m": BenchmarkChartData[]
-  }
   balanceSheetData: Tables<"balance_sheet">[]
   stockData: StockData[]
   cryptoData: CryptoData[]
@@ -41,8 +27,6 @@ const fallback: DelayedDataApiResponse = {
     ytd: 0,
     mtd: 0
   },
-  equityData: { all_time: [], "1y": [], "6m": [], "3m": [] },
-  benchmarkData: { all_time: [], "1y": [], "6m": [], "3m": [] },
   balanceSheetData: [],
   stockData: [],
   cryptoData: [],
@@ -67,8 +51,6 @@ export function useDelayedData() {
   return {
     twrData: data.twrData,
     pnlData: data.pnlData,
-    equityData: data.equityData,
-    benchmarkData: data.benchmarkData,
     bsData: data.balanceSheetData,
     stockData: data.stockData,
     cryptoData: data.cryptoData,

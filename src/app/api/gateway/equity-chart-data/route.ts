@@ -40,30 +40,27 @@ export async function GET(request: NextRequest) {
           p_start_date = "2021-11-01"
           p_end_date = now.toISOString().slice(0, 10)
           break
-        case "1y":
-          {
-            const start = new Date(now)
-            start.setFullYear(start.getFullYear() - 1)
-            p_start_date = start.toISOString().slice(0, 10)
-            p_end_date = now.toISOString().slice(0, 10)
-          }
+        case "1y": {
+          const start = new Date(now)
+          start.setFullYear(start.getFullYear() - 1)
+          p_start_date = start.toISOString().slice(0, 10)
+          p_end_date = now.toISOString().slice(0, 10)
           break
-        case "6m":
-          {
-            const start = new Date(now)
-            start.setMonth(start.getMonth() - 6)
-            p_start_date = start.toISOString().slice(0, 10)
-            p_end_date = now.toISOString().slice(0, 10)
-          }
+        }
+        case "6m": {
+          const start = new Date(now)
+          start.setMonth(start.getMonth() - 6)
+          p_start_date = start.toISOString().slice(0, 10)
+          p_end_date = now.toISOString().slice(0, 10)
           break
-        case "3m":
-          {
-            const start = new Date(now)
-            start.setMonth(start.getMonth() - 3)
-            p_start_date = start.toISOString().slice(0, 10)
-            p_end_date = now.toISOString().slice(0, 10)
-          }
+        }
+        case "3m": {
+          const start = new Date(now)
+          start.setMonth(start.getMonth() - 3)
+          p_start_date = start.toISOString().slice(0, 10)
+          p_end_date = now.toISOString().slice(0, 10)
           break
+        }
       }
     }
 
@@ -73,7 +70,7 @@ export async function GET(request: NextRequest) {
       body.p_end_date = p_end_date
     }
 
-    const fetchSupabaseOptions = {
+    const fetchSupabaseOptions: RequestInit & { next?: { revalidate: number; tags: string[] } } = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -87,7 +84,7 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sampling_benchmark_data`, fetchSupabaseOptions)
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sampling_equity_data`, fetchSupabaseOptions)
 
     if (!response.ok) {
       const errorResult = await response.json().catch(() => null)

@@ -30,8 +30,6 @@ export async function GET(request: NextRequest) {
     const [
       twrResponse,
       pnlResponse,
-      equityResponse,
-      benchmarkResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
       balancesheetResponse,
@@ -39,8 +37,6 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       fetch(`${baseURL}/api/internal/twr`, fetchOptions),
       fetch(`${baseURL}/api/internal/pnl`, fetchOptions),
-      fetch(`${baseURL}/api/internal/equity-chart`, fetchOptions),
-      fetch(`${baseURL}/api/internal/benchmark-chart`, fetchOptions),
       fetch(`${baseURL}/api/internal/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/internal/crypto-holdings`, fetchOptions),
       fetch(`${supabaseUrl}/rest/v1/balance_sheet?select=*`, fetchSupabaseOptions),
@@ -56,8 +52,6 @@ export async function GET(request: NextRequest) {
     for (const response of [
       twrResponse,
       pnlResponse,
-      equityResponse,
-      benchmarkResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
       balancesheetResponse,
@@ -72,8 +66,6 @@ export async function GET(request: NextRequest) {
     const [
       twrData,
       pnlData,
-      equityData,
-      benchmarkData,
       stockData,
       cryptoData,
       balanceSheetData,
@@ -82,8 +74,6 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       twrResponse.json(),
       pnlResponse.json(),
-      equityResponse.json(),
-      benchmarkResponse.json(),
       stockHoldingsResponse.json(),
       cryptoHoldingsResponse.json(),
       balancesheetResponse.json(),
@@ -93,8 +83,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       twrData,
       pnlData,
-      equityData,
-      benchmarkData,
       balanceSheetData,
       stockData,
       cryptoData,

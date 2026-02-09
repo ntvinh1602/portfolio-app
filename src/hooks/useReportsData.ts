@@ -8,19 +8,11 @@ export interface GatewayReportResponse {
   monthlyData: Tables<"monthly_snapshots">[]
 }
 
-// ----------------------------
-// Default Fallback
-// ----------------------------
-
 const fallback: GatewayReportResponse = {
   stockPnLData: [],
   yearlyData: [],
   monthlyData: []
 }
-
-// ----------------------------
-// Hook Definition
-// ----------------------------
 
 export function useReportsData() {
   const { data, error, isLoading } = useSWR<GatewayReportResponse>(

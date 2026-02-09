@@ -73,7 +73,7 @@ function ChartCard<
 
     switch (dateRange) {
       case "1y":
-      case "all_time":
+      case "all":
         return format(date, "MMM yy")
       default:
         return format(date, "dd MMM")
@@ -138,7 +138,7 @@ function ChartCard<
               { label: "3M", value: "3m" },
               { label: "6M", value: "6m" },
               { label: "1Y", value: "1y" },
-              { label: "All", value: "all_time" },
+              { label: "All", value: "all" },
             ]}
             variant="content"
             tabClassName="ml-auto"
@@ -215,7 +215,7 @@ function ChartCardSkeleton({
               { label: "3M", value: "3m" },
               { label: "6M", value: "6m" },
               { label: "1Y", value: "1y" },
-              { label: "All", value: "all_time" },
+              { label: "All", value: "all" },
             ]}
             variant="content"
             tabClassName="ml-auto"

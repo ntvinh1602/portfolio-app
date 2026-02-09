@@ -3,12 +3,14 @@ import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useDelayedData } from "@/hooks/useDelayedData"
+import { useReturnChartData } from "@/hooks/useReturnChartData"
 
 export function Benchmarkchart() {
-  const { twrData, benchmarkData, isLoading } = useDelayedData()
   const [dateRange, setDateRange] = useState("1y")
+  const { twrData, isLoading } = useDelayedData()
+  const { data, isLoading: isChartLoading } = useReturnChartData({ time: dateRange })
 
-  if (isLoading) return (
+  if ( isLoading || isChartLoading ) return (
     <ChartCardSkeleton
       title="Year-to-Date Return"
       minorText1="all time"
@@ -17,7 +19,11 @@ export function Benchmarkchart() {
     />
   )
 
-  const chartData = benchmarkData[dateRange as keyof typeof benchmarkData]
+  const chartData = (data ?? []).map((d) => ({
+    snapshot_date: d.date,
+    portfolio_value: d.portfolio_value,
+    vni_value: d.vni_value,
+  }))
 
   const years = (new Date().getTime() - new Date('2021-11-09').getTime()) / (1000 * 60 * 60 * 24 * 365.25)
   const cagr = (Math.pow(1 + twrData.all_time, 1 / years) - 1) * 100

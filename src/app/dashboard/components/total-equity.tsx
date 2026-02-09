@@ -4,13 +4,15 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { useDelayedData } from "@/hooks/useDelayedData"
+import { useEquityChartData } from "@/hooks/useEquityChartData"
 
 export function EquityChart() {
-  const { totalEquity } = useLiveData()
-  const { pnlData, equityData, isLoading } = useDelayedData()
   const [dateRange, setDateRange] = useState("1y")
+  const { totalEquity } = useLiveData()
+  const { pnlData, isLoading } = useDelayedData()
+  const { data, isLoading: isChartLoading } = useEquityChartData({ time: dateRange })
 
-  if (isLoading) return (
+  if ( isLoading || isChartLoading ) return (
     <ChartCardSkeleton
       title="Equity"
       minorText1="this month"
@@ -19,7 +21,11 @@ export function EquityChart() {
     />
   )
     
-  const chartData = equityData[dateRange as keyof typeof equityData]
+  const chartData = (data ?? []).map((d) => ({
+    snapshot_date: d.date,
+    net_equity_value: d.net_equity_value,
+    total_cashflow: d.total_cashflow
+  }))
 
   return (
     <ChartCard

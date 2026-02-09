@@ -15,6 +15,7 @@ import {
 import { useDNSEData } from "@/hooks/useDNSEData"
 import { useBinanceData } from "@/hooks/useBinanceData"
 import { useDelayedData } from "@/hooks/useDelayedData"
+import { Tables } from "@/types/database.types"
 
 export interface LiveStockData extends StockData {
   totalAmount: number
@@ -32,12 +33,6 @@ export interface LiveCryptoData extends CryptoData {
   prevPrice?: number | null
 }
 
-export interface BalanceSheetRow {
-  account: string
-  type: "asset" | "liability" | "equity"
-  amount: number
-}
-
 interface LiveDataContextType {
   isLoading: boolean
   totalAssets: number
@@ -47,7 +42,7 @@ interface LiveDataContextType {
   totalLiabilities: number
   processedStockData: LiveStockData[]
   processedCryptoData: LiveCryptoData[]
-  balanceSheet: BalanceSheetRow[]
+  balanceSheet: Tables<"balance_sheet">[]
   isStockPriceLive: boolean
   isCryptoPriceLive: boolean
 }
@@ -69,12 +64,14 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
     () => stockData?.map((s) => s.ticker) ?? [],
     [stockData]
   )
-  const { data: marketData, loading: isStockDataLoading, error: stockError } =
-    useDNSEData(stockSymbols)
+  const {
+    data: marketData,
+    loading: isStockDataLoading,
+    error: stockError
+  } = useDNSEData(stockSymbols)
 
   const cryptoSymbols = useMemo(
-    () =>
-      cryptoData?.filter((c) => c.ticker !== "USDT").map((c) => c.ticker) ?? [],
+    () => cryptoData?.filter((c) => c.ticker !== "USDT").map((c) => c.ticker) ?? [],
     [cryptoData]
   )
   const {
@@ -83,10 +80,8 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
     error: cryptoError,
   } = useBinanceData(cryptoSymbols)
 
-  const isStockPriceLive =
-    !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
-  const isCryptoPriceLive =
-    !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
+  const isStockPriceLive = !isStockDataLoading && Object.keys(marketData).length > 0 && !stockError
+  const isCryptoPriceLive = !isCryptoDataLoading && Object.keys(liveCryptoPrices).length > 0 && !cryptoError
 
   // ===== Stock Data =====
   const processedStockData = useMemo(() => {
@@ -121,10 +116,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoading, stockData, marketData])
 
   useEffect(() => {
-    const total = processedStockData.reduce(
-      (acc, s) => acc + s.totalAmount,
-      0
-    )
+    const total = processedStockData.reduce((acc, s) => acc + s.totalAmount, 0)
     setTotalStockValue(total)
   }, [processedStockData])
 
@@ -163,10 +155,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoading, cryptoData, liveCryptoPrices])
 
   useEffect(() => {
-    const total = processedCryptoData.reduce(
-      (acc, c) => acc + c.totalAmount,
-      0
-    )
+    const total = processedCryptoData.reduce((acc, c) => acc + c.totalAmount, 0)
     setTotalCryptoValue(total)
   }, [processedCryptoData])
 
@@ -179,25 +168,12 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
     const liabilities = bsData.filter((r) => r.type === "liability")
     const equity = bsData.filter((r) => r.type === "equity")
 
-    const totalAssetsValue =
-      assets.reduce((acc, r) => acc + (r.amount || 0), 0) +
-      totalStockValue +
-      totalCryptoValue
+    const totalAssetsValue = assets.reduce((acc, r) => acc + (r.amount || 0), 0)
+    const totalLiabilitiesValue = liabilities.reduce((acc, r) => acc + (r.amount || 0), 0)
+    const totalEquityValue = equity.reduce((acc, r) => acc + (r.amount || 0), 0)
 
-    const totalLiabilitiesValue = liabilities.reduce(
-      (acc, r) => acc + (r.amount || 0),
-      0
-    )
-
-    const totalEquityValue = equity.reduce(
-      (acc, r) => acc + (r.amount || 0),
-      0
-    )
-
-    const stockPnL =
-      processedStockData.reduce((acc, s) => acc + s.pnlNet, 0) ?? 0
-    const cryptoPnL =
-      processedCryptoData.reduce((acc, c) => acc + c.pnlNet, 0) ?? 0
+    const stockPnL = processedStockData.reduce((acc, s) => acc + s.pnlNet, 0) ?? 0
+    const cryptoPnL = processedCryptoData.reduce((acc, c) => acc + c.pnlNet, 0) ?? 0
 
     setUnrealizedPnL(stockPnL + cryptoPnL)
     setTotalAssets(totalAssetsValue)
