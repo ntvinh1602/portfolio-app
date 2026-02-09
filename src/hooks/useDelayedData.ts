@@ -2,8 +2,7 @@ import useSWR from "swr"
 import { fetcher } from "@/lib/fetcher"
 import {
   StockData,
-  CryptoData,
-  TWRData,
+  CryptoData
 } from "@/app/dashboard/types/dashboard-data"
 import { Tables } from "@/types/database.types"
 

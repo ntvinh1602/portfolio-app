@@ -2,12 +2,12 @@ import * as Card from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
-import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { BalanceSheet } from "./balance-sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useDelayedData } from "@/hooks/useDelayedData"
 
 export function AssetCard() {
-  const { balanceSheet: rows, isLoading } = useLiveData()
+  const { bsData: rows, isLoading } = useDelayedData()
 
   // Graceful fallback
   const data = Array.isArray(rows) ? rows : []
@@ -19,26 +19,18 @@ export function AssetCard() {
 
   // --- Totals ---
   const totalAssets = assets.reduce((sum, r) => sum + (r.amount || 0), 0)
-  const totalLiabilities = liabilities.reduce(
-    (sum, r) => sum + (r.amount || 0),
-    0
-  )
+  const totalLiabilities = liabilities.reduce((sum, r) => sum + (r.amount || 0), 0)
   const totalEquity = equities.reduce((sum, r) => sum + (r.amount || 0), 0)
 
   // --- Derived Metrics ---
-  const leverage =
-    totalEquity !== 0 ? (totalLiabilities / totalEquity).toFixed(2) : "∞"
-
-  const fund =
-    assets.find((a) => a.account.toLowerCase() === "fund")?.amount || 0
-
-  const liquidity =
-    totalEquity !== 0 ? ((totalEquity - fund) / totalEquity) * 100 : 0
+  const leverage = totalEquity !== 0 ? (totalLiabilities / totalEquity).toFixed(2) : "∞"
+  const fund = assets.find((a) => (a.account ?? "Unknown").toLowerCase() === "fund")?.amount || 0
+  const liquidity = totalEquity !== 0 ? ((totalEquity - fund) / totalEquity) * 100 : 0
 
   // --- Asset Chart Config ---
   const assetChartCfg: ChartConfig = Object.fromEntries(
     assets.map((a, i) => [
-      a.account.toLowerCase(),
+      (a.account ?? "Unknown").toLowerCase(),
       {
         label: a.account,
         color: `var(--chart-${(i % 4) + 1})`,
@@ -49,7 +41,7 @@ export function AssetCard() {
   const assetChartData = assets
     .filter((a) => (a.amount || 0) > 0)
     .map((a, i) => ({
-      asset: a.account.toLowerCase(),
+      asset: (a.account ?? "Unknown").toLowerCase(),
       allocation: a.amount,
       fill: `var(--chart-${(i % 4) + 1})`,
     }))

@@ -2,15 +2,15 @@ import { format } from "date-fns"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useDelayedData } from "@/hooks/useDelayedData"
+import { useReportsData } from "@/hooks/useReportsData"
 
 export function NetProfit() {
   const {
     monthlyData,
     isLoading
-  } = useDelayedData()
+  } = useReportsData()
 
-  if (isLoading)
+  if (isLoading || !monthlyData)
     return (
     <ChartCardSkeleton
       title="Last 1-year Profit"

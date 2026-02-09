@@ -1,96 +1,57 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Header } from "@/components/header"
 import { TxnInfo } from "./components/txn-info"
 import { Transaction } from "./components/columns"
 import { DateRange } from "@/components/date-picker"
 import { subMonths, format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
-import { TxnLeg, Expense } from "./types/data"
 import { toast } from "sonner"
 import { TxnTable } from "./components/txn-table"
+import { useTransactions } from "@/hooks/useTransactions"
+import { TxnLeg, Expense } from "./types/data"
+import { useTransactionDetails } from "@/hooks/useTransactionInfo"
 
 export default function Page() {
-  const [data, setData] = useState<Transaction[]>([])
   const [dateFrom, setDateFrom] = useState<Date | undefined>(
     subMonths(new Date(), 1)
   )
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date())
+
+  const startDate = dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined
+  const endDate = dateTo ? format(dateTo, "yyyy-MM-dd") : undefined
+
+  // ---- Fetch transactions using SWR hook ----
+  const { transactions: data, isLoading: txnLoading, isError } = useTransactions({
+    startDate,
+    endDate,
+  })
+
+  // ---- Selected transaction ----
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
-  const [txnLegs, setTxnLegs] = useState<TxnLeg[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [txnLoading, setTxnLoading] = useState(true)
-  const [detailLoading, setDetailLoading] = useState(false)
 
-  const handleTransactionSelect = async (transaction: Transaction | null) => {
-    if (!transaction) {
-      setSelectedTxn(null)
-      setTxnLegs([])
-      setExpenses([])
-      return
-    }
+  // ---- Fetch details via RPC hook ----
+  const {
+    data: detailData,
+    isLoading: detailLoading,
+    isError: detailError,
+  } = useTransactionDetails({
+    txn_id: selectedTxn?.id || "",
+    include_expenses:
+      selectedTxn?.type === "buy" || selectedTxn?.type === "sell" ? true : false,
+  })
 
-    setSelectedTxn(transaction)
-    setDetailLoading(true)
-    try {
-      const isTrade = transaction.type === "buy" || transaction.type === "sell"
-        ? "true"
-        : "false"
+  const txnLegs: TxnLeg[] = detailData?.legs || []
+  const expenses: Expense[] = detailData?.expenses || []
 
-      const params = new URLSearchParams({
-        txnID: transaction.id,
-        isExpense: isTrade,
-      })
-
-      const response = await fetch(`/api/gateway/txn-info?${params.toString()}`)
-      const result = await response.json()
-
-      if (!response.ok) {
-        const errorMessage = result?.error || "Failed to fetch transaction details"
-        throw new Error(errorMessage)
-      }
-
-      setTxnLegs(result.legs || [])
-      setExpenses(result.expenses || [])
-    } catch (err) {
-      console.error(err)
-      toast.error(err instanceof Error ? err.message : "Failed to fetch transactions")
-    } finally {
-      setDetailLoading(false)
-    }
+  // ---- Error handling ----
+  if (isError) {
+    toast.error("Failed to fetch transactions")
   }
-
-  useEffect(() => {
-    async function fetchData() {
-      setTxnLoading(true)
-      try {
-        const params = new URLSearchParams()
-        if (dateFrom) params.set("startDate", format(dateFrom, "yyyy-MM-dd"))
-        if (dateTo) params.set("endDate", format(dateTo, "yyyy-MM-dd"))
-
-        const response = await fetch(`/api/gateway/txn-feed?${params.toString()}`)
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          const errorMessage = result?.error || "Failed to fetch transactions"
-          throw new Error(errorMessage)
-        }
-
-        setData(result)
-      } catch (err) {
-        console.error(err)
-        const message =
-          err instanceof Error ? err.message : "Failed to fetch transactions"
-        toast.error(message)
-      } finally {
-        setTxnLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [dateFrom, dateTo])
+  if (detailError) {
+    toast.error("Failed to fetch transaction details")
+  }
 
   return (
     <div className="flex flex-col">
@@ -99,9 +60,9 @@ export default function Page() {
       <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
         <div className="flex w-6/10 flex-col gap-2">
           <TxnTable
-            data={data}
+            data={data || []}
             loading={txnLoading}
-            onTransactionSelect={handleTransactionSelect}
+            onTransactionSelect={setSelectedTxn}
           >
             <DateRange
               dateFrom={dateFrom}
