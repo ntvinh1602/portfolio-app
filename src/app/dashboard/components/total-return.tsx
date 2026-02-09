@@ -2,15 +2,18 @@ import { useState } from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useDelayedData } from "@/hooks/useDelayedData"
 import { useReturnChartData } from "@/hooks/useReturnChartData"
+import { useTWR } from "@/hooks/useTWR"
 
 export function Benchmarkchart() {
   const [dateRange, setDateRange] = useState("1y")
-  const { twrData, isLoading } = useDelayedData()
   const { data, isLoading: isChartLoading } = useReturnChartData({ time: dateRange })
+  
+  // Fetch MTD and YTD separately
+  const { data: twr_ytd, isLoading: isYtdLoading } = useTWR("ytd")
+  const { data: twr_all, isLoading: isAllLoading } = useTWR("all")
 
-  if ( isLoading || isChartLoading ) return (
+  if ( isYtdLoading || isAllLoading || isChartLoading ) return (
     <ChartCardSkeleton
       title="Year-to-Date Return"
       minorText1="all time"
@@ -26,15 +29,15 @@ export function Benchmarkchart() {
   }))
 
   const years = (new Date().getTime() - new Date('2021-11-09').getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-  const cagr = (Math.pow(1 + twrData.all_time, 1 / years) - 1) * 100
+  const cagr = (Math.pow(1 + twr_all, 1 / years) - 1) * 100
 
    return (
     <ChartCard
       title="Return"
-      majorValue={twrData.ytd}
+      majorValue={twr_ytd}
       majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
       description="this year"
-      minorValue1={twrData.all_time}
+      minorValue1={twr_all}
       minorValue1Formatter={(value) => `${formatNum(value * 100, 1)}%`}
       minorText1="all time"
       minorValue2={cagr}

@@ -1014,7 +1014,7 @@ ALTER FUNCTION "public"."assets_quantity_trigger"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 DECLARE
@@ -1300,43 +1300,6 @@ $$;
 ALTER FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "portfolio_value" numeric, "vni_value" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  ranges CONSTANT text[] := ARRAY['all_time', '1y', '6m', '3m'];
-  start_date date;
-  end_date date := CURRENT_DATE;
-  label text;
-BEGIN
-  FOREACH label IN ARRAY ranges LOOP
-    -- determine range start
-    CASE label
-      WHEN 'all_time' THEN
-        SELECT MIN(date) INTO start_date
-        FROM public.daily_performance_snapshots;
-      WHEN '1y' THEN start_date := end_date - INTERVAL '1 year';
-      WHEN '6m' THEN start_date := end_date - INTERVAL '6 months';
-      WHEN '3m' THEN start_date := end_date - INTERVAL '3 months';
-    END CASE;
-
-    -- Call the single-range function and attach the label
-    RETURN QUERY
-    SELECT
-      label,
-      s.date::date AS snapshot_date,
-      s.portfolio_value,
-      s.vni_value
-    FROM public.sampling_benchmark_data(start_date, end_date, p_threshold) s;
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_crypto_holdings"() RETURNS TABLE("ticker" "text", "name" "text", "logo_url" "text", "currency_code" "text", "quantity" numeric, "cost_basis" numeric, "price" numeric, "fx_rate" numeric, "market_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1374,43 +1337,6 @@ $$;
 ALTER FUNCTION "public"."get_crypto_holdings"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) RETURNS TABLE("range_label" "text", "snapshot_date" "date", "net_equity_value" numeric, "total_cashflow" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  ranges CONSTANT text[] := ARRAY['all_time', '1y', '6m', '3m'];
-  start_date date;
-  end_date date := CURRENT_DATE;
-  label text;
-BEGIN
-  FOREACH label IN ARRAY ranges LOOP
-    -- determine range start
-    CASE label
-      WHEN 'all_time' THEN
-        SELECT MIN(date) INTO start_date
-        FROM public.daily_performance_snapshots;
-      WHEN '1y' THEN start_date := end_date - INTERVAL '1 year';
-      WHEN '6m' THEN start_date := end_date - INTERVAL '6 months';
-      WHEN '3m' THEN start_date := end_date - INTERVAL '3 months';
-    END CASE;
-
-    -- Call sampling_equity_data() and include total_cashflow
-    RETURN QUERY
-    SELECT
-      label AS range_label,
-      s.date AS snapshot_date,
-      s.net_equity_value,
-      s.total_cashflow
-    FROM public.sampling_equity_data(start_date, end_date, p_threshold) s;
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date" DEFAULT CURRENT_DATE) RETURNS numeric
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -1427,37 +1353,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_pnl"() RETURNS TABLE("range_label" "text", "pnl" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  ranges CONSTANT text[] := ARRAY['all_time', 'ytd', 'mtd'];
-  start_date date;
-  end_date date := CURRENT_DATE;
-  label text;
-BEGIN
-  FOREACH label IN ARRAY ranges LOOP
-    -- Determine range start
-    CASE label
-      WHEN 'all_time' THEN
-        SELECT MIN(date) INTO start_date
-        FROM public.daily_performance_snapshots;
-      WHEN 'ytd' THEN start_date := date_trunc('year', end_date);
-      WHEN 'mtd' THEN start_date := date_trunc('month', end_date);
-    END CASE;
-
-    -- Call the single-range function and attach the label
-    RETURN QUERY
-    SELECT label, public.calculate_pnl(start_date, end_date);
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_pnl"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_security_price"("p_asset_id" "uuid") RETURNS numeric
@@ -1582,36 +1477,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_transactions"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_twr"() RETURNS TABLE("range_label" "text", "twr" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  ranges CONSTANT text[] := ARRAY['all_time', 'ytd'];
-  start_date date;
-  end_date date := CURRENT_DATE;
-  label text;
-BEGIN
-  FOREACH label IN ARRAY ranges LOOP
-    -- Determine range start
-    CASE label
-      WHEN 'all_time' THEN
-        SELECT MIN(date) INTO start_date
-        FROM public.daily_performance_snapshots;
-      WHEN 'ytd' THEN start_date := date_trunc('year', end_date);
-    END CASE;
-
-    -- Call the single-range function and attach the label
-    RETURN QUERY
-    SELECT label, public.calculate_twr(start_date, end_date);
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_twr"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") RETURNS "void"
@@ -1863,7 +1728,7 @@ ALTER FUNCTION "public"."refresh_assets_quantity"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "portfolio_value" numeric, "vni_value" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
+    LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
 DECLARE
@@ -2478,7 +2343,8 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
     COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
    FROM (("month_ranges" "m"
      LEFT JOIN "monthly_pnl" "mp" ON (("mp"."month_start" = "m"."month_start")))
-     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")));
+     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")))
+  ORDER BY "m"."month_start" DESC;
 
 
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
@@ -3236,33 +3102,15 @@ GRANT ALL ON FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") TO 
 
 
 
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_benchmark_chart_data"("p_threshold" integer) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_crypto_holdings"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_equity_chart_data"("p_threshold" integer) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_fx_rate"("p_currency_code" "text", "p_date" "date") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_pnl"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_pnl"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_pnl"() TO "service_role";
 
 
 
@@ -3287,12 +3135,6 @@ GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "inclu
 GRANT ALL ON FUNCTION "public"."get_transactions"("p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_transactions"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_transactions"("p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_twr"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_twr"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_twr"() TO "service_role";
 
 
 

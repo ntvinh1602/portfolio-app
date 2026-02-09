@@ -28,15 +28,11 @@ export async function GET(request: NextRequest) {
     }
 
     const [
-      twrResponse,
-      pnlResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
       balancesheetResponse,
       monthlyResponse
     ] = await Promise.all([
-      fetch(`${baseURL}/api/internal/twr`, fetchOptions),
-      fetch(`${baseURL}/api/internal/pnl`, fetchOptions),
       fetch(`${baseURL}/api/internal/stock-holdings`, fetchOptions),
       fetch(`${baseURL}/api/internal/crypto-holdings`, fetchOptions),
       fetch(`${supabaseUrl}/rest/v1/balance_sheet?select=*`, fetchSupabaseOptions),
@@ -46,12 +42,17 @@ export async function GET(request: NextRequest) {
           ...fetchSupabaseOptions.headers,
           Range: '0-11',
         },
+      }),
+      fetch(`${supabaseUrl}/rest/v1/rpc/calculate_pnl?select=*`, {
+        ...fetchSupabaseOptions,
+        headers: {
+          ...fetchSupabaseOptions.headers,
+          Range: '0-11',
+        },
       })
     ])
 
     for (const response of [
-      twrResponse,
-      pnlResponse,
       stockHoldingsResponse,
       cryptoHoldingsResponse,
       balancesheetResponse,
@@ -64,16 +65,12 @@ export async function GET(request: NextRequest) {
     }
 
     const [
-      twrData,
-      pnlData,
       stockData,
       cryptoData,
       balanceSheetData,
       monthlyData
 
     ] = await Promise.all([
-      twrResponse.json(),
-      pnlResponse.json(),
       stockHoldingsResponse.json(),
       cryptoHoldingsResponse.json(),
       balancesheetResponse.json(),
@@ -81,8 +78,6 @@ export async function GET(request: NextRequest) {
     ])
     
     return NextResponse.json({
-      twrData,
-      pnlData,
       balanceSheetData,
       stockData,
       cryptoData,

@@ -3,30 +3,18 @@ import { fetcher } from "@/lib/fetcher"
 import {
   StockData,
   CryptoData,
-  PnLData,
   TWRData,
 } from "@/app/dashboard/types/dashboard-data"
 import { Tables } from "@/types/database.types"
 
 interface DelayedDataApiResponse {
-  twrData: TWRData
   monthlyData: Tables<"monthly_snapshots">[]
-  pnlData: PnLData
   balanceSheetData: Tables<"balance_sheet">[]
   stockData: StockData[]
   cryptoData: CryptoData[]
 }
 
 const fallback: DelayedDataApiResponse = {
-  twrData: {
-    all_time: 0,
-    ytd: 0
-  },
-  pnlData: {
-    all_time: 0,
-    ytd: 0,
-    mtd: 0
-  },
   balanceSheetData: [],
   stockData: [],
   cryptoData: [],
@@ -49,8 +37,6 @@ export function useDelayedData() {
   }
  
   return {
-    twrData: data.twrData,
-    pnlData: data.pnlData,
     bsData: data.balanceSheetData,
     stockData: data.stockData,
     cryptoData: data.cryptoData,
