@@ -1,1 +1,0 @@
-drop function if exists public.get_transactions(date, date);
