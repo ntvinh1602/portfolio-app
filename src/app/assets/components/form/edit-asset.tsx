@@ -7,7 +7,6 @@ import { preparePayload } from "./prepare-payload"
 import { SchemaForm } from "@/components/form/schemaForm"
 import { assetSchema } from "@/app/assets/components/form/schema"
 import { createClient } from "@/lib/supabase/client"
-import { refreshData } from "@/lib/refresh"
 import { NormalizeError } from "@/lib/error"
 import { showErrorToast } from "@/components/error-toast"
 import { Tables } from "@/types/database.types"
@@ -71,8 +70,7 @@ export function EditAssetForm({
         .eq("id", selectedAsset.id)
 
       if (error) throw error
-
-      await refreshData("account", "/api/gateway/account-data")
+      
       toast.success("Asset updated successfully!")
     } catch (err) {
       showErrorToast(NormalizeError(err))
@@ -97,7 +95,6 @@ export function EditAssetForm({
 
       toast.success("Asset deleted successfully!")
       setFormState({}) // reset form state
-      await refreshData("account", "/api/gateway/account-data")
       if (onDeleted) onDeleted()
     } catch (err) {
       showErrorToast(NormalizeError(err))

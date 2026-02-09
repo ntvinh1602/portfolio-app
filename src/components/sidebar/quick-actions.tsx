@@ -12,7 +12,6 @@ import { Plus, RefreshCw, ListRestart, type LucideIcon } from "lucide-react"
 import { TransactionForm } from "@/components/sidebar/add-transaction/form-wrapper"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { refreshData } from "@/lib/refresh"
 
 type ActionItem = {
   text: string
@@ -31,7 +30,6 @@ export function QuickActions() {
       console.error(error)
       toast.error(error.message)
     } else {
-      await refreshData("dashboard", "api/gateway/dashboard")
       toast.success("Assets refreshed successfully")
     }
   }

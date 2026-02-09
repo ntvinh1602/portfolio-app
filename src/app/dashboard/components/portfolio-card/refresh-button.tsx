@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { refreshData } from "@/lib/refresh"
 
 export function RefreshPricesButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -19,8 +18,6 @@ export function RefreshPricesButton() {
         toast.error(data.error ?? "Something went wrong", { id: toastId })
         return
       }
-
-      await refreshData("dashboard", "/api/gateway/dashboard")
  
       toast.success(data.message, {
         id: toastId,

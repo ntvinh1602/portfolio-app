@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, FormEvent } from "react"
 import { formatISO } from "date-fns"
-import { refreshData } from "@/lib/refresh"
 import { Button } from "@/components/ui/button"
 import {
   Root,
@@ -96,8 +95,7 @@ export function TransactionForm({
         throw new Error(result.error || "An unknown error occurred.")
       }
       onOpenChange(false)
-      // 🔄 refresh dashboard data
-      await refreshData("dashboard", "api/gateway/dashboard")
+      
       toast.success("Transaction saved successfully!")
     } catch (error) {
       const message =

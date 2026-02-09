@@ -5,7 +5,6 @@ import { toast } from "sonner"
 import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
-import { refreshData } from "@/lib/refresh"
 
 export function DailySnapshot({
   open,
@@ -41,8 +40,6 @@ export function DailySnapshot({
         id: toastId
       })
 
-      // ✅ Tell SWR to refetch dashboard data
-      await refreshData("dashboard", "api/gateway/dashboard")
     } catch {
       toast.error("An error occurred while starting the backfill process.", {
         id: toastId

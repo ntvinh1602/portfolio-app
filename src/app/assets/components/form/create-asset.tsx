@@ -11,7 +11,6 @@ import { SchemaForm } from "@/components/form/schemaForm"
 import { assetSchema } from "@/app/assets/components/form/schema"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/client"
-import { refreshData } from "@/lib/refresh"
 import { NormalizeError } from "@/lib/error"
 import { showErrorToast } from "@/components/error-toast"
 
@@ -54,7 +53,6 @@ export function CreateAssetForm({
 
       onOpenChange(false)
       setFormState({})
-      await refreshData("account", "/api/gateway/account-data")
       toast.success("Asset created successfully!")
     } catch (err) {
       showErrorToast(NormalizeError(err))
