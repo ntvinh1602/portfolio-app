@@ -2,13 +2,20 @@ import { useState } from "react"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import { useEquityChartData } from "@/hooks/useEquityChartData"
-import { usePnL } from "@/hooks/usePnL" // your SWR hook returning a single numeric value
+import { usePnL } from "@/hooks/usePnL"
+import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 
 export function EquityChart() {
   const [dateRange, setDateRange] = useState("1y")
-  const { totalEquity } = useLiveData()
+  const { balanceSheet } = useBalanceSheetData()
+
+  // Safety guard for undefined data
+  const data = Array.isArray(balanceSheet) ? balanceSheet : []
+
+  const totalEquity = data
+    .filter((r) => r.type === "equity")
+    .reduce((sum, r) => sum + (r.amount || 0), 0)
 
   // Equity chart data (line chart)
   const { data: chartRawData, isLoading: isChartLoading } = useEquityChartData({ time: dateRange })

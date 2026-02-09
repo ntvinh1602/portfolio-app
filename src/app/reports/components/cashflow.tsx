@@ -1,7 +1,7 @@
 import * as Card from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
-import { useDelayedData } from "@/hooks/useDelayedData"
+import { useHoldingData } from "@/hooks/useHoldingData"
 import { useReportsData } from "@/hooks/useReportsData"
 import { TrendingUp, TrendingDown, ArrowDownCircle, ArrowLeftRight, ArrowUpCircle } from "lucide-react"
 
@@ -12,7 +12,7 @@ export function Cashflow({
   year: string
   className?: string
 }) {
-  const { isLoading: isDelayedLoading } = useDelayedData()
+  const { isLoading: isDelayedLoading } = useHoldingData()
   const { yearlyData, isLoading: isReportsLoading } = useReportsData()
 
   const isLoading = isDelayedLoading || isReportsLoading || !yearlyData

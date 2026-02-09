@@ -12,7 +12,7 @@ import { AssetInfo } from "./components/asset-info"
 import { AssetTable } from "./components/table/asset-table"
 
 export default function Page() {
-  const { assets, loading } = useAccountData()
+  const { assetData, isLoading } = useAccountData()
   const [selectedAsset, setSelectedAsset] = useState<Tables<"assets"> | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
@@ -28,8 +28,8 @@ export default function Page() {
       <div className="flex gap-4 flex-1 overflow-hidden w-7/10 mx-auto">
         <div className="flex w-6/10 flex-col gap-2">
           <AssetTable
-            data={assets}
-            loading={loading}
+            data={assetData}
+            loading={isLoading}
             onAssetSelect={handleAssetSelect}
           >
             <Button

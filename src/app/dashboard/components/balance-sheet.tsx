@@ -3,7 +3,7 @@ import * as Popover from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { PanelRightOpen } from "lucide-react"
 import { formatNum } from "@/lib/utils"
-import { useDelayedData } from "@/hooks/useDelayedData"
+import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 
 interface BSItemProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: boolean
@@ -42,7 +42,7 @@ function BSItem({
 }
 
 export function BalanceSheet() {
-  const { bsData } = useDelayedData() // now a flat array from Supabase view
+  const { balanceSheet: bsData } = useBalanceSheetData() // now a flat array from Supabase view
 
   // Safety guard for undefined data
   const data = Array.isArray(bsData) ? bsData : []

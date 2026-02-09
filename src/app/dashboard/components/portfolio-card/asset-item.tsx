@@ -88,7 +88,7 @@ export function Asset({
                 <ShoppingBag className="stroke-1" />
                 {price
                   ? type === 'stock'
-                    ? formatNum(price, 2)
+                    ? formatNum(price / 1000, 2)
                     : formatNum(price, ticker === 'BTC' ? 2 : 4)
                   : 0
                 }

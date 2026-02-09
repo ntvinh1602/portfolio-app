@@ -1,8 +1,10 @@
+"use client"
+
 import { format } from "date-fns"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useReportsData } from "@/hooks/useReportsData"
+import { useMonthlyData } from "@/hooks/useMonthlyData"
 
 // ---------- Types ----------
 interface RawData {
@@ -53,9 +55,10 @@ function groupByYear(data: RawData[]): ChartData[] {
 
 // ---------- Main Chart Component ----------
 export function ProfitChart({ year }: { year: string }) {
-  const { monthlyData, isLoading } = useReportsData()
+  const period = year === "All Time" ? "all" : Number(year)
+  const { data: monthlyData, isLoading } = useMonthlyData(period)
 
-  if (isLoading || !monthlyData )
+  if (isLoading || !monthlyData)
     return (
       <ChartCardSkeleton
         title="Net Profit"
@@ -85,10 +88,10 @@ export function ProfitChart({ year }: { year: string }) {
   }
 
   const totalPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const avgPnl = totalPnL / processedData.length
+  const avgPnl = totalPnL / (processedData.length || 1)
   const avgExpenses =
     -processedData.reduce((acc, curr) => acc + curr.revenue - curr.pnl, 0) /
-    processedData.length
+    (processedData.length || 1)
 
   return (
     <ChartCard

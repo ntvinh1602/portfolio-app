@@ -1,25 +1,44 @@
 import { useState } from "react"
 import * as Card from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useLiveData } from "@/app/dashboard/context/live-data-context"
 import {
-  LiveIndicator,
   RefreshPricesButton,
   Asset,
   AssetSkeleton
 } from "./portfolio-card"
 import { TabSwitcher } from "@/components/tab-switcher"
 import { RefreshCw } from "lucide-react"
+import { useHoldingData } from "@/hooks/useHoldingData"
+
+interface StockData {
+  cost_basis: number
+  logo_url: string
+  market_value: number
+  name: string
+  price: number
+  quantity: number
+  ticker: string
+}
+
+interface CryptoData {
+  cost_basis: number
+  currency_code: string
+  fx_rate: number
+  logo_url: string
+  market_value: number
+  name: string
+  price: number
+  quantity: number
+  ticker: string
+}
 
 export function Portfolio() {
   const [category, setCategory] = useState<"stock" | "crypto">("stock")
   const {
-    processedCryptoData,
-    processedStockData,
-    isCryptoPriceLive,
-    isStockPriceLive,
+    cryptoData,
+    stockData,
     isLoading,
-  } = useLiveData()
+  } = useHoldingData()
   
   if (isLoading) {
     return (
@@ -40,12 +59,10 @@ export function Portfolio() {
                 {
                   label: "Stocks",
                   value: "stock",
-                  customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
                 },
                 {
                   label: "Crypto",
                   value: "crypto",
-                  customBadge: <div className="size-2.5 rounded-full bg-rose-700"/>
                 },
               ]}
               tabClassName="w-full"
@@ -78,12 +95,10 @@ export function Portfolio() {
               {
                 label: "Stocks",
                 value: "stock",
-                customBadge: <LiveIndicator is247={false} source={isStockPriceLive}/>
               },
               {
                 label: "Crypto",
                 value: "crypto",
-                customBadge: <LiveIndicator is247={true} source={isCryptoPriceLive}/>
               },
             ]}
             tabClassName="w-full"
@@ -96,19 +111,21 @@ export function Portfolio() {
               {category === "stock" ? (
                 <Card.Root className="border-0 py-0 gap-1">
                   <Card.Content className="flex flex-col px-0 gap-2">
-                    {processedStockData.length > 0 ? (
-                      processedStockData.map((stock) => (
+                    {stockData.length > 0 ? (
+                      (stockData as StockData[]).map((stock) => (
                         <Asset
                           key={stock.ticker}
                           ticker={stock.ticker}
                           name={stock.name}
                           logoUrl={stock.logo_url}
                           quantity={stock.quantity}
-                          totalAmount={stock.totalAmount}
-                          pnlPct={stock.pnlPct}
-                          pnlNet={stock.pnlNet}
+                          totalAmount={stock.market_value}
+                          pnlPct={stock.cost_basis > 0
+                            ? (stock.market_value * 0.99873 / stock.cost_basis - 1) * 100
+                            : 0
+                          }
+                          pnlNet={stock.market_value - stock.cost_basis - stock.market_value * 0.00127}
                           price={stock.price}
-                          prevPrice={stock.prevPrice}
                           type="stock"
                         />
                       ))
@@ -122,24 +139,24 @@ export function Portfolio() {
               ) : (
                 <Card.Root className="border-0 py-0 gap-1">
                   <Card.Content className="flex flex-col px-0 gap-2">
-                    {processedCryptoData.length > 0 ? (
-                      processedCryptoData
-                        .filter(asset => asset.totalAmount > 50000)
-                        .map((crypto) => (
-                          <Asset
-                            key={crypto.ticker}
-                            ticker={crypto.ticker}
-                            name={crypto.name}
-                            logoUrl={crypto.logo_url}
-                            quantity={crypto.quantity}
-                            totalAmount={crypto.totalAmount}
-                            pnlPct={crypto.pnlPct}
-                            pnlNet={crypto.pnlNet}
-                            price={crypto.price}
-                            prevPrice={crypto.prevPrice}
-                            type="crypto"
-                          />
-                        ))
+                    {cryptoData.length > 0 ? (
+                      (cryptoData as CryptoData[]).map((crypto) => (
+                        <Asset
+                          key={crypto.ticker}
+                          ticker={crypto.ticker}
+                          name={crypto.name}
+                          logoUrl={crypto.logo_url}
+                          quantity={crypto.quantity}
+                          totalAmount={crypto.market_value}
+                          pnlPct={crypto.cost_basis > 0
+                            ? (crypto.market_value / crypto.cost_basis - 1) * 100
+                            : 0
+                          }
+                          pnlNet={crypto.market_value - crypto.cost_basis}
+                          price={crypto.price}
+                          type="crypto"
+                        />
+                      ))
                     ) : (
                       <span className="self-center py-20 text-muted-foreground">
                         No crypto holdings.

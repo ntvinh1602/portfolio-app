@@ -4,10 +4,10 @@ import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
 import { BalanceSheet } from "./balance-sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useDelayedData } from "@/hooks/useDelayedData"
+import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 
 export function AssetCard() {
-  const { bsData: rows, isLoading } = useDelayedData()
+  const { balanceSheet: rows, isLoading } = useBalanceSheetData()
 
   // Graceful fallback
   const data = Array.isArray(rows) ? rows : []

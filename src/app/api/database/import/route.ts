@@ -2,11 +2,6 @@ import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  // Check Authorization header
-  const authHeader = req.headers.get("Authorization")
-  if (authHeader !== `Bearer ${process.env.MY_APP_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
 
   // Initialize Supabase client
   const supabase = await createClient()

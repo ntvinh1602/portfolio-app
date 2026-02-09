@@ -4,7 +4,7 @@ import { useAccountData } from "@/hooks/useAccountData"
 import { formatNum } from "@/lib/utils"
 
 export function useBlueprintMap() {
-  const { assets, debts } = useAccountData()
+  const { assetData, debtData } = useAccountData()
 
   const txnTypes = Constants.public.Enums.transaction_type
     .map((type) => ({
@@ -12,28 +12,28 @@ export function useBlueprintMap() {
       label: type.replace(/\b\w/g, (c) => c.toUpperCase()),
     }))
 
-  const cashAssets = assets
+  const cashAssets = assetData
     .filter((asset) => ["cash", "crypto", "fund"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
       label: `${asset.ticker} - ${asset.name}`
     }))
 
-  const tradableAssets = assets
+  const tradableAssets = assetData
     .filter((asset) => ["stock", "crypto"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
       label: `${asset.ticker} - ${asset.name}`
     }))
 
-  const stockAssets = assets
+  const stockAssets = assetData
     .filter((asset) => ["stock"].includes(asset.asset_class))
     .map((asset) => ({
       value: asset.id,
       label: `${asset.ticker} - ${asset.name}`
     }))
 
-  const debtAssets = debts.map((debt) => ({
+  const debtAssets = debtData.map((debt) => ({
     value: debt.id,
     label: `${debt.lender_name} - ${formatNum(debt.principal_amount)}`
   }))

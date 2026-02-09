@@ -1,5 +1,5 @@
 import useSWR from "swr"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 import { 
   startOfMonth,
   startOfYear,
@@ -8,10 +8,7 @@ import {
   startOfDay
 } from "date-fns"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient()
 
 async function fetchPnL(p_start_date: string, p_end_date: string) {
   const { data, error } = await supabase.rpc("calculate_twr", {

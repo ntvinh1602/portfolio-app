@@ -2,15 +2,23 @@ import { format } from "date-fns"
 import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useReportsData } from "@/hooks/useReportsData"
+import { useMonthlyData } from "@/hooks/useMonthlyData"
+
+interface RawData {
+  date: string
+  pnl: number
+  fee: number
+  interest: number
+  tax: number
+}
 
 export function NetProfit() {
   const {
-    monthlyData,
+    data,
     isLoading
-  } = useReportsData()
+  } = useMonthlyData("1y")
 
-  if (isLoading || !monthlyData)
+  if (isLoading)
     return (
     <ChartCardSkeleton
       title="Last 1-year Profit"
@@ -21,7 +29,7 @@ export function NetProfit() {
     />
   )
 
-  const processedData = monthlyData
+  const processedData = (data as RawData[])
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(d => ({
       revenue: d.pnl + d.fee + d.interest + d.tax,
