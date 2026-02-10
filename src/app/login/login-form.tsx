@@ -12,7 +12,6 @@ import {
   Subtitle,
   Header
 } from "@/components/ui/card"
-import { TurnstileWidget } from "./turnstile"
 
 export function LoginForm({
   className,
@@ -22,7 +21,6 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -32,7 +30,7 @@ export function LoginForm({
 
     const response = await fetch("/api/auth", {
       method: "POST",
-      body: JSON.stringify({ email, password, token }),
+      body: JSON.stringify({ email, password }),
     })
 
     if (response.ok) {
@@ -95,13 +93,10 @@ export function LoginForm({
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
-              <div className="flex justify-center">
-                <TurnstileWidget onSuccess={setToken} />
-              </div>
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || !token}
+                disabled={isLoading}
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>

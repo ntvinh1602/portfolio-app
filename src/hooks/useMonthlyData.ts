@@ -51,7 +51,7 @@ export function useMonthlyData(period: PeriodParam) {
   })
 
   return {
-    data,
+    data: data || [],
     error,
     isLoading,
     mutate,

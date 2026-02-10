@@ -1,35 +1,13 @@
 import { format } from "date-fns"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { useMonthlyData } from "@/hooks/useMonthlyData"
 
-interface RawData {
-  date: string
-  pnl: number
-  fee: number
-  interest: number
-  tax: number
-}
-
 export function NetProfit() {
-  const {
-    data,
-    isLoading
-  } = useMonthlyData("1y")
+  const { data } = useMonthlyData("1y")
 
-  if (isLoading)
-    return (
-    <ChartCardSkeleton
-      title="Last 1-year Profit"
-      minorText1="avg. profit"
-      minorText2="avg. cost"
-      cardClassName="gap-4 h-full"
-      tabswitch={false}
-    />
-  )
-
-  const processedData = (data as RawData[])
+  const processedData = data
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(d => ({
       revenue: d.pnl + d.fee + d.interest + d.tax,
@@ -37,7 +15,7 @@ export function NetProfit() {
       fee: -d.fee,
       interest: -d.interest,
       tax: -d.tax,
-      snapshot_date: d.date
+      date: d.date
     }))
   const totalPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0)
   const avgPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0) / 12
@@ -76,7 +54,6 @@ export function NetProfit() {
         }
       }}
       chartClassName="h-full w-full"
-      xAxisDataKey="snapshot_date"
       chartDataKeys={["tax", "fee", "interest", "revenue"]}
       dateRange="1y"
       yAxisTickFormatter={(value) => compactNum(Number(value))}

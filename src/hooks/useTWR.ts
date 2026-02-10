@@ -1,77 +1,37 @@
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
-import { 
-  startOfMonth,
-  startOfYear,
-  endOfYear,
-  subMonths,
-  startOfDay
-} from "date-fns"
+import { getDateRange } from "@/lib/get-date-range"
 
-const supabase = createClient()
 
-async function fetchPnL(p_start_date: string, p_end_date: string) {
+async function fetchPnL(time: string) {
+  const supabase = createClient()
+  const { p_start_date, p_end_date } = getDateRange(time)
   const { data, error } = await supabase.rpc("calculate_twr", {
     p_start_date,
     p_end_date,
   })
   if (error) throw error
-  return data
+  return data as number
 }
 
 /**
  * usePnL - fetches PnL data by year or by rolling period.
  * @param range - can be a year ("2024") or a period ("1m", "3m", "6m", "all")
  */
-export function useTWR(range: string) {
-  // Compute start/end dates based on the range
-  const today = startOfDay(new Date())
-  let startDate: Date
-  let endDate: Date = today
-
-  if (/^\d{4}$/.test(range)) {
-    // Year mode: e.g., "2024"
-    const year = parseInt(range, 10)
-    startDate = startOfYear(new Date(year, 0, 1))
-    endDate = endOfYear(new Date(year, 0, 1))
-  } else {
-    // Rolling mode: e.g., "1m", "3m", "6m", "all"
-    switch (range) {
-      case "1m":
-        startDate = subMonths(today, 1)
-        break
-      case "3m":
-        startDate = subMonths(today, 3)
-        break
-      case "6m":
-        startDate = subMonths(today, 6)
-        break
-      case "1y":
-        startDate = subMonths(today, 12)
-        break
-      case "mtd":
-        startDate = startOfMonth(today)
-        break
-      case "ytd":
-        startDate = startOfYear(today)
-        break
-      case "all":
-        startDate = new Date(2000, 0, 1) // arbitrary early date — depends on your data
-        break
-      default:
-        throw new Error(`Invalid range: ${range}`)
-    }
-  }
-
-  const p_start_date = startDate.toISOString().slice(0, 10)
-  const p_end_date = endDate.toISOString().slice(0, 10)
-
-  return useSWR(
-    ["calculate_twr", range], // use range as cache key for simplicity
-    () => fetchPnL(p_start_date, p_end_date),
+export function useTWR(time: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    ["calculate_twr", time], // use range as cache key for simplicity
+    () => fetchPnL(time),
     {
       revalidateOnFocus: false,
       dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
     }
   )
+
+  return {
+    data: data || 0,
+    error,
+    isLoading,
+    mutate,
+  }
 }

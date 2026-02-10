@@ -17,7 +17,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
 
   // Convert UI “All Time” to backend time parameter
   const timeParam = year === "All Time" ? "all" : year
-  const { data, isLoading: isFetching, error } = useReturnChartData({ time: timeParam })
+  const { data, isLoading: isFetching, error } = useReturnChartData(timeParam)
 
   const isLoading = isFetching || isReportsLoading
 
@@ -44,7 +44,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
     )
   }
 
-  const chartData = (data ?? []).map((d) => ({
+  const chartData = data.map((d) => ({
     snapshot_date: d.date,
     portfolio_value: d.portfolio_value,
     vni_value: d.vni_value,

@@ -1,32 +1,27 @@
 "use client"
 
 import useSWR from "swr"
-import { Tables } from "@/types/database.types"
 import { createClient } from "@/lib/supabase/client"
 
-// ---------- Types ----------
-export interface BalanceSheetData {
-  balanceSheet: Tables<"balance_sheet">[]
-}
-
 // ---------- Fetcher ----------
-async function fetchBalanceSheet(): Promise<BalanceSheetData> {
+async function fetchBalanceSheet() {
   const supabase = createClient()
 
   const { data, error } = await supabase
     .from("balance_sheet")
     .select("*")
 
-  if (error) {
-    throw new Error(error.message || "Failed to fetch balance sheet data")
-  }
-
-  return { balanceSheet: data ?? [] }
+  if (error) throw error
+  return data as {
+    account: string
+    type: string
+    amount: number
+  }[]
 }
 
 // ---------- Hook ----------
 export function useBalanceSheetData() {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     "supabase/balance_sheet",
     fetchBalanceSheet,
     {
@@ -35,5 +30,10 @@ export function useBalanceSheetData() {
     }
   )
 
-  return { ...data, isLoading, error }
+  return {
+    data: data || [],
+    error,
+    isLoading,
+    mutate,
+  }
 }

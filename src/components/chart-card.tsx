@@ -9,7 +9,7 @@ import { TabSwitcher } from "@/components/tab-switcher"
 import { Separator } from "@/components/ui/separator"
 
 interface ChartCardProps<
-  TData extends { snapshot_date: string; [key: string]: number | string }
+  TData extends { date: string; [key: string]: number | string }
 > {
   cardClassName?: string
   title: string
@@ -26,7 +26,6 @@ interface ChartCardProps<
   chartData: TData[]
   chartConfig: ChartConfig
   chartClassName?: string
-  xAxisDataKey: string
   chartDataKeys: string[]
   legend?: boolean
   xAxisTickFormatter?: (value: string | number) => string // ✅ user-supplied formatter
@@ -38,7 +37,7 @@ interface ChartCardProps<
 }
 
 function ChartCard<
-  TData extends { snapshot_date: string; [key: string]: number | string }
+  TData extends { date: string; [key: string]: number | string }
 >({
   title,
   majorValue,
@@ -54,10 +53,8 @@ function ChartCard<
   chartData,
   chartConfig,
   chartClassName,
-  xAxisDataKey,
   chartDataKeys,
   legend,
-  // ✅ renamed for clarity
   xAxisTickFormatter,
   yAxisTickFormatter,
   tooltipValueFormatter,
@@ -149,10 +146,9 @@ function ChartCard<
           data={chartData}
           config={chartConfig}
           className={chartClassName}
-          xAxisDataKey={xAxisDataKey}
+          xAxisDataKey={"date"}
           dataKeys={chartDataKeys}
           legend={legend}
-          // ✅ use custom formatter if provided, fallback otherwise
           xAxisTickFormatter={xAxisTickFormatter ?? defaultXAxisTickFormatter}
           yAxisTickFormatter={yAxisTickFormatter}
           valueFormatter={tooltipValueFormatter}
@@ -162,70 +158,4 @@ function ChartCard<
   )
 }
 
-// Skeleton unchanged
-function ChartCardSkeleton({
-  title,
-  minorText1,
-  minorText2,
-  cardClassName,
-  tabswitch = true,
-}: {
-  title: string
-  minorText1?: string
-  minorText2?: string
-  cardClassName?: string
-  tabswitch?: boolean
-}) {
-  return (
-    <Card.Root className={`gap-4 h-full ${cardClassName}`}>
-      <Card.Header className="px-6">
-        <Card.Subtitle className="flex items-center w-fit">
-          {title}
-        </Card.Subtitle>
-        <Card.Title className="text-2xl">
-          <Skeleton className="h-8 w-32" />
-        </Card.Title>
-        <Card.Action className="flex gap-3 items-end">
-          {minorText1 && (
-            <div className="flex flex-col gap-1 items-end">
-              <Skeleton className="h-4 w-10" />
-              <Card.Subtitle className="text-xs">{minorText1}</Card.Subtitle>
-            </div>
-          )}
-          {minorText2 && (
-            <Separator
-              orientation="vertical"
-              className="data-[orientation=vertical]:h-8 -mr-1"
-            />
-          )}
-          {minorText2 && (
-            <div className="flex flex-col gap-1 items-end">
-              <Skeleton className="h-4 w-10" />
-              <Card.Subtitle className="text-xs">{minorText2}</Card.Subtitle>
-            </div>
-          )}
-        </Card.Action>
-      </Card.Header>
-      <Card.Content className="px-4 flex flex-col gap-1 h-full">
-        {tabswitch && (
-          <TabSwitcher
-            value="1y"
-            onValueChange={() => {}}
-            options={[
-              { label: "3M", value: "3m" },
-              { label: "6M", value: "6m" },
-              { label: "1Y", value: "1y" },
-              { label: "All", value: "all" },
-            ]}
-            variant="content"
-            tabClassName="ml-auto"
-            triggerClassName="w-[50px]"
-          />
-        )}
-        <Skeleton className="w-19/20 h-full ml-auto" />
-      </Card.Content>
-    </Card.Root>
-  )
-}
-
-export { ChartCard, ChartCardSkeleton }
+export { ChartCard }

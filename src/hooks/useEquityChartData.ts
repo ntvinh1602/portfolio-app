@@ -1,77 +1,44 @@
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
-
-const supabase = createClient()
-
-interface EquityChartParams {
-  time: string // "1y" | "6m" | "3m" | "all" | "2024"
-}
-
-interface EquityChartResponse {
-  date: string
-  net_equity_value: number
-  total_cashflow: number
-}
+import { getDateRange } from "@/lib/get-date-range"
 
 async function fetchEquityChartData(time: string) {
-  const now = new Date()
-  let p_start_date: string | null = null
-  let p_end_date: string | null = null
-  const threshold = 150
-
-  // derive dates like before
-  if (/^\d{4}$/.test(time)) {
-    const year = parseInt(time, 10)
-    p_start_date = `${year}-01-01`
-    p_end_date = `${year}-12-31`
-  } else {
-    const start = new Date(now)
-    switch (time) {
-      case "all":
-        p_start_date = "2021-11-01"
-        p_end_date = now.toISOString().slice(0, 10)
-        break
-      case "1y":
-        start.setFullYear(start.getFullYear() - 1)
-        break
-      case "6m":
-        start.setMonth(start.getMonth() - 6)
-        break
-      case "3m":
-        start.setMonth(start.getMonth() - 3)
-        break
-    }
-    if (time !== "all") {
-      p_start_date = start.toISOString().slice(0, 10)
-      p_end_date = now.toISOString().slice(0, 10)
-    }
-  }
+  const supabase = createClient()
+  const { p_start_date, p_end_date } = getDateRange(time)
+  const p_threshold = 150
 
   const { data, error } = await supabase.rpc("sampling_equity_data", {
-    p_threshold: threshold,
+    p_threshold,
     p_start_date,
     p_end_date,
   })
 
   if (error) throw error
-  return data as EquityChartResponse[]
+  return data as {
+    date: string
+    net_equity_value: number
+    total_cashflow: number
+  }[]
 }
 
-export function useEquityChartData({ time }: EquityChartParams) {
+/**
+ * useEquityChartData - fetches equity chart data by year or by rolling period.
+ * @param time - can be a year ("2024") or one of the following periods: "1m", "3m", "6m", "1y", "mtd", "ytd", "all"
+ */
+export function useEquityChartData(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
     time ? ["equityChartData", time] : null,
     () => fetchEquityChartData(time),
     {
       revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
     }
   )
 
   return {
-    data,
+    data: data || [],
     error,
     isLoading,
     mutate,
-    isError: Boolean(error),
   }
 }
