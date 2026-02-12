@@ -1,14 +1,14 @@
 "use client"
 
 import { format } from "date-fns"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { useMonthlyData } from "@/hooks/useMonthlyData"
 
 // ---------- Types ----------
 interface RawData {
-  date: string
+  snapshot_date: string
   pnl: number
   fee: number
   interest: number
@@ -33,7 +33,7 @@ function groupByYear(data: RawData[]): ChartData[] {
   > = {}
 
   data.forEach((d) => {
-    const year = new Date(d.date).getFullYear().toString()
+    const year = new Date(d.snapshot_date).getFullYear().toString()
     if (!grouped[year]) {
       grouped[year] = { pnl: 0, fee: 0, interest: 0, tax: 0 }
     }
@@ -56,34 +56,23 @@ function groupByYear(data: RawData[]): ChartData[] {
 // ---------- Main Chart Component ----------
 export function ProfitChart({ year }: { year: string }) {
   const period = year === "All Time" ? "all" : Number(year)
-  const { data: monthlyData, isLoading } = useMonthlyData(period)
-
-  if (isLoading || !monthlyData)
-    return (
-      <ChartCardSkeleton
-        title="Net Profit"
-        minorText1="avg. profit"
-        minorText2="avg. cost"
-        cardClassName="gap-4 h-full"
-        tabswitch={false}
-      />
-    )
+  const { data: monthlyData } = useMonthlyData(period)
 
   let processedData: ChartData[] = []
 
   if (year === "All Time") {
-    processedData = groupByYear(monthlyData as RawData[])
+    processedData = groupByYear(monthlyData)
   } else {
-    processedData = (monthlyData as RawData[])
-      .filter((d) => new Date(d.date).getFullYear() === Number(year))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    processedData = (monthlyData)
+      .filter((d) => new Date(d.snapshot_date).getFullYear() === Number(year))
+      .sort((a, b) => new Date(a.snapshot_date).getTime() - new Date(b.snapshot_date).getTime())
       .map((d) => ({
         revenue: d.pnl + d.fee + d.interest + d.tax,
         pnl: d.pnl,
         fee: -d.fee,
         interest: -d.interest,
         tax: -d.tax,
-        snapshot_date: d.date,
+        snapshot_date: d.snapshot_date,
       }))
   }
 
@@ -113,7 +102,6 @@ export function ProfitChart({ year }: { year: string }) {
         revenue: { label: "Revenue", color: "var(--chart-2)" },
       }}
       chartClassName="h-full w-full"
-      xAxisDataKey="snapshot_date"
       chartDataKeys={["tax", "fee", "interest", "revenue"]}
       yAxisTickFormatter={(value) => compactNum(Number(value))}
       xAxisTickFormatter={(value: string | number) => {

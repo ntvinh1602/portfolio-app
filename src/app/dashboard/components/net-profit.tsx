@@ -8,14 +8,14 @@ export function NetProfit() {
   const { data } = useMonthlyData("1y")
 
   const processedData = data
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .sort((a, b) => new Date(a.snapshot_date).getTime() - new Date(b.snapshot_date).getTime())
     .map(d => ({
       revenue: d.pnl + d.fee + d.interest + d.tax,
       pnl: d.pnl,
       fee: -d.fee,
       interest: -d.interest,
       tax: -d.tax,
-      date: d.date
+      snapshot_date: d.snapshot_date
     }))
   const totalPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0)
   const avgPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0) / 12

@@ -9,7 +9,7 @@ import { TabSwitcher } from "@/components/tab-switcher"
 import { Separator } from "@/components/ui/separator"
 
 interface ChartCardProps<
-  TData extends { date: string; [key: string]: number | string }
+  TData extends { snapshot_date: string; [key: string]: number | string }
 > {
   cardClassName?: string
   title: string
@@ -37,7 +37,7 @@ interface ChartCardProps<
 }
 
 function ChartCard<
-  TData extends { date: string; [key: string]: number | string }
+  TData extends { snapshot_date: string; [key: string]: number | string }
 >({
   title,
   majorValue,
@@ -146,7 +146,7 @@ function ChartCard<
           data={chartData}
           config={chartConfig}
           className={chartClassName}
-          xAxisDataKey={"date"}
+          xAxisDataKey={"snapshot_date"}
           dataKeys={chartDataKeys}
           legend={legend}
           xAxisTickFormatter={xAxisTickFormatter ?? defaultXAxisTickFormatter}

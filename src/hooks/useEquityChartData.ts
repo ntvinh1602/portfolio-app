@@ -15,9 +15,9 @@ async function fetchEquityChartData(time: string) {
 
   if (error) throw error
   return data as {
-    date: string
-    net_equity_value: number
-    total_cashflow: number
+    snapshot_date: string
+    net_equity: number
+    cumulative_cashflow: number
   }[]
 }
 

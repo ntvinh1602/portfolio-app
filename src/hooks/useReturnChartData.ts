@@ -17,7 +17,7 @@ async function fetchReturnData(time: string) {
 
   if (error) throw error
   return data as {
-    date: string
+    snapshot_date: string
     portfolio_value: number
     vni_value: number
   }[]

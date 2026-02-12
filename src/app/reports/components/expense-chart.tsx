@@ -47,10 +47,10 @@ export function ExpenseChart({
     )
 
   // ---------- Process Data ----------
-  const processedData = (monthlyData as RawData[])
+  const processedData = monthlyData
     .filter((d) => {
       if (year === "All Time") return true
-      const dataYear = new Date(d.date).getFullYear()
+      const dataYear = new Date(d.snapshot_date).getFullYear()
       return dataYear === Number(year)
     })
     .map((d) => ({
@@ -59,7 +59,7 @@ export function ExpenseChart({
       fee: -d.fee,
       interest: -d.interest,
       tax: -d.tax,
-      snapshot_date: d.date,
+      snapshot_date: d.snapshot_date,
     }))
 
   const expenseChartCfg = {

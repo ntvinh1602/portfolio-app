@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   const endDate = new Date().toISOString().split('T')[0];
 
-  const { error } = await supabase.rpc('generate_performance_snapshots', {
+  const { error } = await supabase.rpc('rebuild_daily_snapshots', {
     p_start_date: startDate,
     p_end_date: endDate,
   });

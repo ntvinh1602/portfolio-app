@@ -8,14 +8,10 @@ import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 
 export function EquityChart() {
   const [dateRange, setDateRange] = useState("1y")
-  const { data: bsData } = useBalanceSheetData()
+  const { totalEquity } = useBalanceSheetData()
   const { data: chartData } = useEquityChartData(dateRange)
   const { data: pnl_mtd } = usePnL("mtd")
   const { data: pnl_ytd } = usePnL("ytd")
-
-  const totalEquity = bsData
-    .filter((r) => r.type === "equity")
-    .reduce((sum, r) => sum + (r.amount || 0), 0)
 
   return (
     <ChartCard
@@ -31,17 +27,17 @@ export function EquityChart() {
       chartComponent={Areachart}
       chartData={chartData}
       chartConfig={{
-        net_equity_value: {
+        net_equity: {
           label: "Equity",
           color: "var(--chart-2)",
         },
-        total_cashflow: {
+        cumulative_cashflow: {
           label: "Paid-in Capital",
           color: "var(--chart-1)",
         },
       }}
       chartClassName="h-full w-full"
-      chartDataKeys={["net_equity_value", "total_cashflow"]}
+      chartDataKeys={["net_equity", "cumulative_cashflow"]}
       legend={true}
       yAxisTickFormatter={(value) => compactNum(Number(value))}
       tooltipValueFormatter={(value) => formatNum(value)}

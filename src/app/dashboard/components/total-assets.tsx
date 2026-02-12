@@ -6,24 +6,26 @@ import { BalanceSheet } from "./balance-sheet"
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 
 export function AssetCard() {
-  const { data: bsData } = useBalanceSheetData()
-
-  // --- Group by type ---
+  const {
+    bsData,
+    totalAssets,
+    totalLiabilities,
+    totalEquity,
+    debtsPrincipal,
+    accruedInterest,
+    margin,
+    fund,
+  } = useBalanceSheetData()
+  
   const assets = bsData.filter((r) => r.type === "asset")
-  const liabilities = bsData.filter((r) => r.type === "liability")
-  const equities = bsData.filter((r) => r.type === "equity")
-
-  // --- Totals ---
-  const totalAssets = assets.reduce((sum, r) => sum + (r.amount), 0)
-  const totalLiabilities = liabilities.reduce((sum, r) => sum + (r.amount), 0)
-  const totalEquity = equities.reduce((sum, r) => sum + (r.amount), 0)
 
   // --- Derived Metrics ---
-  const leverage = totalEquity !== 0 ? (totalLiabilities / totalEquity).toFixed(2) : "∞"
-  const fund = bsData
-    .filter((r) => r.account === "Fund")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const liquidity = totalEquity !== 0 ? ((totalEquity - fund) / totalEquity) * 100 : 0
+  const leverage = totalEquity !== 0
+    ? (totalLiabilities / totalEquity).toFixed(2)
+    : "∞"
+  const liquidity = totalEquity !== 0
+    ? ((totalEquity - fund) / totalEquity) * 100
+    : 0
 
   // --- Asset Chart Config ---
   const assetChartCfg: ChartConfig = Object.fromEntries(
@@ -59,16 +61,6 @@ export function AssetCard() {
       color: "var(--chart-3)"
     },
   }
-
-  const debtsPrincipal = bsData
-    .filter((r) => r.account === "Debts Principal")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const accruedInterest = bsData
-    .filter((r) => r.account === "Accrued Interest")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const margin = bsData
-    .filter((r) => r.account === "Margin")
-    .reduce((sum, r) => sum + (r.amount), 0)
 
   const liabilityChartData = [
     {

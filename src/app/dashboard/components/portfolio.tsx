@@ -20,62 +20,11 @@ interface StockData {
   ticker: string
 }
 
-interface CryptoData {
-  cost_basis: number
-  currency_code: string
-  fx_rate: number
-  logo_url: string
-  market_value: number
-  name: string
-  price: number
-  quantity: number
-  ticker: string
-}
-
 export function Portfolio() {
   const [category, setCategory] = useState<"stock" | "crypto">("stock")
   const {
-    cryptoData,
-    stockData,
-    isLoading,
+    stockData
   } = useHoldingData()
-  
-  if (isLoading) {
-    return (
-      <Card.Root variant="glow" className="relative flex flex-col gap-2 h-full">
-        <Card.Header>
-          <Card.Title className="text-xl">Portfolio</Card.Title>
-          <Card.Action>
-            <RefreshCw className="size-4 mx-4 m-2 text-muted-foreground animate-spin"/>
-          </Card.Action>
-        </Card.Header>
-        <Card.Content className="h-full flex flex-col gap-4">
-          <div className="flex w-full">
-            <TabSwitcher
-              variant="content"
-              value={category}
-              onValueChange={(value) => setCategory(value as "stock" | "crypto")}
-              options={[
-                {
-                  label: "Stocks",
-                  value: "stock",
-                },
-                {
-                  label: "Crypto",
-                  value: "crypto",
-                },
-              ]}
-              tabClassName="w-full"
-              triggerClassName="h-10 data-[state=active]:after:opacity-0 data-[state=active]:bg-none hover:bg-none"
-            />
-          </div>
-          <div className="flex flex-col gap-2 w-full">
-            {[...Array(3)].map((_, i) => (<AssetSkeleton key={i}/>))}
-          </div>
-        </Card.Content>
-      </Card.Root>
-    )
-  }
 
   return (
     <Card.Root variant="glow" className="relative flex flex-col gap-2 h-full">
@@ -108,63 +57,33 @@ export function Portfolio() {
           <div className="flex-1 overflow-hidden w-full">
             <ScrollArea className="h-full w-full">
             <div className="flex flex-col pb-4">
-              {category === "stock" ? (
-                <Card.Root className="border-0 py-0 gap-1">
-                  <Card.Content className="flex flex-col px-0 gap-2">
-                    {stockData.length > 0 ? (
-                      (stockData as StockData[]).map((stock) => (
-                        <Asset
-                          key={stock.ticker}
-                          ticker={stock.ticker}
-                          name={stock.name}
-                          logoUrl={stock.logo_url}
-                          quantity={stock.quantity}
-                          totalAmount={stock.market_value}
-                          pnlPct={stock.cost_basis > 0
-                            ? (stock.market_value * 0.99873 / stock.cost_basis - 1) * 100
-                            : 0
-                          }
-                          pnlNet={stock.market_value - stock.cost_basis - stock.market_value * 0.00127}
-                          price={stock.price}
-                          type="stock"
-                        />
-                      ))
-                    ) : (
-                      <span className="self-center py-20 text-muted-foreground">
-                        No stock holdings.
-                      </span>
-                    )}
-                  </Card.Content>
-                </Card.Root>
-              ) : (
-                <Card.Root className="border-0 py-0 gap-1">
-                  <Card.Content className="flex flex-col px-0 gap-2">
-                    {cryptoData.length > 0 ? (
-                      (cryptoData as CryptoData[]).map((crypto) => (
-                        <Asset
-                          key={crypto.ticker}
-                          ticker={crypto.ticker}
-                          name={crypto.name}
-                          logoUrl={crypto.logo_url}
-                          quantity={crypto.quantity}
-                          totalAmount={crypto.market_value}
-                          pnlPct={crypto.cost_basis > 0
-                            ? (crypto.market_value / crypto.cost_basis - 1) * 100
-                            : 0
-                          }
-                          pnlNet={crypto.market_value - crypto.cost_basis}
-                          price={crypto.price}
-                          type="crypto"
-                        />
-                      ))
-                    ) : (
-                      <span className="self-center py-20 text-muted-foreground">
-                        No crypto holdings.
-                      </span>
-                    )}
-                  </Card.Content>
-                </Card.Root>
-              )}
+              <Card.Root className="border-0 py-0 gap-1">
+                <Card.Content className="flex flex-col px-0 gap-2">
+                  {stockData.length > 0 ? (
+                    (stockData as StockData[]).map((stock) => (
+                      <Asset
+                        key={stock.ticker}
+                        ticker={stock.ticker}
+                        name={stock.name}
+                        logoUrl={stock.logo_url}
+                        quantity={stock.quantity}
+                        totalAmount={stock.market_value}
+                        pnlPct={stock.cost_basis > 0
+                          ? (stock.market_value * 0.99873 / stock.cost_basis - 1) * 100
+                          : 0
+                        }
+                        pnlNet={stock.market_value - stock.cost_basis - stock.market_value * 0.00127}
+                        price={stock.price}
+                        type="stock"
+                      />
+                    ))
+                  ) : (
+                    <span className="self-center py-20 text-muted-foreground">
+                      No stock holdings.
+                    </span>
+                  )}
+                </Card.Content>
+              </Card.Root>
             </div>
           </ScrollArea>
         </div>

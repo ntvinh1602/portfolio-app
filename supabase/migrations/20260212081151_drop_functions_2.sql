@@ -1010,33 +1010,33 @@ DECLARE
   v_pnl NUMERIC;
 BEGIN
   -- Get starting equity (closing equity of the day before the start date)
-  SELECT net_equity_value INTO v_start_equity
-  FROM public.daily_performance_snapshots
-  WHERE date < p_start_date
-  ORDER BY date DESC
+  SELECT net_equity INTO v_start_equity
+  FROM public.daily_snapshots
+  WHERE snapshot_date < p_start_date
+  ORDER BY snapshot_date DESC
   LIMIT 1;
 
   -- If no prior snapshot, this is the first month.
   -- Use the opening equity of the first day as the starting equity.
   IF v_start_equity IS NULL THEN
-    SELECT (net_equity_value - net_cash_flow) INTO v_start_equity
-    FROM public.daily_performance_snapshots
-    WHERE date >= p_start_date
-    ORDER BY date ASC
+    SELECT (net_equity - net_cashflow) INTO v_start_equity
+    FROM public.daily_snapshots
+    WHERE snapshot_date >= p_start_date
+    ORDER BY snapshot_date ASC
     LIMIT 1;
   END IF;
 
   -- Get ending equity (closing equity of the end date)
-  SELECT net_equity_value INTO v_end_equity
-  FROM public.daily_performance_snapshots
-  WHERE date <= p_end_date
-  ORDER BY date DESC
+  SELECT net_equity INTO v_end_equity
+  FROM public.daily_snapshots
+  WHERE snapshot_date <= p_end_date
+  ORDER BY snapshot_date DESC
   LIMIT 1;
 
   -- Get net cash flow for the period
-  SELECT COALESCE(SUM(net_cash_flow), 0) INTO v_cash_flow
-  FROM public.daily_performance_snapshots
-  WHERE date >= p_start_date AND date <= p_end_date;
+  SELECT COALESCE(SUM(net_cashflow), 0) INTO v_cash_flow
+  FROM public.daily_snapshots
+  WHERE snapshot_date >= p_start_date AND snapshot_date <= p_end_date;
 
   -- Calculate PnL
   v_pnl := (COALESCE(v_end_equity, 0) - COALESCE(v_start_equity, 0)) - v_cash_flow;
@@ -1060,9 +1060,9 @@ DECLARE
 BEGIN
   -- Get the equity index from the day before the start date
   SELECT equity_index INTO v_start_index
-  FROM public.daily_performance_snapshots
-  WHERE date < p_start_date
-  ORDER BY date DESC
+  FROM public.daily_snapshots
+  WHERE snapshot_date < p_start_date
+  ORDER BY snapshot_date DESC
   LIMIT 1;
   -- If no prior snapshot, this is the first month.
   -- The starting index is conceptually 100 before the first day.
@@ -1070,9 +1070,9 @@ BEGIN
   END IF;
   -- Get the equity index at the end of the period
   SELECT equity_index INTO v_end_index
-  FROM public.daily_performance_snapshots
-  WHERE date <= p_end_date
-  ORDER BY date DESC
+  FROM public.daily_snapshots
+  WHERE snapshot_date <= p_end_date
+  ORDER BY snapshot_date DESC
   LIMIT 1;
   -- If there's no data for the period, return 0
   IF v_end_index IS NULL THEN RETURN 0;
@@ -1085,148 +1085,6 @@ $$;
 
 
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  loop_date date;
-  v_total_assets_value numeric;
-  v_total_liabilities_value numeric;
-  v_net_cash_flow numeric;
-  v_total_cashflow numeric;
-  v_net_equity_value numeric;
-  v_previous_equity_value numeric;
-  v_previous_equity_index numeric;
-  v_previous_total_cashflow numeric;
-  v_daily_return numeric;
-  v_equity_index numeric;
-BEGIN
-  FOR loop_date IN SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date LOOP
-    -- Skip weekends
-    IF EXTRACT(ISODOW FROM loop_date) IN (6, 7) THEN CONTINUE;
-    END IF;
-
-    -- Calculate total assets value for the day
-    WITH user_assets AS (
-      SELECT
-        a.id,
-        a.currency_code,
-        SUM(tl.quantity) AS total_quantity
-      FROM transaction_legs tl
-      JOIN transactions t ON tl.transaction_id = t.id
-      JOIN assets a ON tl.asset_id = a.id
-      WHERE t.transaction_date <= loop_date
-        AND a.asset_class NOT IN ('equity', 'liability')
-      GROUP BY a.id, a.currency_code
-    )
-    SELECT COALESCE(SUM(
-      ua.total_quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)
-    ), 0)
-    INTO v_total_assets_value
-    FROM user_assets ua
-    LEFT JOIN LATERAL (
-      SELECT price FROM public.daily_security_prices
-      WHERE asset_id = ua.id AND date <= loop_date
-      ORDER BY date DESC
-      LIMIT 1
-    ) sp ON TRUE
-    LEFT JOIN LATERAL (
-      SELECT rate FROM public.daily_exchange_rates
-      WHERE currency_code = ua.currency_code AND date <= loop_date
-      ORDER BY date DESC
-      LIMIT 1
-    ) er ON TRUE;
-
-    -- Calculate total liabilities value for the day
-    WITH historical_debt_balances AS (
-      SELECT
-        d.id,
-        d.principal_amount,
-        d.interest_rate,
-        tb.transaction_date AS start_date,
-        tr.transaction_date AS end_date,
-        CASE
-          WHEN tr.transaction_date IS NOT NULL AND tr.transaction_date <= loop_date THEN 0
-          ELSE d.principal_amount
-        END AS balance_at_date
-      FROM debts d
-      JOIN transactions tb ON tb.id = d.borrow_txn_id
-      LEFT JOIN transactions tr ON tr.id = d.repay_txn_id
-      WHERE tb.transaction_date <= loop_date
-    )
-    SELECT COALESCE(SUM(
-      CASE
-        WHEN hdb.balance_at_date > 0 THEN
-          hdb.balance_at_date * POWER(1 + (hdb.interest_rate / 100 / 365), (loop_date - hdb.start_date))
-        ELSE 0
-      END
-    ), 0)
-    INTO v_total_liabilities_value
-    FROM historical_debt_balances hdb;
-
-    -- Calculate net cash flow for the day
-    SELECT COALESCE(SUM(tl.amount), 0)
-    INTO v_net_cash_flow
-    FROM transactions t
-    JOIN transaction_legs tl ON t.id = tl.transaction_id
-    JOIN assets a ON tl.asset_id = a.id
-    WHERE t.transaction_date = loop_date
-      AND t.type IN ('deposit', 'withdraw')
-      AND a.asset_class IN ('cash', 'fund', 'crypto');
-
-    -- Retrieve previous day's data
-    SELECT net_equity_value, equity_index, total_cashflow
-    INTO v_previous_equity_value, v_previous_equity_index, v_previous_total_cashflow
-    FROM daily_performance_snapshots
-    WHERE date < loop_date
-    ORDER BY date DESC
-    LIMIT 1;
-
-    -- Calculate equity value
-    v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
-
-    -- Calculate cumulative cashflow
-    IF v_previous_total_cashflow IS NULL THEN
-      v_total_cashflow := v_net_cash_flow;
-    ELSE
-      v_total_cashflow := v_previous_total_cashflow + v_net_cash_flow;
-    END IF;
-
-    -- Calculate Equity Index
-    IF v_previous_equity_value IS NULL THEN
-      v_equity_index := 100; -- first snapshot
-    ELSE
-      IF v_previous_equity_value = 0 THEN
-        v_daily_return := 0;
-      ELSE
-        v_daily_return := (v_net_equity_value - v_net_cash_flow - v_previous_equity_value) / v_previous_equity_value;
-      END IF;
-      v_equity_index := v_previous_equity_index * (1 + v_daily_return);
-    END IF;
-
-    -- Insert or update the snapshot for the day
-    INSERT INTO daily_performance_snapshots (date, net_equity_value, net_cash_flow, total_cashflow, equity_index)
-    VALUES (
-      loop_date,
-      v_net_equity_value,
-      v_net_cash_flow,
-      v_total_cashflow,
-      v_equity_index
-    )
-    ON CONFLICT (date) DO UPDATE
-    SET net_equity_value = EXCLUDED.net_equity_value,
-        net_cash_flow = EXCLUDED.net_cash_flow,
-        total_cashflow = EXCLUDED.total_cashflow,
-        equity_index = EXCLUDED.equity_index;
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") RETURNS "text"
@@ -1273,15 +1131,14 @@ CREATE OR REPLACE FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "
     AS $$
 declare
   legs jsonb;
-  expenses jsonb := '[]'::jsonb;
 begin
   -- fetch all transaction legs with their assets
   select coalesce(jsonb_agg(t), '[]'::jsonb)
   into legs
   from (
     select
-      tl.id,
-      tl.amount,
+      (tl.tx_id::text || '_' || tl.asset_id::text),
+      tl.net_proceed,
       tl.quantity,
       jsonb_build_object(
         'asset_class', a.asset_class,
@@ -1289,171 +1146,19 @@ begin
         'ticker', a.ticker,
         'logo_url', a.logo_url
       ) as assets
-    from transaction_legs tl
+    from tx_legs tl
     join assets a on tl.asset_id = a.id
-    where tl.transaction_id = txn_id
+    where tl.tx_id = txn_id
   ) t;
 
-  -- fetch associated expenses if requested
-  if include_expenses then
-    select coalesce(jsonb_agg(e), '[]'::jsonb)
-    into expenses
-    from (
-      select
-        tr.description,
-        jsonb_agg(
-          jsonb_build_object('amount', tl.amount)
-        ) as transaction_legs
-      from transactions tr
-      join transaction_legs tl on tr.id = tl.transaction_id
-      where tr.linked_txn = txn_id
-      group by tr.description
-    ) e;
-  end if;
-
   return jsonb_build_object(
-    'legs', legs,
-    'expenses', expenses
+    'legs', legs
   );
 end;
 $$;
 
 
 ALTER FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_txn_record jsonb;
-  v_txn_type text;
-  v_asset_id uuid;
-  v_cash_asset_id uuid;
-  v_debt_id uuid;
-  v_asset_ticker text;
-  v_cash_asset_ticker text;
-  v_lender_name text;
-BEGIN
-  IF NOT jsonb_typeof(p_txn_data) = 'array' THEN
-    RAISE EXCEPTION 'Input must be a JSON array of transactions.';
-  END IF;
-
-  -- Temporarily disable all user-defined triggers on the transactions table
-  ALTER TABLE public.transactions DISABLE TRIGGER USER;
-
-  FOR v_txn_record IN SELECT * FROM jsonb_array_elements(p_txn_data)
-  LOOP
-    v_txn_type := v_txn_record->>'type';
-
-    v_asset_ticker := v_txn_record->>'asset_ticker';
-    IF v_asset_ticker IS NOT NULL THEN
-      v_asset_id := public.get_asset_id_from_ticker(v_asset_ticker);
-    END IF;
-
-    v_cash_asset_ticker := v_txn_record->>'cash_asset_ticker';
-    IF v_cash_asset_ticker IS NOT NULL THEN
-      v_cash_asset_id := public.get_asset_id_from_ticker(v_cash_asset_ticker);
-    END IF;
-
-    CASE v_txn_type
-      WHEN 'buy' THEN PERFORM "public"."add_buy_transaction"(
-        (v_txn_record->>'date')::date,
-        v_asset_id,
-        v_cash_asset_id,
-        (v_txn_record->>'quantity')::numeric,
-        (v_txn_record->>'price')::numeric,
-        v_txn_record->>'description',
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'sell' THEN PERFORM "public"."add_sell_transaction"(
-        v_asset_id,
-        (v_txn_record->>'quantity')::numeric,
-        (v_txn_record->>'price')::numeric,
-        (v_txn_record->>'date')::date,
-        v_cash_asset_id,
-        v_txn_record->>'description',
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'deposit' THEN PERFORM "public"."add_deposit_transaction"(
-        (v_txn_record->>'date')::date,
-        (v_txn_record->>'quantity')::numeric,
-        v_txn_record->>'description',
-        v_asset_id,
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'withdraw' THEN PERFORM "public"."add_withdraw_transaction"(
-        (v_txn_record->>'date')::date,
-        (v_txn_record->>'quantity')::numeric,
-        v_txn_record->>'description',
-        v_asset_id,
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'repay' THEN
-        v_lender_name := v_txn_record->>'counterparty';
-        SELECT id INTO v_debt_id
-        FROM public.debts
-        WHERE lender_name = v_lender_name AND repay_txn_id is null;
-        IF v_debt_id IS NULL THEN
-          RAISE EXCEPTION 'Active debt for lender % not found.', v_lender_name;
-        END IF;
-        PERFORM "public"."add_repay_transaction"(
-          v_debt_id,
-          (v_txn_record->>'principal')::numeric,
-          (v_txn_record->>'interest')::numeric,
-          (v_txn_record->>'date')::date,
-          v_cash_asset_id,
-          v_txn_record->>'description',
-          (v_txn_record->>'created_at')::timestamptz
-        );
-      WHEN 'income' THEN
-        PERFORM "public"."add_income_transaction"(
-          (v_txn_record->>'date')::date,
-          (v_txn_record->>'quantity')::numeric,
-          v_txn_record->>'description',
-          v_cash_asset_id,
-          'income',
-          (v_txn_record->>'created_at')::timestamptz
-        );
-      WHEN 'expense' THEN PERFORM "public"."add_expense_transaction"(
-        (v_txn_record->>'date')::date,
-        (v_txn_record->>'quantity')::numeric,
-        v_txn_record->>'description',
-        v_asset_id,
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'borrow' THEN PERFORM "public"."add_borrow_transaction"(
-        v_txn_record->>'counterparty',
-        (v_txn_record->>'principal')::numeric,
-        (v_txn_record->>'interest_rate')::numeric,
-        (v_txn_record->>'date')::date,
-        v_cash_asset_id,
-        v_txn_record->>'description',
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      WHEN 'split' THEN PERFORM "public"."add_split_transaction"(
-        v_asset_id,
-        (v_txn_record->>'quantity')::numeric,
-        (v_txn_record->>'date')::date,
-        v_txn_record->>'description',
-        (v_txn_record->>'created_at')::timestamptz
-      );
-      ELSE
-        RAISE EXCEPTION 'Unknown transaction type: %', v_txn_type;
-    END CASE;
-  END LOOP;
-
-  -- Re-enable all user-defined triggers on the transactions table
-  ALTER TABLE public.transactions ENABLE TRIGGER USER;
-  
-  -- Generate the performance snapshots in a single batch
-  PERFORM public.generate_performance_snapshots(p_start_date, CURRENT_DATE);
-END;
-$$;
-
-
-ALTER FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_dnse_orders"() RETURNS "void"
@@ -1536,7 +1241,468 @@ $$;
 ALTER FUNCTION "public"."process_dnse_orders"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "portfolio_value" numeric, "vni_value" numeric)
+CREATE OR REPLACE FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    r tx_cashflow%rowtype;
+    v_pos asset_positions%rowtype;
+    v_cash_asset uuid;
+    v_equity_asset uuid;
+    v_cash_currency text;
+    v_new_qty numeric;
+    v_new_avg_cost numeric;
+BEGIN
+    -- 1️⃣ Load transaction
+    SELECT * INTO r FROM public.tx_cashflow WHERE tx_id = p_tx_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Transaction % not found in tx_cashflow', p_tx_id;
+    END IF;
+
+    -- 2️⃣ Identify assets
+    v_cash_asset := r.asset_id;
+    SELECT currency_code INTO v_cash_currency FROM public.assets WHERE id = v_cash_asset;
+
+    SELECT id INTO v_equity_asset FROM public.assets WHERE asset_class = 'equity' LIMIT 1;
+    IF v_equity_asset IS NULL THEN
+        RAISE EXCEPTION 'Missing equity asset';
+    END IF;
+
+    -- 3️⃣ Clear existing legs
+    DELETE FROM public.tx_legs WHERE tx_id = p_tx_id;
+
+    -- 4️⃣ Handle by operation type
+    IF r.operation IN ('deposit', 'income') THEN
+        -- Debit cash
+        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        VALUES (r.tx_id, v_cash_asset, r.quantity, r.net_proceed);
+
+        -- Credit equity (capital in)
+        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        VALUES (r.tx_id, v_equity_asset, -r.net_proceed, -r.net_proceed);
+
+        -- Only update cost basis for non-VND assets
+        IF v_cash_currency <> 'VND' THEN
+            SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
+            IF NOT FOUND THEN
+                INSERT INTO public.asset_positions (asset_id, quantity, average_cost)
+                VALUES (v_cash_asset, 0, 0)
+                RETURNING * INTO v_pos;
+            END IF;
+
+            v_new_qty := v_pos.quantity + r.quantity;
+            v_new_avg_cost := (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty;
+
+            UPDATE public.asset_positions
+            SET quantity = v_new_qty,
+                average_cost = v_new_avg_cost
+            WHERE asset_id = v_cash_asset;
+        END IF;
+
+    ELSIF r.operation IN ('withdraw', 'expense') THEN
+        -- Credit cash (reduce balance)
+        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        VALUES (r.tx_id, v_cash_asset, -r.quantity, -r.net_proceed);
+
+        -- Debit equity (capital out)
+        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        VALUES (r.tx_id, v_equity_asset, r.net_proceed, r.net_proceed);
+
+        -- Only update positions for non-VND
+        IF v_cash_currency <> 'VND' THEN
+            SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'No position found for asset %, cannot withdraw', v_cash_asset;
+            END IF;
+
+            IF v_pos.quantity < r.quantity THEN
+                RAISE EXCEPTION 'Not enough balance to withdraw %', r.tx_id;
+            END IF;
+
+            UPDATE public.asset_positions
+            SET quantity = v_pos.quantity - r.quantity
+            WHERE asset_id = v_cash_asset;
+        END IF;
+
+    ELSE
+        RAISE EXCEPTION 'Invalid operation %', r.operation;
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+    r tx_debt%rowtype;
+    v_cash_asset uuid;
+    v_debt_asset uuid;
+    v_equity_asset uuid;
+begin
+    -- 1️⃣ Load transaction
+    select * into r from public.tx_debt where tx_id = p_tx_id;
+    if not found then
+        raise exception 'Transaction % not found in tx_debt', p_tx_id;
+    end if;
+
+    -- 2️⃣ Resolve asset IDs
+    select id into v_cash_asset from public.assets where asset_class = 'cash' and currency_code = 'VND' limit 1;
+    select id into v_equity_asset from public.assets where asset_class = 'equity' limit 1;
+    select id into v_debt_asset from public.assets where asset_class = 'liability' and ticker = 'DEBTS' limit 1;
+
+    if v_cash_asset is null or v_debt_asset is null or v_equity_asset is null then
+        raise exception 'Missing required assets (cash, debt, or equity)';
+    end if;
+
+    -- 3️⃣ Clear any prior legs for this transaction
+    delete from public.tx_legs where tx_id = p_tx_id;
+
+    -- 4️⃣ Process operation type
+    if r.operation = 'borrow' then
+        -- Borrow: receive cash, increase liability
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_cash_asset, r.net_proceed,  r.net_proceed);  -- Debit cash
+
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_debt_asset, -r.net_proceed, -r.net_proceed);  -- Credit debt
+
+    elsif r.operation = 'repay' then
+        -- Repay: pay cash (reduce asset), reduce debt, record interest expense
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_cash_asset, -r.net_proceed, -r.net_proceed);  -- Credit cash (payment)
+
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_debt_asset, r.principal,  r.principal);     -- Debit debt (liability reduced)
+
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_equity_asset, r.interest,  r.interest);    -- Debit equity (interest expense)
+
+    else
+        raise exception 'Invalid debt operation: %', r.operation;
+    end if;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+    r tx_stock%rowtype;
+    v_pos asset_positions%rowtype;
+    v_cash_asset uuid;
+    v_equity_asset uuid;
+    v_stock_asset uuid;
+    v_new_qty numeric;
+    v_new_avg_cost numeric;
+    v_realized_gain numeric := 0;
+    v_cost_basis numeric := 0;
+begin
+    -- 1️⃣ Load the transaction
+    select * into r from public.tx_stock where tx_id = p_tx_id;
+    if not found then
+        raise exception 'Transaction % not found in tx_stock', p_tx_id;
+    end if;
+
+    -- 2️⃣ Resolve asset IDs
+    select id into v_cash_asset from public.assets where asset_class = 'cash' and currency_code = 'VND' limit 1;
+    select id into v_equity_asset from public.assets where asset_class = 'equity' limit 1;
+    v_stock_asset := r.stock_id;
+
+    if v_cash_asset is null or v_equity_asset is null then
+        raise exception 'Missing required assets (cash or equity)';
+    end if;
+
+    -- 3️⃣ Fetch or initialize position
+    select * into v_pos from public.asset_positions where asset_id = r.stock_id;
+    if not found then
+        insert into public.asset_positions (asset_id, quantity, average_cost)
+        values (r.stock_id, 0, 0)
+        returning * into v_pos;
+    end if;
+
+    -- 4️⃣ Process transaction
+    if r.side = 'buy' then
+        v_new_qty := v_pos.quantity + r.quantity;
+        v_new_avg_cost :=
+            case when v_new_qty = 0 then 0
+                 else (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty
+            end;
+
+        update public.asset_positions
+        set quantity = v_new_qty,
+            average_cost = v_new_avg_cost
+        where asset_id = r.stock_id;
+
+        -- Generate double-entry legs for BUY
+        delete from public.tx_legs where tx_id = p_tx_id;
+
+        -- Debit stock (increase holdings)
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_stock_asset, r.quantity, r.net_proceed);
+
+        -- Credit cash
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_cash_asset, -r.net_proceed, -r.net_proceed);
+
+    elsif r.side = 'sell' then
+        if v_pos.quantity < r.quantity then
+            raise exception 'Not enough shares to sell for stock %', r.stock_id;
+        end if;
+
+        v_cost_basis := v_pos.average_cost * r.quantity;
+        v_realized_gain := r.net_proceed - v_cost_basis;
+
+        update public.asset_positions
+        set quantity = v_pos.quantity - r.quantity
+        where asset_id = r.stock_id;
+
+        -- Generate double-entry legs for SELL
+        delete from public.tx_legs where tx_id = p_tx_id;
+
+        -- Debit cash
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_cash_asset, r.net_proceed, r.net_proceed);
+
+        -- Credit stock (reduce holdings)
+        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+        values (r.tx_id, v_stock_asset, -r.quantity, -v_cost_basis);
+
+        -- Post gain/loss to equity
+        if v_realized_gain <> 0 then
+            insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
+            values (r.tx_id, v_equity_asset, -v_realized_gain, -v_realized_gain);
+        end if;
+    else
+        raise exception 'Invalid side: %', r.side;
+    end if;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  loop_date date;
+  v_total_assets_value numeric;
+  v_total_liabilities_value numeric;
+  v_net_cash_flow numeric;
+  v_total_cashflow numeric;
+  v_net_equity_value numeric;
+  v_previous_equity_value numeric;
+  v_previous_equity_index numeric;
+  v_previous_total_cashflow numeric;
+  v_daily_return numeric;
+  v_equity_index numeric;
+BEGIN
+  FOR loop_date IN SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date LOOP
+    -- Skip weekends
+    IF EXTRACT(ISODOW FROM loop_date) IN (6, 7) THEN CONTINUE;
+    END IF;
+
+    -- Calculate total assets value for the day
+    WITH user_assets AS (
+      SELECT
+        a.id,
+        a.currency_code,
+        SUM(tl.quantity) AS quantity
+      FROM tx_legs tl
+      JOIN tx_entries e ON tl.tx_id = e.id
+      JOIN assets a ON tl.asset_id = a.id
+      WHERE e.created_at::date <= loop_date
+        AND a.asset_class NOT IN ('equity', 'liability')
+      GROUP BY a.id, a.currency_code
+    )
+    SELECT COALESCE(SUM(ua.quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)), 0)
+    INTO v_total_assets_value
+    FROM user_assets ua
+    LEFT JOIN LATERAL (
+      SELECT price FROM public.daily_security_prices
+      WHERE asset_id = ua.id AND date <= loop_date
+      ORDER BY date DESC
+      LIMIT 1
+    ) sp ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT rate FROM public.daily_exchange_rates
+      WHERE currency_code = ua.currency_code AND date <= loop_date
+      ORDER BY date DESC
+      LIMIT 1
+    ) er ON TRUE;
+
+    -- Calculate total liabilities value for the day
+    WITH historical_debt_balances AS (
+      SELECT
+        b.tx_id AS borrow_tx_id,
+        b.principal,
+        b.rate,
+        e_b.created_at::date AS start_date,
+        e_r.created_at::date AS end_date,
+        CASE
+          -- If repaid already and repayment date <= today, balance is 0
+          WHEN e_r.created_at IS NOT NULL AND e_r.created_at::date <= loop_date THEN 0
+          ELSE b.principal
+        END AS balance_at_date
+      FROM public.tx_debt b
+      JOIN public.tx_entries e_b ON e_b.id = b.tx_id
+      LEFT JOIN public.tx_debt r ON r.repay_tx = b.tx_id AND r.operation = 'repay'
+      LEFT JOIN public.tx_entries e_r ON e_r.id = r.tx_id
+      WHERE b.operation = 'borrow'
+        AND e_b.created_at::date <= loop_date
+    )
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN hdb.balance_at_date > 0 THEN
+          hdb.balance_at_date * POWER(1 + (hdb.rate / 100 / 365), (loop_date - hdb.start_date))
+        ELSE 0
+      END
+    ), 0) AS total_liabilities_value
+    INTO v_total_liabilities_value
+    FROM historical_debt_balances hdb;
+
+    -- Calculate net cash flow for the day
+    SELECT COALESCE(SUM(tl.net_proceed), 0)
+    INTO v_net_cash_flow
+    FROM tx_entries e
+    JOIN tx_legs tl ON e.id = tl.tx_id
+    JOIN assets a ON tl.asset_id = a.id
+    JOIN tx_cashflow cf ON cf.tx_id = e.id
+    WHERE e.created_at::date = loop_date
+      AND cf.operation IN ('deposit', 'withdraw')
+      AND a.asset_class IN ('cash', 'fund', 'crypto');
+
+    -- Retrieve previous day's data
+    SELECT net_equity, equity_index, cumulative_cashflow
+    INTO v_previous_equity_value, v_previous_equity_index, v_previous_total_cashflow
+    FROM daily_snapshots
+    WHERE snapshot_date < loop_date
+    ORDER BY snapshot_date DESC
+    LIMIT 1;
+
+    -- Calculate equity value
+    v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
+
+    -- Calculate cumulative cashflow
+    IF v_previous_total_cashflow IS NULL THEN
+      v_total_cashflow := v_net_cash_flow;
+    ELSE
+      v_total_cashflow := v_previous_total_cashflow + v_net_cash_flow;
+    END IF;
+
+    -- Calculate Equity Index
+    IF v_previous_equity_value IS NULL THEN
+      v_equity_index := 100; -- first snapshot
+    ELSE
+      IF v_previous_equity_value = 0 THEN
+        v_daily_return := 0;
+      ELSE
+        v_daily_return := (v_net_equity_value - v_net_cash_flow - v_previous_equity_value) / v_previous_equity_value;
+      END IF;
+      v_equity_index := v_previous_equity_index * (1 + v_daily_return);
+    END IF;
+
+    -- Insert or update the snapshot for the day
+    INSERT INTO daily_snapshots (
+      snapshot_date,
+      total_assets,
+      total_liabilities,
+      net_equity,
+      net_cashflow,
+      cumulative_cashflow,
+      equity_index
+    )
+    VALUES (
+      loop_date,
+      v_total_assets_value,
+      v_total_liabilities_value,
+      v_net_equity_value,
+      v_net_cash_flow,
+      v_total_cashflow,
+      v_equity_index
+    )
+    ON CONFLICT (snapshot_date) DO UPDATE
+    SET
+      total_assets = EXCLUDED.total_assets,
+      total_liabilities = EXCLUDED.total_liabilities,
+      net_equity = EXCLUDED.net_equity,
+      net_cashflow = EXCLUDED.net_cashflow,
+      cumulative_cashflow = EXCLUDED.cumulative_cashflow,
+      equity_index = EXCLUDED.equity_index;
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."rebuild_ledger"() RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+    r record;
+begin
+    raise notice 'Rebuilding ledger (positions + legs)...';
+
+    -- Step 1: clear all derived data
+    truncate table public.tx_legs cascade;
+    truncate table public.asset_positions cascade;
+
+    -- Step 2: replay all transactions in chronological order
+    for r in
+        select id as tx_id, category, created_at
+        from public.tx_entries
+        where category in ('stock', 'cashflow', 'debt')
+        order by created_at asc
+    loop
+        if r.category = 'stock' then
+            perform public.process_tx_stock(r.tx_id);
+
+        elsif r.category = 'cashflow' then
+            perform public.process_tx_cashflow(r.tx_id);
+
+        elsif r.category = 'debt' then
+            perform public.process_tx_debt(r.tx_id);
+
+        else
+            raise notice 'Skipping unknown category % for tx_id %', r.category, r.tx_id;
+        end if;
+    end loop;
+
+    raise notice 'Ledger rebuild completed.';
+end;
+$$;
+
+
+ALTER FUNCTION "public"."rebuild_ledger"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."rebuild_on_child_update"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+    -- Rebuild the entire ledger whenever a child transaction changes
+    perform public.rebuild_ledger();
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."rebuild_on_child_update"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("snapshot_date" "date", "portfolio_value" numeric, "vni_value" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1560,9 +1726,9 @@ DECLARE
 BEGIN
   -- Step 1: Find the first available values on or after the start date for normalization
   SELECT dps.equity_index INTO v_first_portfolio_value
-  FROM public.daily_performance_snapshots dps
-  WHERE dps.date >= p_start_date
-  ORDER BY dps.date
+  FROM public.daily_snapshots dps
+  WHERE dps.snapshot_date >= p_start_date
+  ORDER BY dps.snapshot_date
   LIMIT 1;
 
   SELECT md.close INTO v_first_vni_value
@@ -1575,10 +1741,10 @@ BEGIN
   CREATE TEMP TABLE raw_data AS
   WITH portfolio_data AS (
     SELECT
-      dps.date,
+      dps.snapshot_date,
       dps.equity_index
-    FROM public.daily_performance_snapshots dps
-    WHERE dps.date BETWEEN p_start_date AND p_end_date
+    FROM public.daily_snapshots dps
+    WHERE dps.snapshot_date BETWEEN p_start_date AND p_end_date
   ),
   vni_data AS (
     SELECT
@@ -1588,32 +1754,32 @@ BEGIN
     WHERE md.symbol = 'VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
   )
   SELECT
-    pd.date,
+    pd.snapshot_date,
     (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
     (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
-    ROW_NUMBER() OVER (ORDER BY pd.date) as rn
+    ROW_NUMBER() OVER (ORDER BY pd.snapshot_date) as rn
   FROM portfolio_data pd
-  INNER JOIN vni_data vni ON pd.date = vni.date
-  ORDER BY pd.date;
+  INNER JOIN vni_data vni ON pd.snapshot_date = vni.date
+  ORDER BY pd.snapshot_date;
 
   SELECT COUNT(*) INTO data_count FROM raw_data;
 
   -- If the data count is below the threshold, return all points
   IF data_count <= p_threshold THEN
-    RETURN QUERY SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd;
+    RETURN QUERY SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd;
     DROP TABLE raw_data;
     RETURN;
   END IF;
 
   -- LTTB Downsampling
   CREATE TEMP TABLE result_data_temp (
-    date DATE,
+    snapshot_date DATE,
     portfolio_value NUMERIC,
     vni_value NUMERIC
   );
 
   -- Always add the first point
-  INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
+  INSERT INTO result_data_temp SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
 
   every := (data_count - 2.0) / (p_threshold - 2.0);
 
@@ -1628,7 +1794,7 @@ BEGIN
     IF range_start > range_end THEN CONTINUE;
     END IF;
 
-    SELECT AVG(EXTRACT(EPOCH FROM rd.date)) INTO avg_x
+    SELECT AVG(EXTRACT(EPOCH FROM rd.snapshot_date)) INTO avg_x
     FROM raw_data rd
     WHERE rn >= range_start AND rn <= range_end;
 
@@ -1641,13 +1807,13 @@ BEGIN
 
     SELECT * INTO result_data
     FROM result_data_temp
-    ORDER BY date
+    ORDER BY snapshot_date
     DESC LIMIT 1;
 
     FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
       point_area := abs(
-        (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
-        (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.portfolio_value)
+        (EXTRACT(EPOCH FROM result_data.snapshot_date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
+        (EXTRACT(EPOCH FROM result_data.snapshot_date) - EXTRACT(EPOCH FROM data.snapshot_date)) * (avg_y - result_data.portfolio_value)
       ) * 0.5;
 
       IF point_area > max_area THEN
@@ -1657,15 +1823,15 @@ BEGIN
     END LOOP;
 
     -- Add the selected point to the results
-    INSERT INTO result_data_temp (date, portfolio_value, vni_value)
-    VALUES (point_to_add.date, point_to_add.portfolio_value, point_to_add.vni_value);
+    INSERT INTO result_data_temp (snapshot_date, portfolio_value, vni_value)
+    VALUES (point_to_add.snapshot_date, point_to_add.portfolio_value, point_to_add.vni_value);
     a := a + 1;
   END LOOP;
 
   -- Always add the last point
-  INSERT INTO result_data_temp SELECT rd.date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
+  INSERT INTO result_data_temp SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
 
-  RETURN QUERY SELECT r.date, r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.date;
+  RETURN QUERY SELECT r.snapshot_date, r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.snapshot_date;
 
   DROP TABLE raw_data;
   DROP TABLE result_data_temp;
@@ -1676,7 +1842,7 @@ $$;
 ALTER FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("date" "date", "net_equity_value" numeric, "total_cashflow" numeric)
+CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("snapshot_date" "date", "net_equity" numeric, "cumulative_cashflow" numeric)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1695,23 +1861,23 @@ DECLARE
   i INT;
   a INT := 0;
 BEGIN
-  -- Create temp table with both equity and total_cashflow
+  -- Create temp table with both equity and cumulative_cashflow
   CREATE TEMP TABLE raw_data AS
   SELECT
-    dps.date,
-    dps.net_equity_value::numeric AS net_equity_value,
-    dps.total_cashflow::numeric AS total_cashflow,
-    ROW_NUMBER() OVER (ORDER BY dps.date) AS rn
-  FROM public.daily_performance_snapshots dps
-  WHERE dps.date >= p_start_date AND dps.date <= p_end_date
-  ORDER BY dps.date;
+    dps.snapshot_date,
+    dps.net_equity::numeric AS net_equity,
+    dps.cumulative_cashflow::numeric AS cumulative_cashflow,
+    ROW_NUMBER() OVER (ORDER BY dps.snapshot_date) AS rn
+  FROM public.daily_snapshots dps
+  WHERE dps.snapshot_date >= p_start_date AND dps.snapshot_date <= p_end_date
+  ORDER BY dps.snapshot_date;
 
   SELECT COUNT(*) INTO data_count FROM raw_data;
 
   -- If data below threshold, return all
   IF data_count <= p_threshold THEN
     RETURN QUERY
-    SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+    SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
     FROM raw_data rd;
     DROP TABLE raw_data;
     RETURN;
@@ -1719,14 +1885,14 @@ BEGIN
 
   -- Temporary result table
   CREATE TEMP TABLE result_data_temp (
-    date DATE,
-    net_equity_value NUMERIC,
-    total_cashflow NUMERIC
+    snapshot_date DATE,
+    net_equity NUMERIC,
+    cumulative_cashflow NUMERIC
   );
 
   -- Always add first point
   INSERT INTO result_data_temp
-  SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+  SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
   FROM raw_data rd
   WHERE rn = 1;
 
@@ -1738,21 +1904,21 @@ BEGIN
 
     -- Compute average for the next bucket
     SELECT
-      AVG(EXTRACT(EPOCH FROM rd.date)),
-      AVG(rd.net_equity_value)
+      AVG(EXTRACT(EPOCH FROM rd.snapshot_date)),
+      AVG(rd.net_equity)
     INTO avg_x, avg_y
     FROM raw_data rd
     WHERE rn >= range_start AND rn <= range_end;
 
     max_area := -1;
-    SELECT * INTO result_data FROM result_data_temp ORDER BY date DESC LIMIT 1;
+    SELECT * INTO result_data FROM result_data_temp ORDER BY snapshot_date DESC LIMIT 1;
 
     FOR data IN
       SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end
     LOOP
       point_area := abs(
-        (EXTRACT(EPOCH FROM result_data.date) - avg_x) * (data.net_equity_value - result_data.net_equity_value) -
-        (EXTRACT(EPOCH FROM result_data.date) - EXTRACT(EPOCH FROM data.date)) * (avg_y - result_data.net_equity_value)
+        (EXTRACT(EPOCH FROM result_data.snapshot_date) - avg_x) * (data.net_equity - result_data.net_equity) -
+        (EXTRACT(EPOCH FROM result_data.snapshot_date) - EXTRACT(EPOCH FROM data.snapshot_date)) * (avg_y - result_data.net_equity)
       ) * 0.5;
 
       IF point_area > max_area THEN
@@ -1761,21 +1927,21 @@ BEGIN
       END IF;
     END LOOP;
 
-    INSERT INTO result_data_temp (date, net_equity_value, total_cashflow)
-    VALUES (point_to_add.date, point_to_add.net_equity_value, point_to_add.total_cashflow);
+    INSERT INTO result_data_temp (snapshot_date, net_equity, cumulative_cashflow)
+    VALUES (point_to_add.snapshot_date, point_to_add.net_equity, point_to_add.cumulative_cashflow);
 
     a := a + 1;
   END LOOP;
 
   -- Always add last point
   INSERT INTO result_data_temp
-  SELECT rd.date, rd.net_equity_value, rd.total_cashflow
+  SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
   FROM raw_data rd
   WHERE rn = data_count;
 
   -- Return the final sampled points
   RETURN QUERY
-  SELECT * FROM result_data_temp ORDER BY date;
+  SELECT * FROM result_data_temp ORDER BY snapshot_date;
 
   DROP TABLE raw_data;
   DROP TABLE result_data_temp;
@@ -1786,42 +1952,57 @@ $$;
 ALTER FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."snapshots_trigger"() RETURNS "trigger"
+CREATE OR REPLACE FUNCTION "public"."trg_process_tx_cashflow_func"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_date date;
-BEGIN
-  -- Try to get NEW.date if it exists
-  BEGIN
-    v_date := NEW.date;
-  EXCEPTION
-    WHEN undefined_column THEN
-      -- Column doesn't exist → try transaction_id lookup
-      IF NEW.transaction_id IS NOT NULL THEN
-        SELECT t.transaction_date
-        INTO v_date
-        FROM public.transactions t
-        WHERE t.id = NEW.transaction_id;
-      END IF;
-  END;
-
-  -- Run both snapshot generators
-  IF v_date IS NOT NULL THEN
-    PERFORM public.generate_performance_snapshots(v_date, CURRENT_DATE);
-  END IF;
-
-  RETURN NEW;
-END;
+begin
+    perform public.process_tx_cashflow(new.tx_id);
+    return new;
+end;
 $$;
 
 
-ALTER FUNCTION "public"."snapshots_trigger"() OWNER TO "postgres";
+ALTER FUNCTION "public"."trg_process_tx_cashflow_func"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_process_tx_debt_func"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+    perform public.process_tx_debt(new.tx_id);
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_process_tx_debt_func"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_process_tx_stock_func"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+    perform public.process_tx_stock(new.tx_id);
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_process_tx_stock_func"() OWNER TO "postgres";
 
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."asset_positions" (
+    "asset_id" "uuid" NOT NULL,
+    "quantity" numeric(18,2) DEFAULT 0 NOT NULL,
+    "average_cost" numeric(18,2) DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE "public"."asset_positions" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."assets" (
@@ -1858,45 +2039,41 @@ CREATE TABLE IF NOT EXISTS "public"."daily_security_prices" (
 ALTER TABLE "public"."daily_security_prices" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."debts" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "lender_name" "text" NOT NULL,
-    "principal_amount" numeric(16,4) NOT NULL,
-    "currency_code" "text" NOT NULL,
-    "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
-    "borrow_txn_id" "uuid",
-    "repay_txn_id" "uuid"
+CREATE TABLE IF NOT EXISTS "public"."tx_debt" (
+    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "operation" "text" NOT NULL,
+    "principal" numeric(16,0) NOT NULL,
+    "interest" numeric(16,0) NOT NULL,
+    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("principal" + "interest")) STORED NOT NULL,
+    "lender" "text",
+    "rate" numeric(6,2),
+    "repay_tx" "uuid"
 );
 
 
-ALTER TABLE "public"."debts" OWNER TO "postgres";
+ALTER TABLE "public"."tx_debt" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
+CREATE TABLE IF NOT EXISTS "public"."tx_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "category" "text" NOT NULL,
+    "memo" "text"
+);
+
+
+ALTER TABLE "public"."tx_entries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."tx_legs" (
+    "tx_id" "uuid" NOT NULL,
     "asset_id" "uuid" NOT NULL,
-    "quantity" numeric(20,8) NOT NULL,
-    "amount" numeric(16,4) NOT NULL,
-    "currency_code" "text" NOT NULL
+    "quantity" numeric(18,2) NOT NULL,
+    "net_proceed" numeric(16,0) NOT NULL
 );
 
 
-ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."transactions" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_date" "date" NOT NULL,
-    "type" "public"."transaction_type" NOT NULL,
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "price" numeric(16,4),
-    "linked_txn" "uuid"
-);
-
-
-ALTER TABLE "public"."transactions" OWNER TO "postgres";
+ALTER TABLE "public"."tx_legs" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
@@ -1904,20 +2081,21 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
          SELECT "a"."id" AS "asset_id",
             "a"."ticker",
                 CASE
-                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN COALESCE(( SELECT "sum"(("d"."principal_amount" * ("power"(((1)::numeric + (("d"."interest_rate" / (100)::numeric) / (365)::numeric)), ((CURRENT_DATE - "tb"."transaction_date"))::numeric) - (1)::numeric))) AS "sum"
-                       FROM (("public"."debts" "d"
-                         JOIN "public"."transactions" "tb" ON (("tb"."id" = "d"."borrow_txn_id")))
-                         LEFT JOIN "public"."transactions" "tr" ON (("tr"."id" = "d"."repay_txn_id")))
-                      WHERE (("tr"."id" IS NULL) OR ("tr"."transaction_date" > CURRENT_DATE))), (0)::numeric)
+                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN COALESCE(( SELECT "sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))) AS "sum"
+                       FROM ("public"."tx_debt" "d"
+                         JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
+                      WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
+                               FROM "public"."tx_debt"
+                              WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))), (0)::numeric)
                     ELSE COALESCE("sum"("tl"."quantity"), (0)::numeric)
                 END AS "quantity"
            FROM ("public"."assets" "a"
-             LEFT JOIN "public"."transaction_legs" "tl" ON (("tl"."asset_id" = "a"."id")))
+             LEFT JOIN "public"."tx_legs" "tl" ON (("tl"."asset_id" = "a"."id")))
           GROUP BY "a"."id", "a"."ticker"
         ), "asset_cb" AS (
          SELECT "a"."asset_class",
-            "sum"("tl"."amount") AS "total"
-           FROM ("public"."transaction_legs" "tl"
+            "sum"("tl"."net_proceed") AS "total"
+           FROM ("public"."tx_legs" "tl"
              JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
           WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
           GROUP BY "a"."asset_class"
@@ -1993,11 +2171,12 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
             "totals"."cash_mv_raw"
            FROM "totals"
         ), "liabilities_base" AS (
-         SELECT COALESCE("sum"(("d"."principal_amount" * ("power"(((1)::numeric + (("d"."interest_rate" / (100)::numeric) / (365)::numeric)), ((CURRENT_DATE - "tb"."transaction_date"))::numeric) - (1)::numeric))), (0)::numeric) AS "accrued_interest"
-           FROM (("public"."debts" "d"
-             JOIN "public"."transactions" "tb" ON (("tb"."id" = "d"."borrow_txn_id")))
-             LEFT JOIN "public"."transactions" "tr" ON (("tr"."id" = "d"."repay_txn_id")))
-          WHERE (("tr"."id" IS NULL) OR ("tr"."transaction_date" > CURRENT_DATE))
+         SELECT "sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))) AS "accrued_interest"
+           FROM ("public"."tx_debt" "d"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
+          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
+                   FROM "public"."tx_debt"
+                  WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
         ), "liabilities" AS (
          SELECT ((0)::numeric - LEAST("t"."cash_mv_raw", (0)::numeric)) AS "margin",
             ( SELECT ("aq"."quantity" * ('-1'::integer)::numeric)
@@ -2063,6 +2242,19 @@ UNION ALL
 
 
 ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "transaction_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "quantity" numeric(20,8) NOT NULL,
+    "amount" numeric(16,4) NOT NULL,
+    "currency_code" "text" NOT NULL
+);
+
+
+ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."crypto_holdings" WITH ("security_invoker"='on') AS
@@ -2137,6 +2329,34 @@ CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
 ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."daily_snapshots" (
+    "snapshot_date" "date" NOT NULL,
+    "total_assets" numeric(16,0) DEFAULT 0 NOT NULL,
+    "total_liabilities" numeric(16,0) DEFAULT 0 NOT NULL,
+    "net_equity" numeric(16,0) DEFAULT 0 NOT NULL,
+    "net_cashflow" numeric(16,0) DEFAULT 0 NOT NULL,
+    "cumulative_cashflow" numeric(16,0) DEFAULT 0 NOT NULL,
+    "equity_index" numeric(10,2) DEFAULT 100 NOT NULL
+);
+
+
+ALTER TABLE "public"."daily_snapshots" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."debts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "lender_name" "text" NOT NULL,
+    "principal_amount" numeric(16,4) NOT NULL,
+    "currency_code" "text" NOT NULL,
+    "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
+    "borrow_txn_id" "uuid",
+    "repay_txn_id" "uuid"
+);
+
+
+ALTER TABLE "public"."debts" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
     "id" bigint NOT NULL,
     "side" "text" NOT NULL,
@@ -2165,47 +2385,79 @@ CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
 ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
+    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "operation" "text" NOT NULL,
+    "quantity" numeric(18,2) NOT NULL,
+    "fx_rate" numeric DEFAULT 1 NOT NULL,
+    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("quantity" * "fx_rate")) STORED NOT NULL
+);
+
+
+ALTER TABLE "public"."tx_cashflow" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
+    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "side" "text" NOT NULL,
+    "stock_id" "uuid" NOT NULL,
+    "price" numeric(16,0) DEFAULT 0 NOT NULL,
+    "quantity" numeric(16,0) NOT NULL,
+    "fee" numeric(16,0) NOT NULL,
+    "tax" numeric(16,0) DEFAULT 0 NOT NULL,
+    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (
+CASE
+    WHEN ("side" = 'buy'::"text") THEN ((("price" * "quantity") + "fee") + "tax")
+    WHEN ("side" = 'sell'::"text") THEN ((("price" * "quantity") - "fee") - "tax")
+    ELSE (0)::numeric
+END) STORED NOT NULL
+);
+
+
+ALTER TABLE "public"."tx_stock" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on') AS
  WITH "month_ranges" AS (
-         SELECT ("date_trunc"('month'::"text", "dd"."dd"))::"date" AS "month_start",
-            LEAST((("date_trunc"('month'::"text", "dd"."dd") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
-           FROM "generate_series"(('2021-11-01'::"date")::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "dd"("dd")
+         SELECT ("date_trunc"('month'::"text", "d"."d"))::"date" AS "month_start",
+            LEAST((("date_trunc"('month'::"text", "d"."d") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
+           FROM "generate_series"('2021-11-01 00:00:00+00'::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "d"("d")
         ), "monthly_transactions" AS (
-         SELECT ("date_trunc"('month'::"text", ("t"."transaction_date")::timestamp with time zone))::"date" AS "month",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%fee%'::"text")) AS "total_fees",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%tax%'::"text")) AS "total_taxes",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."type" = 'repay'::"public"."transaction_type")) AS "repay_interest",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Margin%'::"text")) AS "margin_interest",
-            "sum"("tl"."amount") FILTER (WHERE ("t"."description" ~~* '%Cash advance%'::"text")) AS "cash_advance_interest"
-           FROM (("public"."transactions" "t"
-             JOIN "public"."transaction_legs" "tl" ON (("tl"."transaction_id" = "t"."id")))
-             JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
-          WHERE ("a"."ticker" = ANY (ARRAY['EARNINGS'::"text", 'CAPITAL'::"text"]))
-          GROUP BY (("date_trunc"('month'::"text", ("t"."transaction_date")::timestamp with time zone))::"date")
+         SELECT ("date_trunc"('month'::"text", "t"."created_at"))::"date" AS "month",
+            ("sum"("s"."fee") + "sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%fee%'::"text"))) AS "total_fees",
+            "sum"("s"."tax") AS "total_taxes",
+            "sum"("d"."interest") AS "loan_interest",
+            "sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%interest%'::"text")) AS "margin_interest"
+           FROM ((("public"."tx_entries" "t"
+             LEFT JOIN "public"."tx_debt" "d" ON (("d"."tx_id" = "t"."id")))
+             LEFT JOIN "public"."tx_stock" "s" ON (("s"."tx_id" = "t"."id")))
+             LEFT JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "t"."id")))
+          GROUP BY (("date_trunc"('month'::"text", "t"."created_at"))::"date")
         ), "monthly_pnl" AS (
          SELECT "m_1"."month_start",
             "m_1"."month_end",
-            "start_snapshot"."net_equity_value" AS "start_equity",
-            "end_snapshot"."net_equity_value" AS "end_equity",
-            COALESCE("sum"("dps"."net_cash_flow"), (0)::numeric) AS "cash_flow",
-            ((COALESCE("end_snapshot"."net_equity_value", (0)::numeric) - COALESCE("start_snapshot"."net_equity_value", (0)::numeric)) - COALESCE("sum"("dps"."net_cash_flow"), (0)::numeric)) AS "pnl"
+            "start_s"."net_equity" AS "start_equity",
+            "end_s"."net_equity" AS "end_equity",
+            COALESCE("sum"("ds"."net_cashflow"), (0)::numeric) AS "cash_flow",
+            ((COALESCE("end_s"."net_equity", (0)::numeric) - COALESCE("start_s"."net_equity", (0)::numeric)) - COALESCE("sum"("ds"."net_cashflow"), (0)::numeric)) AS "pnl"
            FROM ((("month_ranges" "m_1"
-             LEFT JOIN "public"."daily_performance_snapshots" "dps" ON ((("dps"."date" >= "m_1"."month_start") AND ("dps"."date" <= "m_1"."month_end"))))
-             LEFT JOIN LATERAL ( SELECT "s"."net_equity_value"
-                   FROM "public"."daily_performance_snapshots" "s"
-                  WHERE ("s"."date" < "m_1"."month_start")
-                  ORDER BY "s"."date" DESC
-                 LIMIT 1) "start_snapshot" ON (true))
-             LEFT JOIN LATERAL ( SELECT "s"."net_equity_value"
-                   FROM "public"."daily_performance_snapshots" "s"
-                  WHERE ("s"."date" <= "m_1"."month_end")
-                  ORDER BY "s"."date" DESC
-                 LIMIT 1) "end_snapshot" ON (true))
-          GROUP BY "m_1"."month_start", "m_1"."month_end", "start_snapshot"."net_equity_value", "end_snapshot"."net_equity_value"
+             LEFT JOIN "public"."daily_snapshots" "ds" ON ((("ds"."snapshot_date" >= "m_1"."month_start") AND ("ds"."snapshot_date" <= "m_1"."month_end"))))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
+                   FROM "public"."daily_snapshots" "s"
+                  WHERE ("s"."snapshot_date" < "m_1"."month_start")
+                  ORDER BY "s"."snapshot_date" DESC
+                 LIMIT 1) "start_s" ON (true))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
+                   FROM "public"."daily_snapshots" "s"
+                  WHERE ("s"."snapshot_date" <= "m_1"."month_end")
+                  ORDER BY "s"."snapshot_date" DESC
+                 LIMIT 1) "end_s" ON (true))
+          GROUP BY "m_1"."month_start", "m_1"."month_end", "start_s"."net_equity", "end_s"."net_equity"
         )
- SELECT "m"."month_start" AS "date",
+ SELECT "m"."month_start" AS "snapshot_date",
     "mp"."pnl",
-    ((COALESCE("mt"."repay_interest", (0)::numeric) + COALESCE("mt"."margin_interest", (0)::numeric)) + COALESCE("mt"."cash_advance_interest", (0)::numeric)) AS "interest",
+    (COALESCE("mt"."loan_interest", (0)::numeric) + COALESCE("mt"."margin_interest", (0)::numeric)) AS "interest",
     COALESCE("mt"."total_taxes", (0)::numeric) AS "tax",
     COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
    FROM (("month_ranges" "m"
@@ -2217,30 +2469,55 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on') AS
+ WITH "borrow_tx" AS (
+         SELECT "d"."lender",
+            "d"."principal",
+            "d"."rate",
+            "e"."created_at" AS "borrow_date"
+           FROM ("public"."tx_debt" "d"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
+          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
+                   FROM "public"."tx_debt"
+                  WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
+        )
+ SELECT "lender",
+    "principal",
+    "rate",
+    "borrow_date",
+    EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")) AS "duration",
+    "round"((("principal" * "power"(((1)::numeric + (("rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")))) - "principal"), 2) AS "interest"
+   FROM "borrow_tx" "b"
+  ORDER BY "borrow_date";
+
+
+ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
  WITH "capital_legs" AS (
-         SELECT "tl"."transaction_id",
-            "tl"."amount" AS "capital_amount",
-            "t"."transaction_date"
-           FROM ("public"."transaction_legs" "tl"
-             JOIN "public"."transactions" "t" ON (("t"."id" = "tl"."transaction_id")))
+         SELECT "tl"."tx_id",
+            "tl"."net_proceed" AS "capital_amount",
+            "t"."created_at"
+           FROM ("public"."tx_legs" "tl"
+             JOIN "public"."tx_entries" "t" ON (("t"."id" = "tl"."tx_id")))
           WHERE ("tl"."asset_id" = 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid")
         ), "stock_legs" AS (
-         SELECT "tl"."transaction_id",
+         SELECT "tl"."tx_id",
             "tl"."asset_id" AS "stock_id"
-           FROM ("public"."transaction_legs" "tl"
+           FROM ("public"."tx_legs" "tl"
              JOIN "public"."assets" "a_1" ON (("a_1"."id" = "tl"."asset_id")))
           WHERE ("a_1"."asset_class" = 'stock'::"public"."asset_class")
         )
- SELECT (EXTRACT(year FROM "c"."transaction_date"))::integer AS "year",
+ SELECT (EXTRACT(year FROM "c"."created_at"))::integer AS "year",
     "a"."ticker",
     "a"."name",
     "a"."logo_url",
     (- "sum"("c"."capital_amount")) AS "total_pnl"
    FROM (("capital_legs" "c"
-     JOIN "stock_legs" "s" ON (("s"."transaction_id" = "c"."transaction_id")))
+     JOIN "stock_legs" "s" ON (("s"."tx_id" = "c"."tx_id")))
      JOIN "public"."assets" "a" ON (("a"."id" = "s"."stock_id")))
-  GROUP BY "a"."logo_url", "a"."name", "a"."ticker", (EXTRACT(year FROM "c"."transaction_date"));
+  GROUP BY "a"."logo_url", "a"."name", "a"."ticker", (EXTRACT(year FROM "c"."created_at"));
 
 
 ALTER VIEW "public"."stock_annual_pnl" OWNER TO "postgres";
@@ -2257,11 +2534,11 @@ CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') 
     "a"."name",
     "a"."logo_url",
     "sum"("tl"."quantity") AS "quantity",
-    "sum"("tl"."amount") AS "cost_basis",
+    "sum"("tl"."net_proceed") AS "cost_basis",
     COALESCE("ld"."price", (1)::numeric) AS "price",
     ("sum"("tl"."quantity") * COALESCE("ld"."price", (1)::numeric)) AS "market_value"
    FROM (("public"."assets" "a"
-     JOIN "public"."transaction_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
+     JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
      LEFT JOIN "latest_data" "ld" ON (("ld"."asset_id" = "a"."id")))
   WHERE ("a"."asset_class" = 'stock'::"public"."asset_class")
   GROUP BY "a"."id", "a"."ticker", "a"."name", "a"."logo_url", "ld"."price"
@@ -2288,27 +2565,41 @@ CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
 ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."transactions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "transaction_date" "date" NOT NULL,
+    "type" "public"."transaction_type" NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "price" numeric(16,4),
+    "linked_txn" "uuid"
+);
+
+
+ALTER TABLE "public"."transactions" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on') AS
  WITH "annual_cashflow" AS (
-         SELECT (EXTRACT(year FROM "daily_performance_snapshots"."date"))::integer AS "year",
+         SELECT (EXTRACT(year FROM "daily_snapshots"."snapshot_date"))::integer AS "year",
             "sum"(
                 CASE
-                    WHEN ("daily_performance_snapshots"."net_cash_flow" > (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    WHEN ("daily_snapshots"."net_cashflow" > (0)::numeric) THEN "daily_snapshots"."net_cashflow"
                     ELSE (0)::numeric
                 END) AS "deposits",
             "sum"(
                 CASE
-                    WHEN ("daily_performance_snapshots"."net_cash_flow" < (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    WHEN ("daily_snapshots"."net_cashflow" < (0)::numeric) THEN "daily_snapshots"."net_cashflow"
                     ELSE (0)::numeric
                 END) AS "withdrawals"
-           FROM "public"."daily_performance_snapshots"
-          GROUP BY (EXTRACT(year FROM "daily_performance_snapshots"."date"))
+           FROM "public"."daily_snapshots"
+          GROUP BY (EXTRACT(year FROM "daily_snapshots"."snapshot_date"))
         ), "equity_data" AS (
-         SELECT EXTRACT(year FROM "daily_performance_snapshots"."date") AS "yr",
-            "daily_performance_snapshots"."date" AS "dps_date",
-            "daily_performance_snapshots"."equity_index"
-           FROM "public"."daily_performance_snapshots"
-          WHERE ("daily_performance_snapshots"."equity_index" IS NOT NULL)
+         SELECT EXTRACT(year FROM "daily_snapshots"."snapshot_date") AS "yr",
+            "daily_snapshots"."snapshot_date" AS "dps_date",
+            "daily_snapshots"."equity_index"
+           FROM "public"."daily_snapshots"
+          WHERE ("daily_snapshots"."equity_index" IS NOT NULL)
         ), "equity_end_of_year" AS (
          SELECT "equity_data"."yr",
             "max"("equity_data"."dps_date") AS "last_date"
@@ -2349,23 +2640,23 @@ CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on'
         ), "all_time_cashflow" AS (
          SELECT "sum"(
                 CASE
-                    WHEN ("daily_performance_snapshots"."net_cash_flow" > (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    WHEN ("daily_snapshots"."net_cashflow" > (0)::numeric) THEN "daily_snapshots"."net_cashflow"
                     ELSE (0)::numeric
                 END) AS "deposits",
             "sum"(
                 CASE
-                    WHEN ("daily_performance_snapshots"."net_cash_flow" < (0)::numeric) THEN "daily_performance_snapshots"."net_cash_flow"
+                    WHEN ("daily_snapshots"."net_cashflow" < (0)::numeric) THEN "daily_snapshots"."net_cashflow"
                     ELSE (0)::numeric
                 END) AS "withdrawals"
-           FROM "public"."daily_performance_snapshots"
+           FROM "public"."daily_snapshots"
         ), "scalar_values" AS (
-         SELECT ( SELECT "daily_performance_snapshots"."equity_index"
-                   FROM "public"."daily_performance_snapshots"
-                  ORDER BY "daily_performance_snapshots"."date"
+         SELECT ( SELECT "daily_snapshots"."equity_index"
+                   FROM "public"."daily_snapshots"
+                  ORDER BY "daily_snapshots"."snapshot_date"
                  LIMIT 1) AS "first_equity",
-            ( SELECT "daily_performance_snapshots"."equity_index"
-                   FROM "public"."daily_performance_snapshots"
-                  ORDER BY "daily_performance_snapshots"."date" DESC
+            ( SELECT "daily_snapshots"."equity_index"
+                   FROM "public"."daily_snapshots"
+                  ORDER BY "daily_snapshots"."snapshot_date" DESC
                  LIMIT 1) AS "last_equity",
             ( SELECT "daily_market_indices"."close"
                    FROM "public"."daily_market_indices"
@@ -2453,6 +2744,11 @@ ALTER TABLE ONLY "public"."daily_security_prices"
 
 
 
+ALTER TABLE ONLY "public"."daily_snapshots"
+    ADD CONSTRAINT "daily_snapshots_pkey" PRIMARY KEY ("snapshot_date");
+
+
+
 ALTER TABLE ONLY "public"."debts"
     ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
 
@@ -2478,6 +2774,11 @@ ALTER TABLE ONLY "public"."daily_market_indices"
 
 
 
+ALTER TABLE ONLY "public"."asset_positions"
+    ADD CONSTRAINT "stock_positions_pkey" PRIMARY KEY ("asset_id");
+
+
+
 ALTER TABLE ONLY "public"."tax_lots"
     ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
 
@@ -2490,6 +2791,31 @@ ALTER TABLE ONLY "public"."transaction_legs"
 
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."tx_cashflow"
+    ADD CONSTRAINT "tx_cashflow_pkey" PRIMARY KEY ("tx_id");
+
+
+
+ALTER TABLE ONLY "public"."tx_debt"
+    ADD CONSTRAINT "tx_debt_pkey" PRIMARY KEY ("tx_id");
+
+
+
+ALTER TABLE ONLY "public"."tx_entries"
+    ADD CONSTRAINT "tx_entries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."tx_legs"
+    ADD CONSTRAINT "tx_legs_pkey" PRIMARY KEY ("tx_id", "asset_id");
+
+
+
+ALTER TABLE ONLY "public"."tx_stock"
+    ADD CONSTRAINT "tx_stock_pkey" PRIMARY KEY ("tx_id");
 
 
 
@@ -2521,15 +2847,27 @@ CREATE INDEX "transaction_legs_transaction_id_idx" ON "public"."transaction_legs
 
 
 
-CREATE OR REPLACE TRIGGER "snapshot_after_new_fx_rate" AFTER INSERT OR UPDATE ON "public"."daily_exchange_rates" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
+CREATE OR REPLACE TRIGGER "trg_process_tx_cashflow" AFTER INSERT ON "public"."tx_cashflow" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_cashflow_func"();
 
 
 
-CREATE OR REPLACE TRIGGER "snapshot_after_new_prices" AFTER INSERT OR UPDATE ON "public"."daily_security_prices" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
+CREATE OR REPLACE TRIGGER "trg_process_tx_debt" AFTER INSERT ON "public"."tx_debt" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_debt_func"();
 
 
 
-CREATE OR REPLACE TRIGGER "snapshot_after_new_txn" AFTER INSERT OR UPDATE ON "public"."transaction_legs" FOR EACH ROW EXECUTE FUNCTION "public"."snapshots_trigger"();
+CREATE OR REPLACE TRIGGER "trg_process_tx_stock" AFTER INSERT ON "public"."tx_stock" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_stock_func"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_rebuild_on_cashflow_update" AFTER UPDATE ON "public"."tx_cashflow" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_rebuild_on_debt_update" AFTER UPDATE ON "public"."tx_debt" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_rebuild_on_stock_update" AFTER UPDATE ON "public"."tx_stock" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
 
 
 
@@ -2578,6 +2916,11 @@ ALTER TABLE ONLY "public"."lot_consumptions"
 
 
 
+ALTER TABLE ONLY "public"."asset_positions"
+    ADD CONSTRAINT "stock_positions_stock_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
+
+
+
 ALTER TABLE ONLY "public"."tax_lots"
     ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
 
@@ -2600,6 +2943,69 @@ ALTER TABLE ONLY "public"."transaction_legs"
 
 ALTER TABLE ONLY "public"."transaction_legs"
     ADD CONSTRAINT "transaction_legs_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tx_cashflow"
+    ADD CONSTRAINT "tx_cashflow_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
+
+
+
+ALTER TABLE ONLY "public"."tx_cashflow"
+    ADD CONSTRAINT "tx_cashflow_tx_id_fkey" FOREIGN KEY ("tx_id") REFERENCES "public"."tx_entries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tx_debt"
+    ADD CONSTRAINT "tx_debt_tx_id_fkey" FOREIGN KEY ("tx_id") REFERENCES "public"."tx_entries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tx_legs"
+    ADD CONSTRAINT "tx_legs_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
+
+
+
+ALTER TABLE ONLY "public"."tx_legs"
+    ADD CONSTRAINT "tx_legs_tx_id_fkey" FOREIGN KEY ("tx_id") REFERENCES "public"."tx_entries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tx_stock"
+    ADD CONSTRAINT "tx_stock_stock_id_fkey" FOREIGN KEY ("stock_id") REFERENCES "public"."assets"("id");
+
+
+
+ALTER TABLE ONLY "public"."tx_stock"
+    ADD CONSTRAINT "tx_stock_tx_id_fkey" FOREIGN KEY ("tx_id") REFERENCES "public"."tx_entries"("id") ON DELETE CASCADE;
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."daily_snapshots" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."tx_cashflow" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."tx_debt" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."tx_entries" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."tx_legs" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."tx_stock" TO "authenticated" USING (true);
 
 
 
@@ -2651,6 +3057,9 @@ CREATE POLICY "Users can read DNSE orders" ON "public"."dnse_orders" TO "authent
 
 
 
+ALTER TABLE "public"."asset_positions" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2669,6 +3078,9 @@ ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."daily_security_prices" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."daily_snapshots" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2685,6 +3097,21 @@ ALTER TABLE "public"."transaction_legs" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tx_cashflow" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tx_debt" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tx_entries" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tx_legs" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tx_stock" ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -2948,12 +3375,6 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
-GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."generate_performance_snapshots"("p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "service_role";
@@ -2972,15 +3393,45 @@ GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "inclu
 
 
 
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."import_transactions"("p_txn_data" "jsonb", "p_start_date" "date") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "anon";
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "anon";
+GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "anon";
+GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "service_role";
 
 
 
@@ -2996,9 +3447,21 @@ GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_
 
 
 
-GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "anon";
-GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "service_role";
 
 
 
@@ -3020,6 +3483,12 @@ GRANT ALL ON FUNCTION "public"."snapshots_trigger"() TO "service_role";
 
 
 
+
+
+
+GRANT ALL ON TABLE "public"."asset_positions" TO "anon";
+GRANT ALL ON TABLE "public"."asset_positions" TO "authenticated";
+GRANT ALL ON TABLE "public"."asset_positions" TO "service_role";
 
 
 
@@ -3041,27 +3510,33 @@ GRANT ALL ON TABLE "public"."daily_security_prices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."debts" TO "anon";
-GRANT ALL ON TABLE "public"."debts" TO "authenticated";
-GRANT ALL ON TABLE "public"."debts" TO "service_role";
+GRANT ALL ON TABLE "public"."tx_debt" TO "anon";
+GRANT ALL ON TABLE "public"."tx_debt" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_debt" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
-GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
-GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
+GRANT ALL ON TABLE "public"."tx_entries" TO "anon";
+GRANT ALL ON TABLE "public"."tx_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_entries" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transactions" TO "anon";
-GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
-GRANT ALL ON TABLE "public"."transactions" TO "service_role";
+GRANT ALL ON TABLE "public"."tx_legs" TO "anon";
+GRANT ALL ON TABLE "public"."tx_legs" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
 
 
 
 GRANT ALL ON TABLE "public"."balance_sheet" TO "anon";
 GRANT ALL ON TABLE "public"."balance_sheet" TO "authenticated";
 GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
+GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
 
 
 
@@ -3089,6 +3564,18 @@ GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."daily_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."debts" TO "anon";
+GRANT ALL ON TABLE "public"."debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."debts" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
@@ -3101,9 +3588,27 @@ GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tx_stock" TO "anon";
+GRANT ALL ON TABLE "public"."tx_stock" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_stock" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "anon";
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "authenticated";
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
 
 
 
@@ -3122,6 +3627,12 @@ GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
 GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
 GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
 GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."transactions" TO "anon";
+GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
+GRANT ALL ON TABLE "public"."transactions" TO "service_role";
 
 
 

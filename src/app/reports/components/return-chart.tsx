@@ -4,7 +4,7 @@ import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
 import * as Card from "@/components/ui/card"
 import { useReportsData } from "@/hooks/useReportsData"
-import { ChartCard, ChartCardSkeleton } from "@/components/chart-card"
+import { ChartCard } from "@/components/chart-card"
 import { format } from "date-fns"
 import { useReturnChartData } from "@/hooks/useReturnChartData"
 
@@ -13,23 +13,11 @@ interface ReturnChartProps {
 }
 
 export function ReturnChart({ year }: ReturnChartProps) {
-  const { yearlyData, isLoading: isReportsLoading } = useReportsData()
+  const { yearlyData } = useReportsData()
 
   // Convert UI “All Time” to backend time parameter
   const timeParam = year === "All Time" ? "all" : year
-  const { data, isLoading: isFetching, error } = useReturnChartData(timeParam)
-
-  const isLoading = isFetching || isReportsLoading
-
-  if (isLoading || !yearlyData) {
-    return (
-      <ChartCardSkeleton
-        title="Equity Return"
-        minorText1="VN-Index"
-        tabswitch={false}
-      />
-    )
-  }
+  const { data, error } = useReturnChartData(timeParam)
 
   if (error) {
     return (
@@ -43,15 +31,9 @@ export function ReturnChart({ year }: ReturnChartProps) {
       </Card.Root>
     )
   }
-
-  const chartData = data.map((d) => ({
-    snapshot_date: d.date,
-    portfolio_value: d.portfolio_value,
-    vni_value: d.vni_value,
-  }))
-
+  
   const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearlyData.find((item) => item.year === yearNum)
+  const yearData = yearlyData?.find((item) => item.year === yearNum)
   const equityReturn = yearData?.equity_ret ?? 0
   const vnIndexReturn = yearData?.vn_ret ?? 0
 
@@ -64,7 +46,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
       minorValue1Formatter={(value) => `${formatNum(value, 1)}%`}
       minorText1="VN-Index"
       chartComponent={Areachart}
-      chartData={chartData}
+      chartData={data}
       chartConfig={{
         portfolio_value: {
           label: "Equity",
@@ -76,7 +58,6 @@ export function ReturnChart({ year }: ReturnChartProps) {
         },
       }}
       chartClassName="h-full w-full pt-4"
-      xAxisDataKey="snapshot_date"
       chartDataKeys={["portfolio_value", "vni_value"]}
       legend={true}
       yAxisTickFormatter={(value) => `${formatNum(Number(value))}`}

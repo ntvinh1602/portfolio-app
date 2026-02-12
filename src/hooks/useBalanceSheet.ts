@@ -29,9 +29,38 @@ export function useBalanceSheetData() {
       revalidateOnReconnect: false,
     }
   )
+  const rawData = data ? data : []
+  const totalAssets = rawData
+    .filter((r) => r.type === "asset")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const totalLiabilities = rawData
+    .filter((r) => r.type === "liability")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const totalEquity = rawData
+    .filter((r) => r.type === "equity")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const debtsPrincipal = rawData
+    .filter((r) => r.account === "Debts Principal")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const accruedInterest = rawData
+    .filter((r) => r.account === "Accrued Interest")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const margin = rawData
+    .filter((r) => r.account === "Margin")
+    .reduce((sum, r) => sum + (r.amount), 0)
+  const fund = rawData
+    .filter((r) => r.account === "Fund")
+    .reduce((sum, r) => sum + (r.amount), 0)
 
   return {
-    data: data || [],
+    bsData: rawData,
+    totalAssets,
+    totalLiabilities,
+    totalEquity,
+    debtsPrincipal,
+    accruedInterest,
+    margin,
+    fund,
     error,
     isLoading,
     mutate,

@@ -42,20 +42,17 @@ function BSItem({
 }
 
 export function BalanceSheet() {
-  const { balanceSheet: bsData } = useBalanceSheetData() // now a flat array from Supabase view
-
-  // Safety guard for undefined data
-  const data = Array.isArray(bsData) ? bsData : []
+  const {
+    bsData,
+    totalAssets,
+    totalLiabilities,
+    totalEquity
+  } = useBalanceSheetData()
 
   // Group rows by type
-  const assets = data.filter((r) => r.type === "asset")
-  const liabilities = data.filter((r) => r.type === "liability")
-  const equities = data.filter((r) => r.type === "equity")
-
-  // Calculate totals
-  const totalAssets = assets.reduce((sum, r) => sum + (r.amount || 0), 0)
-  const totalLiabilities = liabilities.reduce((sum, r) => sum + (r.amount || 0), 0)
-  const totalEquity = equities.reduce((sum, r) => sum + (r.amount || 0), 0)
+  const assets = bsData.filter((r) => r.type === "asset")
+  const liabilities = bsData.filter((r) => r.type === "liability")
+  const equities = bsData.filter((r) => r.type === "equity")
 
   return (
     <Popover.Root>
@@ -74,7 +71,6 @@ export function BalanceSheet() {
         className="rounded-2xl bg-background/80 backdrop-blur-sm w-auto max-w-[90vw] max-h-[80vh] overflow-y-auto"
       >
         <Card.Root className="flex flex-row px-2 py-4 border-0 bg-transparent">
-          {/* Assets */}
           <div className="flex flex-col min-w-[300px]">
             <Card.Header className="pb-4 justify-center text-xl font-thin">
               Total Assets
@@ -83,13 +79,12 @@ export function BalanceSheet() {
             {assets.map((item) => (
               <BSItem
                 key={item.account}
-                label={item.account ?? "-"}
-                value={item.amount ?? 0}
+                label={item.account}
+                value={item.amount}
               />
             ))}
           </div>
-
-          {/* Divider */}
+          
           <div className="relative flex items-center">
             <div
               className="
@@ -98,10 +93,8 @@ export function BalanceSheet() {
               "
             />
           </div>
-
-          {/* Liabilities & Equity */}
+          
           <div className="flex flex-col gap-4 min-w-[300px]">
-            {/* Liabilities */}
             <div className="flex flex-col">
               <Card.Header className="pb-4 justify-center text-xl font-thin">
                 Total Liabilities
@@ -110,20 +103,19 @@ export function BalanceSheet() {
               {liabilities.map((item) => (
                 <BSItem
                   key={item.account}
-                  label={item.account ?? "-"}
-                  value={item.amount ?? 0}
+                  label={item.account}
+                  value={item.amount}
                 />
               ))}
             </div>
-
-            {/* Equity */}
+            
             <div>
               <BSItem header label="Equity" value={totalEquity} />
               {equities.map((item) => (
                 <BSItem
                   key={item.account}
-                  label={item.account ?? "-"}
-                  value={item.amount ?? 0}
+                  label={item.account}
+                  value={item.amount}
                 />
               ))}
             </div>
