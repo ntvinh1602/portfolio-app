@@ -4,7 +4,14 @@ import { useState } from "react"
 import { CheckIcon, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import * as Cmd from "@/components/ui/command"
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command"
 import * as Popover from "@/components/ui/popover"
 
 export type ComboboxItem = {
@@ -42,7 +49,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("has-[>svg]:px-0 w-full justify-between", className)}
+          className={cn("w-full justify-between bg-transparent", className)}
         >
           {selectedItem
             ? <span>{selectedItem.label}</span>
@@ -52,7 +59,7 @@ export function Combobox({
         </Button>
       </Popover.Trigger>
       <Popover.Content
-        className="w-[--radix-popover-trigger-width] rounded-2xl bg-card/25 p-0 backdrop-blur-sm"
+        className="min-w-[var(--radix-popover-trigger-width)] w-[var(--radix-popover-trigger-width)] p-0"
         onTouchMove={(e) => {
           e.stopPropagation();
         }}
@@ -60,13 +67,13 @@ export function Combobox({
           e.stopPropagation(); 
         }}
       >
-        <Cmd.Root>
-          <Cmd.Input placeholder={searchPlaceholder} />
-          <Cmd.List className="max-h-52">
-            <Cmd.Empty>{emptyPlaceholder}</Cmd.Empty>
-            <Cmd.Group>
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList className="max-h-52">
+            <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
+            <CommandGroup>
               {items.map(item => (
-                <Cmd.Item
+                <CommandItem
                   className="p-3"
                   key={item.value}
                   value={item.label}
@@ -82,11 +89,11 @@ export function Combobox({
                     )}
                   />
                   {item.label}
-                </Cmd.Item>
+                </CommandItem>
               ))}
-            </Cmd.Group>
-          </Cmd.List>
-        </Cmd.Root>
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </Popover.Content>
     </Popover.Root>
   )

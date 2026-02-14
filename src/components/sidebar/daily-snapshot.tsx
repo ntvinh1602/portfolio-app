@@ -4,7 +4,14 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
-import * as Dialog from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export function DailySnapshot({
   open,
@@ -48,18 +55,18 @@ export function DailySnapshot({
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Content
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
         showCloseButton={false}
         className="w-fit"
       >
-        <Dialog.Header>
-          <Dialog.Title>Daily Snapshots</Dialog.Title>
-          <Dialog.Subtitle className="w-80">
+        <DialogHeader>
+          <DialogTitle>Daily Snapshots</DialogTitle>
+          <DialogDescription className="w-80">
             Calculate daily portfolio snapshots from a chosen date. Earliest date available is 10th Nov 2021.
-          </Dialog.Subtitle>
-        </Dialog.Header>
+          </DialogDescription>
+        </DialogHeader>
         <Calendar
           mode="single"
           captionLayout="dropdown"
@@ -72,12 +79,12 @@ export function DailySnapshot({
           onSelect={setStartDate}
           className="rounded-lg border w-80 bg-transparent"
         />
-        <Dialog.Footer>
+        <DialogFooter>
           <Button onClick={handleBackfill}>
             Generate
           </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog.Root>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

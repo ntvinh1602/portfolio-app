@@ -6,7 +6,6 @@ import {
   InputGroupAddon,
   InputGroupText,
 } from "@/components/ui/input-group"
-import { formatNumber, parseNumber } from "@/lib/utils"
 import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 
@@ -32,20 +31,20 @@ export function NumberField<T extends FieldValues>({
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
+        <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
           {label && <FieldLabel>{label}</FieldLabel>}
-          <InputGroup className="border-0">
+          <InputGroup className="flex gap-2 border-0">
             <Input
-              type="text"
-              value={formatNumber(field.value)}
-              onChange={(e) => field.onChange(parseNumber(e.target.value))}
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
               inputMode="decimal"
               placeholder={placeholder}
               disabled={disabled}
             />
             {suffix && (
-              <InputGroupAddon align="inline-end">
-                <InputGroupText>{suffix}</InputGroupText>
+              <InputGroupAddon align="inline-end" className="p-0">
+                <InputGroupText className="text-nowrap">{suffix}</InputGroupText>
               </InputGroupAddon>
             )}
           </InputGroup>

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useReturnChartData } from "@/hooks/useReturnChartData"
+import { useReturnChartData } from "@/hooks/useReturnChart"
 import { useTWR } from "@/hooks/useTWR"
 
 export function Benchmarkchart() {

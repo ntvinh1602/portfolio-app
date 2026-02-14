@@ -1,11 +1,11 @@
 "use client"
 
 import {
-  Root,
-  Content,
-  Header,
-  Title,
-  Subtitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 
 type FormDialogWrapperProps = {
@@ -24,14 +24,14 @@ export function FormDialogWrapper({
   FormComponent,
 }: FormDialogWrapperProps) {
   return (
-    <Root open={open} onOpenChange={onOpenChange}>
-      <Content className="flex flex-col gap-10">
-        <Header>
-          <Title>{title}</Title>
-          {subtitle && <Subtitle>{subtitle}</Subtitle>}
-        </Header>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex flex-col gap-10">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {subtitle && <DialogDescription>{subtitle}</DialogDescription>}
+        </DialogHeader>
         <FormComponent />
-      </Content>
-    </Root>
+      </DialogContent>
+    </Dialog>
   )
 }

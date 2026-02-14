@@ -1,0 +1,1 @@
+CREATE POLICY "Access for authenticated users" ON "public"."cashflow_memo" TO "authenticated" USING (true);

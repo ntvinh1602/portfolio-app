@@ -2,7 +2,7 @@ import { useState } from "react"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useEquityChartData } from "@/hooks/useEquityChartData"
+import { useEquityChartData } from "@/hooks/useEquityChart"
 import { usePnL } from "@/hooks/usePnL"
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 

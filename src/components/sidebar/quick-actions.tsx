@@ -12,6 +12,8 @@ import { DatabaseBackup, Plus, RefreshCcw, type LucideIcon } from "lucide-react"
 import { FormDialogWrapper } from "../add-transactions/form-wrapper"
 import { StockForm } from "../add-transactions/form/stockForm"
 import { CashflowForm } from "../add-transactions/form/cashflowForm"
+import { BorrowForm } from "../add-transactions/form/borrowForm"
+import { RepayForm } from "../add-transactions/form/repayForm"
 
 type ActionType = "stock" | "cashflow" | "debt" | "repay"
 
@@ -70,7 +72,7 @@ export function QuickActions() {
     stock: {
       component: StockForm,
       title: "Add Stock Event",
-      subtitle: "Manual submit of stock orders when auto fetching is not working",
+      subtitle: "Record orders of stock trading",
     },
     cashflow: {
       component: CashflowForm,
@@ -78,12 +80,12 @@ export function QuickActions() {
       subtitle: "Record deposit, withdrawal, or transfer operations",
     },
     debt: {
-      component: CashflowForm, // placeholder
+      component: BorrowForm, 
       title: "Add Debt",
       subtitle: "Record new borrowings or loans",
     },
     repay: {
-      component: CashflowForm, // placeholder
+      component: RepayForm,
       title: "Repay Debt",
       subtitle: "Log repayment of debt transactions",
     },

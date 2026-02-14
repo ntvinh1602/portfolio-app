@@ -130,14 +130,14 @@ function DialogDescription({
 }
 
 export {
-  Dialog as Root,
-  DialogClose as Close,
-  DialogContent as Content,
-  DialogDescription as Subtitle,
-  DialogFooter as Footer,
-  DialogHeader as Header,
-  DialogOverlay as Overlay,
-  DialogPortal as Portal,
-  DialogTitle as Title,
-  DialogTrigger as Trigger,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
 }

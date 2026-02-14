@@ -4,7 +4,13 @@ import { FieldConfig } from "./field-types"
 import { format } from "date-fns"
 import { Combobox } from "@/components/combobox"
 
-import * as Select from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import * as Popover from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -30,18 +36,18 @@ const InputField: React.FC<FieldRendererProps<string | undefined>> = ({ field, v
 const SelectField: React.FC<FieldRendererProps<string | undefined>> = ({ field, value, onChange }) => {
 
   return (
-    <Select.Root onValueChange={onChange} value={value}>
-      <Select.Trigger className="w-full">
-        <Select.Value placeholder={field.placeholder} />
-      </Select.Trigger>
-      <Select.Content>
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder={field.placeholder} />
+      </SelectTrigger>
+      <SelectContent>
         {field.options?.map((option) => (
-          <Select.Item key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value}>
             {option.label}
-          </Select.Item>
+          </SelectItem>
         ))}
-      </Select.Content>
-    </Select.Root>
+      </SelectContent>
+    </Select>
   )
 }
 

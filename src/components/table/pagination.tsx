@@ -8,37 +8,37 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
-  Root,
-  Content,
-  Item,
-  Trigger,
-  Value,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 
 export function Pagination<TData>({ table }: { table: Table<TData> }) {
   return (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex SelectItems-center justify-between w-full">
       <div className="flex gap-2">
         <Label htmlFor="rows-per-page" className="text-sm text-muted-foreground font-light">
           Rows per page
         </Label>
-        <Root
+        <Select
           value={`${table.getState().pagination.pageSize}`}
           onValueChange={(value) => {
             table.setPageSize(Number(value))
           }}
         >
-          <Trigger className="w-20" id="rows-per-page" variant="default">
-            <Value placeholder={table.getState().pagination.pageSize}/>
-          </Trigger>
-          <Content side="top">
+          <SelectTrigger className="w-20" id="rows-per-page">
+            <SelectValue placeholder={table.getState().pagination.pageSize}/>
+          </SelectTrigger>
+          <SelectContent side="top">
             {[10, 20, 30, 40, 50].map((pageSize) => (
-              <Item key={pageSize} value={`${pageSize}`}>
+              <SelectItem key={pageSize} value={`${pageSize}`}>
                 {pageSize}
-              </Item>
+              </SelectItem>
             ))}
-          </Content>
-        </Root>
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex gap-8">
         <div className="flex gap-2">
@@ -62,7 +62,7 @@ export function Pagination<TData>({ table }: { table: Table<TData> }) {
             <ChevronLeft />
           </Button>
         </div>
-        <div className="flex items-center text-sm text-muted-foreground font-light">
+        <div className="flex SelectItems-center text-sm text-muted-foreground font-light">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>

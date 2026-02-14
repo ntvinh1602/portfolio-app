@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -12,31 +10,26 @@ import {
   FieldGroup,
 } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { useAccountData } from "@/hooks/useAccountData"
+import { useAssets } from "@/hooks/useAssets"
 import { stockSchema } from "../schema"
 
 type FormValues = z.infer<typeof stockSchema>
 
 export function StockForm() {
   const supabase = createClient()
-  const { assetData } = useAccountData()
+  const { assetData } = useAssets()
   const [loading, setLoading] = React.useState(false)
-
-  // Filter only stock tickers and map to unique ticker names
-  const stockTickers = React.useMemo(() => {
-    const seen = new Set<string>()
-    return assetData
-      .filter((a) => a.asset_class === "stock")
-      .map((a) => ({
-        value: a.ticker,
-        label: a.name ? `${a.ticker} — ${a.name}` : a.ticker,
-      }))
-      .filter((item) => {
-        if (seen.has(item.value)) return false
-        seen.add(item.value)
-        return true
-      })
-  }, [assetData])
+  
+  const stockTickers = React.useMemo(
+    () =>
+      assetData
+        .filter((a) => a.asset_class === "stock")
+        .map((a) => ({
+          value: a.ticker,
+          label: a.name ? `${a.ticker} — ${a.name}` : a.ticker,
+        })),
+    [assetData]
+  )
 
   const form = useForm<FormValues>({
     resolver: zodResolver(stockSchema),
@@ -90,25 +83,26 @@ export function StockForm() {
             control={form.control}
             name="side"
             options={[
-              { value: "buy", label: "Buy", description: "...the dip" },
+              { value: "buy", label: "Buy", description: "Is it bottom yet?" },
               { value: "sell", label: "Sell", description: "Time to cash out!" },
             ]}
+            column="grid-cols-2"
           />
 
           <ComboboxField
             control={form.control}
             name="ticker"
-            label="Ticker"
+            label="Stock"
             items={stockTickers}
-            placeholder="Select a ticker"
-            searchPlaceholder="Search tickers..."
+            placeholder="Select a stock"
+            searchPlaceholder="Search for stock..."
           />
 
           <NumberField
             control={form.control}
             name="price"
             label="Price"
-            placeholder="Matched price in full"
+            placeholder="Input price in full, no decimals"
             suffix="VND"
           />
 

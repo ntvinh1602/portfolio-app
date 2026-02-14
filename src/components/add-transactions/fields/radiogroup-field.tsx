@@ -22,12 +22,14 @@ interface RadioGroupFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
   options: RadioOption[]
+  column: string
 }
 
 export function RadioGroupField<T extends FieldValues>({
   control,
   name,
   options,
+  column,
 }: RadioGroupFieldProps<T>) {
   return (
     <Controller
@@ -38,7 +40,7 @@ export function RadioGroupField<T extends FieldValues>({
           <RadioGroup
             onValueChange={field.onChange}
             value={field.value}
-            className="flex w-full"
+            className={`${column} w-full`}
           >
             {options.map((opt) => (
               <FieldLabel htmlFor={`${name}-${opt.value}`} key={opt.value}>

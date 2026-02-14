@@ -78,6 +78,24 @@ export type Database = {
           },
         ]
       }
+      cashflow_memo: {
+        Row: {
+          id: string
+          memo: string
+          operation: Database["public"]["Enums"]["cashflow_ops"]
+        }
+        Insert: {
+          id?: string
+          memo: string
+          operation: Database["public"]["Enums"]["cashflow_ops"]
+        }
+        Update: {
+          id?: string
+          memo?: string
+          operation?: Database["public"]["Enums"]["cashflow_ops"]
+        }
+        Relationships: []
+      }
       currencies: {
         Row: {
           code: string
@@ -490,12 +508,7 @@ export type Database = {
     }
     Functions: {
       add_borrow_event: {
-        Args: {
-          p_lender: string
-          p_operation: string
-          p_principal: number
-          p_rate: number
-        }
+        Args: { p_lender: string; p_principal: number; p_rate: number }
         Returns: undefined
       }
       add_cashflow_event: {
@@ -565,6 +578,7 @@ export type Database = {
         | "equity"
         | "liability"
         | "index"
+      cashflow_ops: "deposit" | "withdraw" | "income" | "expense"
       currency_type: "fiat" | "crypto"
       transaction_type:
         | "buy"
@@ -712,6 +726,7 @@ export const Constants = {
         "liability",
         "index",
       ],
+      cashflow_ops: ["deposit", "withdraw", "income", "expense"],
       currency_type: ["fiat", "crypto"],
       transaction_type: [
         "buy",

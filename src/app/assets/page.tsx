@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Header } from "@/components/header"
-import { useAccountData } from "@/hooks/useAccountData"
+import { useAssets } from "@/hooks/useAssets"
 import { Separator } from "@/components/ui/separator"
 import { Tables } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { AssetInfo } from "./components/asset-info"
 import { AssetTable } from "./components/table/asset-table"
 
 export default function Page() {
-  const { assetData, isLoading } = useAccountData()
+  const { assetData, isLoading } = useAssets()
   const [selectedAsset, setSelectedAsset] = useState<Tables<"assets"> | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 

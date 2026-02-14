@@ -1,42 +1,70 @@
-"use client"
-
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
+import { useWatch, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-
+import { NumberField, ComboboxField, RadioGroupField } from "../fields"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldContent,
-  FieldTitle
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-} from "@/components/ui/input-group"
+import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Combobox } from "@/components/combobox"
-import { useAccountData } from "@/hooks/useAccountData"
-import { formatNumber, parseNumber } from "@/lib/utils"
+import { useAssets } from "@/hooks/useAssets"
 import { cashflowSchema } from "../schema"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
 export function CashflowForm() {
   const supabase = createClient()
-  const { assetData, isLoading } = useAccountData()
+  const { assetData } = useAssets()
   const [loading, setLoading] = React.useState(false)
+  const [memoOptions, setMemoOptions] = React.useState<
+  { value: string; label: string; operation: string }[]
+>([])
 
-  // Filter only stock tickers and map to unique ticker names
+  const form = useForm<FormValues>({
+    resolver: zodResolver(cashflowSchema),
+    defaultValues: {
+      operation: "expense",
+    },
+  })
+
+  const operation = useWatch({
+    control: form.control,
+    name: "operation",
+  })
+
+  const selectedAssetId = useWatch({
+    control: form.control,
+    name: "asset",
+  })
+  
+  React.useEffect(() => {
+    async function loadMemos() {
+      const { data, error } = await supabase
+        .from("cashflow_memo")
+        .select("operation,memo")
+
+      if (error) {
+        toast.error("Failed to load memo list", { description: error.message })
+        return
+      }
+
+      setMemoOptions(
+        data?.map((m) => ({
+          value: m.memo,
+          label: m.memo,
+          operation: m.operation,
+        })) ?? []
+      )
+    }
+
+    loadMemos()
+  }, [supabase])
+  
+  const filteredMemos = React.useMemo(
+    () => memoOptions.filter((m) => m.operation === operation),
+    [memoOptions, operation]
+  )
+  
   const assetIDs = React.useMemo(() => {
     const seen = new Set<string>()
     return assetData
@@ -44,6 +72,7 @@ export function CashflowForm() {
       .map((a) => ({
         value: a.id,
         label: a.name ? `${a.ticker} — ${a.name}` : a.ticker,
+        currency: a.currency_code
       }))
       .filter((item) => {
         if (seen.has(item.value)) return false
@@ -52,12 +81,11 @@ export function CashflowForm() {
       })
   }, [assetData])
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(cashflowSchema),
-    defaultValues: {
-      operation: "expense"
-    },
-  })
+  const selectedAsset = React.useMemo(() => {
+    return assetIDs.find((a) => a.value === selectedAssetId)
+  }, [assetIDs, selectedAssetId])
+
+  const isVND = selectedAsset?.currency === "VND"
 
   async function onSubmit(data: FormValues) {
     setLoading(true)
@@ -71,20 +99,15 @@ export function CashflowForm() {
       })
 
       if (error) {
-        toast.error("Transaction failed", {
-          description: error.message,
-        })
+        toast.error("Transaction failed", { description: error.message })
       } else {
-        toast.success("Cashflow event added", {
-          description: `${data.memo}`,
-        })
+        toast.success("Cashflow event added", { description: data.memo })
         form.reset()
       }
     } catch (err) {
-        const message =  err instanceof Error
-          ? err.message
-          : "An unexpected error occurred. Please try again later."
-        toast.error("Unexpected error", { description: message })
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred. Please try again later."
+      toast.error("Unexpected error", { description: message })
     } finally {
       setLoading(false)
     }
@@ -92,186 +115,61 @@ export function CashflowForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <form id="stock-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id="cashflow-form" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
-
-          {/* Opearation */}
-          <Controller
+          <RadioGroupField
+            control={form.control}
             name="operation"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="grid-cols-2"
-                >
-                  <FieldLabel htmlFor="deposit-option">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>Deposit</FieldTitle>
-                        <FieldDescription>
-                          Paid-in Capital
-                        </FieldDescription>
-                      </FieldContent>
-                      <RadioGroupItem value="deposit" id="deposit-option" />
-                    </Field>
-                  </FieldLabel>
-
-                  <FieldLabel htmlFor="withdraw-option">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>Withdraw</FieldTitle>
-                        <FieldDescription>
-                          Cashing out
-                        </FieldDescription>
-                      </FieldContent>
-                      <RadioGroupItem value="withdraw" id="withdraw-option" />
-                    </Field>
-                  </FieldLabel>
-
-                  <FieldLabel htmlFor="income-option">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>Income</FieldTitle>
-                        <FieldDescription>
-                          Interest, dividends etc.
-                        </FieldDescription>
-                      </FieldContent>
-                      <RadioGroupItem value="income" id="income-option" />
-                    </Field>
-                  </FieldLabel>
-
-                  <FieldLabel htmlFor="expense-option">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>Expense</FieldTitle>
-                        <FieldDescription>
-                          Margin, fees etc.
-                        </FieldDescription>
-                      </FieldContent>
-                      <RadioGroupItem value="expense" id="expense-option" />
-                    </Field>
-                  </FieldLabel>
-                </RadioGroup>
-
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
+            options={[
+              { value: "deposit", label: "Deposit", description: "Paid-in capital" },
+              { value: "withdraw", label: "Withdraw", description: "Time to treat yourself!" },
+              { value: "income", label: "Income", description: "Free money!" },
+              { value: "expense", label: "Expense", description: "So expensive!" },
+            ]}
+            column="grid-cols-2"
           />
 
-          {/* Asset */}
-          <Controller
-            name="asset"
+          <ComboboxField
             control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Ticker</FieldLabel>
-                <Combobox
-                  items={assetIDs}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder={isLoading ? "Loading assets..." : "Select cash/fund asset"}
-                  searchPlaceholder="Search assets..."
-                  emptyPlaceholder="No assets found."
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-
-          {/* Quantity */}
-          <Controller
-            name="quantity"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Quantity</FieldLabel>
-                <InputGroup className="border-0">
-                  <Input
-                    type="text" // important: text, not number, to allow commas
-                    value={formatNumber(field.value)}
-                    onChange={(e) => {
-                      const formatted = e.target.value;
-                      const parsed = parseNumber(formatted);
-                      field.onChange(parsed);
-                    }}
-                    inputMode="decimal"
-                    placeholder="Amount in original currency"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>Units</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          {/* FX Rate */}
-          <Controller
-            name="fx_rate"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>FX Rate</FieldLabel>
-                <InputGroup className="border-0">
-                  <Input
-                    type="text" // important: text, not number, to allow commas
-                    value={formatNumber(field.value)}
-                    onChange={(e) => {
-                      const formatted = e.target.value;
-                      const parsed = parseNumber(formatted);
-                      field.onChange(parsed);
-                    }}
-                    inputMode="decimal"
-                    placeholder="FX rate (to VND)"
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>VND</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          {/* Memo */}
-          <Controller
             name="memo"
+            label="Description"
+            items={filteredMemos}
+            placeholder="Select description preset"
+            searchPlaceholder="Search for desription..."
+          />
+
+          <ComboboxField
             control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Ticker</FieldLabel>
-                <Combobox
-                  items={assetIDs}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder={isLoading ? "Loading assets..." : "Select cash/fund asset"}
-                  searchPlaceholder="Search assets..."
-                  emptyPlaceholder="No assets found."
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
+            name="asset"
+            label="Asset"
+            items={assetIDs}
+            placeholder="Select cash or fund asset"
+            searchPlaceholder="Search for asset..."
+          />
+
+          <NumberField
+            control={form.control}
+            name="quantity"
+            label="Quantity"
+            placeholder="Total amount in original currency"
+            suffix="VND"
+          />
+
+          <NumberField
+            control={form.control}
+            name="fx_rate"
+            label="FX Rate"
+            placeholder="Foreign exchange rate to VND"
+            disabled={isVND}
+            suffix="VND"
           />
         </FieldGroup>
       </form>
       <Field className="flex justify-end" orientation="horizontal">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => form.reset()}
-        >
+        <Button type="button" variant="outline" onClick={() => form.reset()}>
           Reset
         </Button>
-        <Button type="submit" form="stock-form" disabled={loading}>
+        <Button type="submit" form="cashflow-form" disabled={loading}>
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </Field>

@@ -6,7 +6,7 @@ import * as Card from "@/components/ui/card"
 import { useReportsData } from "@/hooks/useReportsData"
 import { ChartCard } from "@/components/chart-card"
 import { format } from "date-fns"
-import { useReturnChartData } from "@/hooks/useReturnChartData"
+import { useReturnChartData } from "@/hooks/useReturnChart"
 
 interface ReturnChartProps {
   year: string
