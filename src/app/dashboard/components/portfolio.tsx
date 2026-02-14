@@ -3,11 +3,9 @@ import * as Card from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   RefreshPricesButton,
-  Asset,
-  AssetSkeleton
+  Asset
 } from "./portfolio-card"
 import { TabSwitcher } from "@/components/tab-switcher"
-import { RefreshCw } from "lucide-react"
 import { useHoldingData } from "@/hooks/useHoldingData"
 
 interface StockData {

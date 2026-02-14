@@ -65,7 +65,7 @@ const DateField: React.FC<FieldRendererProps<string | undefined>> = ({ value, on
       <Popover.Trigger asChild>
         <Button
           id="dates"
-          variant="underline"
+          variant="outline"
           className="w-full has-[>svg]:px-0 justify-between"
         >
           {dateValue ? format(dateValue, "iiii, dd MMMM yyyy") : "Select date"}

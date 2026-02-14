@@ -55,13 +55,6 @@ export function AssetInfo({
         <div className="h-9 grid grid-cols-4 items-center text-left text-foreground text-sm font-thin gap-2">
           <span>Current Quantity</span>
           <span className="col-span-3">
-            {asset.current_quantity} {
-              asset.asset_class !== "stock"
-                ? asset.currency_code
-                : asset.current_quantity > 2
-                  ? "shares"
-                  : "share"
-            }
           </span>
         </div>
         <EditAssetForm

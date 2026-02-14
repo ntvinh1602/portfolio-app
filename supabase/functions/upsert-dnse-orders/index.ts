@@ -1,5 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "std/http/server";
+import { createClient } from "@supabase/supabase-js";
 
 interface Order {
   id: number;
@@ -13,6 +13,10 @@ interface Order {
   feeRate: number;
 }
 
+interface OrderID {
+  id: number
+}
+
 // Initialize Supabase client
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -20,7 +24,7 @@ const supabase = createClient(
 );
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-const TELEGRAM_SIGNAL_GROUP_ID = Deno.env.get('TELEGRAM_SIGNAL_GROUP_ID'); // Use your own chat ID or a group chat ID
+const TELEGRAM_SIGNAL_GROUP_ID = Deno.env.get('TELEGRAM_SIGNAL_GROUP_ID');
 
 // Helper to send Telegram messages
 async function sendTelegramMessage(text: string) {
@@ -95,7 +99,7 @@ serve(async (_req: Request) => {
     const filledOrders = dnseOrders.filter(o => o.orderStatus === 'Filled');
 
     // Fetch existing order IDs
-    const { data: existingOrders, error: fetchError } = await supabase
+    const { data: existingOrders, error: fetchError }= await supabase
       .from('dnse_orders')
       .select('id');
 
@@ -103,7 +107,7 @@ serve(async (_req: Request) => {
       throw new Error(`Failed to fetch existing orders: ${fetchError.message}`);
     }
 
-    const existingIds = new Set(existingOrders?.map(o => o.id));
+    const existingIds = new Set((existingOrders as OrderID[]).map(o => o.id));
 
     // Filter to only new ones
     const newOrders = filledOrders.filter(order => !existingIds.has(order.id));

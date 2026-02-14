@@ -32,7 +32,7 @@ function DateRange({
       <Calendar1 className="stroke-1 size-4 h-9 border-b" />
       <Root open={openFrom} onOpenChange={setOpenFrom}>
         <Trigger asChild>
-          <Button variant="underline" className="flex-1 px-3" id="dates">
+          <Button variant="outline" className="flex-1 px-3" id="dates">
             {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Select date"}
           </Button>
         </Trigger>
@@ -56,7 +56,7 @@ function DateRange({
       <ChevronRight className="stroke-1 size-4 h-9 border-b" />
       <Root open={openTo} onOpenChange={setOpenTo}>
         <Trigger asChild>
-          <Button variant="underline" className="flex-1 px-3" id="dates">
+          <Button variant="outline" className="flex-1 px-3" id="dates">
             {dateTo ? format(dateTo, "dd/MM/yyyy") : "Select date"}
           </Button>
         </Trigger>
@@ -97,7 +97,7 @@ function SingleDate({
       <Calendar1 className="stroke-1 size-4 h-9 border-b" />
       <Root open={open} onOpenChange={setOpen}>
         <Trigger asChild>
-          <Button variant="underline" className="flex-1 px-2" id="dates">
+          <Button variant="outline" className="flex-1 px-2" id="dates">
             {selected ? format(selected, dateFormat) : "Select date"}
           </Button>
         </Trigger>

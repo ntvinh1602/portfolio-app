@@ -74,6 +74,20 @@
   --sidebar-ring: oklch(0.554 0.135 66.442);
 }
 
+/* Remove spin buttons from number inputs (cross-browser) */
+input[type="number"] {
+  -webkit-appearance: none; /* Chrome, Safari, Edge */
+  -moz-appearance: textfield; /* Firefox */
+  appearance: textfield; /* Standard property for compatibility */
+}
+
+/* Specifically hide inner spin buttons in WebKit browsers */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 @layer base {
   * {
     @apply border-border;

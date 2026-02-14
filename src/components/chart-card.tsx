@@ -1,6 +1,5 @@
 "use client"
 
-import { Skeleton } from "@/components/ui/skeleton"
 import * as Card from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"

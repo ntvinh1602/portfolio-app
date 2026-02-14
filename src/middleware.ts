@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createClient(request)
+  const { supabase, supabaseResponse } = createClient(request)
 
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {

@@ -44,8 +44,8 @@ export const columns: ColumnDef<Transaction>[] = [
       return (
         <div className="flex">
           {["buy", "income", "deposit", "borrow", "dividend"].includes(raw)
-            ? <Badge variant="inbound">{formatted}</Badge>
-            : <Badge variant="outbound">{formatted}</Badge>
+            ? <Badge variant="default">{formatted}</Badge>
+            : <Badge variant="secondary">{formatted}</Badge>
           }
         </div>
     )}

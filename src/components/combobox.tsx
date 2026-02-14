@@ -39,10 +39,10 @@ export function Combobox({
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <Button
-          variant="underline"
+          variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("has-[>svg]:px-0 w-full justify-between h-9", className)}
+          className={cn("has-[>svg]:px-0 w-full justify-between", className)}
         >
           {selectedItem
             ? <span>{selectedItem.label}</span>

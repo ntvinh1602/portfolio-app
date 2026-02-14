@@ -10,15 +10,40 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
+      asset_positions: {
+        Row: {
+          asset_id: string
+          average_cost: number
+          quantity: number
+        }
+        Insert: {
+          asset_id: string
+          average_cost?: number
+          quantity?: number
+        }
+        Update: {
+          asset_id?: string
+          average_cost?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_positions_stock_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
-          current_quantity: number
           id: string
           is_active: boolean
           logo_url: string | null
@@ -28,7 +53,6 @@ export type Database = {
         Insert: {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
-          current_quantity?: number
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -38,7 +62,6 @@ export type Database = {
         Update: {
           asset_class?: Database["public"]["Enums"]["asset_class"]
           currency_code?: string
-          current_quantity?: number
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -117,30 +140,6 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_performance_snapshots: {
-        Row: {
-          date: string
-          equity_index: number | null
-          net_cash_flow: number
-          net_equity_value: number
-          total_cashflow: number | null
-        }
-        Insert: {
-          date: string
-          equity_index?: number | null
-          net_cash_flow: number
-          net_equity_value: number
-          total_cashflow?: number | null
-        }
-        Update: {
-          date?: string
-          equity_index?: number | null
-          net_cash_flow?: number
-          net_equity_value?: number
-          total_cashflow?: number | null
-        }
-        Relationships: []
-      }
       daily_security_prices: {
         Row: {
           asset_id: string
@@ -167,58 +166,6 @@ export type Database = {
           },
         ]
       }
-      debts: {
-        Row: {
-          borrow_txn_id: string | null
-          currency_code: string
-          id: string
-          interest_rate: number
-          lender_name: string
-          principal_amount: number
-          repay_txn_id: string | null
-        }
-        Insert: {
-          borrow_txn_id?: string | null
-          currency_code: string
-          id?: string
-          interest_rate?: number
-          lender_name: string
-          principal_amount: number
-          repay_txn_id?: string | null
-        }
-        Update: {
-          borrow_txn_id?: string | null
-          currency_code?: string
-          id?: string
-          interest_rate?: number
-          lender_name?: string
-          principal_amount?: number
-          repay_txn_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "debts_borrow_txn_id_fkey"
-            columns: ["borrow_txn_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "debts_currency_code_fkey"
-            columns: ["currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "debts_repay_txn_id_fkey"
-            columns: ["repay_txn_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       dnse_orders: {
         Row: {
           average_price: number | null
@@ -230,7 +177,6 @@ export type Database = {
           side: string
           symbol: string
           tax: number | null
-          txn_created: boolean | null
         }
         Insert: {
           average_price?: number | null
@@ -242,7 +188,6 @@ export type Database = {
           side: string
           symbol: string
           tax?: number | null
-          txn_created?: boolean | null
         }
         Update: {
           average_price?: number | null
@@ -254,7 +199,6 @@ export type Database = {
           side?: string
           symbol?: string
           tax?: number | null
-          txn_created?: boolean | null
         }
         Relationships: [
           {
@@ -262,13 +206,6 @@ export type Database = {
             columns: ["symbol"]
             isOneToOne: false
             referencedRelation: "assets"
-            referencedColumns: ["ticker"]
-          },
-          {
-            foreignKeyName: "dnse_orders_symbol_fkey"
-            columns: ["symbol"]
-            isOneToOne: false
-            referencedRelation: "crypto_holdings"
             referencedColumns: ["ticker"]
           },
           {
@@ -287,162 +224,193 @@ export type Database = {
           },
         ]
       }
-      lot_consumptions: {
-        Row: {
-          quantity_consumed: number
-          sell_transaction_leg_id: string
-          tax_lot_id: string
-        }
-        Insert: {
-          quantity_consumed: number
-          sell_transaction_leg_id: string
-          tax_lot_id: string
-        }
-        Update: {
-          quantity_consumed?: number
-          sell_transaction_leg_id?: string
-          tax_lot_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lot_consumptions_sell_transaction_leg_id_fkey"
-            columns: ["sell_transaction_leg_id"]
-            isOneToOne: false
-            referencedRelation: "transaction_legs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lot_consumptions_tax_lot_id_fkey"
-            columns: ["tax_lot_id"]
-            isOneToOne: false
-            referencedRelation: "tax_lots"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tax_lots: {
+      tx_cashflow: {
         Row: {
           asset_id: string
-          cost_basis: number
-          creation_date: string
-          creation_transaction_id: string
-          id: string
-          original_quantity: number
-          remaining_quantity: number
+          fx_rate: number
+          net_proceed: number
+          operation: string
+          quantity: number
+          tx_id: string
         }
         Insert: {
           asset_id: string
-          cost_basis?: number
-          creation_date: string
-          creation_transaction_id: string
-          id?: string
-          original_quantity: number
-          remaining_quantity: number
+          fx_rate?: number
+          net_proceed?: number
+          operation: string
+          quantity: number
+          tx_id?: string
         }
         Update: {
           asset_id?: string
-          cost_basis?: number
-          creation_date?: string
-          creation_transaction_id?: string
-          id?: string
-          original_quantity?: number
-          remaining_quantity?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tax_lots_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tax_lots_creation_transaction_id_fkey"
-            columns: ["creation_transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      transaction_legs: {
-        Row: {
-          amount: number
-          asset_id: string
-          currency_code: string
-          id: string
-          quantity: number
-          transaction_id: string
-        }
-        Insert: {
-          amount: number
-          asset_id: string
-          currency_code: string
-          id?: string
-          quantity: number
-          transaction_id: string
-        }
-        Update: {
-          amount?: number
-          asset_id?: string
-          currency_code?: string
-          id?: string
+          fx_rate?: number
+          net_proceed?: number
+          operation?: string
           quantity?: number
-          transaction_id?: string
+          tx_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "transaction_legs_asset_id_fkey"
+            foreignKeyName: "tx_cashflow_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transaction_legs_currency_code_fkey"
-            columns: ["currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "transaction_legs_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
+            foreignKeyName: "tx_cashflow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
             referencedColumns: ["id"]
           },
         ]
       }
-      transactions: {
+      tx_debt: {
         Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          linked_txn: string | null
-          price: number | null
-          transaction_date: string
-          type: Database["public"]["Enums"]["transaction_type"]
+          interest: number
+          lender: string | null
+          net_proceed: number
+          operation: string
+          principal: number
+          rate: number | null
+          repay_tx: string | null
+          tx_id: string
         }
         Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          linked_txn?: string | null
-          price?: number | null
-          transaction_date: string
-          type: Database["public"]["Enums"]["transaction_type"]
+          interest?: number
+          lender?: string | null
+          net_proceed?: number
+          operation: string
+          principal: number
+          rate?: number | null
+          repay_tx?: string | null
+          tx_id?: string
         }
         Update: {
-          created_at?: string | null
-          description?: string | null
+          interest?: number
+          lender?: string | null
+          net_proceed?: number
+          operation?: string
+          principal?: number
+          rate?: number | null
+          repay_tx?: string | null
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_debt_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tx_entries: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          memo: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
           id?: string
-          linked_txn?: string | null
-          price?: number | null
-          transaction_date?: string
-          type?: Database["public"]["Enums"]["transaction_type"]
+          memo?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          memo?: string | null
         }
         Relationships: []
+      }
+      tx_legs: {
+        Row: {
+          asset_id: string
+          net_proceed: number
+          quantity: number
+          tx_id: string
+        }
+        Insert: {
+          asset_id: string
+          net_proceed: number
+          quantity: number
+          tx_id: string
+        }
+        Update: {
+          asset_id?: string
+          net_proceed?: number
+          quantity?: number
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_legs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_legs_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: false
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tx_stock: {
+        Row: {
+          fee: number
+          net_proceed: number
+          price: number
+          quantity: number
+          side: string
+          stock_id: string
+          tax: number
+          tx_id: string
+        }
+        Insert: {
+          fee: number
+          net_proceed?: number
+          price?: number
+          quantity: number
+          side: string
+          stock_id: string
+          tax?: number
+          tx_id?: string
+        }
+        Update: {
+          fee?: number
+          net_proceed?: number
+          price?: number
+          quantity?: number
+          side?: string
+          stock_id?: string
+          tax?: number
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_stock_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_stock_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -454,35 +422,36 @@ export type Database = {
         }
         Relationships: []
       }
-      crypto_holdings: {
+      daily_snapshots: {
         Row: {
-          cost_basis: number | null
-          currency_code: string | null
-          fx_rate: number | null
-          logo_url: string | null
-          market_value: number | null
-          name: string | null
-          price: number | null
-          quantity: number | null
-          ticker: string | null
+          cumulative_cashflow: number | null
+          equity_index: number | null
+          net_cashflow: number | null
+          net_equity: number | null
+          snapshot_date: string | null
+          total_assets: number | null
+          total_liabilities: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "assets_currency_fkey"
-            columns: ["currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-        ]
+        Relationships: []
       }
       monthly_snapshots: {
         Row: {
-          date: string | null
           fee: number | null
           interest: number | null
           pnl: number | null
+          snapshot_date: string | null
           tax: number | null
+        }
+        Relationships: []
+      }
+      outstanding_debts: {
+        Row: {
+          borrow_date: string | null
+          duration: number | null
+          interest: number | null
+          lender: string | null
+          principal: number | null
+          rate: number | null
         }
         Relationships: []
       }
@@ -520,105 +489,39 @@ export type Database = {
       }
     }
     Functions: {
-      add_borrow_transaction: {
+      add_borrow_event: {
         Args: {
-          p_cash_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_interest_rate: number
-          p_lender_name: string
-          p_principal_amount: number
-          p_transaction_date: string
+          p_lender: string
+          p_operation: string
+          p_principal: number
+          p_rate: number
         }
         Returns: undefined
       }
-      add_buy_transaction: {
+      add_cashflow_event: {
         Args: {
           p_asset_id: string
-          p_cash_asset_id: string
-          p_created_at?: string
-          p_description: string
+          p_fx_rate: number
+          p_memo: string
+          p_operation: string
+          p_quantity: number
+        }
+        Returns: undefined
+      }
+      add_repay_event: {
+        Args: { p_interest: number; p_repay_tx: string }
+        Returns: undefined
+      }
+      add_stock_event: {
+        Args: {
+          p_fee: number
           p_price: number
           p_quantity: number
-          p_transaction_date: string
-        }
-        Returns: string
-      }
-      add_deposit_transaction: {
-        Args: {
-          p_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_quantity: number
-          p_transaction_date: string
-        }
-        Returns: Json
-      }
-      add_expense_transaction: {
-        Args: {
-          p_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_linked_txn?: string
-          p_quantity: number
-          p_transaction_date: string
-        }
-        Returns: string
-      }
-      add_income_transaction: {
-        Args: {
-          p_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_quantity: number
-          p_transaction_date: string
-          p_transaction_type: string
+          p_side: string
+          p_tax?: number
+          p_ticker: string
         }
         Returns: undefined
-      }
-      add_repay_transaction: {
-        Args: {
-          p_cash_asset_id: string
-          p_created_at?: string
-          p_debt_id: string
-          p_description: string
-          p_paid_interest: number
-          p_paid_principal: number
-          p_txn_date: string
-        }
-        Returns: undefined
-      }
-      add_sell_transaction: {
-        Args: {
-          p_asset_id: string
-          p_cash_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_price: number
-          p_quantity_to_sell: number
-          p_transaction_date: string
-        }
-        Returns: string
-      }
-      add_split_transaction: {
-        Args: {
-          p_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_quantity: number
-          p_transaction_date: string
-        }
-        Returns: undefined
-      }
-      add_withdraw_transaction: {
-        Args: {
-          p_asset_id: string
-          p_created_at?: string
-          p_description: string
-          p_quantity: number
-          p_transaction_date: string
-        }
-        Returns: Json
       }
       calculate_pnl: {
         Args: { p_end_date: string; p_start_date: string }
@@ -628,68 +531,28 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
-      generate_performance_snapshots: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: undefined
-      }
-      get_asset_balance: { Args: { p_asset_id: string }; Returns: number }
-      get_asset_currency: { Args: { p_asset_id: string }; Returns: string }
-      get_asset_id_from_ticker: { Args: { p_ticker: string }; Returns: string }
-      get_crypto_holdings: {
-        Args: never
-        Returns: {
-          cost_basis: number
-          currency_code: string
-          fx_rate: number
-          logo_url: string
-          market_value: number
-          name: string
-          price: number
-          quantity: number
-          ticker: string
-        }[]
-      }
-      get_fx_rate: {
-        Args: { p_currency_code: string; p_date?: string }
-        Returns: number
-      }
-      get_security_price: { Args: { p_asset_id: string }; Returns: number }
-      get_stock_holdings: {
-        Args: never
-        Returns: {
-          cost_basis: number
-          logo_url: string
-          market_value: number
-          name: string
-          price: number
-          quantity: number
-          ticker: string
-        }[]
-      }
       get_transaction_details: {
         Args: { include_expenses?: boolean; txn_id: string }
         Returns: Json
       }
-      import_transactions: {
-        Args: { p_start_date: string; p_txn_data: Json }
-        Returns: undefined
-      }
-      process_dnse_orders: { Args: never; Returns: undefined }
-      refresh_assets_quantity: { Args: never; Returns: undefined }
+      process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
+      process_tx_debt: { Args: { p_tx_id: string }; Returns: undefined }
+      process_tx_stock: { Args: { p_tx_id: string }; Returns: undefined }
+      rebuild_ledger: { Args: never; Returns: undefined }
       sampling_benchmark_data: {
         Args: { p_end_date: string; p_start_date: string; p_threshold: number }
         Returns: {
-          date: string
           portfolio_value: number
+          snapshot_date: string
           vni_value: number
         }[]
       }
       sampling_equity_data: {
         Args: { p_end_date: string; p_start_date: string; p_threshold: number }
         Returns: {
-          date: string
-          net_equity_value: number
-          total_cashflow: number
+          cumulative_cashflow: number
+          net_equity: number
+          snapshot_date: string
         }[]
       }
     }

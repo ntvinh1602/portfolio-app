@@ -61,7 +61,7 @@ export const columns: ColumnDef<Tables<"assets">>[] = [
       const value = row.getValue("is_active") as boolean
       return (
         <div className="flex justify-center items-center">
-          <Badge variant={value ? "inbound" : "outbound"}>
+          <Badge variant={value ? "default" : "secondary"}>
             {value ? "Active" : "Inactive"}
           </Badge>
         </div>

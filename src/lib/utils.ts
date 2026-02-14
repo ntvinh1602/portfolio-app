@@ -42,3 +42,19 @@ export function compactNum(amount: number) {
 
   return formatted
 }
+
+// Format number
+export function formatNumber(value?: number | string) {
+  if (value === undefined || value === null || value === "") return "";
+  const num = typeof value === "number" ? value : Number(value.replace(/,/g, ""));
+  if (isNaN(num)) return "";
+  return num.toLocaleString("en-US");
+}
+
+// Parse number from thousand separated strings
+export function parseNumber(value: string): number | undefined {
+  const cleaned = value.replace(/,/g, "");
+  if (cleaned === "") return undefined;
+  const num = Number(cleaned);
+  return isNaN(num) ? undefined : num;
+}

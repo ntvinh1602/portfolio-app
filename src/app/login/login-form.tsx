@@ -63,7 +63,6 @@ export function LoginForm({
                   Email
                 </Label>
                 <Input 
-                  variant="default"
                   id="email"
                   type="email"
                   required
@@ -80,7 +79,6 @@ export function LoginForm({
                   </Label>
                 </div>
                 <Input
-                  variant="default"
                   id="password"
                   type="password"
                   required

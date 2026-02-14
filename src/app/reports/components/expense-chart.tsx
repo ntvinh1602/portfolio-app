@@ -8,15 +8,6 @@ import { compactNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
 import { useMonthlyData } from "@/hooks/useMonthlyData"
 
-// ---------- Types ----------
-interface RawData {
-  date: string
-  pnl: number
-  fee: number
-  interest: number
-  tax: number
-}
-
 export function ExpenseChart({
   year,
   className,

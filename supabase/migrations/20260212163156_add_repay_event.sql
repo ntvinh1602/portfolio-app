@@ -105,898 +105,173 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
 ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_borrow_transaction"("p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_debts_asset_id uuid;
-  v_transaction_id uuid;
-  v_debt_id uuid;
-BEGIN
-  -- 1. Get debts asset
-  v_debts_asset_id := public.get_asset_id_from_ticker('DEBTS');
+declare
+  v_tx_id uuid;
+begin
+  -- Insert into tx_entries
+  insert into public.tx_entries (category, memo)
+  values (
+    'debt',
+    initcap(p_operation) || ' ' || p_lender || ' ' ||
+    p_principal::text || ' at ' || to_char(p_rate, 'FM90.##%')
+  )
+  returning id into v_tx_id;
 
-  -- 2. Create the transaction
-  INSERT INTO public.transactions (transaction_date, type, description, created_at)
-  VALUES (
-    p_transaction_date,
+  -- Insert into tx_cashflow
+  insert into public.tx_debt (
+    tx_id,
+    operation,
+    principal,
+    lender,
+    rate
+  )
+  values (
+    v_tx_id,
     'borrow',
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-  
-  -- 3. Create the debt record
-  INSERT INTO public.debts (lender_name, principal_amount, currency_code, interest_rate, borrow_txn_id)
-  VALUES (
-    p_lender_name,
-    p_principal_amount,
-    'VND',
-    p_interest_rate,
-    v_transaction_id
-  ) RETURNING id INTO v_debt_id;
-
-  -- 4. Create the transaction legs
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES
-    -- Debit the deposit account (increase cash)
-    (v_transaction_id,
-    p_cash_asset_id,
-    p_principal_amount,
-    p_principal_amount,
-    'VND'),
-    -- Credit the Debts Principal account (increase liability)
-    (v_transaction_id,
-    v_debts_asset_id,
-    p_principal_amount * -1,
-    p_principal_amount * -1,
-    'VND');
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_borrow_transaction"("p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_transaction_id uuid;
-  v_total_proceeds_native_currency numeric;
-  v_cash_asset_currency text;
-  v_purchased_asset_currency text;
-  v_exchange_rate numeric;
-  v_cost_basis_purchased_asset numeric; -- in VND
-
-  -- FX Gain/Loss variables
-  v_cost_basis_cash_spent numeric := 0; -- in VND
-  v_realized_gain_loss_vnd numeric;
-  v_remaining_quantity_to_spend numeric;
-  v_lot record;
-  v_quantity_from_lot numeric;
-  v_cost_basis_from_lot numeric;
-  v_cash_asset_leg_id uuid;
-  v_owner_capital_asset_id uuid;
-BEGIN
-  -- 1. Get assets information
-  -- Get currency codes for purchased asset and cash asset
-  v_purchased_asset_currency := public.get_asset_currency(p_asset_id);
-  v_cash_asset_currency := public.get_asset_currency(p_cash_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-
-  -- 2. Calculate the total proceeds in the native currency
-  v_total_proceeds_native_currency := p_quantity * p_price;
-
-  -- 3. Create transaction
-  INSERT INTO public.transactions (transaction_date, type, description, price, created_at)
-  VALUES (
-    p_transaction_date,
-    'buy',
-    p_description,
-    p_price,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-  -- 4. Handle FX Gain/Loss if cash asset is not in VND
-  IF v_cash_asset_currency != 'VND' THEN
-    -- Get exchange rate to VND
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_cash_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_cash_asset_currency, p_transaction_date;
-    END IF;
-    v_cost_basis_purchased_asset := v_total_proceeds_native_currency * v_exchange_rate;
-    -- Consume tax lots of the cash asset
-    v_remaining_quantity_to_spend := v_total_proceeds_native_currency;
-    DROP TABLE IF EXISTS temp_consumed_lots;
-    CREATE TEMP TABLE temp_consumed_lots (lot_id uuid, quantity_consumed numeric) ON COMMIT DROP;
-    FOR v_lot IN
-      SELECT * FROM public.tax_lots
-      WHERE asset_id = p_cash_asset_id AND remaining_quantity > 0
-      ORDER BY creation_date ASC
-    LOOP
-      IF v_remaining_quantity_to_spend <= 0 THEN EXIT;
-      END IF;
-      v_quantity_from_lot := LEAST(v_remaining_quantity_to_spend, v_lot.remaining_quantity);
-      v_cost_basis_from_lot := (v_lot.cost_basis / v_lot.original_quantity) * v_quantity_from_lot;
-      UPDATE public.tax_lots SET remaining_quantity = remaining_quantity - v_quantity_from_lot WHERE id = v_lot.id;
-      INSERT INTO temp_consumed_lots (lot_id, quantity_consumed) VALUES (v_lot.id, v_quantity_from_lot);
-      v_cost_basis_cash_spent := v_cost_basis_cash_spent + v_cost_basis_from_lot;
-      v_remaining_quantity_to_spend := v_remaining_quantity_to_spend - v_quantity_from_lot;
-    END LOOP;
-    IF v_remaining_quantity_to_spend > 0 THEN
-      RAISE EXCEPTION 'Not enough cash for purchase. Tried to spend %, but only % was available.', v_total_proceeds_native_currency, (v_total_proceeds_native_currency - v_remaining_quantity_to_spend);
-    END IF;
-    -- Calculate realized gain/loss
-    v_realized_gain_loss_vnd := v_cost_basis_purchased_asset - v_cost_basis_cash_spent;
-    -- Create transaction legs
-    -- Credit the cash asset at its cost basis
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_cash_asset_id,
-      v_total_proceeds_native_currency * -1,
-      v_cost_basis_cash_spent * -1,
-      v_cash_asset_currency
-    )
-    RETURNING id INTO v_cash_asset_leg_id;
-    -- Debit the purchased asset
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_asset_id,
-      p_quantity,
-      v_cost_basis_purchased_asset,
-      v_purchased_asset_currency
-    );
-    -- Credit/Debit Owner Capital with the realized FX gain/loss
-    IF v_realized_gain_loss_vnd != 0 THEN
-      INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-      VALUES (
-        v_transaction_id,
-        v_owner_capital_asset_id,
-        v_realized_gain_loss_vnd * -1,
-        v_realized_gain_loss_vnd * -1,
-        'VND'
-      );
-    END IF;
-    -- Create lot consumptions
-    FOR v_lot IN SELECT * FROM temp_consumed_lots LOOP
-      INSERT INTO public.lot_consumptions (sell_transaction_leg_id, tax_lot_id, quantity_consumed)
-      VALUES (v_cash_asset_leg_id, v_lot.lot_id, v_lot.quantity_consumed);
-    END LOOP;
-  -- Standard buy logic if cash asset is VND
-  ELSE
-    v_cost_basis_purchased_asset := v_total_proceeds_native_currency;
-    -- Create transaction legs
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES
-      -- Credit cash asset' 
-      (v_transaction_id,
-      p_cash_asset_id,
-      v_total_proceeds_native_currency * -1,
-      v_cost_basis_purchased_asset * -1,
-      v_cash_asset_currency),
-      -- Debit purchased asset
-      (v_transaction_id,
-      p_asset_id,
-      p_quantity,
-      v_cost_basis_purchased_asset,
-      v_purchased_asset_currency);
-  END IF;
-  
-  -- 5. Create tax lot for the purchased asset
-  INSERT INTO public.tax_lots (asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
-  VALUES (
-    p_asset_id,
-    v_transaction_id,
-    p_transaction_date,
-    p_quantity,
-    p_quantity,
-    v_cost_basis_purchased_asset
+    p_principal,
+    p_lender,
+    p_rate
   );
-  RETURN v_transaction_id;
-END;
+end;
 $$;
 
 
-ALTER FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+ALTER FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_owner_capital_asset_id UUID;
-  v_transaction_id UUID;
-  v_response JSONB;
-  v_calculated_amount numeric;
+declare
+  v_tx_id uuid;
   v_asset_currency text;
-  v_exchange_rate numeric;
-BEGIN
-  -- 1. Get asset details
-  -- Get asset currency
-  v_asset_currency := public.get_asset_currency(p_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-  
-  -- 2. Calculate the amount
-  IF v_asset_currency = 'VND' THEN v_calculated_amount := p_quantity;
-  ELSE
-    -- Correctly fetch the historical exchange rate
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_asset_currency, p_transaction_date;
-    END IF;
-    v_calculated_amount := p_quantity * v_exchange_rate;
-  END IF;
+  v_fx_rate numeric;
+begin
+  -- Find asset currency
+  select a.currency_code into v_asset_currency
+  from public.assets a
+  where a.id = p_asset_id;
 
-  -- 3. Create transaction
-  INSERT INTO public.transactions (transaction_date, type, description, created_at)
-  VALUES (
-    p_transaction_date,
-    'deposit',
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
+  -- Determine FX rate
+  if v_asset_currency = 'VND' then v_fx_rate := 1;
+  else v_fx_rate := coalesce(p_fx_rate, 1);
+  end if;
 
-  -- 4. Create transaction legs
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES
-    -- Debit cash
-    (v_transaction_id,
-    p_asset_id,
-    p_quantity,
-    v_calculated_amount,
-    v_asset_currency),
-    -- Credit paid-in equity
-    (v_transaction_id,
-    v_owner_capital_asset_id,
-    v_calculated_amount * -1,
-    v_calculated_amount * -1,
-    'VND');
+  -- Insert into tx_entries
+  insert into public.tx_entries (category, memo)
+  values ('cashflow', p_memo)
+  returning id into v_tx_id;
 
-  -- 5. Create tax lot for non-VND cash assets
-  IF v_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
-    VALUES (
-      p_asset_id,
-      v_transaction_id,
-      p_transaction_date,
-      p_quantity,
-      p_quantity,
-      v_calculated_amount
-    );
-  END IF;
-  v_response := jsonb_build_object('success', true, 'transaction_id', v_transaction_id);
-  RETURN v_response;
-  EXCEPTION WHEN OTHERS THEN RAISE;
-END;
+  -- Insert into tx_cashflow
+  insert into public.tx_cashflow (
+    tx_id,
+    asset_id,
+    operation,
+    quantity,
+    fx_rate
+  )
+  values (v_tx_id, p_asset_id, p_operation, p_quantity, v_fx_rate);
+end;
 $$;
 
 
-ALTER FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+ALTER FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_expense_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"(), "p_linked_txn" "uuid" DEFAULT NULL::"uuid") RETURNS "uuid"
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_cash_asset_currency text;
-  v_transaction_id uuid;
-  v_owner_capital_asset_id uuid;
-  v_calculated_amount numeric;
-  v_exchange_rate numeric;
+declare
+  v_tx_id uuid;
+  v_lender text;
+  v_principal text;
+begin
+  -- Find lender name
+  select d.lender into v_lender
+  from public.tx_debt d where d.tx_id = p_repay_tx;
 
-  -- FX Gain/Loss variables
-  v_total_cost_basis numeric := 0;
-  v_realized_gain_loss numeric;
-  v_remaining_quantity_to_spend numeric;
-  v_lot record;
-  v_quantity_from_lot numeric;
-  v_cost_basis_from_lot numeric;
-  v_asset_leg_id uuid;
-BEGIN
-  -- 1. Get the currency of the cash asset being spent
-  v_cash_asset_currency := public.get_asset_currency(p_asset_id);
+  -- Find principal amount
+  select d.principal into v_principal
+  from public.tx_debt d where d.tx_id = p_repay_tx;
 
-  -- 2. Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
+  -- Insert into tx_entries
+  insert into public.tx_entries (category, memo)
+  values (
+    'debt',
+    'Repay to ' || v_lender
+  ) returning id into v_tx_id;
 
-  -- 3. Calculate the amount in VND
-  IF v_cash_asset_currency = 'VND' THEN
-    v_calculated_amount := p_quantity;
-  ELSE
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_cash_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_cash_asset_currency, p_transaction_date;
-    END IF;
-
-    v_calculated_amount := p_quantity * v_exchange_rate;
-  END IF;
-
-  -- 4. Create transaction (now with linked_txn support)
-  INSERT INTO public.transactions (transaction_date, type, description, created_at, linked_txn)
-  VALUES (
-    p_transaction_date,
-    'expense',
-    p_description,
-    p_created_at,
-    p_linked_txn
-  ) RETURNING id INTO v_transaction_id;
-
-  -- 5. FX Gain/Loss logic for non-VND cash expenses
-  IF v_cash_asset_currency != 'VND' THEN
-    v_remaining_quantity_to_spend := p_quantity;
-
-    DROP TABLE IF EXISTS temp_consumed_lots;
-    CREATE TEMP TABLE temp_consumed_lots (lot_id uuid, quantity_consumed numeric) ON COMMIT DROP;
-
-    FOR v_lot IN
-      SELECT * FROM public.tax_lots
-      WHERE asset_id = p_asset_id AND remaining_quantity > 0
-      ORDER BY creation_date ASC
-    LOOP
-      EXIT WHEN v_remaining_quantity_to_spend <= 0;
-
-      v_quantity_from_lot := LEAST(v_remaining_quantity_to_spend, v_lot.remaining_quantity);
-      v_cost_basis_from_lot := (v_lot.cost_basis / v_lot.original_quantity) * v_quantity_from_lot;
-
-      UPDATE public.tax_lots 
-      SET remaining_quantity = remaining_quantity - v_quantity_from_lot 
-      WHERE id = v_lot.id;
-
-      INSERT INTO temp_consumed_lots (lot_id, quantity_consumed) 
-      VALUES (v_lot.id, v_quantity_from_lot);
-
-      v_total_cost_basis := v_total_cost_basis + v_cost_basis_from_lot;
-      v_remaining_quantity_to_spend := v_remaining_quantity_to_spend - v_quantity_from_lot;
-    END LOOP;
-
-    IF v_remaining_quantity_to_spend > 0 THEN
-      RAISE EXCEPTION 'Not enough cash for expense. Tried %, available %.', p_quantity, (p_quantity - v_remaining_quantity_to_spend);
-    END IF;
-
-    v_realized_gain_loss := v_calculated_amount - v_total_cost_basis;
-
-    -- Credit the cash asset at its cost basis
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_asset_id,
-      p_quantity * -1,
-      v_total_cost_basis * -1,
-      v_cash_asset_currency
-    ) RETURNING id INTO v_asset_leg_id;
-
-    -- Realized FX gain/loss
-    IF v_realized_gain_loss != 0 THEN
-      INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-      VALUES (
-        v_transaction_id,
-        v_owner_capital_asset_id,
-        v_realized_gain_loss * -1,
-        v_realized_gain_loss * -1,
-        'VND'
-      );
-    END IF;
-
-    -- Lot consumptions
-    FOR v_lot IN SELECT * FROM temp_consumed_lots LOOP
-      INSERT INTO public.lot_consumptions (sell_transaction_leg_id, tax_lot_id, quantity_consumed)
-      VALUES (v_asset_leg_id, v_lot.lot_id, v_lot.quantity_consumed);
-    END LOOP;
-
-  -- 6. Standard expense logic for VND
-  ELSE
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_asset_id,
-      p_quantity * -1,
-      v_calculated_amount * -1,
-      v_cash_asset_currency
-    );
-  END IF;
-
-  -- 7. Debit Owner Capital for the expense
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES (
-    v_transaction_id,
-    v_owner_capital_asset_id,
-    v_calculated_amount,
-    v_calculated_amount,
-    'VND'
-  );
-
-  RETURN v_transaction_id;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_expense_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone, "p_linked_txn" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_owner_capital_asset_id uuid;
-  v_transaction_id uuid;
-  v_asset_currency text;
-  v_calculated_amount numeric;
-  v_exchange_rate numeric;
-BEGIN
-  -- 1. Get asset information
-  -- Get debited asset details
-  v_asset_currency := public.get_asset_currency(p_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-
-  -- 2. Calculate the amount
-  IF v_asset_currency = 'VND' THEN v_calculated_amount := p_quantity;
-  ELSE
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_asset_currency, p_transaction_date;
-    END IF;
-    v_calculated_amount := p_quantity * v_exchange_rate;
-  END IF;
-
-  -- 3. Create the transaction
-  INSERT INTO public.transactions (transaction_date, type, description, created_at)
-  VALUES (
-    p_transaction_date,
-    p_transaction_type::transaction_type,
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-  -- 4. Create transaction legs
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES
-    -- Debit cash
-    (v_transaction_id,
-    p_asset_id,
-    p_quantity,
-    v_calculated_amount,
-    v_asset_currency),
-    -- Credit Owner Capital
-    (v_transaction_id,
-    v_owner_capital_asset_id,
-    v_calculated_amount * -1,
-    v_calculated_amount * -1,
-    'VND');
-
-  -- 5. Create tax lot for non-VND cash assets
-  IF v_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
-    VALUES (
-      p_asset_id,
-      v_transaction_id,
-      p_transaction_date,
-      p_quantity,
-      p_quantity,
-      v_calculated_amount
-    );
-  END IF;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_transaction_id uuid;
-  v_total_payment numeric;
-  v_owner_capital_asset_id uuid;
-  v_debts_asset_id uuid;
-BEGIN
-  -- 1. Look up user-specific asset IDs
-  v_debts_asset_id := public.get_asset_id_from_ticker('DEBTS');
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-
-  -- 2. Calculate the total payment amount
-  v_total_payment := p_paid_principal + p_paid_interest;
-
-  -- 3. Create a new transactions record
-  INSERT INTO public.transactions (transaction_date, type, description, created_at)
-  VALUES (
-    p_txn_date,
+  -- Insert into tx_cashflow
+  insert into public.tx_debt (
+    tx_id,
+    operation,
+    principal,
+    interest,
+    repay_tx
+  )
+  values (
+    v_tx_id,
     'repay',
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-VALUES
-  -- Credit: Decrease cash from the paying account
-  (v_transaction_id,
-  p_cash_asset_id,
-  v_total_payment * -1,
-  v_total_payment * -1,
-  'VND'),
-  -- Debit: Decrease the "Debts Principal" for principal portion
-  (v_transaction_id,
-  v_debts_asset_id,
-  p_paid_principal,
-  p_paid_principal,
-  'VND'),
-  -- Debit: Decrease Owner Capital for interest portion
-  (v_transaction_id,
-  v_owner_capital_asset_id,
-  p_paid_interest,
-  p_paid_interest,
-  'VND');
-
-  -- 5. Mark the debt as paid
-  UPDATE public.debts SET repay_txn_id = v_transaction_id WHERE id = p_debt_id;
-END;
+    v_principal,
+    p_interest,
+    p_repay_tx
+  );
+end;
 $$;
 
 
-ALTER FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+ALTER FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "uuid"
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p_price" numeric, "p_quantity" numeric, "p_fee" numeric, "p_tax" numeric DEFAULT 0) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_transaction_id uuid;
-  v_net_proceeds_native_currency numeric;
-  v_cash_asset_currency text;
-  v_sold_asset_currency text;
-  v_exchange_rate numeric;
-  v_proceeds_in_vnd numeric;
-  
-  -- Sell asset cost basis variables
-  v_total_cost_basis numeric := 0;
-  v_realized_pnl numeric; -- in VND
-  v_remaining_quantity_to_sell numeric := p_quantity_to_sell;
-  v_lot record;
-  v_quantity_from_lot numeric;
-  v_cost_basis_from_lot numeric; -- in VND
-  v_asset_leg_id uuid;
-  
-  -- Equity-related variables
-  v_owner_capital_asset_id uuid;
-BEGIN
-  -- 1. Get assets information
-  -- Get currency codes for sold asset and cash asset
-  v_sold_asset_currency := public.get_asset_currency(p_asset_id);
-  v_cash_asset_currency := public.get_asset_currency(p_cash_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
+declare
+  v_tx_id uuid;
+  v_stock_id uuid;
+  v_memo text;
+begin
+  -- Find stock id
+  select a.id into v_stock_id from public.assets a where a.ticker = p_ticker;
 
-  -- 2. Calculate net proceeds and their value in VND
-  v_net_proceeds_native_currency := p_quantity_to_sell * p_price;
-  IF v_cash_asset_currency != 'VND' THEN
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_cash_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_cash_asset_currency, p_transaction_date;
-    END IF;
-    v_proceeds_in_vnd := v_net_proceeds_native_currency * v_exchange_rate;
-  ELSE
-    v_proceeds_in_vnd := v_net_proceeds_native_currency;
-  END IF;
+  -- Insert into tx_entries
+  insert into public.tx_entries (category, memo)
+  values (
+    'stock',
+    initcap(p_side) || ' ' || p_quantity::text || ' ' || p_ticker || ' at ' || p_price::text
+  ) returning id into v_tx_id;
 
-  -- 3. Consume tax lots of the sold asset to find its total cost basis in VND
-  DROP TABLE IF EXISTS temp_consumed_lots;
-  CREATE TEMP TABLE temp_consumed_lots (lot_id uuid, quantity_consumed numeric) ON COMMIT DROP;
-  FOR v_lot IN
-    SELECT * FROM public.tax_lots
-    WHERE asset_id = p_asset_id AND remaining_quantity > 0
-    ORDER BY creation_date ASC
-  LOOP
-    IF v_remaining_quantity_to_sell <= 0 THEN EXIT; END IF;
-    v_quantity_from_lot := LEAST(v_remaining_quantity_to_sell, v_lot.remaining_quantity);
-    v_cost_basis_from_lot := (v_lot.cost_basis / v_lot.original_quantity) * v_quantity_from_lot;
-    
-    UPDATE public.tax_lots SET remaining_quantity = remaining_quantity - v_quantity_from_lot WHERE id = v_lot.id;
-    INSERT INTO temp_consumed_lots (lot_id, quantity_consumed) VALUES (v_lot.id, v_quantity_from_lot);
-    
-    v_total_cost_basis := v_total_cost_basis + v_cost_basis_from_lot;
-    v_remaining_quantity_to_sell := v_remaining_quantity_to_sell - v_quantity_from_lot;
-  END LOOP;
-  IF v_remaining_quantity_to_sell > 0 THEN
-    RAISE EXCEPTION 'Not enough shares to sell. Tried to sell %, but only % were available.', p_quantity_to_sell, (p_quantity_to_sell - v_remaining_quantity_to_sell);
-  END IF;
-
-  -- 4. Calculate realized gain/loss for the sold asset
-  v_realized_pnl := v_proceeds_in_vnd - v_total_cost_basis;
-  
-  -- 5. Create the transaction
-  INSERT INTO public.transactions (transaction_date, type, description, price, created_at)
-  VALUES (
-    p_transaction_date,
-    'sell',
-    p_description,
+  -- Insert into tx_stock
+  insert into public.tx_stock (
+    tx_id,
+    side,
+    stock_id,
+    price,
+    quantity,
+    fee,
+    tax
+  )
+  values (
+    v_tx_id,
+    p_side,
+    v_stock_id,
     p_price,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-  -- 6. Create transaction legs (all amounts in VND)
-  -- Debit the cash asset for the net proceeds
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES (
-    v_transaction_id,
-    p_cash_asset_id,
-    v_net_proceeds_native_currency,
-    v_proceeds_in_vnd,
-    v_cash_asset_currency
+    p_quantity,
+    p_fee,
+    coalesce(p_tax, 0)
   );
-  -- Credit the sold asset at its cost basis
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-  VALUES (
-    v_transaction_id,
-    p_asset_id,
-    p_quantity_to_sell * -1,
-    v_total_cost_basis * -1,
-    v_sold_asset_currency
-  ) RETURNING id INTO v_asset_leg_id;
-  -- Credit/Debit Owner Capital with the realized gain/loss
-  IF v_realized_pnl != 0 THEN
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      v_owner_capital_asset_id,
-      v_realized_pnl * -1,
-      v_realized_pnl * -1,
-      'VND'
-    );
-  END IF;
-
-  -- 7. Create lot consumptions for the sold asset
-  FOR v_lot IN SELECT * FROM temp_consumed_lots LOOP
-    INSERT INTO public.lot_consumptions (sell_transaction_leg_id, tax_lot_id, quantity_consumed)
-    VALUES (v_asset_leg_id, v_lot.lot_id, v_lot.quantity_consumed);
-  END LOOP;
-
-  -- 8. Create a new tax lot for the received cash asset if it's not in VND
-  IF v_cash_asset_currency != 'VND' THEN
-    INSERT INTO public.tax_lots (asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis)
-    VALUES (
-      p_cash_asset_id,
-      v_transaction_id,
-      p_transaction_date,
-      v_net_proceeds_native_currency,
-      v_net_proceeds_native_currency,
-      v_proceeds_in_vnd
-    );
-  END IF;
-  RETURN v_transaction_id;
-END;
+end;
 $$;
 
 
-ALTER FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_split_transaction"("p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_transaction_id UUID;
-  v_owner_capital_asset_id UUID;
-  v_asset_currency TEXT;
-BEGIN
-  -- 1. Get assets information
-  -- Get currency code for asset
-  v_asset_currency := public.get_asset_currency(p_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-
-  -- 2. Create transaction
-  INSERT INTO public.transactions (transaction_date, type, description, created_at) VALUES (
-    p_transaction_date,
-    'split',
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-
-  -- 3. Create transaction legs
-  INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code) VALUES
-    -- Debit asset
-    (v_transaction_id,
-    p_asset_id,
-    p_quantity,
-    0,
-    v_asset_currency),
-    -- Credit owner capital
-    (v_transaction_id,
-    v_owner_capital_asset_id,
-    0,
-    0,
-    'VND');
-
-  -- 4. Create tax lots
-  INSERT INTO public.tax_lots (asset_id, creation_transaction_id, creation_date, original_quantity, remaining_quantity, cost_basis) VALUES (
-    p_asset_id,
-    v_transaction_id,
-    p_transaction_date,
-    p_quantity,
-    p_quantity,
-    0
-  );
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_split_transaction"("p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_cash_asset_currency text;
-  v_transaction_id UUID;
-  v_owner_capital_asset_id uuid;
-  v_calculated_amount numeric;
-  v_exchange_rate numeric;
-
-  -- FX Gain/Loss variables
-  v_total_cost_basis numeric := 0;
-  v_realized_gain_loss numeric;
-  v_remaining_quantity_to_withdraw numeric;
-  v_lot record;
-  v_quantity_from_lot numeric;
-  v_cost_basis_from_lot numeric;
-  v_asset_leg_id uuid;
-  v_response JSONB;
-BEGIN
-  -- 1. Get assets information
-  -- Get cash asset currency
-  v_cash_asset_currency := public.get_asset_currency(p_asset_id);
-  -- Get Owner Capital asset
-  v_owner_capital_asset_id := public.get_asset_id_from_ticker('CAPITAL');
-  
-  -- 22. Calculate the amount
-  IF v_cash_asset_currency = 'VND' THEN v_calculated_amount := p_quantity;
-  ELSE
-    SELECT rate INTO v_exchange_rate
-    FROM public.daily_exchange_rates
-    WHERE currency_code = v_cash_asset_currency AND date <= p_transaction_date
-    ORDER BY date DESC
-    LIMIT 1;
-    IF v_exchange_rate IS NULL THEN
-      RAISE EXCEPTION 'Could not find exchange rate for % on or before %', v_cash_asset_currency, p_transaction_date;
-    END IF;
-    v_calculated_amount := p_quantity * v_exchange_rate;
-  END IF;
-
-  -- 3. Create transaction
-  INSERT INTO public.transactions (transaction_date, type, description, created_at)
-  VALUES (
-    p_transaction_date,
-    'withdraw',
-    p_description,
-    p_created_at
-  ) RETURNING id INTO v_transaction_id;
-  
-  -- 4. FX Gain/Loss logic for non-VND cash withdrawal
-  IF v_cash_asset_currency != 'VND' THEN
-    v_remaining_quantity_to_withdraw := p_quantity;
-    DROP TABLE IF EXISTS temp_consumed_lots;
-    CREATE TEMP TABLE temp_consumed_lots (lot_id uuid, quantity_consumed numeric) ON COMMIT DROP;    
-    -- Consume tax lots
-    FOR v_lot IN
-      SELECT * FROM public.tax_lots
-      WHERE asset_id = p_asset_id AND remaining_quantity > 0
-      ORDER BY creation_date ASC
-    LOOP
-      IF v_remaining_quantity_to_withdraw <= 0 THEN EXIT; END IF;
-      v_quantity_from_lot := LEAST(v_remaining_quantity_to_withdraw, v_lot.remaining_quantity);
-      v_cost_basis_from_lot := (v_lot.cost_basis / v_lot.original_quantity) * v_quantity_from_lot;
-      UPDATE public.tax_lots SET remaining_quantity = remaining_quantity - v_quantity_from_lot WHERE id = v_lot.id;
-      INSERT INTO temp_consumed_lots (lot_id, quantity_consumed) VALUES (v_lot.id, v_quantity_from_lot);
-      v_total_cost_basis := v_total_cost_basis + v_cost_basis_from_lot;
-      v_remaining_quantity_to_withdraw := v_remaining_quantity_to_withdraw - v_quantity_from_lot;
-    END LOOP;
-    IF v_remaining_quantity_to_withdraw > 0 THEN
-      RAISE EXCEPTION 'Not enough cash to withdraw. Tried to withdraw %, but only % was available.', p_quantity, (p_quantity - v_remaining_quantity_to_withdraw);
-    END IF;
-    v_realized_gain_loss := v_calculated_amount - v_total_cost_basis;
-    -- Create balanced transaction legs
-    -- Credit the cash asset at its cost basis
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_asset_id,
-      p_quantity * -1,
-      v_total_cost_basis * -1,
-      v_cash_asset_currency
-    ) RETURNING id INTO v_asset_leg_id;
-    -- Debit Owner Capital for the full current value
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      v_owner_capital_asset_id,
-      v_calculated_amount,
-      v_calculated_amount,
-      'VND'
-    );
-    -- Debit/Credit Owner Capital with the realized FX gain/loss
-    IF v_realized_gain_loss != 0 THEN
-      INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-      VALUES (
-        v_transaction_id,
-        v_owner_capital_asset_id,
-        v_realized_gain_loss * -1,
-        v_realized_gain_loss * -1,
-        'VND'
-      );
-    END IF;
-    -- Create lot consumptions
-    FOR v_lot IN SELECT * FROM temp_consumed_lots LOOP
-      INSERT INTO public.lot_consumptions (sell_transaction_leg_id, tax_lot_id, quantity_consumed)
-      VALUES (v_asset_leg_id, v_lot.lot_id, v_lot.quantity_consumed);
-    END LOOP;
-    v_response := jsonb_build_object('success', true, 'transaction_id', v_transaction_id);
-    RETURN v_response;
-    
-  -- 5. Standard withdrawal logic for VND
-  ELSE
-    -- Credit cash asset
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      p_asset_id,
-      p_quantity * -1,
-      v_calculated_amount * -1,
-      v_cash_asset_currency
-    );
-    -- Debit Owner Capital
-    INSERT INTO public.transaction_legs (transaction_id, asset_id, quantity, amount, currency_code)
-    VALUES (
-      v_transaction_id,
-      v_owner_capital_asset_id,
-      v_calculated_amount,
-      v_calculated_amount,
-      'VND'
-    );
-    v_response := jsonb_build_object('success', true, 'transaction_id', v_transaction_id);
-    RETURN v_response;
-  END IF;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) OWNER TO "postgres";
+ALTER FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p_price" numeric, "p_quantity" numeric, "p_fee" numeric, "p_tax" numeric) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
@@ -1087,44 +362,6 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") RETURNS "text"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_currency text;
-BEGIN
-  SELECT a.currency_code INTO v_currency
-  FROM public.assets a
-  WHERE a.id = p_asset_id;
-  RETURN v_currency;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") RETURNS "uuid"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_id uuid;
-BEGIN
-  SELECT a.id INTO v_id FROM public.assets a WHERE a.ticker = p_ticker;
-
-  IF v_id IS NULL THEN
-    RAISE EXCEPTION 'Asset for ticker % not found', p_ticker;
-  END IF;
-  RETURN v_id;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean DEFAULT false) RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1161,84 +398,27 @@ $$;
 ALTER FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."process_dnse_orders"() RETURNS "void"
+CREATE OR REPLACE FUNCTION "public"."process_dnse_order"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
     AS $$
-DECLARE
-  unprocessed_order RECORD;
-  v_asset_id uuid;
-  v_cash_asset_id uuid;
-  v_main_txn_id uuid; -- holds the buy/sell transaction id
 BEGIN
-  -- Get the VND cash asset ID for the user
-  v_cash_asset_id := public.get_asset_id_from_ticker('VND');
-
-  FOR unprocessed_order IN
-    SELECT * FROM public.dnse_orders WHERE txn_created = false
-  LOOP
-    -- Get the asset_id for the security being traded
-    v_asset_id := public.get_asset_id_from_ticker(unprocessed_order.symbol);
-
-    -- Create a buy or sell transaction and capture its id
-    IF unprocessed_order.side = 'NB' THEN
-      SELECT public.add_buy_transaction(
-        unprocessed_order.modified_date::date,
-        v_asset_id,
-        v_cash_asset_id,
-        unprocessed_order.fill_quantity,
-        unprocessed_order.average_price,
-        'Buy ' || unprocessed_order.fill_quantity || ' ' || unprocessed_order.symbol || ' at ' || unprocessed_order.average_price,
-        unprocessed_order.modified_date
-      ) INTO v_main_txn_id;
-
-    ELSIF unprocessed_order.side = 'NS' THEN
-      SELECT public.add_sell_transaction(
-        v_asset_id,
-        unprocessed_order.fill_quantity,
-        unprocessed_order.average_price,
-        unprocessed_order.modified_date::date,
-        v_cash_asset_id,
-        'Sell ' || unprocessed_order.fill_quantity || ' ' || unprocessed_order.symbol || ' at ' || unprocessed_order.average_price,
-        unprocessed_order.modified_date
-      ) INTO v_main_txn_id;
-    END IF;
-
-    -- Create an expense transaction for the tax, if applicable
-    IF unprocessed_order.tax > 0 THEN
-      PERFORM public.add_expense_transaction(
-        unprocessed_order.modified_date::date,
-        unprocessed_order.tax,
-        'Income tax',
-        v_cash_asset_id,
-        unprocessed_order.modified_date,
-        v_main_txn_id  -- pass linked txn
-      );
-    END IF;
-
-    -- Create an expense transaction for the fee, if applicable
-    IF unprocessed_order.fee > 0 THEN
-      PERFORM public.add_expense_transaction(
-        unprocessed_order.modified_date::date,
-        unprocessed_order.fee,
-        'Transaction fee',
-        v_cash_asset_id,
-        unprocessed_order.modified_date,
-        v_main_txn_id  -- pass linked txn
-      );
-    END IF;
-
-    -- Mark the order as processed
-    UPDATE public.dnse_orders 
-    SET txn_created = true 
-    WHERE id = unprocessed_order.id;
-
-  END LOOP;
+  -- Only process fully filled orders
+  IF NEW.order_status = 'Filled' THEN
+    PERFORM public.add_stock_event(
+      NEW.side,
+      NEW.symbol,
+      NEW.average_price,
+      NEW.fill_quantity,
+      NEW.fee,
+      NEW.tax
+    );
+  END IF;
+  RETURN NULL;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."process_dnse_orders"() OWNER TO "postgres";
+ALTER FUNCTION "public"."process_dnse_order"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") RETURNS "void"
@@ -1488,163 +668,6 @@ $$;
 
 
 ALTER FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  loop_date date;
-  v_total_assets_value numeric;
-  v_total_liabilities_value numeric;
-  v_net_cash_flow numeric;
-  v_total_cashflow numeric;
-  v_net_equity_value numeric;
-  v_previous_equity_value numeric;
-  v_previous_equity_index numeric;
-  v_previous_total_cashflow numeric;
-  v_daily_return numeric;
-  v_equity_index numeric;
-BEGIN
-  FOR loop_date IN SELECT generate_series(p_start_date, p_end_date, '1 day'::interval)::date LOOP
-    -- Skip weekends
-    IF EXTRACT(ISODOW FROM loop_date) IN (6, 7) THEN CONTINUE;
-    END IF;
-
-    -- Calculate total assets value for the day
-    WITH user_assets AS (
-      SELECT
-        a.id,
-        a.currency_code,
-        SUM(tl.quantity) AS quantity
-      FROM tx_legs tl
-      JOIN tx_entries e ON tl.tx_id = e.id
-      JOIN assets a ON tl.asset_id = a.id
-      WHERE e.created_at::date <= loop_date
-        AND a.asset_class NOT IN ('equity', 'liability')
-      GROUP BY a.id, a.currency_code
-    )
-    SELECT COALESCE(SUM(ua.quantity * COALESCE(sp.price, 1) * COALESCE(er.rate, 1)), 0)
-    INTO v_total_assets_value
-    FROM user_assets ua
-    LEFT JOIN LATERAL (
-      SELECT price FROM public.daily_security_prices
-      WHERE asset_id = ua.id AND date <= loop_date
-      ORDER BY date DESC
-      LIMIT 1
-    ) sp ON TRUE
-    LEFT JOIN LATERAL (
-      SELECT rate FROM public.daily_exchange_rates
-      WHERE currency_code = ua.currency_code AND date <= loop_date
-      ORDER BY date DESC
-      LIMIT 1
-    ) er ON TRUE;
-
-    -- Calculate total liabilities value for the day
-    WITH historical_debt_balances AS (
-      SELECT
-        b.tx_id AS borrow_tx_id,
-        b.principal,
-        b.rate,
-        e_b.created_at::date AS start_date,
-        e_r.created_at::date AS end_date,
-        CASE
-          -- If repaid already and repayment date <= today, balance is 0
-          WHEN e_r.created_at IS NOT NULL AND e_r.created_at::date <= loop_date THEN 0
-          ELSE b.principal
-        END AS balance_at_date
-      FROM public.tx_debt b
-      JOIN public.tx_entries e_b ON e_b.id = b.tx_id
-      LEFT JOIN public.tx_debt r ON r.repay_tx = b.tx_id AND r.operation = 'repay'
-      LEFT JOIN public.tx_entries e_r ON e_r.id = r.tx_id
-      WHERE b.operation = 'borrow'
-        AND e_b.created_at::date <= loop_date
-    )
-    SELECT COALESCE(SUM(
-      CASE
-        WHEN hdb.balance_at_date > 0 THEN
-          hdb.balance_at_date * POWER(1 + (hdb.rate / 100 / 365), (loop_date - hdb.start_date))
-        ELSE 0
-      END
-    ), 0) AS total_liabilities_value
-    INTO v_total_liabilities_value
-    FROM historical_debt_balances hdb;
-
-    -- Calculate net cash flow for the day
-    SELECT COALESCE(SUM(tl.net_proceed), 0)
-    INTO v_net_cash_flow
-    FROM tx_entries e
-    JOIN tx_legs tl ON e.id = tl.tx_id
-    JOIN assets a ON tl.asset_id = a.id
-    JOIN tx_cashflow cf ON cf.tx_id = e.id
-    WHERE e.created_at::date = loop_date
-      AND cf.operation IN ('deposit', 'withdraw')
-      AND a.asset_class IN ('cash', 'fund', 'crypto');
-
-    -- Retrieve previous day's data
-    SELECT net_equity, equity_index, cumulative_cashflow
-    INTO v_previous_equity_value, v_previous_equity_index, v_previous_total_cashflow
-    FROM daily_snapshots
-    WHERE snapshot_date < loop_date
-    ORDER BY snapshot_date DESC
-    LIMIT 1;
-
-    -- Calculate equity value
-    v_net_equity_value := v_total_assets_value - v_total_liabilities_value;
-
-    -- Calculate cumulative cashflow
-    IF v_previous_total_cashflow IS NULL THEN
-      v_total_cashflow := v_net_cash_flow;
-    ELSE
-      v_total_cashflow := v_previous_total_cashflow + v_net_cash_flow;
-    END IF;
-
-    -- Calculate Equity Index
-    IF v_previous_equity_value IS NULL THEN
-      v_equity_index := 100; -- first snapshot
-    ELSE
-      IF v_previous_equity_value = 0 THEN
-        v_daily_return := 0;
-      ELSE
-        v_daily_return := (v_net_equity_value - v_net_cash_flow - v_previous_equity_value) / v_previous_equity_value;
-      END IF;
-      v_equity_index := v_previous_equity_index * (1 + v_daily_return);
-    END IF;
-
-    -- Insert or update the snapshot for the day
-    INSERT INTO daily_snapshots (
-      snapshot_date,
-      total_assets,
-      total_liabilities,
-      net_equity,
-      net_cashflow,
-      cumulative_cashflow,
-      equity_index
-    )
-    VALUES (
-      loop_date,
-      v_total_assets_value,
-      v_total_liabilities_value,
-      v_net_equity_value,
-      v_net_cash_flow,
-      v_total_cashflow,
-      v_equity_index
-    )
-    ON CONFLICT (snapshot_date) DO UPDATE
-    SET
-      total_assets = EXCLUDED.total_assets,
-      total_liabilities = EXCLUDED.total_liabilities,
-      net_equity = EXCLUDED.net_equity,
-      net_cashflow = EXCLUDED.net_cashflow,
-      cumulative_cashflow = EXCLUDED.cumulative_cashflow,
-      equity_index = EXCLUDED.equity_index;
-  END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."rebuild_ledger"() RETURNS "void"
@@ -2043,7 +1066,7 @@ CREATE TABLE IF NOT EXISTS "public"."tx_debt" (
     "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "operation" "text" NOT NULL,
     "principal" numeric(16,0) NOT NULL,
-    "interest" numeric(16,0) NOT NULL,
+    "interest" numeric(16,0) DEFAULT 0 NOT NULL,
     "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("principal" + "interest")) STORED NOT NULL,
     "lender" "text",
     "rate" numeric(6,2),
@@ -2244,59 +1267,6 @@ UNION ALL
 ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."transaction_legs" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_id" "uuid" NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "quantity" numeric(20,8) NOT NULL,
-    "amount" numeric(16,4) NOT NULL,
-    "currency_code" "text" NOT NULL
-);
-
-
-ALTER TABLE "public"."transaction_legs" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."crypto_holdings" WITH ("security_invoker"='on') AS
- WITH "latest_price" AS (
-         SELECT DISTINCT ON ("dsp"."asset_id") "dsp"."asset_id",
-            "dsp"."price"
-           FROM "public"."daily_security_prices" "dsp"
-          ORDER BY "dsp"."asset_id", "dsp"."date" DESC
-        ), "latest_fx" AS (
-         SELECT DISTINCT ON ("der"."currency_code") "der"."currency_code",
-            "der"."rate" AS "fx_rate"
-           FROM "public"."daily_exchange_rates" "der"
-          ORDER BY "der"."currency_code", "der"."date" DESC
-        ), "latest_data" AS (
-         SELECT "a_1"."id" AS "asset_id",
-            COALESCE("lp"."price", (1)::numeric) AS "price",
-            COALESCE("lf"."fx_rate", (1)::numeric) AS "fx_rate"
-           FROM (("public"."assets" "a_1"
-             LEFT JOIN "latest_price" "lp" ON (("lp"."asset_id" = "a_1"."id")))
-             LEFT JOIN "latest_fx" "lf" ON (("lf"."currency_code" = "a_1"."currency_code")))
-          WHERE ("a_1"."asset_class" = 'crypto'::"public"."asset_class")
-        )
- SELECT "a"."ticker",
-    "a"."name",
-    "a"."logo_url",
-    "a"."currency_code",
-    "sum"("tl"."quantity") AS "quantity",
-    "sum"("tl"."amount") AS "cost_basis",
-    "ld"."price",
-    "ld"."fx_rate",
-    (("sum"("tl"."quantity") * "ld"."price") * "ld"."fx_rate") AS "market_value"
-   FROM (("public"."assets" "a"
-     JOIN "public"."transaction_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
-     JOIN "latest_data" "ld" ON (("ld"."asset_id" = "a"."id")))
-  WHERE ("a"."asset_class" = 'crypto'::"public"."asset_class")
-  GROUP BY "a"."id", "a"."ticker", "a"."name", "a"."logo_url", "a"."currency_code", "ld"."price", "ld"."fx_rate"
- HAVING ("sum"("tl"."quantity") > (0)::numeric);
-
-
-ALTER VIEW "public"."crypto_holdings" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" "text" NOT NULL,
     "name" "text" NOT NULL,
@@ -2317,74 +1287,6 @@ CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
 ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."daily_performance_snapshots" (
-    "date" "date" NOT NULL,
-    "net_equity_value" numeric(16,4) NOT NULL,
-    "net_cash_flow" numeric(16,4) NOT NULL,
-    "equity_index" numeric(8,2),
-    "total_cashflow" numeric
-);
-
-
-ALTER TABLE "public"."daily_performance_snapshots" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."daily_snapshots" (
-    "snapshot_date" "date" NOT NULL,
-    "total_assets" numeric(16,0) DEFAULT 0 NOT NULL,
-    "total_liabilities" numeric(16,0) DEFAULT 0 NOT NULL,
-    "net_equity" numeric(16,0) DEFAULT 0 NOT NULL,
-    "net_cashflow" numeric(16,0) DEFAULT 0 NOT NULL,
-    "cumulative_cashflow" numeric(16,0) DEFAULT 0 NOT NULL,
-    "equity_index" numeric(10,2) DEFAULT 100 NOT NULL
-);
-
-
-ALTER TABLE "public"."daily_snapshots" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."debts" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "lender_name" "text" NOT NULL,
-    "principal_amount" numeric(16,4) NOT NULL,
-    "currency_code" "text" NOT NULL,
-    "interest_rate" numeric(4,2) DEFAULT 0 NOT NULL,
-    "borrow_txn_id" "uuid",
-    "repay_txn_id" "uuid"
-);
-
-
-ALTER TABLE "public"."debts" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
-    "id" bigint NOT NULL,
-    "side" "text" NOT NULL,
-    "symbol" "text" NOT NULL,
-    "order_status" "text",
-    "fill_quantity" numeric,
-    "average_price" numeric,
-    "modified_date" timestamp with time zone DEFAULT "now"(),
-    "tax" numeric(12,0),
-    "fee" numeric,
-    "txn_created" boolean DEFAULT false
-);
-
-
-ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."lot_consumptions" (
-    "sell_transaction_leg_id" "uuid" NOT NULL,
-    "tax_lot_id" "uuid" NOT NULL,
-    "quantity_consumed" numeric(20,8) NOT NULL,
-    CONSTRAINT "lot_consumptions_quantity_consumed_check" CHECK ((("quantity_consumed")::numeric > (0)::numeric))
-);
-
-
-ALTER TABLE "public"."lot_consumptions" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
     "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "asset_id" "uuid" NOT NULL,
@@ -2396,6 +1298,165 @@ CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
 
 
 ALTER TABLE "public"."tx_cashflow" OWNER TO "postgres";
+
+
+CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
+ WITH "dates" AS (
+         SELECT ("generate_series"(('2021-11-09'::"date")::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 day'::interval))::"date" AS "snapshot_date"
+        ), "business_days" AS (
+         SELECT "dates"."snapshot_date"
+           FROM "dates"
+          WHERE (EXTRACT(isodow FROM "dates"."snapshot_date") <> ALL (ARRAY[(6)::numeric, (7)::numeric]))
+        ), "positions" AS (
+         SELECT "d"."snapshot_date",
+            "tl"."asset_id",
+            "a"."currency_code",
+            "sum"("tl"."quantity") AS "quantity"
+           FROM ((("business_days" "d"
+             JOIN "public"."tx_legs" "tl" ON (("tl"."tx_id" IN ( SELECT "e2"."id"
+                   FROM "public"."tx_entries" "e2"
+                  WHERE (("e2"."created_at")::"date" <= "d"."snapshot_date")))))
+             JOIN "public"."tx_entries" "e_ref" ON (("e_ref"."id" = "tl"."tx_id")))
+             JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
+          WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
+          GROUP BY "d"."snapshot_date", "tl"."asset_id", "a"."currency_code"
+        ), "asset_prices" AS (
+         SELECT "p"."snapshot_date",
+            "p"."asset_id",
+            "p"."price"
+           FROM ( SELECT "pos"."snapshot_date",
+                    "pos"."asset_id",
+                    ( SELECT "dsp"."price"
+                           FROM "public"."daily_security_prices" "dsp"
+                          WHERE (("dsp"."asset_id" = "pos"."asset_id") AND ("dsp"."date" <= "pos"."snapshot_date"))
+                          ORDER BY "dsp"."date" DESC
+                         LIMIT 1) AS "price"
+                   FROM "positions" "pos") "p"
+        ), "asset_fx" AS (
+         SELECT "pos"."snapshot_date",
+            "pos"."currency_code",
+            ( SELECT "der"."rate"
+                   FROM "public"."daily_exchange_rates" "der"
+                  WHERE (("der"."currency_code" = "pos"."currency_code") AND ("der"."date" <= "pos"."snapshot_date"))
+                  ORDER BY "der"."date" DESC
+                 LIMIT 1) AS "rate"
+           FROM ( SELECT DISTINCT "positions"."snapshot_date",
+                    "positions"."currency_code"
+                   FROM "positions") "pos"
+        ), "total_assets_per_day" AS (
+         SELECT "pos"."snapshot_date",
+            COALESCE("sum"((("pos"."quantity" * COALESCE("ap"."price", (1)::numeric)) * COALESCE("af"."rate", (1)::numeric))), (0)::numeric) AS "total_assets"
+           FROM (("positions" "pos"
+             LEFT JOIN "asset_prices" "ap" ON ((("ap"."snapshot_date" = "pos"."snapshot_date") AND ("ap"."asset_id" = "pos"."asset_id"))))
+             LEFT JOIN "asset_fx" "af" ON ((("af"."snapshot_date" = "pos"."snapshot_date") AND ("af"."currency_code" = "pos"."currency_code"))))
+          GROUP BY "pos"."snapshot_date"
+        ), "debt_events" AS (
+         SELECT "b"."tx_id" AS "borrow_tx_id",
+            "b"."principal",
+            "b"."rate",
+            ("e_b"."created_at")::"date" AS "borrow_date",
+            ("e_r"."created_at")::"date" AS "repay_date"
+           FROM ((("public"."tx_debt" "b"
+             JOIN "public"."tx_entries" "e_b" ON (("e_b"."id" = "b"."tx_id")))
+             LEFT JOIN "public"."tx_debt" "r" ON ((("r"."repay_tx" = "b"."tx_id") AND ("r"."operation" = 'repay'::"text"))))
+             LEFT JOIN "public"."tx_entries" "e_r" ON (("e_r"."id" = "r"."tx_id")))
+          WHERE ("b"."operation" = 'borrow'::"text")
+        ), "debt_balances_by_day" AS (
+         SELECT "d"."snapshot_date",
+            "de"."borrow_tx_id",
+            "de"."principal",
+            "de"."rate",
+            "de"."borrow_date",
+            "de"."repay_date",
+                CASE
+                    WHEN (("de"."repay_date" IS NOT NULL) AND ("de"."repay_date" <= "d"."snapshot_date")) THEN (0)::numeric
+                    ELSE ("de"."principal" * "power"(((1)::numeric + (("de"."rate" / 100.0) / 365.0)), (GREATEST(("d"."snapshot_date" - "de"."borrow_date"), 0))::numeric))
+                END AS "balance_at_date"
+           FROM ("debt_events" "de"
+             CROSS JOIN "business_days" "d")
+          WHERE ("de"."borrow_date" <= "d"."snapshot_date")
+        ), "total_liabilities_per_day" AS (
+         SELECT "debt_balances_by_day"."snapshot_date",
+            COALESCE("sum"("debt_balances_by_day"."balance_at_date"), (0)::numeric) AS "total_liabilities"
+           FROM "debt_balances_by_day"
+          GROUP BY "debt_balances_by_day"."snapshot_date"
+        ), "net_cashflow_per_day" AS (
+         SELECT ("e"."created_at")::"date" AS "snapshot_date",
+            COALESCE("sum"("tl"."net_proceed"), (0)::numeric) AS "net_cashflow"
+           FROM ((("public"."tx_entries" "e"
+             JOIN "public"."tx_legs" "tl" ON (("tl"."tx_id" = "e"."id")))
+             JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
+             JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "e"."id")))
+          WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"text", 'withdraw'::"text"])) AND ("a"."asset_class" = ANY (ARRAY['cash'::"public"."asset_class", 'fund'::"public"."asset_class", 'crypto'::"public"."asset_class"])))
+          GROUP BY (("e"."created_at")::"date")
+        ), "base" AS (
+         SELECT "d"."snapshot_date",
+            COALESCE("tad"."total_assets", (0)::numeric) AS "total_assets",
+            COALESCE("tld"."total_liabilities", (0)::numeric) AS "total_liabilities",
+            COALESCE("nc"."net_cashflow", (0)::numeric) AS "net_cashflow",
+            (COALESCE("tad"."total_assets", (0)::numeric) - COALESCE("tld"."total_liabilities", (0)::numeric)) AS "net_equity"
+           FROM ((("business_days" "d"
+             LEFT JOIN "total_assets_per_day" "tad" ON (("tad"."snapshot_date" = "d"."snapshot_date")))
+             LEFT JOIN "total_liabilities_per_day" "tld" ON (("tld"."snapshot_date" = "d"."snapshot_date")))
+             LEFT JOIN "net_cashflow_per_day" "nc" ON (("nc"."snapshot_date" = "d"."snapshot_date")))
+        ), "with_returns" AS (
+         SELECT "b"."snapshot_date",
+            "b"."total_assets",
+            "b"."total_liabilities",
+            "b"."net_equity",
+            "b"."net_cashflow",
+            COALESCE("sum"("b"."net_cashflow") OVER (ORDER BY "b"."snapshot_date" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), (0)::numeric) AS "cumulative_cashflow",
+                CASE
+                    WHEN ("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date") IS NULL) THEN (0)::numeric
+                    WHEN ("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date") = (0)::numeric) THEN (0)::numeric
+                    ELSE ((("b"."net_equity" - "b"."net_cashflow") - "lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date")) / NULLIF("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date"), (0)::numeric))
+                END AS "daily_return"
+           FROM "base" "b"
+        ), "with_index" AS (
+         SELECT "with_returns"."snapshot_date",
+            "with_returns"."total_assets",
+            "with_returns"."total_liabilities",
+            "with_returns"."net_equity",
+            "with_returns"."net_cashflow",
+            "with_returns"."cumulative_cashflow",
+            "with_returns"."daily_return",
+            COALESCE(((1)::numeric + "with_returns"."daily_return"), (1)::numeric) AS "factor",
+            (("exp"("sum"("ln"(GREATEST("abs"(COALESCE(((1)::numeric + "with_returns"."daily_return"), (1)::numeric)), 0.000000000001))) OVER (ORDER BY "with_returns"."snapshot_date")) * (100)::numeric) * (
+                CASE
+                    WHEN (("count"(*) FILTER (WHERE (((1)::numeric + "with_returns"."daily_return") < (0)::numeric)) OVER (ORDER BY "with_returns"."snapshot_date") % (2)::bigint) = 1) THEN '-1'::integer
+                    ELSE 1
+                END)::numeric) AS "equity_index"
+           FROM "with_returns"
+        )
+ SELECT "snapshot_date",
+    "total_assets",
+    "total_liabilities",
+    "net_equity",
+    "net_cashflow",
+    "cumulative_cashflow",
+    "equity_index"
+   FROM "with_index"
+  ORDER BY "snapshot_date" DESC
+  WITH NO DATA;
+
+
+ALTER MATERIALIZED VIEW "public"."daily_snapshots" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
+    "id" bigint NOT NULL,
+    "side" "text" NOT NULL,
+    "symbol" "text" NOT NULL,
+    "order_status" "text",
+    "fill_quantity" numeric,
+    "average_price" numeric,
+    "modified_date" timestamp with time zone DEFAULT "now"(),
+    "tax" numeric(12,0),
+    "fee" numeric
+);
+
+
+ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
@@ -2546,37 +1607,6 @@ CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') 
 
 
 ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."tax_lots" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "creation_transaction_id" "uuid" NOT NULL,
-    "creation_date" "date" NOT NULL,
-    "original_quantity" numeric(20,8) NOT NULL,
-    "cost_basis" numeric(16,4) DEFAULT 0 NOT NULL,
-    "remaining_quantity" numeric(20,8) NOT NULL,
-    CONSTRAINT "tax_lots_cost_basis_check" CHECK ((("cost_basis")::numeric >= (0)::numeric)),
-    CONSTRAINT "tax_lots_original_quantity_check" CHECK ((("original_quantity")::numeric > (0)::numeric)),
-    CONSTRAINT "tax_lots_remaining_quantity_check" CHECK ((("remaining_quantity")::numeric >= (0)::numeric))
-);
-
-
-ALTER TABLE "public"."tax_lots" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."transactions" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "transaction_date" "date" NOT NULL,
-    "type" "public"."transaction_type" NOT NULL,
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "price" numeric(16,4),
-    "linked_txn" "uuid"
-);
-
-
-ALTER TABLE "public"."transactions" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on') AS
@@ -2734,23 +1764,8 @@ ALTER TABLE ONLY "public"."currencies"
 
 
 
-ALTER TABLE ONLY "public"."daily_performance_snapshots"
-    ADD CONSTRAINT "daily_performance_snapshots_pkey" PRIMARY KEY ("date");
-
-
-
 ALTER TABLE ONLY "public"."daily_security_prices"
     ADD CONSTRAINT "daily_security_prices_pkey" PRIMARY KEY ("asset_id", "date");
-
-
-
-ALTER TABLE ONLY "public"."daily_snapshots"
-    ADD CONSTRAINT "daily_snapshots_pkey" PRIMARY KEY ("snapshot_date");
-
-
-
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2764,11 +1779,6 @@ ALTER TABLE ONLY "public"."daily_exchange_rates"
 
 
 
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_pkey" PRIMARY KEY ("sell_transaction_leg_id", "tax_lot_id");
-
-
-
 ALTER TABLE ONLY "public"."daily_market_indices"
     ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
 
@@ -2776,21 +1786,6 @@ ALTER TABLE ONLY "public"."daily_market_indices"
 
 ALTER TABLE ONLY "public"."asset_positions"
     ADD CONSTRAINT "stock_positions_pkey" PRIMARY KEY ("asset_id");
-
-
-
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."transactions"
-    ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2819,31 +1814,51 @@ ALTER TABLE ONLY "public"."tx_stock"
 
 
 
-CREATE INDEX "debts_currency_code_idx" ON "public"."debts" USING "btree" ("currency_code");
+CREATE INDEX "assets_currency_code_idx" ON "public"."assets" USING "btree" ("currency_code");
 
 
 
-CREATE INDEX "lot_consumptions_tax_lot_id_idx" ON "public"."lot_consumptions" USING "btree" ("tax_lot_id");
+CREATE INDEX "daily_snapshots_cumulative_cashflow_idx" ON "public"."daily_snapshots" USING "btree" ("cumulative_cashflow");
 
 
 
-CREATE INDEX "tax_lots_asset_id_idx" ON "public"."tax_lots" USING "btree" ("asset_id");
+CREATE INDEX "daily_snapshots_equity_index_idx" ON "public"."daily_snapshots" USING "btree" ("equity_index");
 
 
 
-CREATE INDEX "tax_lots_creation_transaction_id_idx" ON "public"."tax_lots" USING "btree" ("creation_transaction_id");
+CREATE INDEX "daily_snapshots_net_cashflow_idx" ON "public"."daily_snapshots" USING "btree" ("net_cashflow");
 
 
 
-CREATE INDEX "transaction_legs_asset_id_idx" ON "public"."transaction_legs" USING "btree" ("asset_id");
+CREATE INDEX "daily_snapshots_net_equity_idx" ON "public"."daily_snapshots" USING "btree" ("net_equity");
 
 
 
-CREATE INDEX "transaction_legs_currency_code_idx" ON "public"."transaction_legs" USING "btree" ("currency_code");
+CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
 
 
 
-CREATE INDEX "transaction_legs_transaction_id_idx" ON "public"."transaction_legs" USING "btree" ("transaction_id");
+CREATE INDEX "tx_cashflow_asset_id_idx" ON "public"."tx_cashflow" USING "btree" ("asset_id");
+
+
+
+CREATE INDEX "tx_cashflow_operation_idx" ON "public"."tx_cashflow" USING "btree" ("operation");
+
+
+
+CREATE INDEX "tx_legs_asset_id_idx" ON "public"."tx_legs" USING "btree" ("asset_id");
+
+
+
+CREATE INDEX "tx_stock_stock_id_idx" ON "public"."tx_stock" USING "btree" ("stock_id");
+
+
+
+CREATE INDEX "tx_stock_tax_idx" ON "public"."tx_stock" USING "btree" ("tax");
+
+
+
+CREATE OR REPLACE TRIGGER "after_dnse_order_insert" AFTER INSERT ON "public"."dnse_orders" FOR EACH ROW EXECUTE FUNCTION "public"."process_dnse_order"();
 
 
 
@@ -2881,21 +1896,6 @@ ALTER TABLE ONLY "public"."daily_security_prices"
 
 
 
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_borrow_txn_id_fkey" FOREIGN KEY ("borrow_txn_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
-
-
-
-ALTER TABLE ONLY "public"."debts"
-    ADD CONSTRAINT "debts_repay_txn_id_fkey" FOREIGN KEY ("repay_txn_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
-
-
-
 ALTER TABLE ONLY "public"."dnse_orders"
     ADD CONSTRAINT "dnse_orders_symbol_fkey" FOREIGN KEY ("symbol") REFERENCES "public"."assets"("ticker") ON UPDATE CASCADE ON DELETE RESTRICT;
 
@@ -2906,43 +1906,8 @@ ALTER TABLE ONLY "public"."daily_exchange_rates"
 
 
 
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_sell_transaction_leg_id_fkey" FOREIGN KEY ("sell_transaction_leg_id") REFERENCES "public"."transaction_legs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."lot_consumptions"
-    ADD CONSTRAINT "lot_consumptions_tax_lot_id_fkey" FOREIGN KEY ("tax_lot_id") REFERENCES "public"."tax_lots"("id") ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "public"."asset_positions"
     ADD CONSTRAINT "stock_positions_stock_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
-
-
-
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."tax_lots"
-    ADD CONSTRAINT "tax_lots_creation_transaction_id_fkey" FOREIGN KEY ("creation_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
-
-
-
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code");
-
-
-
-ALTER TABLE ONLY "public"."transaction_legs"
-    ADD CONSTRAINT "transaction_legs_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
 
 
 
@@ -2982,10 +1947,6 @@ ALTER TABLE ONLY "public"."tx_stock"
 
 
 CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Access for authenticated users" ON "public"."daily_snapshots" TO "authenticated" USING (true);
 
 
 
@@ -3029,30 +1990,6 @@ CREATE POLICY "Logged in users can access currency" ON "public"."currencies" TO 
 
 
 
-CREATE POLICY "Logged in users can access debts" ON "public"."debts" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Logged in users can access lot consumptions" ON "public"."lot_consumptions" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Logged in users can access performance snapshots" ON "public"."daily_performance_snapshots" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Logged in users can access tax lots" ON "public"."tax_lots" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Logged in users can access transaction legs" ON "public"."transaction_legs" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Logged in users can access transactions" ON "public"."transactions" TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Users can read DNSE orders" ON "public"."dnse_orders" TO "authenticated" USING (true);
 
 
@@ -3072,31 +2009,10 @@ ALTER TABLE "public"."daily_exchange_rates" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."daily_market_indices" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."daily_performance_snapshots" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."daily_security_prices" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."daily_snapshots" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."debts" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."lot_consumptions" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."tax_lots" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."transaction_legs" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."tx_cashflow" ENABLE ROW LEVEL SECURITY;
@@ -3309,57 +2225,27 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_borrow_transaction"("p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_borrow_transaction"("p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_borrow_transaction"("p_lender_name" "text", "p_principal_amount" numeric, "p_interest_rate" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_buy_transaction"("p_transaction_date" "date", "p_asset_id" "uuid", "p_cash_asset_id" "uuid", "p_quantity" numeric, "p_price" numeric, "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
+GRANT ALL ON FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_deposit_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
+GRANT ALL ON FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_expense_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone, "p_linked_txn" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."add_expense_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone, "p_linked_txn" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_expense_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone, "p_linked_txn" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_income_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_transaction_type" "text", "p_created_at" timestamp with time zone) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_repay_transaction"("p_debt_id" "uuid", "p_paid_principal" numeric, "p_paid_interest" numeric, "p_txn_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_sell_transaction"("p_asset_id" "uuid", "p_quantity_to_sell" numeric, "p_price" numeric, "p_transaction_date" "date", "p_cash_asset_id" "uuid", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."add_split_transaction"("p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_split_transaction"("p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_split_transaction"("p_asset_id" "uuid", "p_quantity" numeric, "p_transaction_date" "date", "p_description" "text", "p_created_at" timestamp with time zone) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_withdraw_transaction"("p_transaction_date" "date", "p_quantity" numeric, "p_description" "text", "p_asset_id" "uuid", "p_created_at" timestamp with time zone) TO "service_role";
+GRANT ALL ON FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p_price" numeric, "p_quantity" numeric, "p_fee" numeric, "p_tax" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p_price" numeric, "p_quantity" numeric, "p_fee" numeric, "p_tax" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p_price" numeric, "p_quantity" numeric, "p_fee" numeric, "p_tax" numeric) TO "service_role";
 
 
 
@@ -3375,27 +2261,15 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
-GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_asset_currency"("p_asset_id" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_asset_id_from_ticker"("p_ticker" "text") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "anon";
-GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."process_dnse_orders"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "anon";
+GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "service_role";
 
 
 
@@ -3414,12 +2288,6 @@ GRANT ALL ON FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") TO "service_r
 GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."rebuild_daily_snapshots"("p_start_date" "date", "p_end_date" "date") TO "service_role";
 
 
 
@@ -3534,18 +2402,6 @@ GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."transaction_legs" TO "anon";
-GRANT ALL ON TABLE "public"."transaction_legs" TO "authenticated";
-GRANT ALL ON TABLE "public"."transaction_legs" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."crypto_holdings" TO "anon";
-GRANT ALL ON TABLE "public"."crypto_holdings" TO "authenticated";
-GRANT ALL ON TABLE "public"."crypto_holdings" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."currencies" TO "anon";
 GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
 GRANT ALL ON TABLE "public"."currencies" TO "service_role";
@@ -3558,9 +2414,9 @@ GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "anon";
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_performance_snapshots" TO "service_role";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 
@@ -3570,27 +2426,9 @@ GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."debts" TO "anon";
-GRANT ALL ON TABLE "public"."debts" TO "authenticated";
-GRANT ALL ON TABLE "public"."debts" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "anon";
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "authenticated";
-GRANT ALL ON TABLE "public"."lot_consumptions" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 
@@ -3621,18 +2459,6 @@ GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "anon";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."tax_lots" TO "anon";
-GRANT ALL ON TABLE "public"."tax_lots" TO "authenticated";
-GRANT ALL ON TABLE "public"."tax_lots" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."transactions" TO "anon";
-GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
-GRANT ALL ON TABLE "public"."transactions" TO "service_role";
 
 
 
