@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"

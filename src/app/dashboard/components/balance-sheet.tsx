@@ -1,3 +1,5 @@
+"use client"
+
 import * as Popover from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { PanelRightOpen } from "lucide-react"

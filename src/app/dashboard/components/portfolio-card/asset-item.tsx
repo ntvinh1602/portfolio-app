@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardDescription, CardContent, CardTitle } from "@/components/ui/card"
