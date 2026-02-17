@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
@@ -13,20 +14,23 @@ export function RefreshPricesButton() {
     const toastId = toast.loading("Refreshing prices...")
 
     try {
-      const response = await fetch("/api/external/refresh-prices", { method: "POST" })
-      const data = await response.json()
+      const supabase = createClient()
 
-      if (!response.ok) {
-        toast.error(data.error ?? "Something went wrong", { id: toastId })
-        return
-      }
- 
+      // ✅ call the Edge Function deployed as "fetch-yahoofinance"
+      const { data, error } = await supabase.functions.invoke('fetch-yahoofinance', {
+        body: { name: 'Functions' },
+      })
+
+      console.log(data) // { message: "Hello JavaScript!" }
+
+      if (error) throw new Error(error.message ?? "Failed to refresh prices")
+
       toast.success(data.message, {
         id: toastId,
         description: `Stocks: ${data.stocks}, Cryptos: ${data.cryptos}, Indices: ${data.indices}`,
       })
-    } catch {
-      toast.error("Failed to refresh prices", { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to refresh prices", { id: toastId })
     } finally {
       setIsRefreshing(false)
     }
@@ -38,16 +42,15 @@ export function RefreshPricesButton() {
       size="sm"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="relative flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
+      className="flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
     >
       <div
         className={`flex items-center justify-center rounded-full p-1 transition-transform ${
-          isRefreshing ? "animate-spin" : "group-hover:rotate-6"
+          isRefreshing ? "animate-spin" : ""
         }`}
       >
         <RefreshCw className="size-4" />
       </div>
     </Button>
   )
-
 }

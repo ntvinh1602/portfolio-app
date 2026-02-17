@@ -12,6 +12,7 @@ import {
   CardDescription,
   CardHeader
 } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/client"
 
 export function LoginForm({
   className,
@@ -22,27 +23,26 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
-    const response = await fetch("/api/auth", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
-    if (response.ok) {
-      router.push("/dashboard")
+    if (error) {
+      setError(error.message)
     } else {
-      const { error } = await response.json()
-      setError(error)
+      router.push("/dashboard")
     }
 
     setIsLoading(false)
   }
-
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
