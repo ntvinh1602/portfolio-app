@@ -1,38 +1,65 @@
+"use client"
+
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import { NumberField, TextField } from "../fields"
+import { NumberField, ComboboxField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { borrowSchema } from "../schema"
+import { repaySchema } from "./schema"
+import { formatNum } from "@/lib/utils"
 
-type FormValues = z.infer<typeof borrowSchema>
+type FormValues = z.infer<typeof repaySchema>
 
-export function BorrowForm() {
+export function RepayForm() {
   const supabase = createClient()
   const [loading, setLoading] = React.useState(false)
+  const [debtOptions, setDebtOptions] = React.useState<
+      { value: string; label: string }[]
+    >([])
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(borrowSchema),
+    resolver: zodResolver(repaySchema),
     defaultValues: {},
   })
+  
+  React.useEffect(() => {
+    async function loadDebts() {
+      const { data, error } = await supabase
+        .from("outstanding_debts")
+        .select("tx_id,lender,principal,rate")
+
+      if (error) {
+        toast.error("Failed to load debts", { description: error.message })
+        return
+      }
+
+      setDebtOptions(
+        data.map((d) => ({
+          value: d.tx_id,
+          label: `${d.lender} — ${formatNum(d.principal)} at ${d.rate}%`,
+        }))
+      )
+    }
+    
+    loadDebts()
+  }, [supabase])
 
   async function onSubmit(data: FormValues) {
     setLoading(true)
     try {
-      const { error } = await supabase.rpc("add_borrow_event", {
-        p_principal: data.principal,
-        p_lender: data.lender,
-        p_rate: data.rate,
+      const { error } = await supabase.rpc("add_repay_event", {
+        p_repay_tx: data.repay_tx,
+        p_interest: data.interest
       })
 
       if (error) {
         toast.error("Transaction failed", { description: error.message })
       } else {
-        toast.success("Debt added")
+        toast.success("Repay event added")
         form.reset()
       }
     } catch (err) {
@@ -48,27 +75,21 @@ export function BorrowForm() {
     <div className="flex flex-col gap-6">
       <form id="cashflow-form" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
-          <TextField
+          <ComboboxField
             control={form.control}
-            name="lender"
-            label="Lender"
-            placeholder="Add suffix for repeated lenders"
+            name="repay_tx"
+            label="Deal"
+            items={debtOptions}
+            placeholder="Select debt"
+            searchPlaceholder="Search for debts..."
           />
 
           <NumberField
             control={form.control}
-            name="principal"
-            label="Debt Principal"
-            placeholder="Input debt principal as a whole number"
+            name="interest"
+            label="Paid Interest"
+            placeholder="Input actual amount of interest paid in this deal"
             suffix="VND"
-          />
-
-          <NumberField
-            control={form.control}
-            name="rate"
-            label="Interest rate"
-            placeholder="Input interest rate, up to 2 decimal points"
-            suffix="% per annum"
           />
         </FieldGroup>
       </form>

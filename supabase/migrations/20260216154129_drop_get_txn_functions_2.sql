@@ -80,6 +80,17 @@ CREATE TYPE "public"."asset_class" AS ENUM (
 ALTER TYPE "public"."asset_class" OWNER TO "postgres";
 
 
+CREATE TYPE "public"."cashflow_ops" AS ENUM (
+    'deposit',
+    'withdraw',
+    'income',
+    'expense'
+);
+
+
+ALTER TYPE "public"."cashflow_ops" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."currency_type" AS ENUM (
     'fiat',
     'crypto'
@@ -105,7 +116,7 @@ CREATE TYPE "public"."transaction_type" AS ENUM (
 ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
+CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -116,8 +127,7 @@ begin
   insert into public.tx_entries (category, memo)
   values (
     'debt',
-    initcap(p_operation) || ' ' || p_lender || ' ' ||
-    p_principal::text || ' at ' || to_char(p_rate, 'FM90.##%')
+    'Borrow ' || p_principal::text || ' from ' || p_lender || ' at ' || to_char(p_rate, 'FM90.##%')
   )
   returning id into v_tx_id;
 
@@ -140,7 +150,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) OWNER TO "postgres";
+ALTER FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") RETURNS "void"
@@ -362,42 +372,6 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean DEFAULT false) RETURNS "jsonb"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  legs jsonb;
-begin
-  -- fetch all transaction legs with their assets
-  select coalesce(jsonb_agg(t), '[]'::jsonb)
-  into legs
-  from (
-    select
-      (tl.tx_id::text || '_' || tl.asset_id::text),
-      tl.net_proceed,
-      tl.quantity,
-      jsonb_build_object(
-        'asset_class', a.asset_class,
-        'name', a.name,
-        'ticker', a.ticker,
-        'logo_url', a.logo_url
-      ) as assets
-    from tx_legs tl
-    join assets a on tl.asset_id = a.id
-    where tl.tx_id = txn_id
-  ) t;
-
-  return jsonb_build_object(
-    'legs', legs
-  );
-end;
-$$;
-
-
-ALTER FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."process_dnse_order"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -425,88 +399,78 @@ CREATE OR REPLACE FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") RETU
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-    r tx_cashflow%rowtype;
-    v_pos asset_positions%rowtype;
-    v_cash_asset uuid;
-    v_equity_asset uuid;
-    v_cash_currency text;
-    v_new_qty numeric;
-    v_new_avg_cost numeric;
+  r tx_cashflow%rowtype;
+  v_pos asset_positions%rowtype;
+  v_cash_asset uuid;
+  v_equity_asset uuid;
+  v_cash_currency text;
+  v_new_qty numeric;
+  v_new_avg_cost numeric;
 BEGIN
-    -- 1️⃣ Load transaction
-    SELECT * INTO r FROM public.tx_cashflow WHERE tx_id = p_tx_id;
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Transaction % not found in tx_cashflow', p_tx_id;
+  -- Load transaction
+  SELECT * INTO r FROM public.tx_cashflow WHERE tx_id = p_tx_id;
+
+  -- Identify assets
+  v_cash_asset := r.asset_id;
+  SELECT currency_code INTO v_cash_currency FROM public.assets WHERE id = v_cash_asset;
+  SELECT id INTO v_equity_asset FROM public.assets WHERE ticker = 'CAPITAL';
+
+  -- Clear existing legs
+  DELETE FROM public.tx_legs WHERE tx_id = p_tx_id;
+
+  -- Handle by operation type
+  IF r.operation IN ('deposit', 'income') THEN
+    -- Debit cash
+    INSERT INTO public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    VALUES (r.tx_id, v_cash_asset, r.quantity, r.net_proceed, 0);
+
+    -- Credit equity (capital in)
+    INSERT INTO public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    VALUES (r.tx_id, v_equity_asset, r.net_proceed, 0, r.net_proceed);
+
+    -- Only update cost basis for non-VND assets
+    IF v_cash_currency <> 'VND' THEN
+      SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
+      IF NOT FOUND THEN
+        INSERT INTO public.asset_positions (asset_id, quantity, average_cost)
+        VALUES (v_cash_asset, 0, 0)
+        RETURNING * INTO v_pos;
+      END IF;
+
+      v_new_qty := v_pos.quantity + r.quantity;
+      v_new_avg_cost := (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty;
+
+      UPDATE public.asset_positions
+      SET quantity = v_new_qty,
+        average_cost = v_new_avg_cost
+      WHERE asset_id = v_cash_asset;
     END IF;
 
-    -- 2️⃣ Identify assets
-    v_cash_asset := r.asset_id;
-    SELECT currency_code INTO v_cash_currency FROM public.assets WHERE id = v_cash_asset;
+  ELSE -- Withdraw and expense operation
+    -- Credit cash (reduce balance)
+    INSERT INTO public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    VALUES (r.tx_id, v_cash_asset, -r.quantity, 0, r.net_proceed);
 
-    SELECT id INTO v_equity_asset FROM public.assets WHERE asset_class = 'equity' LIMIT 1;
-    IF v_equity_asset IS NULL THEN
-        RAISE EXCEPTION 'Missing equity asset';
-    END IF;
+    -- Debit equity (capital out)
+    INSERT INTO public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    VALUES (r.tx_id, v_equity_asset, -r.net_proceed, r.net_proceed, 0);
 
-    -- 3️⃣ Clear existing legs
-    DELETE FROM public.tx_legs WHERE tx_id = p_tx_id;
-
-    -- 4️⃣ Handle by operation type
-    IF r.operation IN ('deposit', 'income') THEN
-        -- Debit cash
-        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        VALUES (r.tx_id, v_cash_asset, r.quantity, r.net_proceed);
-
-        -- Credit equity (capital in)
-        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        VALUES (r.tx_id, v_equity_asset, -r.net_proceed, -r.net_proceed);
-
-        -- Only update cost basis for non-VND assets
-        IF v_cash_currency <> 'VND' THEN
-            SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
-            IF NOT FOUND THEN
-                INSERT INTO public.asset_positions (asset_id, quantity, average_cost)
-                VALUES (v_cash_asset, 0, 0)
-                RETURNING * INTO v_pos;
-            END IF;
-
-            v_new_qty := v_pos.quantity + r.quantity;
-            v_new_avg_cost := (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty;
-
-            UPDATE public.asset_positions
-            SET quantity = v_new_qty,
-                average_cost = v_new_avg_cost
-            WHERE asset_id = v_cash_asset;
+    -- Only update positions for non-VND
+    IF v_cash_currency <> 'VND' THEN
+        SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
+        IF NOT FOUND THEN
+          RAISE EXCEPTION 'No position found for asset %, cannot withdraw', v_cash_asset;
         END IF;
 
-    ELSIF r.operation IN ('withdraw', 'expense') THEN
-        -- Credit cash (reduce balance)
-        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        VALUES (r.tx_id, v_cash_asset, -r.quantity, -r.net_proceed);
-
-        -- Debit equity (capital out)
-        INSERT INTO public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        VALUES (r.tx_id, v_equity_asset, r.net_proceed, r.net_proceed);
-
-        -- Only update positions for non-VND
-        IF v_cash_currency <> 'VND' THEN
-            SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'No position found for asset %, cannot withdraw', v_cash_asset;
-            END IF;
-
-            IF v_pos.quantity < r.quantity THEN
-                RAISE EXCEPTION 'Not enough balance to withdraw %', r.tx_id;
-            END IF;
-
-            UPDATE public.asset_positions
-            SET quantity = v_pos.quantity - r.quantity
-            WHERE asset_id = v_cash_asset;
+        IF v_pos.quantity < r.quantity THEN
+          RAISE EXCEPTION 'Not enough balance to withdraw %', r.tx_id;
         END IF;
 
-    ELSE
-        RAISE EXCEPTION 'Invalid operation %', r.operation;
+        UPDATE public.asset_positions
+        SET quantity = v_pos.quantity - r.quantity
+        WHERE asset_id = v_cash_asset;
     END IF;
+  END IF;
 END;
 $$;
 
@@ -516,54 +480,48 @@ ALTER FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") OWNER TO "postgr
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 declare
-    r tx_debt%rowtype;
-    v_cash_asset uuid;
-    v_debt_asset uuid;
-    v_equity_asset uuid;
+  r tx_debt%rowtype;
+  v_cash_asset uuid;
+  v_debt_asset uuid;
+  v_equity_asset uuid;
 begin
-    -- 1️⃣ Load transaction
-    select * into r from public.tx_debt where tx_id = p_tx_id;
-    if not found then
-        raise exception 'Transaction % not found in tx_debt', p_tx_id;
-    end if;
+  -- Load transaction
+  select * into r from public.tx_debt where tx_id = p_tx_id;
 
-    -- 2️⃣ Resolve asset IDs
-    select id into v_cash_asset from public.assets where asset_class = 'cash' and currency_code = 'VND' limit 1;
-    select id into v_equity_asset from public.assets where asset_class = 'equity' limit 1;
-    select id into v_debt_asset from public.assets where asset_class = 'liability' and ticker = 'DEBTS' limit 1;
+  -- Resolve asset IDs
+  select id into v_cash_asset from public.assets where ticker = 'VND';
+  select id into v_equity_asset from public.assets where ticker = 'CAPITAL';
+  select id into v_debt_asset from public.assets where ticker = 'DEBTS';
 
-    if v_cash_asset is null or v_debt_asset is null or v_equity_asset is null then
-        raise exception 'Missing required assets (cash, debt, or equity)';
-    end if;
+  -- Clear any prior legs for this transaction
+  delete from public.tx_legs where tx_id = p_tx_id;
 
-    -- 3️⃣ Clear any prior legs for this transaction
-    delete from public.tx_legs where tx_id = p_tx_id;
+  -- Process operation type
+  if r.operation = 'borrow' then
+    -- Debit cash
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_cash_asset, r.net_proceed, r.net_proceed, 0);
 
-    -- 4️⃣ Process operation type
-    if r.operation = 'borrow' then
-        -- Borrow: receive cash, increase liability
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_cash_asset, r.net_proceed,  r.net_proceed);  -- Debit cash
+    -- Credit debt
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_debt_asset, r.net_proceed, 0, r.net_proceed);
 
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_debt_asset, -r.net_proceed, -r.net_proceed);  -- Credit debt
+  else -- Repay operation
+    -- Credit cash (payment)
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_cash_asset, -r.net_proceed, 0, r.net_proceed);
 
-    elsif r.operation = 'repay' then
-        -- Repay: pay cash (reduce asset), reduce debt, record interest expense
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_cash_asset, -r.net_proceed, -r.net_proceed);  -- Credit cash (payment)
+    -- Debit debt (liability reduced)
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_debt_asset, -r.principal, r.principal, 0);
 
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_debt_asset, r.principal,  r.principal);     -- Debit debt (liability reduced)
-
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_equity_asset, r.interest,  r.interest);    -- Debit equity (interest expense)
-
-    else
-        raise exception 'Invalid debt operation: %', r.operation;
-    end if;
+    -- Debit equity (interest expense)
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_equity_asset, -r.interest, r.interest, 0);
+  end if;
 end;
 $$;
 
@@ -575,94 +533,90 @@ CREATE OR REPLACE FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") RETURNS
     LANGUAGE "plpgsql"
     AS $$
 declare
-    r tx_stock%rowtype;
-    v_pos asset_positions%rowtype;
-    v_cash_asset uuid;
-    v_equity_asset uuid;
-    v_stock_asset uuid;
-    v_new_qty numeric;
-    v_new_avg_cost numeric;
-    v_realized_gain numeric := 0;
-    v_cost_basis numeric := 0;
+  r tx_stock%rowtype;
+  v_pos asset_positions%rowtype;
+  v_cash_asset uuid;
+  v_equity_asset uuid;
+  v_stock_asset uuid;
+  v_new_qty numeric;
+  v_new_avg_cost numeric;
+  v_realized_gain numeric := 0;
+  v_cost_basis numeric := 0;
 begin
-    -- 1️⃣ Load the transaction
-    select * into r from public.tx_stock where tx_id = p_tx_id;
-    if not found then
-        raise exception 'Transaction % not found in tx_stock', p_tx_id;
+  -- Load the transaction
+  select * into r from public.tx_stock where tx_id = p_tx_id;
+
+  -- Resolve asset IDs
+  select id into v_cash_asset from public.assets where ticker ='VND';
+  select id into v_equity_asset from public.assets where ticker = 'CAPITAL';
+  v_stock_asset := r.stock_id;
+
+  -- Fetch or initialize position
+  select * into v_pos from public.asset_positions where asset_id = r.stock_id;
+  if not found then
+    insert into public.asset_positions (asset_id, quantity, average_cost)
+    values (r.stock_id, 0, 0)
+    returning * into v_pos;
+  end if;
+
+  -- Process transaction
+  if r.side = 'buy' then
+    v_new_qty := v_pos.quantity + r.quantity;
+    v_new_avg_cost :=
+      case
+        when v_new_qty = 0 then 0
+        else (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty
+      end;
+
+    update public.asset_positions
+    set quantity = v_new_qty,
+      average_cost = v_new_avg_cost
+    where asset_id = r.stock_id;
+
+    -- Generate ledger for BUY
+    delete from public.tx_legs where tx_id = p_tx_id;
+
+    -- Debit stock (increase holdings)
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_stock_asset, r.quantity, r.net_proceed, 0);
+
+    -- Credit cash
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_cash_asset, -r.net_proceed, 0, r.net_proceed);
+
+  else -- Sell side
+    if v_pos.quantity < r.quantity then
+      raise exception 'Not enough shares to sell for stock %', r.stock_id;
     end if;
 
-    -- 2️⃣ Resolve asset IDs
-    select id into v_cash_asset from public.assets where asset_class = 'cash' and currency_code = 'VND' limit 1;
-    select id into v_equity_asset from public.assets where asset_class = 'equity' limit 1;
-    v_stock_asset := r.stock_id;
+    v_cost_basis := v_pos.average_cost * r.quantity;
+    v_realized_gain := r.net_proceed - v_cost_basis;
 
-    if v_cash_asset is null or v_equity_asset is null then
-        raise exception 'Missing required assets (cash or equity)';
-    end if;
+    update public.asset_positions
+    set quantity = v_pos.quantity - r.quantity
+    where asset_id = r.stock_id;
 
-    -- 3️⃣ Fetch or initialize position
-    select * into v_pos from public.asset_positions where asset_id = r.stock_id;
-    if not found then
-        insert into public.asset_positions (asset_id, quantity, average_cost)
-        values (r.stock_id, 0, 0)
-        returning * into v_pos;
-    end if;
+    -- Generate ledger for SELL
+    delete from public.tx_legs where tx_id = p_tx_id;
 
-    -- 4️⃣ Process transaction
-    if r.side = 'buy' then
-        v_new_qty := v_pos.quantity + r.quantity;
-        v_new_avg_cost :=
-            case when v_new_qty = 0 then 0
-                 else (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty
-            end;
+    -- Debit cash
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_cash_asset, r.net_proceed, r.net_proceed, 0);
 
-        update public.asset_positions
-        set quantity = v_new_qty,
-            average_cost = v_new_avg_cost
-        where asset_id = r.stock_id;
+    -- Credit stock (reduce holdings)
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (r.tx_id, v_stock_asset, -r.quantity, 0, v_cost_basis);
 
-        -- Generate double-entry legs for BUY
-        delete from public.tx_legs where tx_id = p_tx_id;
-
-        -- Debit stock (increase holdings)
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_stock_asset, r.quantity, r.net_proceed);
-
-        -- Credit cash
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_cash_asset, -r.net_proceed, -r.net_proceed);
-
-    elsif r.side = 'sell' then
-        if v_pos.quantity < r.quantity then
-            raise exception 'Not enough shares to sell for stock %', r.stock_id;
-        end if;
-
-        v_cost_basis := v_pos.average_cost * r.quantity;
-        v_realized_gain := r.net_proceed - v_cost_basis;
-
-        update public.asset_positions
-        set quantity = v_pos.quantity - r.quantity
-        where asset_id = r.stock_id;
-
-        -- Generate double-entry legs for SELL
-        delete from public.tx_legs where tx_id = p_tx_id;
-
-        -- Debit cash
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_cash_asset, r.net_proceed, r.net_proceed);
-
-        -- Credit stock (reduce holdings)
-        insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-        values (r.tx_id, v_stock_asset, -r.quantity, -v_cost_basis);
-
-        -- Post gain/loss to equity
-        if v_realized_gain <> 0 then
-            insert into public.tx_legs (tx_id, asset_id, quantity, net_proceed)
-            values (r.tx_id, v_equity_asset, -v_realized_gain, -v_realized_gain);
-        end if;
-    else
-        raise exception 'Invalid side: %', r.side;
-    end if;
+    -- Post gain/loss to equity
+    insert into public.tx_legs (tx_id, asset_id, quantity, debit, credit)
+    values (
+      r.tx_id,
+      v_equity_asset,
+      v_realized_gain,
+      GREATEST(-v_realized_gain, 0), -- Debit equity when negative realized gain
+      GREATEST(v_realized_gain, 0) -- Credit equity when positive realized gain
+    );
+  end if;
 end;
 $$;
 
@@ -1042,6 +996,38 @@ CREATE TABLE IF NOT EXISTS "public"."assets" (
 ALTER TABLE "public"."assets" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."balance_sheet" AS
+SELECT
+    NULL::"text" AS "ticker",
+    NULL::"text" AS "name",
+    NULL::"public"."asset_class" AS "asset_class",
+    NULL::numeric AS "quantity",
+    NULL::numeric AS "total_value";
+
+
+ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."cashflow_memo" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "operation" "public"."cashflow_ops" NOT NULL,
+    "memo" "text" NOT NULL
+);
+
+
+ALTER TABLE "public"."cashflow_memo" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."currencies" (
+    "code" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "type" "public"."currency_type" NOT NULL
+);
+
+
+ALTER TABLE "public"."currencies" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
     "currency_code" "text" NOT NULL,
     "date" "date" NOT NULL,
@@ -1052,6 +1038,16 @@ CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
 ALTER TABLE "public"."daily_exchange_rates" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
+    "date" "date" NOT NULL,
+    "symbol" "text" NOT NULL,
+    "close" numeric
+);
+
+
+ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."daily_security_prices" (
     "asset_id" "uuid" NOT NULL,
     "date" "date" NOT NULL,
@@ -1060,6 +1056,19 @@ CREATE TABLE IF NOT EXISTS "public"."daily_security_prices" (
 
 
 ALTER TABLE "public"."daily_security_prices" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
+    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "operation" "text" NOT NULL,
+    "quantity" numeric(18,2) NOT NULL,
+    "fx_rate" numeric DEFAULT 1 NOT NULL,
+    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("quantity" * "fx_rate")) STORED NOT NULL
+);
+
+
+ALTER TABLE "public"."tx_cashflow" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."tx_debt" (
@@ -1092,212 +1101,12 @@ CREATE TABLE IF NOT EXISTS "public"."tx_legs" (
     "tx_id" "uuid" NOT NULL,
     "asset_id" "uuid" NOT NULL,
     "quantity" numeric(18,2) NOT NULL,
-    "net_proceed" numeric(16,0) NOT NULL
+    "debit" numeric(16,0) NOT NULL,
+    "credit" numeric(16,0) NOT NULL
 );
 
 
 ALTER TABLE "public"."tx_legs" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
- WITH "asset_quantities" AS (
-         SELECT "a"."id" AS "asset_id",
-            "a"."ticker",
-                CASE
-                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN COALESCE(( SELECT "sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))) AS "sum"
-                       FROM ("public"."tx_debt" "d"
-                         JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
-                      WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
-                               FROM "public"."tx_debt"
-                              WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))), (0)::numeric)
-                    ELSE COALESCE("sum"("tl"."quantity"), (0)::numeric)
-                END AS "quantity"
-           FROM ("public"."assets" "a"
-             LEFT JOIN "public"."tx_legs" "tl" ON (("tl"."asset_id" = "a"."id")))
-          GROUP BY "a"."id", "a"."ticker"
-        ), "asset_cb" AS (
-         SELECT "a"."asset_class",
-            "sum"("tl"."net_proceed") AS "total"
-           FROM ("public"."tx_legs" "tl"
-             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
-          WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
-          GROUP BY "a"."asset_class"
-        ), "asset_mv" AS (
-         SELECT "a"."asset_class",
-            "sum"((("aq"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "total"
-           FROM ((("public"."assets" "a"
-             JOIN "asset_quantities" "aq" ON (("aq"."asset_id" = "a"."id")))
-             LEFT JOIN LATERAL ( SELECT "daily_security_prices"."price"
-                   FROM "public"."daily_security_prices"
-                  WHERE ("daily_security_prices"."asset_id" = "a"."id")
-                  ORDER BY "daily_security_prices"."date" DESC
-                 LIMIT 1) "sp" ON (true))
-             LEFT JOIN LATERAL ( SELECT "daily_exchange_rates"."rate"
-                   FROM "public"."daily_exchange_rates"
-                  WHERE ("daily_exchange_rates"."currency_code" = "a"."currency_code")
-                  ORDER BY "daily_exchange_rates"."date" DESC
-                 LIMIT 1) "er" ON (true))
-          WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
-          GROUP BY "a"."asset_class"
-        ), "totals" AS (
-         SELECT COALESCE("sum"(
-                CASE
-                    WHEN ("amv"."asset_class" = 'cash'::"public"."asset_class") THEN "amv"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "cash_mv_raw",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("amv"."asset_class" = 'stock'::"public"."asset_class") THEN "amv"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "stock_mv",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("amv"."asset_class" = 'fund'::"public"."asset_class") THEN "amv"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "fund_mv",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("amv"."asset_class" = 'crypto'::"public"."asset_class") THEN "amv"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "crypto_mv",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("acb"."asset_class" = 'cash'::"public"."asset_class") THEN "acb"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "cash_cb",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("acb"."asset_class" = 'stock'::"public"."asset_class") THEN "acb"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "stock_cb",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("acb"."asset_class" = 'fund'::"public"."asset_class") THEN "acb"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "fund_cb",
-            COALESCE("sum"(
-                CASE
-                    WHEN ("acb"."asset_class" = 'crypto'::"public"."asset_class") THEN "acb"."total"
-                    ELSE NULL::numeric
-                END), (0)::numeric) AS "crypto_cb"
-           FROM ("asset_mv" "amv"
-             FULL JOIN "asset_cb" "acb" ON (("amv"."asset_class" = "acb"."asset_class")))
-        ), "assets_fixed" AS (
-         SELECT GREATEST("totals"."cash_mv_raw", (0)::numeric) AS "cash_mv",
-            "totals"."stock_mv",
-            "totals"."fund_mv",
-            "totals"."crypto_mv",
-            "totals"."cash_cb",
-            "totals"."stock_cb",
-            "totals"."fund_cb",
-            "totals"."crypto_cb",
-            "totals"."cash_mv_raw"
-           FROM "totals"
-        ), "liabilities_base" AS (
-         SELECT "sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))) AS "accrued_interest"
-           FROM ("public"."tx_debt" "d"
-             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
-          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
-                   FROM "public"."tx_debt"
-                  WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
-        ), "liabilities" AS (
-         SELECT ((0)::numeric - LEAST("t"."cash_mv_raw", (0)::numeric)) AS "margin",
-            ( SELECT ("aq"."quantity" * ('-1'::integer)::numeric)
-                   FROM ("asset_quantities" "aq"
-                     JOIN "public"."assets" "a" ON (("a"."id" = "aq"."asset_id")))
-                  WHERE ("a"."ticker" = 'DEBTS'::"text")) AS "debts_principal",
-            "lb"."accrued_interest"
-           FROM "liabilities_base" "lb",
-            "totals" "t"
-        ), "equity" AS (
-         SELECT ( SELECT ("aq"."quantity" * ('-1'::integer)::numeric)
-                   FROM ("asset_quantities" "aq"
-                     JOIN "public"."assets" "a" ON (("a"."id" = "aq"."asset_id")))
-                  WHERE ("a"."ticker" = 'CAPITAL'::"text")) AS "owner_capital",
-            ((((("t"."cash_mv_raw" + "t"."stock_mv") + "t"."fund_mv") + "t"."crypto_mv") - ((("t"."cash_cb" + "t"."stock_cb") + "t"."fund_cb") + "t"."crypto_cb")) - "l"."accrued_interest") AS "unrealized_pl"
-           FROM "totals" "t",
-            "liabilities" "l"
-        )
- SELECT 'Cash'::"text" AS "account",
-    'asset'::"text" AS "type",
-    ("round"("a"."cash_mv"))::numeric(20,0) AS "amount"
-   FROM "assets_fixed" "a"
-UNION ALL
- SELECT 'Stock'::"text" AS "account",
-    'asset'::"text" AS "type",
-    ("round"("a"."stock_mv"))::numeric(20,0) AS "amount"
-   FROM "assets_fixed" "a"
-UNION ALL
- SELECT 'Fund'::"text" AS "account",
-    'asset'::"text" AS "type",
-    ("round"("a"."fund_mv"))::numeric(20,0) AS "amount"
-   FROM "assets_fixed" "a"
-UNION ALL
- SELECT 'Crypto'::"text" AS "account",
-    'asset'::"text" AS "type",
-    ("round"("a"."crypto_mv"))::numeric(20,0) AS "amount"
-   FROM "assets_fixed" "a"
-UNION ALL
- SELECT 'Margin'::"text" AS "account",
-    'liability'::"text" AS "type",
-    ("round"("l"."margin"))::numeric(20,0) AS "amount"
-   FROM "liabilities" "l"
-UNION ALL
- SELECT 'Debts Principal'::"text" AS "account",
-    'liability'::"text" AS "type",
-    ("round"("l"."debts_principal"))::numeric(20,0) AS "amount"
-   FROM "liabilities" "l"
-UNION ALL
- SELECT 'Accrued Interest'::"text" AS "account",
-    'liability'::"text" AS "type",
-    ("round"("l"."accrued_interest"))::numeric(20,0) AS "amount"
-   FROM "liabilities" "l"
-UNION ALL
- SELECT 'Owner Capital'::"text" AS "account",
-    'equity'::"text" AS "type",
-    ("round"("e"."owner_capital"))::numeric(20,0) AS "amount"
-   FROM "equity" "e"
-UNION ALL
- SELECT 'Unrealized P/L'::"text" AS "account",
-    'equity'::"text" AS "type",
-    ("round"("e"."unrealized_pl"))::numeric(20,0) AS "amount"
-   FROM "equity" "e";
-
-
-ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."currencies" (
-    "code" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "type" "public"."currency_type" NOT NULL
-);
-
-
-ALTER TABLE "public"."currencies" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
-    "date" "date" NOT NULL,
-    "symbol" "text" NOT NULL,
-    "close" numeric
-);
-
-
-ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
-    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "operation" "text" NOT NULL,
-    "quantity" numeric(18,2) NOT NULL,
-    "fx_rate" numeric DEFAULT 1 NOT NULL,
-    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("quantity" * "fx_rate")) STORED NOT NULL
-);
-
-
-ALTER TABLE "public"."tx_cashflow" OWNER TO "postgres";
 
 
 CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
@@ -1382,12 +1191,12 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
           GROUP BY "debt_balances_by_day"."snapshot_date"
         ), "net_cashflow_per_day" AS (
          SELECT ("e"."created_at")::"date" AS "snapshot_date",
-            COALESCE("sum"("tl"."net_proceed"), (0)::numeric) AS "net_cashflow"
+            COALESCE(("sum"("tl"."credit") - "sum"("tl"."debit")), (0)::numeric) AS "net_cashflow"
            FROM ((("public"."tx_entries" "e"
              JOIN "public"."tx_legs" "tl" ON (("tl"."tx_id" = "e"."id")))
              JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
              JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "e"."id")))
-          WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"text", 'withdraw'::"text"])) AND ("a"."asset_class" = ANY (ARRAY['cash'::"public"."asset_class", 'fund'::"public"."asset_class", 'crypto'::"public"."asset_class"])))
+          WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"text", 'withdraw'::"text"])) AND ("a"."asset_class" = 'equity'::"public"."asset_class"))
           GROUP BY (("e"."created_at")::"date")
         ), "base" AS (
          SELECT "d"."snapshot_date",
@@ -1532,7 +1341,8 @@ ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
 
 CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on') AS
  WITH "borrow_tx" AS (
-         SELECT "d"."lender",
+         SELECT "d"."tx_id",
+            "d"."lender",
             "d"."principal",
             "d"."rate",
             "e"."created_at" AS "borrow_date"
@@ -1542,7 +1352,8 @@ CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on
                    FROM "public"."tx_debt"
                   WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
         )
- SELECT "lender",
+ SELECT "tx_id",
+    "lender",
     "principal",
     "rate",
     "borrow_date",
@@ -1558,7 +1369,7 @@ ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
 CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
  WITH "capital_legs" AS (
          SELECT "tl"."tx_id",
-            "tl"."net_proceed" AS "capital_amount",
+            ("tl"."credit" - "tl"."debit") AS "capital_amount",
             "t"."created_at"
            FROM ("public"."tx_legs" "tl"
              JOIN "public"."tx_entries" "t" ON (("t"."id" = "tl"."tx_id")))
@@ -1574,7 +1385,7 @@ CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on'
     "a"."ticker",
     "a"."name",
     "a"."logo_url",
-    (- "sum"("c"."capital_amount")) AS "total_pnl"
+    "sum"("c"."capital_amount") AS "total_pnl"
    FROM (("capital_legs" "c"
      JOIN "stock_legs" "s" ON (("s"."tx_id" = "c"."tx_id")))
      JOIN "public"."assets" "a" ON (("a"."id" = "s"."stock_id")))
@@ -1595,7 +1406,7 @@ CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') 
     "a"."name",
     "a"."logo_url",
     "sum"("tl"."quantity") AS "quantity",
-    "sum"("tl"."net_proceed") AS "cost_basis",
+    "sum"(("tl"."debit" - "tl"."credit")) AS "cost_basis",
     COALESCE("ld"."price", (1)::numeric) AS "price",
     ("sum"("tl"."quantity") * COALESCE("ld"."price", (1)::numeric)) AS "market_value"
    FROM (("public"."assets" "a"
@@ -1759,6 +1570,11 @@ ALTER TABLE ONLY "public"."assets"
 
 
 
+ALTER TABLE ONLY "public"."cashflow_memo"
+    ADD CONSTRAINT "cashflow_memo_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."currencies"
     ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
 
@@ -1814,35 +1630,7 @@ ALTER TABLE ONLY "public"."tx_stock"
 
 
 
-CREATE INDEX "assets_currency_code_idx" ON "public"."assets" USING "btree" ("currency_code");
-
-
-
-CREATE INDEX "daily_snapshots_cumulative_cashflow_idx" ON "public"."daily_snapshots" USING "btree" ("cumulative_cashflow");
-
-
-
-CREATE INDEX "daily_snapshots_equity_index_idx" ON "public"."daily_snapshots" USING "btree" ("equity_index");
-
-
-
-CREATE INDEX "daily_snapshots_net_cashflow_idx" ON "public"."daily_snapshots" USING "btree" ("net_cashflow");
-
-
-
-CREATE INDEX "daily_snapshots_net_equity_idx" ON "public"."daily_snapshots" USING "btree" ("net_equity");
-
-
-
 CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
-
-
-
-CREATE INDEX "tx_cashflow_asset_id_idx" ON "public"."tx_cashflow" USING "btree" ("asset_id");
-
-
-
-CREATE INDEX "tx_cashflow_operation_idx" ON "public"."tx_cashflow" USING "btree" ("operation");
 
 
 
@@ -1850,11 +1638,71 @@ CREATE INDEX "tx_legs_asset_id_idx" ON "public"."tx_legs" USING "btree" ("asset_
 
 
 
-CREATE INDEX "tx_stock_stock_id_idx" ON "public"."tx_stock" USING "btree" ("stock_id");
-
-
-
-CREATE INDEX "tx_stock_tax_idx" ON "public"."tx_stock" USING "btree" ("tax");
+CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
+ WITH "stock" AS (
+         SELECT "a"."ticker",
+            ("sum"("tl"."debit") - "sum"("tl"."credit")) AS "cost_basis",
+            "sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value"
+           FROM ((("public"."assets" "a"
+             JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
+             LEFT JOIN LATERAL ( SELECT "daily_security_prices"."price"
+                   FROM "public"."daily_security_prices"
+                  WHERE ("daily_security_prices"."asset_id" = "a"."id")
+                  ORDER BY "daily_security_prices"."date" DESC
+                 LIMIT 1) "sp" ON (true))
+             LEFT JOIN LATERAL ( SELECT "daily_exchange_rates"."rate"
+                   FROM "public"."daily_exchange_rates"
+                  WHERE ("daily_exchange_rates"."currency_code" = "a"."currency_code")
+                  ORDER BY "daily_exchange_rates"."date" DESC
+                 LIMIT 1) "er" ON (true))
+          WHERE ("a"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"]))
+          GROUP BY "a"."ticker"
+        ), "debt_interest" AS (
+         SELECT COALESCE("sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))), (0)::numeric) AS "coalesce"
+           FROM ("public"."tx_debt" "d"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
+          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT (EXISTS ( SELECT 1
+                   FROM "public"."tx_debt" "x"
+                  WHERE ("x"."repay_tx" = "d"."tx_id")))))
+        ), "pnl" AS (
+         SELECT (("sum"("s_1"."market_value") - "sum"("s_1"."cost_basis")) - ( SELECT "debt_interest"."coalesce"
+                   FROM "debt_interest")) AS "?column?"
+           FROM "stock" "s_1"
+        ), "margin" AS (
+         SELECT GREATEST((- "sum"("tl"."quantity")), (0)::numeric) AS "greatest"
+           FROM ("public"."tx_legs" "tl"
+             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+          WHERE ("a"."ticker" = 'VND'::"text")
+        ), "asset_quantity" AS (
+         SELECT "a"."ticker",
+            "a"."name",
+            "a"."asset_class",
+                CASE
+                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN ( SELECT "debt_interest"."coalesce"
+                       FROM "debt_interest")
+                    WHEN ("a"."ticker" = 'PNL'::"text") THEN ( SELECT "pnl"."?column?"
+                       FROM "pnl")
+                    WHEN ("a"."ticker" = 'MARGIN'::"text") THEN ( SELECT "margin"."greatest"
+                       FROM "margin")
+                    ELSE GREATEST("sum"("tl"."quantity"), (0)::numeric)
+                END AS "quantity"
+           FROM ("public"."assets" "a"
+             LEFT JOIN "public"."tx_legs" "tl" ON (("tl"."asset_id" = "a"."id")))
+          WHERE ("a"."asset_class" <> 'index'::"public"."asset_class")
+          GROUP BY "a"."id", "a"."ticker", "a"."asset_class"
+        )
+ SELECT "aq"."ticker",
+    "aq"."name",
+    "aq"."asset_class",
+    "aq"."quantity",
+        CASE
+            WHEN ("aq"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"])) THEN "s"."market_value"
+            ELSE "aq"."quantity"
+        END AS "total_value"
+   FROM ("asset_quantity" "aq"
+     LEFT JOIN "stock" "s" ON (("aq"."ticker" = "s"."ticker")))
+  WHERE (("aq"."quantity" > (0)::numeric) OR ("aq"."asset_class" <> 'stock'::"public"."asset_class"))
+  ORDER BY "aq"."asset_class";
 
 
 
@@ -1950,6 +1798,10 @@ CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO 
 
 
 
+CREATE POLICY "Access for authenticated users" ON "public"."cashflow_memo" TO "authenticated" USING (true);
+
+
+
 CREATE POLICY "Access for authenticated users" ON "public"."tx_cashflow" TO "authenticated" USING (true);
 
 
@@ -1998,6 +1850,9 @@ ALTER TABLE "public"."asset_positions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."cashflow_memo" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
@@ -2225,9 +2080,9 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_operation" "text", "p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "service_role";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "service_role";
 
 
 
@@ -2258,12 +2113,6 @@ GRANT ALL ON FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_dat
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_transaction_details"("txn_id" "uuid", "include_expenses" boolean) TO "service_role";
 
 
 
@@ -2366,15 +2215,45 @@ GRANT ALL ON TABLE "public"."assets" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."balance_sheet" TO "anon";
+GRANT ALL ON TABLE "public"."balance_sheet" TO "authenticated";
+GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cashflow_memo" TO "anon";
+GRANT ALL ON TABLE "public"."cashflow_memo" TO "authenticated";
+GRANT ALL ON TABLE "public"."cashflow_memo" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."currencies" TO "anon";
+GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
+GRANT ALL ON TABLE "public"."currencies" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 
@@ -2393,30 +2272,6 @@ GRANT ALL ON TABLE "public"."tx_entries" TO "service_role";
 GRANT ALL ON TABLE "public"."tx_legs" TO "anon";
 GRANT ALL ON TABLE "public"."tx_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."balance_sheet" TO "anon";
-GRANT ALL ON TABLE "public"."balance_sheet" TO "authenticated";
-GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."currencies" TO "anon";
-GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
-GRANT ALL ON TABLE "public"."currencies" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 

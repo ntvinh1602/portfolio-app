@@ -12,10 +12,10 @@ import { ChevronRight, Calendar1 } from "lucide-react"
 import { Calendar } from "./ui/calendar"
 
 type DateRangeProps = {
-  dateFrom: Date | undefined
-  dateTo: Date | undefined
-  onDateFromChange: (date: Date | undefined) => void
-  onDateToChange: (date: Date | undefined) => void
+  dateFrom: Date
+  dateTo: Date
+  onDateFromChange: (date: Date) => void
+  onDateToChange: (date: Date) => void
 }
 
 function DateRange({
@@ -29,11 +29,10 @@ function DateRange({
 
   return (
     <div className="flex items-center">
-      <Calendar1 className="stroke-1 size-4 h-9 border-b" />
       <Root open={openFrom} onOpenChange={setOpenFrom}>
         <Trigger asChild>
           <Button variant="outline" className="flex-1 px-3" id="dates">
-            {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Select date"}
+            {dateFrom ? format(dateFrom, "dd MMM yyyy") : "Select date"}
           </Button>
         </Trigger>
         <Content
@@ -47,17 +46,18 @@ function DateRange({
             selected={dateFrom}
             defaultMonth={dateFrom}
             onSelect={(date) => {
+              if (!date) return // prevent passing undefined
               onDateFromChange(date)
               setOpenFrom(false)
             }}
           />
         </Content>
       </Root>
-      <ChevronRight className="stroke-1 size-4 h-9 border-b" />
+      <ChevronRight className="size-4"/>
       <Root open={openTo} onOpenChange={setOpenTo}>
         <Trigger asChild>
           <Button variant="outline" className="flex-1 px-3" id="dates">
-            {dateTo ? format(dateTo, "dd/MM/yyyy") : "Select date"}
+            {dateTo ? format(dateTo, "dd MMM yyyy") : "Select date"}
           </Button>
         </Trigger>
         <Content
@@ -71,8 +71,9 @@ function DateRange({
             selected={dateTo}
             defaultMonth={dateTo}
             onSelect={(date) => {
+              if (!date) return // prevent passing undefined
               onDateToChange(date)
-              setOpenTo(false)
+              setOpenFrom(false)
             }}
           />
         </Content>

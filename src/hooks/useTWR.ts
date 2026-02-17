@@ -1,3 +1,5 @@
+"use client"
+
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
 import { getDateRange } from "@/lib/get-date-range"

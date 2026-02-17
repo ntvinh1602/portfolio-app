@@ -1,9 +1,11 @@
+"use client"
+
 import * as React from "react"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
-import { NumberField, ComboboxField, RadioGroupField } from "../fields"
+import { NumberField, ComboboxField, RadioGroupField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -11,13 +13,13 @@ import {
 } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { useAssets } from "@/hooks/useAssets"
-import { stockSchema } from "../schema"
+import { stockSchema } from "./schema"
 
 type FormValues = z.infer<typeof stockSchema>
 
 export function StockForm() {
   const supabase = createClient()
-  const { assetData } = useAssets()
+  const { data: assetData } = useAssets()
   const [loading, setLoading] = React.useState(false)
   
   const stockTickers = React.useMemo(

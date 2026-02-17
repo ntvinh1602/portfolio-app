@@ -1,6 +1,13 @@
 "use client"
 
-import * as Card from "@/components/ui/card"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,  
+} from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { parseISO, format } from "date-fns"
@@ -77,19 +84,19 @@ function ChartCard<
   }
 
   return (
-    <Card.Root 
+    <Card 
       variant="glow"
       className="relative flex flex-col gap-0 h-full"
     >
-      <Card.Header className="items-center">
-        <Card.Subtitle>{title}</Card.Subtitle>
+      <CardHeader className="items-center">
+        <CardDescription>{title}</CardDescription>
         <div className="flex gap-2 items-baseline">
-          <Card.Title className="text-2xl">
+          <CardTitle className="text-2xl">
             {majorValue && majorValueFormatter(majorValue)}
-          </Card.Title>
-          <Card.Subtitle className="text-xs">{description}</Card.Subtitle>
+          </CardTitle>
+          <CardDescription className="text-xs">{description}</CardDescription>
         </div>
-        <Card.Action className="flex items-center gap-4">
+        <CardAction className="flex items-center gap-4">
           {minorValue1 && (
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
@@ -100,7 +107,7 @@ function ChartCard<
                 {minorValue1 !== null &&
                   minorValue1Formatter?.(Math.abs(minorValue1))}
               </div>
-              <Card.Subtitle className="text-xs">{minorText1}</Card.Subtitle>
+              <CardDescription className="text-xs">{minorText1}</CardDescription>
             </div>
           )}
           {minorValue2 && (
@@ -119,13 +126,13 @@ function ChartCard<
                 {minorValue2 !== null &&
                   minorValue2Formatter?.(Math.abs(minorValue2))}
               </div>
-              <Card.Subtitle className="text-xs">{minorText2}</Card.Subtitle>
+              <CardDescription className="text-xs">{minorText2}</CardDescription>
             </div>
           )}
-        </Card.Action>
-      </Card.Header>
+        </CardAction>
+      </CardHeader>
 
-      <Card.Content className="flex flex-col gap-4 h-full">
+      <CardContent className="flex flex-col gap-4 h-full">
         {dateRange && onDateRangeChange && (
           <TabSwitcher
             value={dateRange}
@@ -152,8 +159,8 @@ function ChartCard<
           yAxisTickFormatter={yAxisTickFormatter}
           valueFormatter={tooltipValueFormatter}
         />
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }
 

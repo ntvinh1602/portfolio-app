@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Root,
-  Content,
-  Subtitle,
-  Header
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader
 } from "@/components/ui/card"
 
 export function LoginForm({
@@ -46,16 +46,16 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Root className="border-none bg-card/0">
-        <Header className="px-0 flex flex-col items-center">
+      <Card className="border-none bg-card/0">
+        <CardHeader className="px-0 flex flex-col items-center">
           <h1 className="text-2xl text-accent-foreground">
             Hello there!
           </h1>
-          <Subtitle>
+          <CardDescription>
             Enter your credentials below to login
-          </Subtitle>
-        </Header>
-        <Content className="px-0">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
           <form onSubmit={handleLogin}>
             <div className="grid gap-6">
               <div className="grid gap-3">
@@ -100,8 +100,8 @@ export function LoginForm({
               </Button>
             </div>
           </form>
-        </Content>
-      </Root>
+        </CardContent>
+      </Card>
     </div>
   )
 }

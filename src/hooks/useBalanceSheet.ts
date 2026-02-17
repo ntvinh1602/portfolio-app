@@ -13,9 +13,11 @@ async function fetchBalanceSheet() {
 
   if (error) throw error
   return data as {
-    account: string
-    type: string
-    amount: number
+    ticker: string
+    name: string
+    asset_class: string
+    quantity: number
+    total_value: number
   }[]
 }
 
@@ -31,36 +33,20 @@ export function useBalanceSheetData() {
   )
   const rawData = data ? data : []
   const totalAssets = rawData
-    .filter((r) => r.type === "asset")
-    .reduce((sum, r) => sum + (r.amount), 0)
+    .filter((r) => r.asset_class != "equity" && r.asset_class !== "liability")
+    .reduce((sum, r) => sum + (r.total_value), 0)
   const totalLiabilities = rawData
-    .filter((r) => r.type === "liability")
-    .reduce((sum, r) => sum + (r.amount), 0)
+    .filter((r) => r.asset_class === "liability")
+    .reduce((sum, r) => sum + (r.total_value), 0)
   const totalEquity = rawData
-    .filter((r) => r.type === "equity")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const debtsPrincipal = rawData
-    .filter((r) => r.account === "Debts Principal")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const accruedInterest = rawData
-    .filter((r) => r.account === "Accrued Interest")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const margin = rawData
-    .filter((r) => r.account === "Margin")
-    .reduce((sum, r) => sum + (r.amount), 0)
-  const fund = rawData
-    .filter((r) => r.account === "Fund")
-    .reduce((sum, r) => sum + (r.amount), 0)
+    .filter((r) => r.asset_class === "equity")
+    .reduce((sum, r) => sum + (r.total_value), 0)
 
   return {
     bsData: rawData,
     totalAssets,
     totalLiabilities,
     totalEquity,
-    debtsPrincipal,
-    accruedInterest,
-    margin,
-    fund,
     error,
     isLoading,
     mutate,

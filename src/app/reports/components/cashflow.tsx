@@ -1,4 +1,4 @@
-import * as Card from "@/components/ui/card"
+import { Card, CardContent, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import { useHoldingData } from "@/hooks/useHoldingData"
@@ -19,14 +19,14 @@ export function Cashflow({
 
   if (isLoading)
     return (
-      <Card.Root className="gap-0 h-fit">
-        <Card.Header>
-          <Card.Title>Cashflow</Card.Title>
-          <Card.Action>
+      <Card className="gap-0 h-fit">
+        <CardHeader>
+          <CardTitle>Cashflow</CardTitle>
+          <CardAction>
             <ArrowLeftRight className="size-5 stroke-1"/>
-          </Card.Action>
-        </Card.Header>
-        <Card.Content className="px-6 pb-6 flex flex-col gap-4">
+          </CardAction>
+        </CardHeader>
+        <CardContent className="px-6 pb-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-6 w-24" />
@@ -35,8 +35,8 @@ export function Cashflow({
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-6 w-24" />
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
 
   // Determine which year's data to display
@@ -47,14 +47,14 @@ export function Cashflow({
   const net = inflow - outflow
 
   return (
-    <Card.Root variant="glow" className={`gap-6 h-fit ${className}`}>
-      <Card.Header>
-        <Card.Title className="text-xl">Cashflow</Card.Title>
-        <Card.Action>
+    <Card variant="glow" className={`gap-6 h-fit ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-xl">Cashflow</CardTitle>
+        <CardAction>
           <ArrowLeftRight className="size-5 stroke-1"/>
-        </Card.Action>
-      </Card.Header>
-      <Card.Content className="px-6 pb-6 flex flex-col gap-4">
+        </CardAction>
+      </CardHeader>
+      <CardContent className="px-6 pb-6 flex flex-col gap-4">
         <div className="flex font-light items-center justify-between group">
           <div className="flex items-center gap-3">
             <ArrowDownCircle className="size-5 stroke-1" />
@@ -89,7 +89,7 @@ export function Cashflow({
             </div>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }

@@ -2,7 +2,7 @@
 
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
-import * as Card from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useReportsData } from "@/hooks/useReportsData"
 import { ChartCard } from "@/components/chart-card"
 import { format } from "date-fns"
@@ -21,14 +21,14 @@ export function ReturnChart({ year }: ReturnChartProps) {
 
   if (error) {
     return (
-      <Card.Root variant="glow" className="relative flex flex-col gap-4 h-full">
-        <Card.Header>
-          <Card.Subtitle>Error</Card.Subtitle>
-          <Card.Title className="text-red-500 text-lg">
+      <Card variant="glow" className="relative flex flex-col gap-4 h-full">
+        <CardHeader>
+          <CardDescription>Error</CardDescription>
+          <CardTitle className="text-red-500 text-lg">
             {error instanceof Error ? error.message : "Internal Server Error"}
-          </Card.Title>
-        </Card.Header>
-      </Card.Root>
+          </CardTitle>
+        </CardHeader>
+      </Card>
     )
   }
   

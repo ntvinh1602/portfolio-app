@@ -5,12 +5,17 @@ import {
   TrendingUp,
   LogOut,
   TvMinimal,
-  PiggyBank,
   Handshake,
   Newspaper
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
-import * as SB from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { QuickActions } from "./quick-actions"
@@ -24,19 +29,14 @@ const data = {
       icon: TvMinimal,
     },
     {
-      title: "Assets",
-      url: "/assets",
-      icon: PiggyBank,
+      title: "Reports",
+      url: "/reports",
+      icon: Newspaper,
     },
     {
       title: "Transactions",
       url: "/transactions",
       icon: Handshake,
-    },
-    {
-      title: "Reports",
-      url: "/reports",
-      icon: Newspaper,
     },
     {
       title: "Settings",
@@ -47,7 +47,7 @@ const data = {
 }
 
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   
   const handleSignOut = async () => {
@@ -57,13 +57,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
   }
 
   return (
-    <SB.Root variant="inset" {...props}>
-      <SB.Header>
-        <SB.MenuButton size="sm" variant="nohover" className="gap-4">
+    <Sidebar variant="inset" {...props}>
+      <SidebarHeader>
+        <SidebarMenuButton size="sm" variant="nohover" className="gap-4">
           <div
             className="
               aspect-square flex size-8 items-center justify-center rounded-lg
-              border-2 border-primary [animation:glowPulse_3s_ease-in-out_infinite]
+              border-2 border-primary animate-[glowPulse_3s_ease-in-out_infinite]
               shadow-[inset_0_0_6px_rgba(251,191,36,0.25)]
             "
           >
@@ -73,25 +73,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof SB.Root>) {
           <h1 className="text-xl font-normal text-foreground truncate">
             Portfolio Tracker
           </h1>
-        </SB.MenuButton>
-      </SB.Header>
+        </SidebarMenuButton>
+      </SidebarHeader>
       
-      <SB.Content>
+      <SidebarContent>
         <NavMenu items={data.navMenu} />
         <QuickActions/>
-      </SB.Content>
+      </SidebarContent>
 
-      <SB.Footer>
+      <SidebarFooter>
         <ConfirmDialog
           onConfirm={handleSignOut}
           message="Do you really want to log out?"
         >
-          <SB.MenuButton>
+          <SidebarMenuButton>
             <LogOut/>
             <span className="font-light">Logout</span>
-          </SB.MenuButton>
+          </SidebarMenuButton>
         </ConfirmDialog>
-      </SB.Footer>
-    </SB.Root>
+      </SidebarFooter>
+    </Sidebar>
   )
 }

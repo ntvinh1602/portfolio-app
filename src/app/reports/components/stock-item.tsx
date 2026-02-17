@@ -1,4 +1,4 @@
-import * as Card from "@/components/ui/card"
+import { Card, CardDescription, CardContent, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from 'next/image'
 import { TrendingUp, TrendingDown, Award } from "lucide-react"
@@ -28,8 +28,8 @@ export function Asset({
         : "text-foreground"
 
   return (
-    <Card.Root variant="highlight" className="relative border-0 text-card-foreground backdrop-blur-sm rounded-full py-3">
-      <Card.Content className="flex items-center gap-3 px-3">
+    <Card variant="highlight" className="relative border-0 text-card-foreground backdrop-blur-sm rounded-full py-3">
+      <CardContent className="flex items-center gap-3 px-3">
         <div className="w-6 flex justify-center">
           {rank <= 3 ? (
             <Award className={`stroke-1 ${AwardColor}`} />
@@ -50,10 +50,10 @@ export function Asset({
 
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col max-w-[250px]">
-            <Card.Title className="text-sm truncate">{ticker}</Card.Title>
-            <Card.Subtitle className="flex items-center gap-1 truncate pt-1">
+            <CardTitle className="text-sm truncate">{ticker}</CardTitle>
+            <CardDescription className="flex items-center gap-1 truncate pt-1">
               {name}
-            </Card.Subtitle>
+            </CardDescription>
           </div>
 
           <div className="flex items-center gap-1 font-thin text-sm justify-end px-2 [&_svg]:stroke-1">
@@ -64,15 +64,15 @@ export function Asset({
             {compactNum(totalAmount)}
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }
 
 export function AssetSkeleton() {
   return (
-    <Card.Root className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
-      <Card.Content className="flex items-center gap-3 px-3">
+    <Card className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
+      <CardContent className="flex items-center gap-3 px-3">
         <div className="w-6 flex justify-center">
           <Skeleton className="w-4 h-4 rounded-full" />
         </div>
@@ -86,7 +86,7 @@ export function AssetSkeleton() {
             <Skeleton className="w-14 h-4" />
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }

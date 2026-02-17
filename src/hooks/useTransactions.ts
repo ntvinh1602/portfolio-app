@@ -2,10 +2,11 @@
 
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
+import { format } from "date-fns"
 
 interface UseTransactionsParams {
-  startDate?: string
-  endDate?: string
+  startDate?: Date
+  endDate?: Date
 }
 
 // Create a single supabase client for client-side usage
@@ -13,13 +14,12 @@ const supabase = createClient()
 
 async function fetchTransactions({ startDate, endDate }: UseTransactionsParams) {
   let query = supabase
-    .from("transactions")
+    .from("tx_entries")
     .select()
-    .is("linked_txn", null)
     .order("created_at", { ascending: false })
 
-  if (startDate) query = query.gte("transaction_date", startDate)
-  if (endDate) query = query.lte("transaction_date", endDate)
+  if (startDate) query = query.gte("created_at", format(startDate, "yyyy-MM-dd"))
+  if (endDate) query = query.lte("created_at", format(endDate, "yyyy-MM-dd"))
 
   const { data, error } = await query
 
@@ -38,7 +38,7 @@ export function useTransactions(params: UseTransactionsParams) {
   return {
     transactions: data,
     isLoading,
-    isError: !!error,
+    error,
     mutate,
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import * as Card from "@/components/ui/card"
+import { Card, CardContent, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,11 +20,11 @@ export function ExpenseChart({
 
   if (isLoading || !monthlyData)
     return (
-      <Card.Root className="gap-0 h-fit">
-        <Card.Header>
-          <Card.Title>Expenses</Card.Title>
-        </Card.Header>
-        <Card.Content className="px-0 flex w-full justify-between">
+      <Card className="gap-0 h-fit">
+        <CardHeader>
+          <CardTitle>Expenses</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0 flex w-full justify-between">
           <div className="flex w-full justify-between">
             <Skeleton className="size-40 aspect-square rounded-full" />
             <div className="flex flex-col w-full gap-2">
@@ -33,8 +33,8 @@ export function ExpenseChart({
               ))}
             </div>
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
 
   // ---------- Process Data ----------
@@ -92,14 +92,14 @@ export function ExpenseChart({
   )
 
   return (
-    <Card.Root variant="glow" className={`gap-0 h-fit ${className}`}>
-      <Card.Header>
-        <Card.Title className="text-xl">Expenses</Card.Title>
-        <Card.Action>
+    <Card variant="glow" className={`gap-0 h-fit ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-xl">Expenses</CardTitle>
+        <CardAction>
           <HandCoins className="size-5 stroke-1" />
-        </Card.Action>
-      </Card.Header>
-      <Card.Content className="px-0 flex h-fit justify-between">
+        </CardAction>
+      </CardHeader>
+      <CardContent className="px-0 flex h-fit justify-between">
         <Piechart
           data={expenseChartData}
           chartConfig={expenseChartCfg}
@@ -114,7 +114,7 @@ export function ExpenseChart({
           centerText="Total Expenses"
           centerValue={compactNum(totalExpenses)}
         />
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }

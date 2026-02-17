@@ -1,7 +1,7 @@
 "use client"
 
 import { Asset, AssetSkeleton } from "@/app/reports/components/stock-item"
-import * as Card from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card"
 import { Trophy } from "lucide-react"
 import { useReportsData } from "@/hooks/useReportsData"
 import { Tables } from "@/types/database.types"
@@ -34,55 +34,55 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     }))
 
   const renderHeader = () => (
-    <Card.Header>
-      <Card.Title className="text-xl">Best Performers</Card.Title>
-      <Card.Subtitle>Based on total realized P/L</Card.Subtitle>
-      <Card.Action>
+    <CardHeader>
+      <CardTitle className="text-xl">Best Performers</CardTitle>
+      <CardDescription>Based on total realized P/L</CardDescription>
+      <CardAction>
         <Trophy className="stroke-1 size-5" />
-      </Card.Action>
-    </Card.Header>
+      </CardAction>
+    </CardHeader>
   )
 
   // --- Loading state ---
   if (isLoading) {
     return (
-      <Card.Root variant="glow" className="h-full">
+      <Card variant="glow" className="h-full">
         {renderHeader()}
-        <Card.Content>
+        <CardContent>
           <div className="flex flex-col gap-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <AssetSkeleton key={i} />
             ))}
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
   }
 
   // --- Error state ---
   if (error) {
     return (
-      <Card.Root variant="glow" className="h-full">
+      <Card variant="glow" className="h-full">
         {renderHeader()}
-        <Card.Content>
+        <CardContent>
           <div className="p-4 text-center text-destructive">
             Failed to load stock data.
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
   }
 
   if (cleanedData.length === 0) {
     return (
-      <Card.Root variant="glow" className="h-full">
+      <Card variant="glow" className="h-full">
         {renderHeader()}
-        <Card.Content>
+        <CardContent>
           <div className="p-4 text-center text-muted-foreground">
             No realized profit/loss data available.
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -117,14 +117,14 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
 
   if (pnlList.length === 0) {
     return (
-      <Card.Root variant="glow" className="h-full">
+      <Card variant="glow" className="h-full">
         {renderHeader()}
-        <Card.Content>
+        <CardContent>
           <div className="p-4 text-center text-muted-foreground">
             No realized profit/loss data for {yearKey || "selected year"}.
           </div>
-        </Card.Content>
-      </Card.Root>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -134,9 +134,9 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
     .slice(0, 10)
 
   return (
-    <Card.Root variant="glow" className="h-full">
+    <Card variant="glow" className="h-full">
       {renderHeader()}
-      <Card.Content>
+      <CardContent>
         <div className="flex flex-col gap-2">
           {topPerformers.map((stock, index) => (
             <Asset
@@ -149,7 +149,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
             />
           ))}
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }

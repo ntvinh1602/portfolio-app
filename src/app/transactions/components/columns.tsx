@@ -1,59 +1,47 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
-import { Database } from "@/types/database.types"
-import { Badge } from "@/components/ui/badge"
-import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ColumnDef } from "@tanstack/react-table"
+import { format } from "date-fns"
+import { ArrowUpDown } from "lucide-react"
 
-// This type is used to define the shape of our data.
 export type Transaction = {
   id: string
-  transaction_date: string
-  type: Database["public"]["Enums"]["transaction_type"]
-  description: string
-  category: "trade" | "cash"
+  created_at: string
+  category: "cashflow" | "stock" | "debt"
+  memo: string
 }
 
 export const columns: ColumnDef<Transaction>[] = [
   {
-    accessorKey: "transaction_date",
+    accessorKey: "created_at",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-foreground gap-1"
-        > 
+        >
           Date
-          <ArrowUpDown className="size-4 stroke-1" />
+          <ArrowUpDown className="h-4 w-4" />
         </Button>
       )
     },
-    cell: ({ row }) => <div className="pl-3">
-      {row.getValue("transaction_date")}
-    </div>
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
     cell: ({ row }) => {
-      const raw = row.getValue("type") as string
-      const formatted = raw.replace(/\b\w/g, (c) => c.toUpperCase())
-
-      return (
-        <div className="flex">
-          {["buy", "income", "deposit", "borrow", "dividend"].includes(raw)
-            ? <Badge variant="default">{formatted}</Badge>
-            : <Badge variant="secondary">{formatted}</Badge>
-          }
-        </div>
-    )}
+      const formatted = format(row.getValue("created_at"), "dd MMM yyyy")
+      return formatted
+    },
   },
   {
-    accessorKey: "description",
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ row }) => {
+      const category = row.getValue("category") as string
+      const formatted = category.charAt(0).toUpperCase() + category.slice(1)
+      return formatted
+    },
+  },
+  {
+    accessorKey: "memo",
     header: "Description",
-    size: 250,
-    cell: ({ row }) => <>{row.getValue("description")}</>
   },
 ]

@@ -1,19 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { DailySnapshot } from "./daily-snapshot"
 import {
-  Group,
-  GroupLabel,
-  MenuButton,
-  MenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { DatabaseBackup, Plus, RefreshCcw, type LucideIcon } from "lucide-react"
-import { FormDialogWrapper } from "../add-transactions/form-wrapper"
-import { StockForm } from "../add-transactions/form/stockForm"
-import { CashflowForm } from "../add-transactions/form/cashflowForm"
-import { BorrowForm } from "../add-transactions/form/borrowForm"
-import { RepayForm } from "../add-transactions/form/repayForm"
+import { Plus, type LucideIcon } from "lucide-react"
+import { FormDialogWrapper } from "../form/dialog-form-wrapper"
+import {
+  StockForm,
+  CashflowForm,
+  BorrowForm,
+  RepayForm,
+} from "./add-transactions/"
 
 type ActionType = "stock" | "cashflow" | "debt" | "repay"
 
@@ -26,7 +27,6 @@ type ActionItem = {
 
 export function QuickActions() {
   const [activeAction, setActiveAction] = useState<ActionType | null>(null)
-  const [isBackfillOpen, setBackfillOpen] = useState(false)
 
   const actions: ActionItem[] = [
     {
@@ -52,16 +52,6 @@ export function QuickActions() {
       text: "Repay Debt",
       actionType: "repay",
       onClick: () => setActiveAction("repay"),
-    },
-    {
-      icon: RefreshCcw,
-      text: "Refresh Daily Snapshots",
-      onClick: () => setBackfillOpen(true),
-    },
-    {
-      icon: DatabaseBackup,
-      text: "Rebuild Ledger",
-      onClick: () => setBackfillOpen(true),
     },
   ]
 
@@ -94,20 +84,20 @@ export function QuickActions() {
   const activeForm = activeAction ? formMap[activeAction] : null
 
   return (
-    <Group className="gap-2">
-      <GroupLabel className="relative text-xs font-light text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
+    <SidebarGroup className="gap-2">
+      <SidebarGroupLabel className="relative text-xs text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
         Actions
-      </GroupLabel>
+      </SidebarGroupLabel>
 
       {actions.map(({ icon: Icon, text, onClick }) => (
-        <MenuItem key={text}>
-          <MenuButton asChild onClick={onClick}>
+        <SidebarMenuItem key={text}>
+          <SidebarMenuButton asChild onClick={onClick}>
             <div className="flex items-center gap-3">
               <Icon className="size-4" />
-              <span className="font-light">{text}</span>
+              <span>{text}</span>
             </div>
-          </MenuButton>
-        </MenuItem>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
       ))}
 
       {/* Generic dialog wrapper */}
@@ -122,8 +112,6 @@ export function QuickActions() {
           FormComponent={activeForm.component}
         />
       )}
-
-      <DailySnapshot open={isBackfillOpen} onOpenChange={setBackfillOpen} />
-    </Group>
+    </SidebarGroup>
   )
 }

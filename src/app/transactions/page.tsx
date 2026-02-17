@@ -1,85 +1,81 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/header"
-import { TxnInfo } from "./components/txn-info"
-import { Transaction } from "./components/columns"
+import { subMonths } from "date-fns"
 import { DateRange } from "@/components/date-picker"
-import { subMonths, format } from "date-fns"
-import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
-import { TxnTable } from "./components/txn-table"
+import { Header } from "@/components/header"
+import { DataTable } from "./components/data-table"
+import { columns } from "./components/columns"
 import { useTransactions } from "@/hooks/useTransactions"
-import { TxnLeg, Expense } from "./types/data"
-import { useTransactionDetails } from "@/hooks/useTransactionInfo"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export default function Page() {
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(
-    subMonths(new Date(), 1)
-  )
-  const [dateTo, setDateTo] = useState<Date | undefined>(new Date())
+type Preset = "1M" | "3M" | "CUSTOM"
 
-  const startDate = dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined
-  const endDate = dateTo ? format(dateTo, "yyyy-MM-dd") : undefined
-
-  // ---- Fetch transactions using SWR hook ----
-  const { transactions: data, isLoading: txnLoading, isError } = useTransactions({
-    startDate,
-    endDate,
+export default function TransactionsPage() {
+  const [preset, setPreset] = useState<Preset>("1M")
+  const [dateRange, setDateRange] = useState({
+    startDate: subMonths(new Date(), 1),
+    endDate: new Date(),
   })
 
-  // ---- Selected transaction ----
-  const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
+  const { transactions, error } = useTransactions(dateRange)
 
-  // ---- Fetch details via RPC hook ----
-  const {
-    data: detailData,
-    isLoading: detailLoading,
-    isError: detailError,
-  } = useTransactionDetails({
-    txn_id: selectedTxn?.id || "",
-    include_expenses:
-      selectedTxn?.type === "buy" || selectedTxn?.type === "sell" ? true : false,
-  })
-
-  const txnLegs: TxnLeg[] = detailData?.legs || []
-  const expenses: Expense[] = detailData?.expenses || []
-
-  // ---- Error handling ----
-  if (isError) {
-    toast.error("Failed to fetch transactions")
-  }
-  if (detailError) {
-    toast.error("Failed to fetch transaction details")
+  // Handle preset change
+  const handlePresetChange = (value: Preset) => {
+    setPreset(value)
+    if (value === "1M") {
+      setDateRange({
+        startDate: subMonths(new Date(), 1),
+        endDate: new Date(),
+      })
+    } else if (value === "3M") {
+      setDateRange({
+        startDate: subMonths(new Date(), 3),
+        endDate: new Date(),
+      })
+    }
   }
 
   return (
-    <div className="flex flex-col">
+    <div>
       <Header title="Transactions" />
-      <Separator className="mb-4" />
-      <div className="flex gap-4 flex-1 overflow-hidden w-8/10 mx-auto">
-        <div className="flex w-6/10 flex-col gap-2">
-          <TxnTable
-            data={data || []}
-            loading={txnLoading}
-            onTransactionSelect={setSelectedTxn}
+      <div className="flex flex-col w-8/10 mx-auto gap-2">
+        <div className="flex items-center gap-2">
+          <Select
+            value={preset}
+            onValueChange={(v) => handlePresetChange(v as Preset)}
           >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Preset" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1M">Last 1 Month</SelectItem>
+              <SelectItem value="3M">Last 3 Months</SelectItem>
+              <SelectItem value="CUSTOM">Custom...</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {preset === "CUSTOM" && (
             <DateRange
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
+              dateFrom={dateRange.startDate}
+              dateTo={dateRange.endDate}
+              onDateFromChange={(date) =>
+                setDateRange((prev) => ({ ...prev, startDate: date }))
+              }
+              onDateToChange={(date) =>
+                setDateRange((prev) => ({ ...prev, endDate: date }))
+              }
             />
-          </TxnTable>
+          )}
         </div>
-        <div className="flex w-4/10 flex-col gap-2">
-          <TxnInfo
-            transaction={selectedTxn}
-            transactionLegs={txnLegs}
-            associatedExpenses={expenses}
-            loading={detailLoading}
-          />
-        </div>
+
+        {error && (
+          <div className="text-red-500 text-sm">
+            Error fetching transactions: {error.message}
+          </div>
+        )}
+
+        <DataTable columns={columns} data={transactions ?? []} />
       </div>
     </div>
   )

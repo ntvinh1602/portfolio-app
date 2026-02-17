@@ -465,7 +465,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 const sidebarMenuButtonVariants = cva(
   [
     // Base layout
-    "peer/menu-button relative flex w-full items-center gap-2 px-3 py-2 text-sm font-medium select-none",
+    "peer/menu-button relative flex w-full items-center gap-2 px-3 py-2 text-sm select-none",
     "text-muted-foreground outline-hidden transition-all duration-300 ease-out",
 
     // Flat shape
@@ -515,7 +515,7 @@ const sidebarMenuButtonVariants = cva(
       size: {
         sm: "h-8 text-xs",
         default: "h-9 text-sm",
-        lg: "h-10 text-sm font-thin [&>svg]:size-5 [&>svg]:stroke-1",
+        lg: "h-10 text-sm [&>svg]:size-5 [&>svg]:stroke-1",
       },
     },
     defaultVariants: {
@@ -731,28 +731,28 @@ function SidebarMenuSubButton({
 }
 
 export {
-  Sidebar as Root,
-  SidebarContent as Content,
-  SidebarFooter as Footer,
-  SidebarGroup as Group,
-  SidebarGroupAction as GroupAction,
-  SidebarGroupContent as GroupContent,
-  SidebarGroupLabel as GroupLabel,
-  SidebarHeader as Header,
-  SidebarInput as Input,
-  SidebarInset as Inset,
-  SidebarMenu as Menu,
-  SidebarMenuAction as MenuAction,
-  SidebarMenuBadge as MenuBadge,
-  SidebarMenuButton as MenuButton,
-  SidebarMenuItem as MenuItem,
-  SidebarMenuSkeleton as MenuSkeleton,
-  SidebarMenuSub as MenuSub,
-  SidebarMenuSubButton as MenuSubButton,
-  SidebarMenuSubItem as MenuSubItem,
-  SidebarProvider as Provider,
-  SidebarRail as Rail,
-  SidebarSeparator as Separator,
-  SidebarTrigger as Trigger,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 }

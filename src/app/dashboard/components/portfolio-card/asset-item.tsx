@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import * as Card from "@/components/ui/card"
+import { Card, CardDescription, CardContent, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from 'next/image'
 import {
@@ -50,8 +50,8 @@ export function Asset({
   }, [price, prevPrice])
 
   return (
-    <Card.Root variant="highlight" className="rounded-full py-3">
-      <Card.Content className="flex items-center gap-3 px-4">
+    <Card variant="highlight" className="rounded-full py-3">
+      <CardContent className="flex items-center gap-3 px-4">
         <Image
           src={logoUrl}
           alt={name}
@@ -61,8 +61,8 @@ export function Asset({
         />
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col max-w-[250px]">
-            <Card.Title className="text-sm truncate">{name}</Card.Title>
-            <Card.Subtitle className="flex items-center gap-1 truncate pt-1">
+            <CardTitle className="text-sm truncate">{name}</CardTitle>
+            <CardDescription className="flex items-center gap-1 truncate pt-1">
               <Badge variant="outline" className="font-thin text-foreground">
                 <Coins className="stroke-1"  />
                 {quantity
@@ -93,13 +93,13 @@ export function Asset({
                   : 0
                 }
               </Badge>
-            </Card.Subtitle>
+            </CardDescription>
           </div>
           <div className="flex flex-col justify-end pr-2">
-            <Card.Title className="text-right text-sm">
+            <CardTitle className="text-right text-sm">
               {formatNum(totalAmount)}
-            </Card.Title>
-            <Card.Subtitle className="flex items-center justify-end text-xs gap-1">
+            </CardTitle>
+            <CardDescription className="flex items-center justify-end text-xs gap-1">
               <div className="[&_svg]:size-4 [&_svg]:stroke-2 flex gap-1">
                 {pnlNet !== null && pnlNet < 0
                   ? <TrendingDown className="text-red-700" />
@@ -108,18 +108,18 @@ export function Asset({
                 <span>{compactNum(Math.abs(pnlNet))}</span>
                 <span>{`${formatNum((pnlPct), 1)}%`}</span>
               </div>
-            </Card.Subtitle>
+            </CardDescription>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }
 
 export function AssetSkeleton() {
   return (
-    <Card.Root className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
-      <Card.Content className="flex items-center gap-3 px-3">
+    <Card className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
+      <CardContent className="flex items-center gap-3 px-3">
         
         {/* Logo */}
         <Skeleton className="size-14 aspect-square rounded-full" />
@@ -150,7 +150,7 @@ export function AssetSkeleton() {
             </div>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </CardContent>
+    </Card>
   )
 }

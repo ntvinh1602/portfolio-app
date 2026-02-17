@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -56,7 +56,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm font-light", className)}
+      className={cn("text-muted-foreground text-sm font-normal", className)}
       {...props}
     />
   )
@@ -96,11 +96,11 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 export {
-  Card as Root,
-  CardHeader as Header,
-  CardFooter as Footer,
-  CardTitle as Title,
-  CardAction as Action,
-  CardDescription as Subtitle,
-  CardContent as Content,
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
 }

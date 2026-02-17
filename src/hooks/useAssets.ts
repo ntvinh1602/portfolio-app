@@ -21,5 +21,5 @@ export function useAssets() {
     }
   )
 
-  return { assetData: data, isLoading, error, mutate }
+  return { data, isLoading, error, mutate }
 }
