@@ -46,8 +46,8 @@ function PopoverAnchor({
 }
 
 export {
-  Popover as Root,
-  PopoverTrigger as Trigger,
-  PopoverContent as Content,
-  PopoverAnchor as Anchor
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverAnchor
 }

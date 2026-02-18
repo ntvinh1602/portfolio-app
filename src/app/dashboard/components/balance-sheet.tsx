@@ -1,6 +1,10 @@
 "use client"
 
-import * as Popover from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent
+} from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { PanelRightOpen } from "lucide-react"
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
@@ -32,8 +36,8 @@ export function BalanceSheet() {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
 
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
@@ -41,9 +45,9 @@ export function BalanceSheet() {
         >
           <PanelRightOpen className="size-4" />
         </Button>
-      </Popover.Trigger>
+      </PopoverTrigger>
 
-      <Popover.Content
+      <PopoverContent
         align="end"
         className="rounded-2xl bg-background/80 backdrop-blur-sm w-fit max-h-[80vh] overflow-y-auto"
       >
@@ -126,7 +130,7 @@ export function BalanceSheet() {
             </div>
           </div>
         </Card>
-      </Popover.Content>
-    </Popover.Root>
+      </PopoverContent>
+    </Popover>
   )
 }

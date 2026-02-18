@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type Preset = "1M" | "3M" | "CUSTOM"
 
 export default function TransactionsPage() {
-  const [preset, setPreset] = useState<Preset>("1M")
+  const [preset, setPreset] = useState<Preset>("3M")
   const [dateRange, setDateRange] = useState({
     startDate: subMonths(new Date(), 1),
     endDate: new Date(),
   })
 
-  const { transactions, error } = useTransactions(dateRange)
+  const { data, error } = useTransactions(dateRange)
 
   // Handle preset change
   const handlePresetChange = (value: Preset) => {
@@ -39,43 +39,43 @@ export default function TransactionsPage() {
   return (
     <div>
       <Header title="Transactions" />
-      <div className="flex flex-col w-8/10 mx-auto gap-2">
-        <div className="flex items-center gap-2">
-          <Select
-            value={preset}
-            onValueChange={(v) => handlePresetChange(v as Preset)}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Preset" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1M">Last 1 Month</SelectItem>
-              <SelectItem value="3M">Last 3 Months</SelectItem>
-              <SelectItem value="CUSTOM">Custom...</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {preset === "CUSTOM" && (
-            <DateRange
-              dateFrom={dateRange.startDate}
-              dateTo={dateRange.endDate}
-              onDateFromChange={(date) =>
-                setDateRange((prev) => ({ ...prev, startDate: date }))
-              }
-              onDateToChange={(date) =>
-                setDateRange((prev) => ({ ...prev, endDate: date }))
-              }
-            />
-          )}
-        </div>
-
+      <div className="flex flex-col w-6/10 mx-auto gap-2 pb-40">
         {error && (
           <div className="text-red-500 text-sm">
             Error fetching transactions: {error.message}
           </div>
         )}
 
-        <DataTable columns={columns} data={transactions ?? []} />
+        <DataTable columns={columns} data={data ?? []}>
+          <div className="flex items-center gap-2">
+            <Select
+              value={preset}
+              onValueChange={(v) => handlePresetChange(v as Preset)}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Preset" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1M">Last 1 months</SelectItem>
+                <SelectItem value="3M">Last 3 months</SelectItem>
+                <SelectItem value="CUSTOM">Custom...</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {preset === "CUSTOM" && (
+              <DateRange
+                dateFrom={dateRange.startDate}
+                dateTo={dateRange.endDate}
+                onDateFromChange={(date) =>
+                  setDateRange((prev) => ({ ...prev, startDate: date }))
+                }
+                onDateToChange={(date) =>
+                  setDateRange((prev) => ({ ...prev, endDate: date }))
+                }
+              />
+            )}
+          </div>
+        </DataTable>
       </div>
     </div>
   )

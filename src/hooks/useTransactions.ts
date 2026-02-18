@@ -14,7 +14,7 @@ const supabase = createClient()
 
 async function fetchTransactions({ startDate, endDate }: UseTransactionsParams) {
   let query = supabase
-    .from("tx_entries")
+    .from("tx_summary")
     .select()
     .order("created_at", { ascending: false })
 
@@ -24,7 +24,14 @@ async function fetchTransactions({ startDate, endDate }: UseTransactionsParams) 
   const { data, error } = await query
 
   if (error) throw error
-  return data
+  return data as {
+    id: string
+    created_at: string
+    category: string
+    operation: string
+    value: number
+    memo: string
+  }[]
 }
 
 export function useTransactions(params: UseTransactionsParams) {
@@ -36,7 +43,7 @@ export function useTransactions(params: UseTransactionsParams) {
   })
 
   return {
-    transactions: data,
+    data: data ?? [],
     isLoading,
     error,
     mutate,

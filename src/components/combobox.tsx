@@ -12,7 +12,12 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command"
-import * as Popover from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverAnchor
+} from "@/components/ui/popover"
 
 export type ComboboxItem = {
   value: string
@@ -43,8 +48,8 @@ export function Combobox({
   const selectedItem = items.find(item => item.value === value)
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
@@ -57,8 +62,8 @@ export function Combobox({
           }
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </Popover.Trigger>
-      <Popover.Content
+      </PopoverTrigger>
+      <PopoverContent
         className="min-w-[var(--radix-popover-trigger-width)] w-[var(--radix-popover-trigger-width)] p-0"
         onTouchMove={(e) => {
           e.stopPropagation();
@@ -94,7 +99,7 @@ export function Combobox({
             </CommandGroup>
           </CommandList>
         </Command>
-      </Popover.Content>
-    </Popover.Root>
+      </PopoverContent>
+    </Popover>
   )
 }

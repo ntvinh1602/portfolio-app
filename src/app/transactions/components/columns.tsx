@@ -1,47 +1,147 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { formatNum } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
-import { ArrowUpDown } from "lucide-react"
+import { operation, category } from "./labels"
+import { DataTableRowActions } from "./row-action"
+import { DataTableColumnHeader } from "./header"
 
 export type Transaction = {
-  id: string
-  created_at: string
-  category: "cashflow" | "stock" | "debt"
-  memo: string
+    id: string
+    created_at: string
+    category: string
+    operation: string
+    value: number
+    memo: string
 }
 
 export const columns: ColumnDef<Transaction>[] = [
   {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-[2px]"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        className="translate-y-[2px]"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: "created_at",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Date
-          <ArrowUpDown className="h-4 w-4" />
-        </Button>
-      )
-    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Timestamp" />
+    ),
     cell: ({ row }) => {
-      const formatted = format(row.getValue("created_at"), "dd MMM yyyy")
-      return formatted
+      const formatted = format(row.getValue("created_at"), "dd MMM yyyy - HH:mm")
+      return (
+        <div className="w-15">{formatted}</div>
+      )
     },
   },
   {
     accessorKey: "category",
-    header: "Category",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Category" />
+    ),
     cell: ({ row }) => {
-      const category = row.getValue("category") as string
-      const formatted = category.charAt(0).toUpperCase() + category.slice(1)
-      return formatted
+      const cat = category.find(
+        (category) => category.value === row.getValue("category")
+      )
+
+      if (!cat) {
+        return null
+      }
+
+      return (
+        <div className="flex items-center">
+          {cat.icon && (
+            <cat.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+          )}
+          <span>{cat.label}</span>
+        </div>
+      )
     },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+    enableSorting: false,
+  },
+  {
+    accessorKey: "operation",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Operation" />
+    ),
+    cell: ({ row }) => {
+      const ops = operation.find(
+        (operation) => operation.value === row.getValue("operation")
+      )
+
+      if (!ops) {
+        return null
+      }
+
+      return (
+        <div className="flex w-20 items-center">
+          {ops.icon && (
+            <ops.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+          )}
+          <span>{ops.label}</span>
+        </div>
+      )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "memo",
-    header: "Description",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Memo" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-125 truncate">
+            {row.getValue("memo")}
+          </span>
+        </div>
+      )
+    },
+    enableSorting: false,
+  },
+  {
+    accessorKey: "value",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Value" />
+    ),
+    cell: ({ row }) => {
+      const value = row.getValue("value") as number
+      const formatted = formatNum(value)
+      return (
+        <div className="w-15">{formatted}</div>
+      )
+    },
+    enableSorting: false,
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]
