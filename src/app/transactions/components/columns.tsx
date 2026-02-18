@@ -19,36 +19,12 @@ export type Transaction = {
 
 export const columns: ColumnDef<Transaction>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: "created_at",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Timestamp" />
     ),
     cell: ({ row }) => {
-      const formatted = format(row.getValue("created_at"), "dd MMM yyyy - HH:mm")
+      const formatted = format(row.getValue("created_at"), "dd-MMM-yyyy HH:mm")
       return (
         <div className="w-15">{formatted}</div>
       )
@@ -142,6 +118,9 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => 
+      <div className="flex justify-end">
+        <DataTableRowActions row={row} />
+      </div>
   },
 ]

@@ -475,25 +475,25 @@ const sidebarMenuButtonVariants = cva(
     "relative flex items-center gap-2 [&>svg]:size-4 [&>svg]:shrink-0 [&>span:last-child]:truncate",
     "[&>svg]:transition [&>svg]:duration-300",
     "data-[active=true]:[&>svg]:text-amber-400",
-    "data-[active=true]:[&>svg]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]",
-    "hover:[&>svg]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]",
+    "data-[active=true]:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
+    "hover:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
 
     // Smooth background fade from left glow → transparent right
-    "hover:bg-gradient-to-r hover:from-amber-400/15 hover:to-transparent",
+    "hover:bg-gradient-to-r hover:from-primary/15 hover:to-transparent",
 
     // Left luminous accent bar, full glow
     "before:absolute before:left-0 before:top-0 before:h-full before:w-[2px]",
-    "before:bg-amber-400",
+    "before:bg-primary",
     "before:opacity-0 hover:before:opacity-100 data-[active=true]:before:opacity-100",
     "before:transition-opacity before:duration-300",
-    "before:shadow-[0_0_10px_2px_rgba(251,191,36,0.6)]",
+    "before:shadow-[0_0_10px_2px_oklch(from_var(--primary)_l_c_h_/0.6)]",
 
     // Active state — slightly brighter with glow
-    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-amber-500/20 data-[active=true]:to-transparent",
-    "data-[active=true]:text-amber-300",
+    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-transparent",
+    "data-[active=true]:text-primary",
 
     // Hover transitions and focus
-    "hover:text-foreground focus-visible:ring-1 focus-visible:ring-amber-400/30 focus-visible:ring-offset-0",
+    "hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0",
 
     // Disabled
     "disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",

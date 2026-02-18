@@ -64,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             className="
               aspect-square flex size-8 items-center justify-center rounded-lg
               border-2 border-primary animate-[glowPulse_3s_ease-in-out_infinite]
-              shadow-[inset_0_0_6px_rgba(251,191,36,0.25)]
+              shadow-[inset_0_0_6px_oklch(from_var(--primary)_l_c_h_/0.25)]
             "
           >
             <TrendingUp className="size-4 text-primary" />

@@ -9,7 +9,7 @@ import { columns } from "./components/columns"
 import { useTransactions } from "@/hooks/useTransactions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-type Preset = "1M" | "3M" | "CUSTOM"
+type Preset = "1M" | "3M" | "6M" | "1Y" | "CUSTOM"
 
 export default function TransactionsPage() {
   const [preset, setPreset] = useState<Preset>("3M")
@@ -33,13 +33,23 @@ export default function TransactionsPage() {
         startDate: subMonths(new Date(), 3),
         endDate: new Date(),
       })
+    } else if (value === "6M") {
+      setDateRange({
+        startDate: subMonths(new Date(), 6),
+        endDate: new Date(),
+      })
+    } else if (value === "1Y") {
+      setDateRange({
+        startDate: subMonths(new Date(), 12),
+        endDate: new Date(),
+      })
     }
   }
 
   return (
     <div>
       <Header title="Transactions" />
-      <div className="flex flex-col w-6/10 mx-auto gap-2 pb-40">
+      <div className="flex flex-col w-8/10 mx-auto gap-2 pb-40">
         {error && (
           <div className="text-red-500 text-sm">
             Error fetching transactions: {error.message}
@@ -58,6 +68,8 @@ export default function TransactionsPage() {
               <SelectContent>
                 <SelectItem value="1M">Last 1 months</SelectItem>
                 <SelectItem value="3M">Last 3 months</SelectItem>
+                <SelectItem value="6M">Last 6 months</SelectItem>
+                <SelectItem value="1Y">Last 1 year</SelectItem>
                 <SelectItem value="CUSTOM">Custom...</SelectItem>
               </SelectContent>
             </Select>

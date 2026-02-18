@@ -22,7 +22,7 @@ export function NavMenu({ items }: { items: NavItem[] }) {
 
   return (
     <SidebarGroup className="gap-2">
-      <SidebarGroupLabel className="relative text-xs text-gray-400 before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_rgba(251,191,36,0.4)]">
+      <SidebarGroupLabel className="relative text-xs text-muted-foreground before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]">
         Navigation
       </SidebarGroupLabel>
       <SidebarMenu>
@@ -38,7 +38,7 @@ export function NavMenu({ items }: { items: NavItem[] }) {
                   href={item.url}
                   className="flex items-center gap-3"
                 >
-                  <item.icon className="transition duration-300 data-[active=true]:text-amber-400 data-[active=true]:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)] hover:text-amber-400 hover:drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
+                  <item.icon className="transition duration-300 data-[active=true]:text-primary data-[active=true]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)] hover:text-primary hover:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]" />
                   <span className="">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
