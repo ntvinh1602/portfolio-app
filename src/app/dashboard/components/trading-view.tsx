@@ -32,7 +32,7 @@ function TradingViewWidgetComponent() {
       "wickUpColor": "#22ab94",
       "wickDownColor": "#f7525f",
       "colorTheme": "dark",
-      "isTransparent": false,
+      "isTransparent": true,
       "locale": "en",
       "chartOnly": false,
       "scalePosition": "right",
@@ -69,7 +69,7 @@ function TradingViewWidgetComponent() {
   }, [])
 
   return (
-    <div className="shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent before:rounded-t-2xl tradingview-widget-container" ref={container}>
+    <div className="border rounded-2xl shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-linear-to-r before:from-transparent before:via-ring/40 before:to-transparent before:rounded-t-2xl tradingview-widget-container" ref={container}>
       <div className="tradingview-widget-container__widget"></div>
     </div>
   )

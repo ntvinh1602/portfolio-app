@@ -108,7 +108,7 @@ export function Asset({
                   : <TrendingUp className="text-green-500" />
                 }
                 <span>{compactNum(Math.abs(pnlNet))}</span>
-                <span>{`${formatNum((pnlPct), 1)}%`}</span>
+                <span>{`(${formatNum((pnlPct), 1)}%)`}</span>
               </div>
             </CardDescription>
           </div>
