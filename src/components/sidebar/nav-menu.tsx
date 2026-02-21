@@ -21,9 +21,8 @@ export function NavMenu({ items }: { items: NavItem[] }) {
   const pathname = usePathname()
 
   return (
-    <SidebarGroup className="gap-2">
-      <SidebarGroupLabel className="relative text-xs text-muted-foreground before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]">
-        Navigation
+    <SidebarGroup className="gap-4">
+      <SidebarGroupLabel className="h-fit relative text-xs text-muted-foreground before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]">
       </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {

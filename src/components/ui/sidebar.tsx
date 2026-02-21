@@ -10,7 +10,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import * as Sheet from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 import * as Tooltip from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -171,8 +177,8 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet.Root open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <Sheet.Content
+      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
@@ -184,13 +190,13 @@ function Sidebar({
           }
           side={side}
         >
-          <Sheet.Header className="sr-only">
-            <Sheet.Title>Sidebar</Sheet.Title>
-            <Sheet.Subtitle>Displays the mobile sidebar.</Sheet.Subtitle>
-          </Sheet.Header>
+          <SheetHeader className="sr-only">
+            <SheetTitle>Sidebar</SheetTitle>
+            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+          </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
-        </Sheet.Content>
-      </Sheet.Root>
+        </SheetContent>
+      </Sheet>
     )
   }
 
@@ -474,7 +480,7 @@ const sidebarMenuButtonVariants = cva(
     // Icon & text styling with active glow
     "relative flex items-center gap-2 [&>svg]:size-4 [&>svg]:shrink-0 [&>span:last-child]:truncate",
     "[&>svg]:transition [&>svg]:duration-300",
-    "data-[active=true]:[&>svg]:text-primary",
+    "data-[active=true]:[&>svg]:text-foreground",
     "data-[active=true]:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
     "hover:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
 
@@ -536,7 +542,7 @@ function SidebarMenuButton({
 }: React.ComponentProps<"button"> & {
   asChild?: boolean
   isActive?: boolean
-  tooltip?: string | React.ComponentProps<typeof Sheet.Content>
+  tooltip?: string | React.ComponentProps<typeof SheetContent>
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot : "button"
   const { isMobile, state } = useSidebar()

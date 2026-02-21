@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,8 +16,8 @@ import { EditStockForm } from "./stock-assets/editForm"
 import { AddAssetForm } from "./stock-assets/addForm"
 
 export default function Page() {
-  const [addOpen, setAddOpen] = React.useState(false)
-  const [editOpen, setEditOpen] = React.useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   return (
     <div>

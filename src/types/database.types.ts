@@ -230,6 +230,13 @@ export type Database = {
             foreignKeyName: "dnse_orders_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
+            referencedRelation: "balance_sheet"
+            referencedColumns: ["ticker"]
+          },
+          {
+            foreignKeyName: "dnse_orders_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
             referencedRelation: "stock_annual_pnl"
             referencedColumns: ["ticker"]
           },
@@ -282,6 +289,13 @@ export type Database = {
             referencedRelation: "tx_entries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tx_cashflow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tx_debt: {
@@ -323,6 +337,13 @@ export type Database = {
             referencedRelation: "tx_entries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tx_debt_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tx_entries: {
@@ -349,19 +370,22 @@ export type Database = {
       tx_legs: {
         Row: {
           asset_id: string
-          net_proceed: number
+          credit: number
+          debit: number
           quantity: number
           tx_id: string
         }
         Insert: {
           asset_id: string
-          net_proceed: number
+          credit: number
+          debit: number
           quantity: number
           tx_id: string
         }
         Update: {
           asset_id?: string
-          net_proceed?: number
+          credit?: number
+          debit?: number
           quantity?: number
           tx_id?: string
         }
@@ -378,6 +402,13 @@ export type Database = {
             columns: ["tx_id"]
             isOneToOne: false
             referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_legs_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: false
+            referencedRelation: "tx_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -428,15 +459,24 @@ export type Database = {
             referencedRelation: "tx_entries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tx_stock_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
       balance_sheet: {
         Row: {
-          account: string | null
-          amount: number | null
-          type: string | null
+          asset_class: Database["public"]["Enums"]["asset_class"] | null
+          name: string | null
+          quantity: number | null
+          ticker: string | null
+          total_value: number | null
         }
         Relationships: []
       }
@@ -470,8 +510,24 @@ export type Database = {
           lender: string | null
           principal: number | null
           rate: number | null
+          tx_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tx_debt_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_debt_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_annual_pnl: {
         Row: {
@@ -492,6 +548,17 @@ export type Database = {
           price: number | null
           quantity: number | null
           ticker: string | null
+        }
+        Relationships: []
+      }
+      tx_summary: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string | null
+          memo: string | null
+          operation: string | null
+          value: number | null
         }
         Relationships: []
       }
@@ -543,10 +610,6 @@ export type Database = {
       calculate_twr: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: number
-      }
-      get_transaction_details: {
-        Args: { include_expenses?: boolean; txn_id: string }
-        Returns: Json
       }
       process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_debt: { Args: { p_tx_id: string }; Returns: undefined }

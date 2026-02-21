@@ -128,12 +128,12 @@ function SheetDescription({
 }
 
 export {
-  Sheet as Root,
-  SheetTrigger as Trigger,
-  SheetClose as Close,
-  SheetContent as Content,
-  SheetHeader as Header,
-  SheetFooter as Footer,
-  SheetTitle as Title,
-  SheetDescription as Subtitle,
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
 }

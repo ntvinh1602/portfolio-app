@@ -25,7 +25,7 @@ export function FormDialogWrapper({
 }: FormDialogWrapperProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col gap-10">
+      <DialogContent className="flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {subtitle && <DialogDescription>{subtitle}</DialogDescription>}

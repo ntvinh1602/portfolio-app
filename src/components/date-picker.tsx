@@ -8,22 +8,22 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ChevronRight, Calendar1 } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Calendar } from "./ui/calendar"
 
-type DateRangeProps = {
+type DatePickerProps = {
   dateFrom: Date
   dateTo: Date
   onDateFromChange: (date: Date) => void
   onDateToChange: (date: Date) => void
 }
 
-function DateRange({
+export function DatePicker({
   dateFrom,
   dateTo,
   onDateFromChange,
   onDateToChange,
-}: DateRangeProps) {
+}: DatePickerProps) {
   const [openFrom, setOpenFrom] = useState(false)
   const [openTo, setOpenTo] = useState(false)
 
@@ -81,50 +81,3 @@ function DateRange({
     </div>
   )
 }
-
-function SingleDate({
-  selected,
-  onSelect,
-  dateFormat = "dd/MM/yyyy"
-}: {
-  selected: Date | undefined
-  onSelect: (date: Date | undefined) => void
-  dateFormat?: string
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div className="flex items-center">
-      <Calendar1 className="stroke-1 size-4 h-9 border-b" />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="flex-1 px-2" id="dates">
-            {selected ? format(selected, dateFormat) : "Select date"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
-          align="start"
-        >
-          <Calendar
-            mode="single"
-            captionLayout="dropdown"
-            startMonth={new Date(2021, 1)}
-            weekStartsOn={1}
-            selected={selected}
-            defaultMonth={selected}
-            disabled={{
-              before: new Date(2021, 11, 1),
-            }}
-            onSelect={(date) => {
-              onSelect(date)
-              setOpen(false)
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  )
-}
-
-export { DateRange, SingleDate }
