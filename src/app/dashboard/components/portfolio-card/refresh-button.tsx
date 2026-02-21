@@ -21,8 +21,6 @@ export function RefreshPricesButton() {
         body: { name: 'Functions' },
       })
 
-      console.log(data) // { message: "Hello JavaScript!" }
-
       if (error) throw new Error(error.message ?? "Failed to refresh prices")
 
       toast.success(data.message, {
@@ -39,10 +37,10 @@ export function RefreshPricesButton() {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
+      className="rounded-full"
     >
       <div
         className={`flex items-center justify-center rounded-full p-1 transition-transform ${

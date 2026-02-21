@@ -1,6 +1,5 @@
 "use client"
 
-import { Checkbox } from "@/components/ui/checkbox"
 import { formatNum } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
@@ -21,10 +20,10 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "created_at",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Timestamp" />
+      <DataTableColumnHeader column={column} title="Time" />
     ),
     cell: ({ row }) => {
-      const formatted = format(row.getValue("created_at"), "dd-MMM-yyyy HH:mm")
+      const formatted = format(row.getValue("created_at"), "yyyy-MM-dd HH:mm")
       return (
         <div className="w-15">{formatted}</div>
       )

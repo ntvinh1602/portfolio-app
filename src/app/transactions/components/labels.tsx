@@ -7,15 +7,14 @@ import {
   Handshake,
   ArrowBigDownDash,
   ArrowBigUpDash,
-  CreditCard,
   Banknote,
-  PiggyBank,
+  Box,
 } from "lucide-react"
 
 export const category = [
-  { value: "stock", label: "Stock", icon: Banknote },
-  { value: "cashflow", label: "Cashflow",icon: PiggyBank },
-  { value: "debt", label: "Debt", icon: CreditCard },
+  { value: "stock", label: "Stock", icon: Box },
+  { value: "cashflow", label: "Cashflow",icon: Banknote },
+  { value: "debt", label: "Debt", icon: HandCoins },
 ]
 
 export const operation = [

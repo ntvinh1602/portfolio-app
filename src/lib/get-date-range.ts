@@ -4,6 +4,7 @@ import {
   startOfYear,
   endOfYear,
   subMonths,
+  format
 } from "date-fns"
 
 /**
@@ -48,7 +49,7 @@ export function getDateRange(time: string) {
   }
 
   return {
-    p_start_date: startDate.toISOString().slice(0, 10),
-    p_end_date: endDate.toISOString().slice(0, 10),
+    p_start_date: format(startDate, "yyyy-MM-dd"),
+    p_end_date: format(endDate, "yyyy-MM-dd"),
   }
 }

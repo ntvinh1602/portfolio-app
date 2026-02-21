@@ -5,23 +5,20 @@ import { createClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
 
 interface UseTransactionsParams {
-  startDate?: Date
-  endDate?: Date
+  startDate: Date
+  endDate: Date
 }
 
 // Create a single supabase client for client-side usage
 const supabase = createClient()
 
 async function fetchTransactions({ startDate, endDate }: UseTransactionsParams) {
-  let query = supabase
+  const { data, error } = await supabase
     .from("tx_summary")
     .select()
     .order("created_at", { ascending: false })
-
-  if (startDate) query = query.gte("created_at", format(startDate, "yyyy-MM-dd"))
-  if (endDate) query = query.lte("created_at", format(endDate, "yyyy-MM-dd"))
-
-  const { data, error } = await query
+    .gte("created_at", format(startDate, "yyyy-MM-dd"))
+    .lte("created_at", format(endDate, "yyyy-MM-dd"))
 
   if (error) throw error
   return data as {

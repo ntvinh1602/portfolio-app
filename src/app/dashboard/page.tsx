@@ -6,7 +6,7 @@ import {
   EquityChart,
   Benchmarkchart,
   NetProfit,
-  TradingViewWidget
+  TradingViewWidget,
 } from "./components"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Header } from "@/components/header"

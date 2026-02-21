@@ -2,47 +2,37 @@
 
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
-import { Tables } from "@/types/database.types"
 
-interface HoldingDataResponse {
-  stockData: Tables<"stock_holdings">[]
-}
-
-const fallback: HoldingDataResponse = {
-  stockData: []
-}
-
-// ---------- Supabase Fetcher ----------
-async function fetchHoldings(): Promise<HoldingDataResponse> {
-  const supabase = createClient()
-
-  const [stockRes] = await Promise.all([
-    supabase.from("stock_holdings").select("*")
-  ])
-
-  if (stockRes.error) throw new Error(stockRes.error.message)
-
-  return {
-    stockData: stockRes.data ?? []
-  }
-}
-
-// ---------- SWR Hook ----------
 export function useHoldingData() {
-  const { data, error, isLoading, mutate } = useSWR<HoldingDataResponse>(
-    "holdings", // SWR key
+  const fetchHoldings = async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("stock_holdings").select("*")
+    if (error) throw new Error(error.message)
+    return data as {
+      cost_basis: number
+      logo_url: string
+      market_value: number
+      name: string
+      price: number
+      quantity: number
+      ticker: string
+    }[]
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    "holdings",
     fetchHoldings,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      fallbackData: fallback,
     }
   )
 
   return {
-    stockData: data?.stockData ?? [],
+    data: data ?? [],
     isLoading,
     error,
-    mutate, // allow manual refresh if needed
+    mutate
   }
 }
+

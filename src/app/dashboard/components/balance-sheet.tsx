@@ -40,8 +40,8 @@ export function BalanceSheet() {
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="relative flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-muted"
+          size="icon"
+          className="rounded-full"
         >
           <PanelRightOpen className="size-4" />
         </Button>

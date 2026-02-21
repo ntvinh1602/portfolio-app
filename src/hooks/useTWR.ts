@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { getDateRange } from "@/lib/get-date-range"
 
 
-async function fetchPnL(time: string) {
+async function fetchTWR(time: string) {
   const supabase = createClient()
   const { p_start_date, p_end_date } = getDateRange(time)
   const { data, error } = await supabase.rpc("calculate_twr", {
@@ -13,6 +13,7 @@ async function fetchPnL(time: string) {
     p_end_date,
   })
   if (error) throw error
+  console.log('twr', data)
   return data as number
 }
 
@@ -23,7 +24,7 @@ async function fetchPnL(time: string) {
 export function useTWR(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
     ["calculate_twr", time], // use range as cache key for simplicity
-    () => fetchPnL(time),
+    () => fetchTWR(time),
     {
       revalidateOnFocus: false,
       dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
