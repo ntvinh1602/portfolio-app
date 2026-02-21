@@ -59,8 +59,8 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring:  oklch(0.421 0.095 57.708);
-  --chart-1: oklch(0.9848 0.0013 106.42);
-  --chart-2: oklch(0.795 0.184 86.047);
+  --chart-1: oklch(0.795 0.184 86.047);
+  --chart-2: oklch(0.9848 0.0013 106.42);
   --chart-3: oklch(0.448 0.0747 59.6);
   --chart-4: oklch(0.5756 0.166573 44.3021);
   --chart-5: oklch(0.645 0.246 16.439);
@@ -72,6 +72,52 @@
   --sidebar-accent-foreground:  oklch(0.985 0 0);
   --sidebar-border:  oklch(1 0 0 / 10%);
   --sidebar-ring:  oklch(0.421 0.095 57.708);
+}
+
+/* Green theme */
+.theme-green {
+  --primary:  oklch(0.648 0.2 131.684);
+  --primary-foreground:  oklch(0.986 0.031 120.757);
+  --ring:  oklch(0.405 0.101 131.063);
+  --chart-1: oklch(0.648 0.2 131.684);
+  --chart-2: oklch(0.7476 0.049 146.01);
+  --chart-3: oklch(0.7549 0.1462 68.55);
+  --chart-4: oklch(0.5765 0.161 41.59);
+  --chart-5: oklch(0.4306 0.1338 34.89);
+  --sidebar-primary:  oklch(0.768 0.233 130.85);
+  --sidebar-primary-foreground:  oklch(0.986 0.031 120.757);
+  --sidebar-ring:  oklch(0.405 0.101 131.063);
+ }
+
+/* Violet theme */
+.theme-violet {
+  --primary:  oklch(0.606 0.25 292.717);
+  --primary-foreground:  oklch(0.969 0.016 293.756);
+  --input:  oklch(1 0 0 / 15%);
+  --ring:  oklch(0.38 0.189 293.745);
+  --chart-1: oklch(0.4823 0.1667 306.81);
+  --chart-2: oklch(0.5078 0.2046 333.5);
+  --chart-3: oklch(0.5753 0.1864 0.68);
+  --chart-4: oklch(0.6898 0.1818 36.26);
+  --chart-5: oklch(0.7945 0.1505 64.2);
+  --sidebar-primary:  oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground:  oklch(0.969 0.016 293.756);
+  --sidebar-ring:  oklch(0.38 0.189 293.745);
+}
+
+/* Rose theme */
+.theme-rose {
+  --primary:  oklch(0.645 0.246 16.439);
+  --primary-foreground:  oklch(0.969 0.015 12.422);
+  --ring:  oklch(0.41 0.159 10.272);
+  --chart-1: oklch(0.5008 0.1978 28.42);
+  --chart-2: oklch(0.7311 0.176 358.26);
+  --chart-3: oklch(0.8353 0.0925 0.36);
+  --chart-4: oklch(0.8598 0.1724 88.5);
+  --chart-5: oklch(0.7766 0.1482 52.78);
+  --sidebar-primary:  oklch(0.645 0.246 16.439);
+  --sidebar-primary-foreground:  oklch(0.969 0.015 12.422);
+  --sidebar-ring:  oklch(0.41 0.159 10.272);
 }
 
 /* Remove spin buttons from number inputs (cross-browser) */
@@ -86,6 +132,10 @@ input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 @layer base {
@@ -140,13 +190,13 @@ input[type="number"]::-webkit-inner-spin-button {
   @keyframes glowPulse {
     0%, 100% {
       box-shadow:
-        inset 0 0 6px rgba(251,191,36,0.25),  
-        0 0 6px 1px rgba(251,191,36,0.25);
+        inset 0 0 6px color-mix(in oklch, var(--primary) 40%, transparent),
+        0 0 6px 1px color-mix(in oklch, var(--primary) 40%, transparent);
     }
     50% {
       box-shadow:
-        inset 0 0 8px rgba(251,191,36,0.35),
-        0 0 16px 4px rgba(251,191,36,0.45);
+        inset 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent),
+        0 0 16px 4px color-mix(in oklch, var(--primary) 70%, transparent);
     }
   }
 }

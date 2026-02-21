@@ -474,7 +474,7 @@ const sidebarMenuButtonVariants = cva(
     // Icon & text styling with active glow
     "relative flex items-center gap-2 [&>svg]:size-4 [&>svg]:shrink-0 [&>span:last-child]:truncate",
     "[&>svg]:transition [&>svg]:duration-300",
-    "data-[active=true]:[&>svg]:text-amber-400",
+    "data-[active=true]:[&>svg]:text-primary",
     "data-[active=true]:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
     "hover:[&>svg]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]",
 
@@ -490,7 +490,7 @@ const sidebarMenuButtonVariants = cva(
 
     // Active state — slightly brighter with glow
     "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-transparent",
-    "data-[active=true]:text-primary",
+    "data-[active=true]:text-foreground",
 
     // Hover transitions and focus
     "hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0",

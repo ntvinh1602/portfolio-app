@@ -20,7 +20,7 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "created_at",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Time" />
+      <DataTableColumnHeader column={column} title="Time"/>
     ),
     cell: ({ row }) => {
       const formatted = format(row.getValue("created_at"), "yyyy-MM-dd HH:mm")

@@ -31,11 +31,11 @@ export function EquityChart() {
       chartConfig={{
         net_equity: {
           label: "Equity",
-          color: "var(--chart-2)",
+          color: "var(--chart-1)",
         },
         cumulative_cashflow: {
           label: "Paid-in Capital",
-          color: "var(--chart-1)",
+          color: "var(--chart-2)",
         },
       }}
       chartClassName="h-full w-full"

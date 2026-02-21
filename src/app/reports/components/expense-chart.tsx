@@ -3,7 +3,6 @@
 import { Card, CardContent, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
 import { useMonthlyData } from "@/hooks/useMonthlyData"
@@ -16,26 +15,7 @@ export function ExpenseChart({
   className?: string
 }) {
   const period = year === "All Time" ? "all" : Number(year)
-  const { data: monthlyData, isLoading } = useMonthlyData(period)
-
-  if (isLoading || !monthlyData)
-    return (
-      <Card className="gap-0 h-fit">
-        <CardHeader>
-          <CardTitle>Expenses</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 flex w-full justify-between">
-          <div className="flex w-full justify-between">
-            <Skeleton className="size-40 aspect-square rounded-full" />
-            <div className="flex flex-col w-full gap-2">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-4 w-10" />
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
+  const { data: monthlyData } = useMonthlyData(period)
 
   // ---------- Process Data ----------
   const processedData = monthlyData

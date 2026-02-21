@@ -46,11 +46,11 @@ export function NetProfit() {
         },
         interest: {
           label: "Interest",
-          color: "var(--chart-1)",
+          color: "var(--chart-2)",
         },
         revenue: {
             label: "Revenue",
-            color: "var(--chart-2)",
+            color: "var(--chart-1)",
         }
       }}
       chartClassName="h-full w-full"

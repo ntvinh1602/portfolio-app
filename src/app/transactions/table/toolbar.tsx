@@ -23,14 +23,6 @@ export function DataTableToolbar<TData>({
   return (
     <div className="flex w-full items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
-        <Input
-          placeholder="Search transactions..."
-          value={(table.getColumn("memo")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("memo")?.setFilterValue(event.target.value)
-          }
-          className="w-[150px] lg:w-[250px]"
-        />
         {table.getColumn("category") && (
           <DataTableFacetedFilter
             column={table.getColumn("category")}
@@ -56,7 +48,17 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <DataTableViewOptions table={table} />
+        <div className="flex gap-2">
+        <Input
+          placeholder="Search transactions..."
+          value={(table.getColumn("memo")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("memo")?.setFilterValue(event.target.value)
+          }
+          className="w-[150px] lg:w-[250px]"
+        />
+        <DataTableViewOptions table={table} />
+        </div>
     </div>
   )
 }

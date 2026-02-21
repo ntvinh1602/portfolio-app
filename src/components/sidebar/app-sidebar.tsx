@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { QuickActions } from "./quick-actions"
 import { ConfirmDialog } from "../confirmation"
 
 const data = {
@@ -78,7 +77,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       <SidebarContent>
         <NavMenu items={data.navMenu} />
-        <QuickActions/>
       </SidebarContent>
 
       <SidebarFooter>

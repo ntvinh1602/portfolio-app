@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { AppSidebar } from "./sidebar/app-sidebar"
 import { Toaster } from "./ui/sonner"
 import { SidebarProvider, SidebarInset } from "./ui/sidebar"
+import { ThemeProvider } from "./theme-provider"
 
 export function ClientLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -18,13 +19,15 @@ export function ClientLayout({ children }: { children: ReactNode }) {
           {children}
         </>
       ) : ( // On other pages → show sidebar layout
-        <SidebarProvider>
-          <AppSidebar collapsible="icon" />
-          <SidebarInset className="md:px-4">
-            <Toaster />
-            {children}
-          </SidebarInset>
-        </SidebarProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <AppSidebar collapsible="icon" />
+            <SidebarInset className="md:px-4">
+              <Toaster />
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </ThemeProvider>
       )}
     </div>
   )

@@ -35,11 +35,11 @@ export function Benchmarkchart() {
       chartConfig={{
         portfolio_value: {
           label: "Equity",
-          color: "var(--chart-2)",
+          color: "var(--chart-1)",
         },
         vni_value: {
           label: "VN-Index",
-          color: "var(--chart-1)",
+          color: "var(--chart-2)",
         },
       }}
       chartClassName="h-full w-full"

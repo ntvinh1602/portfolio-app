@@ -17,10 +17,10 @@ export default function Page() {
   return (
     <div className="flex flex-col md:h-svh pb-4">
       <Header title="Dashboard"/>
-      <div className="grid grid-cols-3 px-0 gap-6 flex-1">
+      <div className="grid grid-cols-3 px-0 gap-2 md:gap-6 flex-1">
         <div className="flex flex-col col-span-3 md:col-span-1 gap-2 px-2 md:px-0 h-full">
           <EquityChart/>
-          {!isMobile && <Benchmarkchart/>}
+          <Benchmarkchart/>
         </div>
 
         <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full">
@@ -30,16 +30,16 @@ export default function Page() {
           </div>
         </div>
 
-        {!isMobile && 
-          <div className="flex flex-col col-span-1 gap-2 h-full">
+        <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full">
+          {!isMobile &&
             <div className="flex-1">
               <TradingViewWidget/>
             </div>
-            <div className="flex-1">
-              <NetProfit/>
-            </div>
+          }
+          <div className="flex-1">
+            <NetProfit/>
           </div>
-        }
+        </div>
       </div>
     </div>
 

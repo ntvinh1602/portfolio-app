@@ -11,8 +11,8 @@ import {
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { parseISO, format } from "date-fns"
-import { TabSwitcher } from "@/components/tab-switcher"
 import { Separator } from "@/components/ui/separator"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 interface ChartCardProps<
   TData extends { snapshot_date: string; [key: string]: number | string }
@@ -42,7 +42,7 @@ interface ChartCardProps<
   onDateRangeChange?: (value: string) => void
 }
 
-function ChartCard<
+export function ChartCard<
   TData extends { snapshot_date: string; [key: string]: number | string }
 >({
   title,
@@ -134,19 +134,18 @@ function ChartCard<
 
       <CardContent className="flex flex-col gap-4 h-full">
         {dateRange && onDateRangeChange && (
-          <TabSwitcher
-            value={dateRange}
+          <ToggleGroup
+            type="single"
             onValueChange={onDateRangeChange}
-            options={[
-              { label: "3M", value: "3m" },
-              { label: "6M", value: "6m" },
-              { label: "1Y", value: "1y" },
-              { label: "All", value: "all" },
-            ]}
-            variant="content"
-            tabClassName="ml-auto"
-            triggerClassName="w-[50px] h-10"
-          />
+            defaultValue="1y"
+            variant="outline"
+            className="self-end"
+          >
+            <ToggleGroupItem value="3m">3M</ToggleGroupItem>
+            <ToggleGroupItem value="6m">6M</ToggleGroupItem>
+            <ToggleGroupItem value="1y">1Y</ToggleGroupItem>
+            <ToggleGroupItem value="all">All</ToggleGroupItem>
+          </ToggleGroup>
         )}
         <ChartComponent
           data={chartData}
@@ -163,5 +162,3 @@ function ChartCard<
     </Card>
   )
 }
-
-export { ChartCard }
