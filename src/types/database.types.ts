@@ -249,6 +249,36 @@ export type Database = {
           },
         ]
       }
+      news_articles: {
+        Row: {
+          created_at: string | null
+          excerpt: string | null
+          id: string
+          published_at: string | null
+          source: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          source: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          source?: string
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
       tx_cashflow: {
         Row: {
           asset_id: string

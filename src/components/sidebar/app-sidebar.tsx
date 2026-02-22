@@ -6,7 +6,8 @@ import {
   LogOut,
   TvMinimal,
   Handshake,
-  Newspaper
+  Newspaper,
+  Rss
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -36,6 +37,11 @@ const data = {
       title: "Transactions",
       url: "/transactions",
       icon: Handshake,
+    },
+    {
+      title: "News",
+      url: "/news",
+      icon: Rss,
     },
     {
       title: "Settings",

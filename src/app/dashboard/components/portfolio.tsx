@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 export function Portfolio() {
   const { data: stockData } = useHoldingData()
 
-  const maxVisible = 4
+  const maxVisible = 3
   const hasMore = stockData.length > maxVisible
   const hiddenCount = hasMore ? stockData.length - maxVisible : 0
   const displayedStocks = hasMore ? stockData.slice(0, maxVisible) : stockData
 
   return (
-    <Card variant="glow" className="relative flex flex-col gap-4 h-fit">
+    <Card variant="glow" className="flex flex-col gap-4 min-h-90">
       <CardHeader>
         <CardTitle className="text-xl">Portfolio</CardTitle>
         <CardAction>

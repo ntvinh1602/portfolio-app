@@ -29,6 +29,7 @@ import {
   RepayForm
 } from "./form/index"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
+import { Separator } from "@/components/ui/separator"
 
 type Preset = "1M" | "3M" | "6M" | "1Y" | "CUSTOM"
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
@@ -107,7 +108,8 @@ export default function TransactionsPage() {
   return (
     <div className="flex flex-col h-svh overflow-hidden">
       <Header title="Transactions" />
-      <div className="flex flex-col flex-1 min-h-0 w-8/10 mx-auto gap-2">
+      <Separator/>
+      <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-2">
         {error && (
           <div className="text-red-500 text-sm">
             Error fetching transactions: {error.message}

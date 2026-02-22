@@ -1339,6 +1339,20 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."news_articles" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "url" "text" NOT NULL,
+    "source" "text" NOT NULL,
+    "published_at" timestamp with time zone,
+    "excerpt" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."news_articles" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on') AS
  WITH "borrow_tx" AS (
          SELECT "d"."tx_id",
@@ -1418,6 +1432,30 @@ CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') 
 
 
 ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
+ SELECT "t"."id",
+    "t"."created_at",
+    "t"."category",
+        CASE
+            WHEN ("t"."category" = 'stock'::"text") THEN "s"."side"
+            WHEN ("t"."category" = 'cashflow'::"text") THEN "cf"."operation"
+            ELSE "d"."operation"
+        END AS "operation",
+        CASE
+            WHEN ("t"."category" = 'stock'::"text") THEN "s"."net_proceed"
+            WHEN ("t"."category" = 'cashflow'::"text") THEN "cf"."net_proceed"
+            ELSE "d"."net_proceed"
+        END AS "value",
+    "t"."memo"
+   FROM ((("public"."tx_entries" "t"
+     LEFT JOIN "public"."tx_stock" "s" ON (("t"."id" = "s"."tx_id")))
+     LEFT JOIN "public"."tx_cashflow" "cf" ON (("t"."id" = "cf"."tx_id")))
+     LEFT JOIN "public"."tx_debt" "d" ON (("t"."id" = "d"."tx_id")));
+
+
+ALTER VIEW "public"."tx_summary" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on') AS
@@ -1597,6 +1635,16 @@ ALTER TABLE ONLY "public"."daily_exchange_rates"
 
 ALTER TABLE ONLY "public"."daily_market_indices"
     ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
+
+
+
+ALTER TABLE ONLY "public"."news_articles"
+    ADD CONSTRAINT "news_articles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."news_articles"
+    ADD CONSTRAINT "news_articles_url_key" UNIQUE ("url");
 
 
 
@@ -1802,6 +1850,10 @@ CREATE POLICY "Access for authenticated users" ON "public"."cashflow_memo" TO "a
 
 
 
+CREATE POLICY "Access for authenticated users" ON "public"."news_articles" TO "authenticated" USING (true);
+
+
+
 CREATE POLICY "Access for authenticated users" ON "public"."tx_cashflow" TO "authenticated" USING (true);
 
 
@@ -1868,6 +1920,9 @@ ALTER TABLE "public"."daily_security_prices" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."news_articles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."tx_cashflow" ENABLE ROW LEVEL SECURITY;
@@ -2299,6 +2354,12 @@ GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."news_articles" TO "anon";
+GRANT ALL ON TABLE "public"."news_articles" TO "authenticated";
+GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
 GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
 GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
@@ -2314,6 +2375,12 @@ GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "anon";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tx_summary" TO "anon";
+GRANT ALL ON TABLE "public"."tx_summary" TO "authenticated";
+GRANT ALL ON TABLE "public"."tx_summary" TO "service_role";
 
 
 
