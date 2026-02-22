@@ -139,7 +139,7 @@ export function ChartCard<
             onValueChange={onDateRangeChange}
             defaultValue="1y"
             variant="outline"
-            className="self-end"
+            className="self-end [&_[data-state=on]]:bg-primary/10 [&_[data-state=on]]:text-primary"
           >
             <ToggleGroupItem value="3m">3M</ToggleGroupItem>
             <ToggleGroupItem value="6m">6M</ToggleGroupItem>
