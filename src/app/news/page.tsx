@@ -33,9 +33,8 @@ export default function NewsPage() {
         <div className="flex flex-col gap-2">
           {articles.map((article) => (
             <Card
-              variant="glow"
               key={article.id}
-              className="cursor-pointer transition hover:bg-primary/10 hover:border-primary"
+              className="cursor-pointer transition hover:bg-primary/10 hover:border-primary backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
               onClick={() => window.open(article.url, "_blank")}
             >
               <CardHeader>

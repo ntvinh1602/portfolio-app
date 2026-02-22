@@ -84,14 +84,13 @@ export function ChartCard<
   }
 
   return (
-    <Card 
-      variant="glow"
-      className="relative flex flex-col gap-0 h-full"
+    <Card className="relative flex flex-col gap-0 h-full
+      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
     >
-      <CardHeader className="items-center">
+      <CardHeader className="flex-col gap-1 items-center">
         <CardDescription>{title}</CardDescription>
         <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-2xl font-light">
             {majorValue && majorValueFormatter(majorValue)}
           </CardTitle>
           <CardDescription className="text-xs">{description}</CardDescription>
@@ -138,8 +137,10 @@ export function ChartCard<
             type="single"
             onValueChange={onDateRangeChange}
             defaultValue="1y"
-            variant="outline"
-            className="self-end [&_[data-state=on]]:bg-primary/10 [&_[data-state=on]]:text-primary"
+            variant="default"
+            spacing={1}
+            size="sm"
+            className="self-end [&_[data-state=on]]:bg-primary/20"
           >
             <ToggleGroupItem value="3m">3M</ToggleGroupItem>
             <ToggleGroupItem value="6m">6M</ToggleGroupItem>

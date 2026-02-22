@@ -5,14 +5,19 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { createClient } from "@/lib/supabase/client"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
-import { createClient } from "@/lib/supabase/client"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 
 export function LoginForm({
   className,
@@ -46,22 +51,18 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="border-none bg-card/0">
-        <CardHeader className="px-0 flex flex-col items-center">
-          <h1 className="text-2xl text-accent-foreground">
-            Hello there!
-          </h1>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Hello there!</CardTitle>
           <CardDescription>
-            Enter your credentials below to login
+            Enter your email below to login to your account
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-0">
+        <CardContent>
           <form onSubmit={handleLogin}>
-            <div className="grid gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="email" className="text-muted-foreground">
-                  Email
-                </Label>
+            <FieldGroup>
+               <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input 
                   id="email"
                   type="email"
@@ -71,13 +72,9 @@ export function LoginForm({
                   disabled={isLoading}
                   className="font-thin text-sm text-accent-foreground"
                 />
-              </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label className="text-muted-foreground" htmlFor="password">
-                    Password
-                  </Label>
-                </div>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -87,18 +84,20 @@ export function LoginForm({
                   disabled={isLoading}
                   className="text-accent-foreground"
                 />
-              </div>
+              </Field>
               {error && (
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive mx-auto">{error}</p>
               )}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </div>
+              <Field>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+              </Field>
+            </FieldGroup>
           </form>
         </CardContent>
       </Card>

@@ -23,7 +23,7 @@ export default function Page() {
     <div>
       <Header title="Transactions" />
       <div className="w-4/10 flex flex-col mx-auto">
-        <Card variant="glow">
+        <Card>
           <CardHeader>
             <CardTitle>Stock Assets</CardTitle>
             <CardDescription>

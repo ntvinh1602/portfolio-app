@@ -43,9 +43,9 @@ export function NewsWidget() {
   const latest = filteredArticles.slice(0, 6)
 
   return (
-    <Card variant="glow" className="min-h-130">
+    <Card className="min-h-130 backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
       <CardHeader>
-        <CardTitle className="text-lg">Latest News</CardTitle>
+        <CardTitle className="text-lg font-normal">Latest News</CardTitle>
         <CardAction>
           <ToggleGroup
             type="single"

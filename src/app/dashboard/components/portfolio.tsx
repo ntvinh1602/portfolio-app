@@ -2,6 +2,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { RefreshPricesButton, Asset } from "./portfolio-card"
 import { useHoldingData } from "@/hooks/useHoldingData"
 import { Button } from "@/components/ui/button"
+import { BalanceSheet } from "./balance-sheet"
 
 export function Portfolio() {
   const { data: stockData } = useHoldingData()
@@ -12,10 +13,13 @@ export function Portfolio() {
   const displayedStocks = hasMore ? stockData.slice(0, maxVisible) : stockData
 
   return (
-    <Card variant="glow" className="flex flex-col gap-4 min-h-90">
-      <CardHeader>
-        <CardTitle className="text-xl">Portfolio</CardTitle>
-        <CardAction>
+    <Card className="flex flex-col gap-4 min-h-90
+      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
+    >
+      <CardHeader className="flex justify-between items-center">
+        <CardTitle className="text-lg font-normal">Portfolio</CardTitle>
+        <CardAction className="flex gap-2">
+          <BalanceSheet/>
           <RefreshPricesButton />
         </CardAction>
       </CardHeader>

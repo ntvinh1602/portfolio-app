@@ -28,7 +28,9 @@ export function Asset({
         : "text-foreground"
 
   return (
-    <Card variant="highlight" className="relative border-0 text-card-foreground backdrop-blur-sm rounded-full py-3">
+    <Card className="relative text-card-foreground rounded-full py-3
+      border-0 bg-gradient-to-r from-ring/10 to-transparent backdrop-blur-sm before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/50 before:to-transparent"
+    >
       <CardContent className="flex items-center gap-3 px-3">
         <div className="w-6 flex justify-center">
           {rank <= 3 ? (

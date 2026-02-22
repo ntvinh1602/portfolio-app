@@ -91,31 +91,6 @@ CREATE TYPE "public"."cashflow_ops" AS ENUM (
 ALTER TYPE "public"."cashflow_ops" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."currency_type" AS ENUM (
-    'fiat',
-    'crypto'
-);
-
-
-ALTER TYPE "public"."currency_type" OWNER TO "postgres";
-
-
-CREATE TYPE "public"."transaction_type" AS ENUM (
-    'buy',
-    'sell',
-    'deposit',
-    'withdraw',
-    'income',
-    'expense',
-    'borrow',
-    'repay',
-    'split'
-);
-
-
-ALTER TYPE "public"."transaction_type" OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -492,7 +467,7 @@ begin
   select * into r from public.tx_debt where tx_id = p_tx_id;
 
   -- Resolve asset IDs
-  select id into v_cash_asset from public.assets where ticker = 'VND';
+  select id into v_cash_asset from public.assets where ticker = 'FX.VND';
   select id into v_equity_asset from public.assets where ticker = 'CAPITAL';
   select id into v_debt_asset from public.assets where ticker = 'DEBTS';
 
@@ -547,7 +522,7 @@ begin
   select * into r from public.tx_stock where tx_id = p_tx_id;
 
   -- Resolve asset IDs
-  select id into v_cash_asset from public.assets where ticker ='VND';
+  select id into v_cash_asset from public.assets where ticker ='FX.VND';
   select id into v_equity_asset from public.assets where ticker = 'CAPITAL';
   v_stock_asset := r.stock_id;
 
@@ -1020,8 +995,7 @@ ALTER TABLE "public"."cashflow_memo" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" "text" NOT NULL,
-    "name" "text" NOT NULL,
-    "type" "public"."currency_type" NOT NULL
+    "name" "text" NOT NULL
 );
 
 
@@ -1061,7 +1035,7 @@ ALTER TABLE "public"."daily_security_prices" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."tx_cashflow" (
     "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "asset_id" "uuid" NOT NULL,
-    "operation" "text" NOT NULL,
+    "operation" "public"."cashflow_ops" NOT NULL,
     "quantity" numeric(18,2) NOT NULL,
     "fx_rate" numeric DEFAULT 1 NOT NULL,
     "net_proceed" numeric(16,0) GENERATED ALWAYS AS (("quantity" * "fx_rate")) STORED NOT NULL
@@ -1196,7 +1170,7 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
              JOIN "public"."tx_legs" "tl" ON (("tl"."tx_id" = "e"."id")))
              JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
              JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "e"."id")))
-          WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"text", 'withdraw'::"text"])) AND ("a"."asset_class" = 'equity'::"public"."asset_class"))
+          WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"public"."cashflow_ops", 'withdraw'::"public"."cashflow_ops"])) AND ("a"."asset_class" = 'equity'::"public"."asset_class"))
           GROUP BY (("e"."created_at")::"date")
         ), "base" AS (
          SELECT "d"."snapshot_date",
@@ -1339,6 +1313,16 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."news_article_assets" (
+    "article_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."news_article_assets" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."news_articles" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "title" "text" NOT NULL,
@@ -1440,7 +1424,7 @@ CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
     "t"."category",
         CASE
             WHEN ("t"."category" = 'stock'::"text") THEN "s"."side"
-            WHEN ("t"."category" = 'cashflow'::"text") THEN "cf"."operation"
+            WHEN ("t"."category" = 'cashflow'::"text") THEN ("cf"."operation")::"text"
             ELSE "d"."operation"
         END AS "operation",
         CASE
@@ -1638,6 +1622,11 @@ ALTER TABLE ONLY "public"."daily_market_indices"
 
 
 
+ALTER TABLE ONLY "public"."news_article_assets"
+    ADD CONSTRAINT "news_article_assets_pkey" PRIMARY KEY ("article_id", "asset_id");
+
+
+
 ALTER TABLE ONLY "public"."news_articles"
     ADD CONSTRAINT "news_articles_pkey" PRIMARY KEY ("id");
 
@@ -1720,7 +1709,7 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
          SELECT GREATEST((- "sum"("tl"."quantity")), (0)::numeric) AS "greatest"
            FROM ("public"."tx_legs" "tl"
              JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
-          WHERE ("a"."ticker" = 'VND'::"text")
+          WHERE ("a"."ticker" = 'FX.VND'::"text")
         ), "asset_quantity" AS (
          SELECT "a"."ticker",
             "a"."name",
@@ -1728,7 +1717,7 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
                 CASE
                     WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN ( SELECT "debt_interest"."coalesce"
                        FROM "debt_interest")
-                    WHEN ("a"."ticker" = 'PNL'::"text") THEN ( SELECT "pnl"."?column?"
+                    WHEN ("a"."ticker" = 'UNREALIZED'::"text") THEN ( SELECT "pnl"."?column?"
                        FROM "pnl")
                     WHEN ("a"."ticker" = 'MARGIN'::"text") THEN ( SELECT "margin"."greatest"
                        FROM "margin")
@@ -1802,6 +1791,16 @@ ALTER TABLE ONLY "public"."daily_exchange_rates"
 
 
 
+ALTER TABLE ONLY "public"."news_article_assets"
+    ADD CONSTRAINT "news_article_assets_article_fkey" FOREIGN KEY ("article_id") REFERENCES "public"."news_articles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."news_article_assets"
+    ADD CONSTRAINT "news_article_assets_asset_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."asset_positions"
     ADD CONSTRAINT "stock_positions_stock_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id");
 
@@ -1847,6 +1846,10 @@ CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO 
 
 
 CREATE POLICY "Access for authenticated users" ON "public"."cashflow_memo" TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Access for authenticated users" ON "public"."news_article_assets" TO "authenticated" USING (true);
 
 
 
@@ -1920,6 +1923,9 @@ ALTER TABLE "public"."daily_security_prices" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."news_article_assets" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."news_articles" ENABLE ROW LEVEL SECURITY;
@@ -2351,6 +2357,12 @@ GRANT ALL ON TABLE "public"."tx_stock" TO "service_role";
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "anon";
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "authenticated";
 GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."news_article_assets" TO "anon";
+GRANT ALL ON TABLE "public"."news_article_assets" TO "authenticated";
+GRANT ALL ON TABLE "public"."news_article_assets" TO "service_role";
 
 
 

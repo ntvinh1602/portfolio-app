@@ -6,9 +6,9 @@ import {
   PopoverContent
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { PanelRightOpen } from "lucide-react"
+import { BookCheck } from "lucide-react"
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
-import { Card, CardHeader } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { useState } from "react"
 import { BSItem } from "./balance-sheet/bs-item"
 
@@ -43,7 +43,7 @@ export function BalanceSheet() {
           size="icon"
           className="rounded-full"
         >
-          <PanelRightOpen className="size-4" />
+          <BookCheck className="size-4" />
         </Button>
       </PopoverTrigger>
 
@@ -54,10 +54,6 @@ export function BalanceSheet() {
         <Card className="flex flex-row px-2 py-4 border-0 bg-transparent">
           {/* ASSETS */}
           <div className="flex flex-col min-w-100">
-            <CardHeader className="pb-4 justify-center text-xl font-thin">
-              Total Assets
-            </CardHeader>
-
             <BSItem header label="Assets" value={totalAssets} />
 
             {Object.entries(groupedAssets).map(([assetClass, items]) => {
@@ -105,9 +101,6 @@ export function BalanceSheet() {
           {/* LIABILITIES + EQUITY */}
           <div className="flex flex-col gap-4 min-w-100">
             <div className="flex flex-col">
-              <CardHeader className="pb-4 justify-center text-xl font-thin">
-                Total Liabilities
-              </CardHeader>
               <BSItem header label="Liabilities" value={totalLiabilities} />
               {liabilities.map((item) => (
                 <BSItem

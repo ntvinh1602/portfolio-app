@@ -25,9 +25,10 @@ export function BSItem({
 }: BSItemProps) {
   return (
     <Card
-      variant={header ? "highlight" : "normal"}
       className={`border-0 py-3 rounded-md transition-colors ${
-        header ? "rounded-full text-primary" : ""
+        header
+          ? "rounded-full text-primary border-0 bg-gradient-to-r from-ring/10 to-transparent backdrop-blur-sm before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/50 before:to-transparent"
+          : "bg-transparent shadow-none"
       } ${className}`}
       {...props}
     >
