@@ -39,8 +39,8 @@ export function NewsWidget() {
     )
   }, [articles, filter, holdingTickers])
 
-  // Show only the 6 latest after filtering
-  const latest = filteredArticles.slice(0, 6)
+  // Show only the 5 latest after filtering
+  const latest = filteredArticles.slice(0, 5)
 
   return (
     <Card className="min-h-130 backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
@@ -70,7 +70,7 @@ export function NewsWidget() {
             onClick={() => window.open(article.url, "_blank")}
           >
             <div className="flex items-start justify-between">
-              <p className="text-sm font-light leading-tight line-clamp-2 group-hover:text-primary">
+              <p className="text-sm font-light leading-tight text-foreground/80 line-clamp-2 group-hover:text-primary">
                 {article.title}
               </p>
 

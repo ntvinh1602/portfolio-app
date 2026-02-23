@@ -1,8 +1,17 @@
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RefreshPricesButton, Asset } from "./portfolio-card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
+import {
+  RefreshButton,
+  Asset,
+  BalanceSheet
+} from "./primitive"
 import { useHoldingData } from "@/hooks/useHoldingData"
 import { Button } from "@/components/ui/button"
-import { BalanceSheet } from "./balance-sheet"
 
 export function Portfolio() {
   const { data: stockData } = useHoldingData()
@@ -20,7 +29,7 @@ export function Portfolio() {
         <CardTitle className="text-lg font-normal">Portfolio</CardTitle>
         <CardAction className="flex gap-2">
           <BalanceSheet/>
-          <RefreshPricesButton />
+          <RefreshButton />
         </CardAction>
       </CardHeader>
 

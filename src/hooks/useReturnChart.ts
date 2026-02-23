@@ -25,11 +25,12 @@ async function fetchReturnData(time: string) {
 
 export function useReturnChartData(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    time ? ["return-chart", time] : null,
+    ["returnChart", "priceRefresh", time],
     () => fetchReturnData(time),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
 

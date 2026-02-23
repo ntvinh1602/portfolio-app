@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { mutate } from 'swr'
 
-export function RefreshPricesButton() {
+export function RefreshButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
@@ -15,8 +16,7 @@ export function RefreshPricesButton() {
 
     try {
       const supabase = createClient()
-
-      // ✅ call the Edge Function deployed as "fetch-yahoofinance"
+      
       const { data, error } = await supabase.functions.invoke('fetch-yahoofinance', {
         body: { name: 'Functions' },
       })
@@ -27,6 +27,12 @@ export function RefreshPricesButton() {
         id: toastId,
         description: `Stocks: ${data.stocks}, Cryptos: ${data.cryptos}, Indices: ${data.indices}`,
       })
+      
+      await mutate(
+        (key) => Array.isArray(key) && key[0] === "priceRefresh",
+        undefined,
+        { revalidate: true }
+      )
     } catch (err: any) {
       toast.error(err.message ?? "Failed to refresh prices", { id: toastId })
     } finally {
@@ -47,7 +53,7 @@ export function RefreshPricesButton() {
           isRefreshing ? "animate-spin" : ""
         }`}
       >
-        <RefreshCw className="size-4" />
+        <RefreshCw className="size-4 text-foreground/80" />
       </div>
     </Button>
   )

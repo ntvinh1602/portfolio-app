@@ -29,11 +29,12 @@ async function fetchEquityChartData(time: string) {
  */
 export function useEquityChartData(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    time ? ["equityChartData", time] : null,
+    ["equityChart", time, "priceRefresh"],
     () => fetchEquityChartData(time),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
 

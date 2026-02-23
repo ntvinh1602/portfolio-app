@@ -65,17 +65,17 @@ export function Asset({
         />
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col max-w-[200px] w-full overflow-hidden">
-            <CardTitle className="text-sm font-normal w-full truncate overflow-hidden whitespace-nowrap">
+            <CardTitle className="text-sm font-light text-foreground/80 w-full truncate overflow-hidden whitespace-nowrap">
               {!isMobile ? name : ticker}
             </CardTitle>
             <CardDescription className="flex items-center gap-1 truncate pt-1">
-              <Badge variant="secondary" className="font-normal">
+              <Badge variant="outline" className="font-light text-foreground/80">
                 <Coins className="" />
                 {!isMobile ? formatNum(quantity) : compactNum(quantity)}
               </Badge>
               <Badge
-                variant="secondary"
-                className={`font-normal ${
+                variant="outline"
+                className={`font-light text-foreground/80 ${
                   priceChanged === "up"
                     ? "animate-flash-green"
                     : priceChanged === "down"
@@ -89,7 +89,7 @@ export function Asset({
             </CardDescription>
           </div>
           <div className="flex flex-col justify-end pr-2">
-            <CardTitle className="text-right text-sm font-normal">
+            <CardTitle className="text-right text-sm font-normal text-foreground/80">
               {formatNum(totalAmount)}
             </CardTitle>
             <CardDescription className="flex items-center justify-end text-xs gap-1">

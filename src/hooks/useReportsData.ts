@@ -33,7 +33,7 @@ async function fetchReports() {
 
 export function useReportsData() {
   const { data, error, isLoading } = useSWR(
-    "supabase/reports",
+    "yearlyData",
     fetchReports,
     {
       revalidateOnFocus: false,

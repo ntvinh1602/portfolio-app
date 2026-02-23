@@ -4,8 +4,10 @@ import { useState } from "react"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
-import { useReturnChartData } from "@/hooks/useReturnChart"
-import { useTWR } from "@/hooks/useTWR"
+import {
+  useReturnChartData,
+  useTWR
+} from "@/hooks"
 
 export function Benchmarkchart() {
   const [dateRange, setDateRange] = useState("1y")

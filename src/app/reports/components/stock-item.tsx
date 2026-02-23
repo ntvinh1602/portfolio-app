@@ -1,5 +1,9 @@
-import { Card, CardDescription, CardContent, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Card,
+  CardDescription,
+  CardContent,
+  CardTitle
+} from "@/components/ui/card"
 import Image from 'next/image'
 import { TrendingUp, TrendingDown, Award } from "lucide-react"
 import { compactNum } from "@/lib/utils"
@@ -64,28 +68,6 @@ export function Asset({
               : <TrendingUp className="text-green-500" />
             }
             {compactNum(totalAmount)}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export function AssetSkeleton() {
-  return (
-    <Card className="border-0 text-card-foreground bg-muted dark:bg-muted/50 backdrop-blur-sm rounded-xl py-3">
-      <CardContent className="flex items-center gap-3 px-3">
-        <div className="w-6 flex justify-center">
-          <Skeleton className="w-4 h-4 rounded-full" />
-        </div>
-        <Skeleton className="w-12 h-12 rounded-full bg-background" />
-        <div className="flex justify-between w-full items-center">
-          <div className="flex flex-col max-w-[250px] space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-          <div className="flex items-center gap-1 font-thin text-sm justify-end px-2">
-            <Skeleton className="w-14 h-4" />
           </div>
         </div>
       </CardContent>

@@ -14,6 +14,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { useAssets } from "@/hooks/useAssets"
 import { stockSchema } from "./schema"
+import { mutate } from "swr"
 
 type FormValues = z.infer<typeof stockSchema>
 
@@ -67,6 +68,12 @@ export function StockForm() {
         })
         form.reset()
       }
+      
+      await mutate(
+        (key) => Array.isArray(key) && key[0] === "priceRefresh",
+        undefined,
+        { revalidate: true }
+      )
     } catch (err) {
         const message = err instanceof Error
           ? err.message

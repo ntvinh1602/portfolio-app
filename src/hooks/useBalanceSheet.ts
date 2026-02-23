@@ -24,11 +24,12 @@ async function fetchBalanceSheet() {
 // ---------- Hook ----------
 export function useBalanceSheetData() {
   const { data, error, isLoading, mutate } = useSWR(
-    "supabase/balance_sheet",
+    ["balanceSheet", "priceRefresh"],
     fetchBalanceSheet,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
   const rawData = data ? data : []

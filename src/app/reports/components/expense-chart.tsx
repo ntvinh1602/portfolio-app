@@ -1,6 +1,12 @@
 "use client"
 
-import { Card, CardContent, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardAction,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum } from "@/lib/utils"
@@ -74,7 +80,7 @@ export function ExpenseChart({
   return (
     <Card className={`gap-0 h-fit rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent ${className}`}>
       <CardHeader>
-        <CardTitle className="text-xl">Expenses</CardTitle>
+        <CardTitle className="text-xl font-normal">Expenses</CardTitle>
         <CardAction>
           <HandCoins className="size-5 stroke-1" />
         </CardAction>

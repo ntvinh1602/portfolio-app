@@ -20,11 +20,12 @@ export function useHoldingData() {
   }
 
   const { data, error, isLoading, mutate } = useSWR(
-    "holdings",
+    ["holdings", "priceRefresh"],
     fetchHoldings,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
 

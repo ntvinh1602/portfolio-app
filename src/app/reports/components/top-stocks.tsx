@@ -1,7 +1,14 @@
 "use client"
 
-import { Asset } from "@/app/reports/components/stock-item"
-import { Card, CardDescription, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card"
+import { Asset } from "./stock-item"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent
+} from "@/components/ui/card"
 import { Trophy } from "lucide-react"
 import { useReportsData } from "@/hooks/useReportsData"
 
@@ -14,7 +21,7 @@ interface StockPnLItem {
   year: number
 }
 
-export function StockLeaderboard({ year }: { year?: string | number }) {
+export function TopStocks({ year }: { year?: string | number }) {
   const { stockPnLData, error } = useReportsData()
   const yearKey = year?.toString()
 
@@ -60,7 +67,7 @@ export function StockLeaderboard({ year }: { year?: string | number }) {
   return (
     <Card className="h-full rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
       <CardHeader>
-        <CardTitle className="text-xl">Best Performers</CardTitle>
+        <CardTitle className="text-xl font-normal">Best Performers</CardTitle>
         <CardDescription>Based on total realized P/L</CardDescription>
         <CardAction>
           <Trophy className="stroke-1 size-5" />

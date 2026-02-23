@@ -13,7 +13,7 @@ export function useAssets() {
   }
 
   const { data = [], error, isLoading, mutate } = useSWR<Tables<"assets">[]>(
-    "assetsData",
+    "assets",
     fetchAssets,
     {
       revalidateOnFocus: false,

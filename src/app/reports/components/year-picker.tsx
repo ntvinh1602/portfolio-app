@@ -6,7 +6,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function YearSelect({
+export function YearPicker({
   startYear = 2000,
   endYear = new Date().getFullYear(),
   value,

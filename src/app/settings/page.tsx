@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,7 +20,6 @@ export default function Page() {
 
   return (
     <div>
-      <Header title="Transactions" />
       <div className="w-4/10 flex flex-col mx-auto">
         <Card>
           <CardHeader>

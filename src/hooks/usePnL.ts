@@ -12,6 +12,9 @@ async function fetchPnL(time: string) {
     p_start_date,
     p_end_date,
   })
+  console.log("param", time)
+  console.log("start", p_start_date)
+  console.log("end", p_end_date)
   if (error) throw error
   return data as number
 }
@@ -22,11 +25,12 @@ async function fetchPnL(time: string) {
  */
 export function usePnL(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    time ? ["calculate_pnl", time] : null,
+    ["pnl", "priceRefresh", time],
     () => fetchPnL(time),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
 

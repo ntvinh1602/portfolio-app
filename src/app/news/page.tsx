@@ -1,7 +1,6 @@
 "use client"
 
 import { useNews } from "@/hooks/useNews"
-import { Header } from "@/components/header"
 import {
   Card,
   CardAction,
@@ -26,8 +25,7 @@ export default function NewsPage() {
   const { data: articles } = useNews()
 
   return (
-    <div className="flex flex-col h-svh overflow-hidden">
-      <Header title="News" />
+    <div>
       <Separator/>
       <ScrollArea className="flex flex-1 min-h-0 w-6/10 mt-4 mx-auto">
         <div className="flex flex-col gap-2">

@@ -15,8 +15,7 @@ import {
 import {
   Popover,
   PopoverTrigger,
-  PopoverContent,
-  PopoverAnchor
+  PopoverContent
 } from "@/components/ui/popover"
 
 export type ComboboxItem = {

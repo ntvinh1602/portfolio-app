@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { subMonths } from "date-fns"
 import { DatePicker } from "@/components/date-picker"
-import { Header } from "@/components/header"
 import { DataTable } from "./table/data-table"
 import { columns } from "./table/columns"
 import { useTransactions } from "@/hooks/useTransactions"
@@ -27,7 +26,7 @@ import {
   CashflowForm,
   BorrowForm,
   RepayForm
-} from "./form/index"
+} from "./form"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import { Separator } from "@/components/ui/separator"
 
@@ -106,8 +105,7 @@ export default function TransactionsPage() {
   const currentConfig = activeForm ? formConfig[activeForm] : null
 
   return (
-    <div className="flex flex-col h-svh overflow-hidden">
-      <Header title="Transactions" />
+    <div>
       <Separator/>
       <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-2">
         {error && (

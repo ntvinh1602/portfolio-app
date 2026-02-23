@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { useTheme } from "./theme-provider"
+import { useTheme } from "../context/theme-provider"
 
 const themes = [
   {

@@ -16,7 +16,7 @@ export function useCurrency() {
 
   // ✅ Use a unique SWR key
   const { data, error, isLoading, mutate } = useSWR<Tables<"currencies">[]>(
-    "currenciesData",
+    "currencies",
     fetchCurrency,
     {
       revalidateOnFocus: false,

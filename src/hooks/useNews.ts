@@ -50,7 +50,7 @@ export function useNews() {
   }
 
   const { data, error, isLoading, mutate } = useSWR(
-    "newsData",
+    "news",
     fetchNews,
     {
       revalidateOnFocus: false,

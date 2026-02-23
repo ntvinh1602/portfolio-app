@@ -2,11 +2,18 @@
 
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useReportsData } from "@/hooks/useReportsData"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { ChartCard } from "@/components/chart-card"
 import { format } from "date-fns"
-import { useReturnChartData } from "@/hooks/useReturnChart"
+import {
+  useReturnChartData,
+  useReportsData
+} from "@/hooks"
 
 interface ReturnChartProps {
   year: string

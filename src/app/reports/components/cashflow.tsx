@@ -1,9 +1,23 @@
-import { Card, CardContent, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardAction,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
-import { useHoldingData } from "@/hooks/useHoldingData"
-import { useReportsData } from "@/hooks/useReportsData"
-import { TrendingUp, TrendingDown, ArrowDownCircle, ArrowLeftRight, ArrowUpCircle } from "lucide-react"
+import {
+  useHoldingData,
+  useReportsData
+} from "@/hooks"
+import {
+  TrendingUp,
+  TrendingDown,
+  ArrowDownCircle,
+  ArrowLeftRight,
+  ArrowUpCircle
+} from "lucide-react"
 
 export function Cashflow({
   year,
@@ -49,7 +63,7 @@ export function Cashflow({
   return (
     <Card className={`gap-6 h-fit rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent ${className}`}>
       <CardHeader>
-        <CardTitle className="text-xl">Cashflow</CardTitle>
+        <CardTitle className="text-xl font-normal">Cashflow</CardTitle>
         <CardAction>
           <ArrowLeftRight className="size-5 stroke-1"/>
         </CardAction>

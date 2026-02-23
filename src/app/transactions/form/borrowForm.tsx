@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { borrowSchema } from "./schema"
+import { mutate } from "swr"
 
 type FormValues = z.infer<typeof borrowSchema>
 
@@ -37,6 +38,12 @@ export function BorrowForm() {
         toast.success("Debt added")
         form.reset()
       }
+      
+      await mutate(
+        (key) => Array.isArray(key) && key[0] === "priceRefresh",
+        undefined,
+        { revalidate: true }
+      )
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred. Please try again later."

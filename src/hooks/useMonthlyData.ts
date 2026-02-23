@@ -45,10 +45,15 @@ async function fetchMonthlySnapshots(period: PeriodParam): Promise<MonthlySnapsh
  * @param period "1y" | "all" | 2024 | 2025 | etc.
  */
 export function useMonthlyData(period: PeriodParam) {
-  const key = ["monthly_snapshots", period]
-  const { data, error, isLoading, mutate } = useSWR(key, () => fetchMonthlySnapshots(period), {
-    revalidateOnFocus: false,
-  })
+  const { data, error, isLoading, mutate } = useSWR(
+    ["monthlyData", "priceRefresh", period],
+    () => fetchMonthlySnapshots(period),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
+    }
+  )
 
   return {
     data: data || [],

@@ -10,7 +10,7 @@ import { BookCheck } from "lucide-react"
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 import { Card } from "@/components/ui/card"
 import { useState } from "react"
-import { BSItem } from "./balance-sheet/bs-item"
+import { BSItem } from "./"
 
 export function BalanceSheet() {
   const {
@@ -43,7 +43,7 @@ export function BalanceSheet() {
           size="icon"
           className="rounded-full"
         >
-          <BookCheck className="size-4" />
+          <BookCheck className="size-4 text-foreground/80" />
         </Button>
       </PopoverTrigger>
 

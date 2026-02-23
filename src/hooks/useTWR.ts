@@ -13,7 +13,6 @@ async function fetchTWR(time: string) {
     p_end_date,
   })
   if (error) throw error
-  console.log('twr', data)
   return data as number
 }
 
@@ -23,11 +22,12 @@ async function fetchTWR(time: string) {
  */
 export function useTWR(time: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    ["calculate_twr", time], // use range as cache key for simplicity
+    ["twr", "priceRefresh", time], // use range as cache key for simplicity
     () => fetchTWR(time),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 1000 * 60 * 5, // cache 5 minutes
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000 * 60 * 10,
     }
   )
 
