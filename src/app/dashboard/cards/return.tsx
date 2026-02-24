@@ -5,8 +5,8 @@ import { ChartCard } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import {
-  useReturnChartData,
-  useTWR
+  useDashboard,
+  useReturnChartData
 } from "@/hooks"
 
 export function Benchmarkchart() {
@@ -14,19 +14,18 @@ export function Benchmarkchart() {
   const { data } = useReturnChartData(dateRange)
   
   // Fetch MTD and YTD separately
-  const { data: twr_ytd } = useTWR("ytd")
-  const { data: twr_all } = useTWR("all")
+  const { data: dashboard } = useDashboard()
 
   const years = (new Date().getTime() - new Date('2021-11-09').getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-  const cagr = (Math.pow(1 + twr_all, 1 / years) - 1) * 100
+  const cagr = (Math.pow(1 + dashboard.twr_all, 1 / years) - 1) * 100
 
    return (
     <ChartCard
       title="Return"
-      majorValue={twr_ytd}
+      majorValue={dashboard.twr_ytd}
       majorValueFormatter={(value) => `${formatNum(value * 100, 1)}%`}
       description="this year"
-      minorValue1={twr_all}
+      minorValue1={dashboard.twr_all}
       minorValue1Formatter={(value) => `${formatNum(value * 100, 1)}%`}
       minorText1="all time"
       minorValue2={cagr}

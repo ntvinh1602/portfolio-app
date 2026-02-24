@@ -2,50 +2,44 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum, formatNum } from "@/lib/utils"
-import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
+import { useDashboard } from "@/hooks"
 
 export function AssetCard() {
-  const {
-    bsData,
-    totalAssets,
-    totalLiabilities,
-    totalEquity,
-  } = useBalanceSheetData()
-  
-  const assets = bsData.filter((r) => r.asset_class != "equity" && r.asset_class !== "liability")
+  const { data: dashboard } = useDashboard()
 
-  // --- Derived Metrics ---
-  const debtsPrincipal = bsData
-    .filter((r) => r.ticker === "DEBTS")
-    .reduce((sum, r) => sum + (r.total_value), 0)
-  const accruedInterest = bsData
-    .filter((r) => r.ticker === "INTERESTS")
-    .reduce((sum, r) => sum + (r.total_value), 0)
-  const margin = bsData
-    .filter((r) => r.ticker === "MARGIN")
-    .reduce((sum, r) => sum + (r.total_value), 0)
-  const leverage = totalEquity !== 0
-    ? (totalLiabilities / totalEquity).toFixed(2)
-    : "∞"
+  const assetChartCfg: ChartConfig = {
+    cash: {
+      label: "Cash",
+      color: "var(--chart-1)"
+    },
+    stock: {
+      label: "Stock",
+      color: "var(--chart-2)"
+    },
+    fund: {
+      label: "Fund",
+      color: "var(--chart-3)"
+    },
+  }
 
-  // --- Asset Chart Config ---
-  const assetChartCfg: ChartConfig = Object.fromEntries(
-    assets.map((a, i) => [
-      (a.asset_class ?? "Unknown"),
-      {
-        label: a.asset_class.charAt(0).toUpperCase() + a.asset_class.slice(1),
-        color: `var(--chart-${(i % 4) + 1})`,
-      },
-    ])
-  )
+  const assetChartData = [
+    {
+      asset: "cash",
+      allocation: dashboard.cash,
+      fill: "var(--chart-1)"
+    },
+    {
+      asset: "stock",
+      allocation: dashboard.stock,
+      fill: "var(--chart-2)",
+    },
+    {
+      asset: "fund",
+      allocation: dashboard.fund,
+      fill: "var(--chart-3)"
+    }
+  ].filter((d) => d.allocation > 0)
 
-  const assetChartData = assets
-    .filter((a) => (a.total_value) > 0)
-    .map((a, i) => ({
-      asset: (a.asset_class ?? "Unknown").toLowerCase(),
-      allocation: a.total_value,
-      fill: `var(--chart-${(i % 4) + 1})`,
-    }))
 
   // --- Liability + Equity Chart Config ---
   const liabilityChartCfg: ChartConfig = {
@@ -66,19 +60,24 @@ export function AssetCard() {
   const liabilityChartData = [
     {
       liability: "equity",
-      allocation: totalEquity,
+      allocation: dashboard.total_equity,
       fill: "var(--chart-1)" },
     {
       liability: "debts",
-      allocation: debtsPrincipal + accruedInterest,
+      allocation: dashboard.debts,
       fill: "var(--chart-2)",
     },
     {
       liability: "margin",
-      allocation: margin,
+      allocation: dashboard.margin,
       fill: "var(--chart-3)"
     }
   ].filter((d) => d.allocation > 0)
+
+  const leverage = dashboard.total_equity !== 0
+    ? (dashboard.total_liabilities / dashboard.total_equity).toFixed(2)
+    : "∞"
+  const totalAssets = dashboard.total_liabilities + dashboard.total_equity
   
   return (
     <Card className="flex min-h-60 py-0 border-0 rounded-none bg-transparent">

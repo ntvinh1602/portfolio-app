@@ -7,8 +7,7 @@ import {
 } from "@/components/ui/card"
 import {
   RefreshButton,
-  Asset,
-  BalanceSheet
+  Asset
 } from "./primitive"
 import { useHoldingData } from "@/hooks/useHoldingData"
 import { Button } from "@/components/ui/button"
@@ -28,7 +27,6 @@ export function Portfolio() {
       <CardHeader className="flex justify-between items-center">
         <CardTitle className="text-lg font-normal">Portfolio</CardTitle>
         <CardAction className="flex gap-2">
-          <BalanceSheet/>
           <RefreshButton />
         </CardAction>
       </CardHeader>

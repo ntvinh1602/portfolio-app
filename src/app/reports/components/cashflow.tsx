@@ -5,10 +5,8 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { compactNum } from "@/lib/utils"
 import {
-  useHoldingData,
   useReportsData
 } from "@/hooks"
 import {
@@ -26,36 +24,11 @@ export function Cashflow({
   year: string
   className?: string
 }) {
-  const { isLoading: isDelayedLoading } = useHoldingData()
-  const { yearlyData, isLoading: isReportsLoading } = useReportsData()
-
-  const isLoading = isDelayedLoading || isReportsLoading || !yearlyData
-
-  if (isLoading)
-    return (
-      <Card className="gap-0 h-fit">
-        <CardHeader>
-          <CardTitle>Cashflow</CardTitle>
-          <CardAction>
-            <ArrowLeftRight className="size-5 stroke-1"/>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="px-6 pb-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </CardContent>
-      </Card>
-    )
+  const { yearlyData } = useReportsData()
 
   // Determine which year's data to display
   const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearlyData.find((item) => item.year === yearNum)
+  const yearData = yearlyData?.find((item) => item.year === yearNum)
   const inflow = yearData?.deposits ?? 0
   const outflow = Math.abs(yearData?.withdrawals ?? 0)
   const net = inflow - outflow

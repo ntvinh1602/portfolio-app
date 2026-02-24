@@ -6,26 +6,23 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
 import {
   useEquityChartData,
-  useBalanceSheetData,
-  usePnL
+  useDashboard
 } from "@/hooks"
 
 export function EquityChart() {
   const [dateRange, setDateRange] = useState("1y")
-  const { totalEquity } = useBalanceSheetData()
   const { data: chartData } = useEquityChartData(dateRange)
-  const { data: pnl_mtd } = usePnL("mtd")
-  const { data: pnl_ytd } = usePnL("ytd")
+  const { data: dashboard } = useDashboard()
 
   return (
     <ChartCard
       title="Equity"
-      majorValue={totalEquity}
+      majorValue={dashboard.total_equity}
       majorValueFormatter={formatNum}
-      minorValue1={pnl_mtd}
+      minorValue1={dashboard.pnl_mtd}
       minorValue1Formatter={compactNum}
       minorText1="this month"
-      minorValue2={pnl_ytd}
+      minorValue2={dashboard.pnl_ytd}
       minorValue2Formatter={compactNum}
       minorText2="this year"
       chartComponent={Areachart}

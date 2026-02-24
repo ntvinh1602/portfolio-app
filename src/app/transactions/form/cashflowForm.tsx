@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useAssets } from "@/hooks/useAssets"
 import { cashflowSchema } from "./schema"
 import { mutate } from "swr"
+import { CASHFLOW_MEMO } from "@/lib/domain/cashflow_memo"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
@@ -23,9 +24,6 @@ export function CashflowForm() {
   const supabase = createClient()
   const { data: assetData } = useAssets()
   const [loading, setLoading] = React.useState(false)
-  const [memoOptions, setMemoOptions] = React.useState<
-  { value: string; label: string; operation: string }[]
->([])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cashflowSchema),
@@ -44,33 +42,14 @@ export function CashflowForm() {
     name: "asset",
   })
   
-  React.useEffect(() => {
-    async function loadMemos() {
-      const { data, error } = await supabase
-        .from("cashflow_memo")
-        .select("operation,memo")
+  const filteredMemos = React.useMemo(() => {
+    if (!operation) return []
 
-      if (error) {
-        toast.error("Failed to load memo list", { description: error.message })
-        return
-      }
-
-      setMemoOptions(
-        data?.map((m) => ({
-          value: m.memo,
-          label: m.memo,
-          operation: m.operation,
-        })) ?? []
-      )
-    }
-
-    loadMemos()
-  }, [supabase])
-  
-  const filteredMemos = React.useMemo(
-    () => memoOptions.filter((m) => m.operation === operation),
-    [memoOptions, operation]
-  )
+    return CASHFLOW_MEMO[operation]?.map((memo) => ({
+      value: memo,
+      label: memo,
+    })) ?? []
+  }, [operation])
   
   const assetIDs = React.useMemo(() => {
     const seen = new Set<string>()

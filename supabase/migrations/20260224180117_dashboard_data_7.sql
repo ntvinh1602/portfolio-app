@@ -31,6 +31,20 @@ COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
 
+CREATE EXTENSION IF NOT EXISTS "hypopg" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "index_advisor" WITH SCHEMA "extensions";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
 
 
@@ -983,16 +997,6 @@ SELECT
 ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."cashflow_memo" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "operation" "public"."cashflow_ops" NOT NULL,
-    "memo" "text" NOT NULL
-);
-
-
-ALTER TABLE "public"."cashflow_memo" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."currencies" (
     "code" "text" NOT NULL,
     "name" "text" NOT NULL
@@ -1085,7 +1089,8 @@ ALTER TABLE "public"."tx_legs" OWNER TO "postgres";
 
 CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
  WITH "dates" AS (
-         SELECT ("generate_series"(('2021-11-09'::"date")::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 day'::interval))::"date" AS "snapshot_date"
+         SELECT ("generate_series"((GREATEST('2021-11-09'::"date", COALESCE(( SELECT ("min"("tx_entries"."created_at"))::"date" AS "min"
+                   FROM "public"."tx_entries"), '2021-11-09'::"date")))::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 day'::interval))::"date" AS "snapshot_date"
         ), "business_days" AS (
          SELECT "dates"."snapshot_date"
            FROM "dates"
@@ -1226,22 +1231,6 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
 ALTER MATERIALIZED VIEW "public"."daily_snapshots" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
-    "id" bigint NOT NULL,
-    "side" "text" NOT NULL,
-    "symbol" "text" NOT NULL,
-    "order_status" "text",
-    "fill_quantity" numeric,
-    "average_price" numeric,
-    "modified_date" timestamp with time zone DEFAULT "now"(),
-    "tax" numeric(12,0),
-    "fee" numeric
-);
-
-
-ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
     "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "side" "text" NOT NULL,
@@ -1313,30 +1302,6 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."news_article_assets" (
-    "article_id" "uuid" NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
-ALTER TABLE "public"."news_article_assets" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."news_articles" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "title" "text" NOT NULL,
-    "url" "text" NOT NULL,
-    "source" "text" NOT NULL,
-    "published_at" timestamp with time zone,
-    "excerpt" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
-ALTER TABLE "public"."news_articles" OWNER TO "postgres";
-
-
 CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on') AS
  WITH "borrow_tx" AS (
          SELECT "d"."tx_id",
@@ -1364,14 +1329,119 @@ CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on
 ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') AS
+ WITH "params" AS (
+         SELECT CURRENT_DATE AS "today",
+            ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "start_of_year",
+            ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "start_of_month",
+            '2000-01-01'::"date" AS "start_of_all"
+        ), "pnl" AS (
+         SELECT "public"."calculate_pnl"("params"."start_of_year", "params"."today") AS "pnl_ytd",
+            "public"."calculate_pnl"("params"."start_of_month", "params"."today") AS "pnl_mtd"
+           FROM "params"
+        ), "twr" AS (
+         SELECT "public"."calculate_twr"("params"."start_of_year", "params"."today") AS "twr_ytd",
+            "public"."calculate_twr"("params"."start_of_all", "params"."today") AS "twr_all"
+           FROM "params"
+        ), "balance" AS (
+         SELECT "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
+            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'liability'::"public"."asset_class")) AS "total_liabilities",
+            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'fund'::"public"."asset_class")) AS "fund",
+            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'stock'::"public"."asset_class")) AS "stock",
+            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'cash'::"public"."asset_class")) AS "cash",
+            "max"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."ticker" = 'MARGIN'::"text")) AS "margin"
+           FROM "public"."balance_sheet"
+        ), "debt" AS (
+         SELECT "sum"(("outstanding_debts"."principal" + "outstanding_debts"."interest")) AS "debts"
+           FROM "public"."outstanding_debts"
+        ), "monthly" AS (
+         SELECT "sum"("last_12"."pnl") AS "total_pnl",
+            "avg"("last_12"."pnl") AS "avg_profit",
+            "avg"((("last_12"."interest" + "last_12"."tax") + "last_12"."fee")) AS "avg_expense",
+            ( SELECT "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("last_12"."pnl", (0)::numeric) + COALESCE("last_12"."fee", (0)::numeric)) + COALESCE("last_12"."interest", (0)::numeric)) + COALESCE("last_12"."tax", (0)::numeric)), 'fee', COALESCE("last_12"."fee", (0)::numeric), 'interest', COALESCE("last_12"."interest", (0)::numeric), 'tax', COALESCE("last_12"."tax", (0)::numeric), 'snapshot_date', ("last_12"."snapshot_date")::"text") ORDER BY "last_12"."snapshot_date") AS "jsonb_agg") AS "profit_chart"
+           FROM ( SELECT "monthly_snapshots"."snapshot_date",
+                    "monthly_snapshots"."pnl",
+                    "monthly_snapshots"."interest",
+                    "monthly_snapshots"."tax",
+                    "monthly_snapshots"."fee"
+                   FROM "public"."monthly_snapshots"
+                  ORDER BY "monthly_snapshots"."snapshot_date" DESC
+                 LIMIT 12) "last_12"
+        )
+ SELECT "pnl"."pnl_ytd",
+    "pnl"."pnl_mtd",
+    "twr"."twr_ytd",
+    "twr"."twr_all",
+    "balance"."total_equity",
+    "balance"."total_liabilities",
+    "balance"."fund",
+    "balance"."stock",
+    "balance"."cash",
+    "balance"."margin",
+    "debt"."debts",
+    "monthly"."total_pnl",
+    "monthly"."avg_profit",
+    "monthly"."avg_expense",
+    "monthly"."profit_chart"
+   FROM (((("pnl"
+     CROSS JOIN "twr")
+     CROSS JOIN "balance")
+     CROSS JOIN "debt")
+     CROSS JOIN "monthly");
+
+
+ALTER VIEW "public"."dashboard_data" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
+    "id" bigint NOT NULL,
+    "side" "text" NOT NULL,
+    "symbol" "text" NOT NULL,
+    "order_status" "text",
+    "fill_quantity" numeric,
+    "average_price" numeric,
+    "modified_date" timestamp with time zone DEFAULT "now"(),
+    "tax" numeric(12,0),
+    "fee" numeric
+);
+
+
+ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."news_article_assets" (
+    "article_id" "uuid" NOT NULL,
+    "asset_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."news_article_assets" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."news_articles" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "url" "text" NOT NULL,
+    "source" "text" NOT NULL,
+    "published_at" timestamp with time zone,
+    "excerpt" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."news_articles" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
  WITH "capital_legs" AS (
          SELECT "tl"."tx_id",
             ("tl"."credit" - "tl"."debit") AS "capital_amount",
             "t"."created_at"
-           FROM ("public"."tx_legs" "tl"
+           FROM (("public"."tx_legs" "tl"
              JOIN "public"."tx_entries" "t" ON (("t"."id" = "tl"."tx_id")))
-          WHERE ("tl"."asset_id" = 'e39728be-0a37-4608-b30d-dabd1a4017ab'::"uuid")
+             JOIN "public"."assets" "a_1" ON (("tl"."asset_id" = "a_1"."id")))
+          WHERE ("a_1"."ticker" = 'CAPITAL'::"text")
         ), "stock_legs" AS (
          SELECT "tl"."tx_id",
             "tl"."asset_id" AS "stock_id"
@@ -1592,11 +1662,6 @@ ALTER TABLE ONLY "public"."assets"
 
 
 
-ALTER TABLE ONLY "public"."cashflow_memo"
-    ADD CONSTRAINT "cashflow_memo_pkey" PRIMARY KEY ("id");
-
-
-
 ALTER TABLE ONLY "public"."currencies"
     ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
 
@@ -1664,10 +1729,6 @@ ALTER TABLE ONLY "public"."tx_legs"
 
 ALTER TABLE ONLY "public"."tx_stock"
     ADD CONSTRAINT "tx_stock_pkey" PRIMARY KEY ("tx_id");
-
-
-
-CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
 
 
 
@@ -1845,10 +1906,6 @@ CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO 
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."cashflow_memo" TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Access for authenticated users" ON "public"."news_article_assets" TO "authenticated" USING (true);
 
 
@@ -1907,9 +1964,6 @@ ALTER TABLE "public"."asset_positions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."cashflow_memo" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1961,6 +2015,42 @@ GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2264,13 +2354,19 @@ GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."asset_positions" TO "anon";
+
+
+
+
+
+
+GRANT MAINTAIN ON TABLE "public"."asset_positions" TO "anon";
 GRANT ALL ON TABLE "public"."asset_positions" TO "authenticated";
 GRANT ALL ON TABLE "public"."asset_positions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."assets" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."assets" TO "anon";
 GRANT ALL ON TABLE "public"."assets" TO "authenticated";
 GRANT ALL ON TABLE "public"."assets" TO "service_role";
 
@@ -2282,55 +2378,49 @@ GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."cashflow_memo" TO "anon";
-GRANT ALL ON TABLE "public"."cashflow_memo" TO "authenticated";
-GRANT ALL ON TABLE "public"."cashflow_memo" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."currencies" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."currencies" TO "anon";
 GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
 GRANT ALL ON TABLE "public"."currencies" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."daily_market_indices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_security_prices" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."daily_security_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."tx_cashflow" TO "anon";
 GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tx_debt" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."tx_debt" TO "anon";
 GRANT ALL ON TABLE "public"."tx_debt" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_debt" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tx_entries" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."tx_entries" TO "anon";
 GRANT ALL ON TABLE "public"."tx_entries" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_entries" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tx_legs" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."tx_legs" TO "anon";
 GRANT ALL ON TABLE "public"."tx_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
 
@@ -2342,13 +2432,7 @@ GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."tx_stock" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."tx_stock" TO "anon";
 GRANT ALL ON TABLE "public"."tx_stock" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_stock" TO "service_role";
 
@@ -2360,21 +2444,33 @@ GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."news_article_assets" TO "anon";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."dashboard_data" TO "anon";
+GRANT ALL ON TABLE "public"."dashboard_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."dashboard_data" TO "service_role";
+
+
+
+GRANT MAINTAIN ON TABLE "public"."dnse_orders" TO "anon";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
+
+
+
+GRANT MAINTAIN ON TABLE "public"."news_article_assets" TO "anon";
 GRANT ALL ON TABLE "public"."news_article_assets" TO "authenticated";
 GRANT ALL ON TABLE "public"."news_article_assets" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."news_articles" TO "anon";
+GRANT MAINTAIN ON TABLE "public"."news_articles" TO "anon";
 GRANT ALL ON TABLE "public"."news_articles" TO "authenticated";
 GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
 
 
 

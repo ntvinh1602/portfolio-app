@@ -7,7 +7,8 @@ import {
   TvMinimal,
   Handshake,
   Newspaper,
-  Rss
+  Rss,
+  BookCheck
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -27,6 +28,11 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: TvMinimal,
+    },
+    {
+      title: "Balance Sheet",
+      url: "/balance-sheet",
+      icon: BookCheck,
     },
     {
       title: "Reports",
