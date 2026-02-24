@@ -1,0 +1,1 @@
+CREATE unique INDEX ON "public"."daily_snapshots" USING btree ("snapshot_date");
