@@ -36,10 +36,15 @@ export function ClientLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <SidebarProvider>
             <AppSidebar collapsible="icon" />
+
             <SidebarInset className="md:px-4">
               <Toaster />
-              <div className="flex flex-col md:h-svh pb-4 overflow-hidden">
-                <header className="flex items-center w-full justify-between px-6 py-4 md:px-0 md:py-2 gap-2">
+
+              {/* FULL HEIGHT APP CONTAINER */}
+              <div className="flex h-svh flex-col overflow-hidden">
+
+                {/* HEADER (fixed height) */}
+                <header className="flex items-center w-full justify-between px-6 py-4 md:px-0 md:py-2 gap-2 shrink-0">
                   <div className="flex items-center gap-2">
                     <SidebarTrigger />
                     <Separator
@@ -50,7 +55,12 @@ export function ClientLayout({ children }: { children: ReactNode }) {
                   </div>
                   <ThemeDropdown />
                 </header>
-                {children}
+
+                {/* CONTENT AREA (critical fix) */}
+                <main className="flex-1 min-h-0 flex flex-col overflow-hidden pb-4">
+                  {children}
+                </main>
+
               </div>
             </SidebarInset>
           </SidebarProvider>

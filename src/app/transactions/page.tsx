@@ -105,7 +105,7 @@ export default function TransactionsPage() {
   const currentConfig = activeForm ? formConfig[activeForm] : null
 
   return (
-    <div>
+    <div className="flex flex-col flex-1 min-h-0">
       <Separator/>
       <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-2">
         {error && (

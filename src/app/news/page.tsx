@@ -25,9 +25,10 @@ export default function NewsPage() {
   const { data: articles } = useNews()
 
   return (
-    <div>
-      <Separator/>
-      <ScrollArea className="flex flex-1 min-h-0 w-6/10 mt-4 mx-auto">
+    <div className="flex flex-col flex-1 min-h-0">
+      <Separator />
+
+      <ScrollArea className="flex-1 min-h-0 w-6/10 mt-4 mx-auto">
         <div className="flex flex-col gap-2">
           {articles.map((article) => (
             <Card
