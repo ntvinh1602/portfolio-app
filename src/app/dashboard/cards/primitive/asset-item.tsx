@@ -14,30 +14,25 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export function Asset({
-  ticker,
   name,
   logoUrl,
-  totalAmount,
   quantity,
-  pnlPct,
-  pnlNet,
   price,
+  costBasis,
   prevPrice,
-  type
 }: {
-  ticker: string
   name: string
   logoUrl: string
-  totalAmount: number
-  pnlPct: number
-  pnlNet: number
   quantity: number
   price: number
+  costBasis: number
   prevPrice?: number | null
-  type: 'stock' | 'crypto'
 }) {
   const isMobile = useIsMobile()
   const [priceChanged, setPriceChanged] = useState<"up" | "down" | null>(null)
+  const totalAmount = quantity * price
+  const pnlNet = totalAmount - costBasis
+  const pnlPct = (totalAmount / costBasis) - 1
 
   useEffect(() => {
     if (prevPrice) {
@@ -66,7 +61,7 @@ export function Asset({
         <div className="flex justify-between w-full items-center">
           <div className="flex flex-col max-w-[200px] w-full overflow-hidden">
             <CardTitle className="text-sm font-light text-foreground/80 w-full truncate overflow-hidden whitespace-nowrap">
-              {!isMobile ? name : ticker}
+              {name}
             </CardTitle>
             <CardDescription className="flex items-center gap-1 truncate pt-1">
               <Badge variant="outline" className="font-light text-foreground/80">

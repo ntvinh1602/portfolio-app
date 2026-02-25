@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react"
 import { useNews } from "@/hooks/useNews"
-import { useHoldingData } from "@/hooks/useHoldingData"
 import {
   Card,
   CardHeader,
@@ -16,24 +15,27 @@ import {
   ToggleGroup,
   ToggleGroupItem
 } from "@/components/ui/toggle-group"
+import { useDashboard } from "@/hooks"
 
 export function NewsWidget() {
   const { data: articles } = useNews()
-  const { data: holdings } = useHoldingData()
+  const { data: dashboard } = useDashboard()
 
   const [filter, setFilter] = useState<"all" | "related">("related")
 
   // Create a fast lookup set of holding tickers
   const holdingTickers = useMemo(() => {
-    return new Set(holdings.map((h) => h.ticker))
-  }, [holdings])
+    if (!dashboard?.stock_list) return new Set<string>()
+    return new Set(dashboard.stock_list.map((s) => s.ticker))
+  }, [dashboard])
 
   // Filter logic
   const filteredArticles = useMemo(() => {
+    if (!articles) return []
     if (filter === "all") return articles
 
     return articles.filter((article) =>
-      article.tickers.some((ticker) =>
+      article.tickers?.some((ticker) =>
         holdingTickers.has(ticker)
       )
     )

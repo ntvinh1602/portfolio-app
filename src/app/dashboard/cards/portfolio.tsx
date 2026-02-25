@@ -5,24 +5,37 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import {
-  RefreshButton,
-  Asset
-} from "./primitive"
-import { useHoldingData } from "@/hooks/useHoldingData"
+import { RefreshButton, Asset } from "./primitive"
 import { Button } from "@/components/ui/button"
 
-export function Portfolio() {
-  const { data: stockData } = useHoldingData()
+interface StockItem {
+  ticker: string
+  name: string
+  logo_url: string
+  quantity: number
+  price: number
+  cost_basis: number
+}
 
-  const maxVisible = 3
-  const hasMore = stockData.length > maxVisible
-  const hiddenCount = hasMore ? stockData.length - maxVisible : 0
-  const displayedStocks = hasMore ? stockData.slice(0, maxVisible) : stockData
+interface PortfolioProps {
+  stocks: StockItem[]
+  maxVisible?: number
+}
+
+export function Portfolio({
+  stocks,
+  maxVisible = 3
+}: PortfolioProps) {
+  const hasMore = stocks.length > maxVisible
+  const hiddenCount = hasMore ? stocks.length - maxVisible : 0
+  const displayedStocks = hasMore ? stocks.slice(0, maxVisible) : stocks
 
   return (
-    <Card className="flex flex-col gap-4 min-h-90
-      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
+    <Card
+      className="flex flex-col gap-4 min-h-90
+      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]
+      before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px
+      before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
     >
       <CardHeader className="flex justify-between items-center">
         <CardTitle className="text-lg font-normal">Portfolio</CardTitle>
@@ -32,24 +45,16 @@ export function Portfolio() {
       </CardHeader>
 
       <CardContent className="h-fit flex flex-col gap-1">
-        {stockData.length > 0 ? (
+        {stocks.length > 0 ? (
           <>
             {displayedStocks.map((stock) => (
               <Asset
                 key={stock.ticker}
-                ticker={stock.ticker}
                 name={stock.name}
                 logoUrl={stock.logo_url}
                 quantity={stock.quantity}
-                totalAmount={stock.market_value}
-                pnlPct={
-                  stock.cost_basis > 0
-                    ? (stock.market_value / stock.cost_basis - 1) * 100
-                    : 0
-                }
-                pnlNet={stock.market_value - stock.cost_basis}
                 price={stock.price}
-                type="stock"
+                costBasis={stock.cost_basis}
               />
             ))}
 
@@ -59,10 +64,7 @@ export function Portfolio() {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-muted-foreground"
-                  onClick={() => {
-                    // placeholder for future modal or navigation
-                    console.log("View full list clicked")
-                  }}
+                  onClick={() => console.log("Navigate to full holdings")}
                 >
                   ...and {hiddenCount} more
                 </Button>

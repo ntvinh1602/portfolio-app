@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -78,39 +98,18 @@ export type Database = {
           },
         ]
       }
-      cashflow_memo: {
-        Row: {
-          id: string
-          memo: string
-          operation: Database["public"]["Enums"]["cashflow_ops"]
-        }
-        Insert: {
-          id?: string
-          memo: string
-          operation: Database["public"]["Enums"]["cashflow_ops"]
-        }
-        Update: {
-          id?: string
-          memo?: string
-          operation?: Database["public"]["Enums"]["cashflow_ops"]
-        }
-        Relationships: []
-      }
       currencies: {
         Row: {
           code: string
           name: string
-          type: Database["public"]["Enums"]["currency_type"]
         }
         Insert: {
           code: string
           name: string
-          type: Database["public"]["Enums"]["currency_type"]
         }
         Update: {
           code?: string
           name?: string
-          type?: Database["public"]["Enums"]["currency_type"]
         }
         Relationships: []
       }
@@ -249,6 +248,39 @@ export type Database = {
           },
         ]
       }
+      news_article_assets: {
+        Row: {
+          article_id: string
+          asset_id: string
+          created_at: string | null
+        }
+        Insert: {
+          article_id: string
+          asset_id: string
+          created_at?: string | null
+        }
+        Update: {
+          article_id?: string
+          asset_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_article_assets_article_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "news_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_article_assets_asset_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_articles: {
         Row: {
           created_at: string | null
@@ -284,7 +316,7 @@ export type Database = {
           asset_id: string
           fx_rate: number
           net_proceed: number
-          operation: string
+          operation: Database["public"]["Enums"]["cashflow_ops"]
           quantity: number
           tx_id: string
         }
@@ -292,7 +324,7 @@ export type Database = {
           asset_id: string
           fx_rate?: number
           net_proceed?: number
-          operation: string
+          operation: Database["public"]["Enums"]["cashflow_ops"]
           quantity: number
           tx_id?: string
         }
@@ -300,7 +332,7 @@ export type Database = {
           asset_id?: string
           fx_rate?: number
           net_proceed?: number
-          operation?: string
+          operation?: Database["public"]["Enums"]["cashflow_ops"]
           quantity?: number
           tx_id?: string
         }
@@ -522,6 +554,35 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_data: {
+        Row: {
+          avg_expense: number | null
+          avg_profit: number | null
+          cash: number | null
+          debts: number | null
+          equitychart_1y: Json | null
+          equitychart_3m: Json | null
+          equitychart_6m: Json | null
+          equitychart_all: Json | null
+          fund: number | null
+          margin: number | null
+          pnl_mtd: number | null
+          pnl_ytd: number | null
+          profit_chart: Json | null
+          returnchart_1y: Json | null
+          returnchart_3m: Json | null
+          returnchart_6m: Json | null
+          returnchart_all: Json | null
+          stock: number | null
+          stock_list: Json | null
+          total_equity: number | null
+          total_liabilities: number | null
+          total_pnl: number | null
+          twr_all: number | null
+          twr_ytd: number | null
+        }
+        Relationships: []
+      }
       monthly_snapshots: {
         Row: {
           fee: number | null
@@ -573,7 +634,6 @@ export type Database = {
         Row: {
           cost_basis: number | null
           logo_url: string | null
-          market_value: number | null
           name: string | null
           price: number | null
           quantity: number | null
@@ -641,6 +701,14 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
+      get_equity_chart: {
+        Args: { p_end_date: string; p_start_date: string; p_threshold: number }
+        Returns: Json
+      }
+      get_return_chart: {
+        Args: { p_end_date: string; p_start_date: string; p_threshold: number }
+        Returns: Json
+      }
       process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_debt: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_stock: { Args: { p_tx_id: string }; Returns: undefined }
@@ -672,17 +740,6 @@ export type Database = {
         | "liability"
         | "index"
       cashflow_ops: "deposit" | "withdraw" | "income" | "expense"
-      currency_type: "fiat" | "crypto"
-      transaction_type:
-        | "buy"
-        | "sell"
-        | "deposit"
-        | "withdraw"
-        | "income"
-        | "expense"
-        | "borrow"
-        | "repay"
-        | "split"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -808,6 +865,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       asset_class: [
@@ -820,18 +880,7 @@ export const Constants = {
         "index",
       ],
       cashflow_ops: ["deposit", "withdraw", "income", "expense"],
-      currency_type: ["fiat", "crypto"],
-      transaction_type: [
-        "buy",
-        "sell",
-        "deposit",
-        "withdraw",
-        "income",
-        "expense",
-        "borrow",
-        "repay",
-        "split",
-      ],
     },
   },
 } as const
+
