@@ -4,20 +4,10 @@ import { format } from "date-fns"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import { useMonthlyData } from "@/hooks/useMonthlyData"
 
 // ---------- Types ----------
-interface RawData {
-  snapshot_date: string
-  pnl: number
-  fee: number
-  interest: number
-  tax: number
-}
-
-interface ChartData {
+export interface ProfitChartItem {
   revenue: number
-  pnl: number
   fee: number
   interest: number
   tax: number
@@ -25,76 +15,48 @@ interface ChartData {
   [key: string]: string | number
 }
 
-// ---------- Helper: Group All Time data by year ----------
-function groupByYear(data: RawData[]): ChartData[] {
-  const grouped: Record<
-    string,
-    { pnl: number; fee: number; interest: number; tax: number }
-  > = {}
-
-  data.forEach((d) => {
-    const year = new Date(d.snapshot_date).getFullYear().toString()
-    if (!grouped[year]) {
-      grouped[year] = { pnl: 0, fee: 0, interest: 0, tax: 0 }
-    }
-    grouped[year].pnl += d.pnl
-    grouped[year].fee += d.fee
-    grouped[year].interest += d.interest
-    grouped[year].tax += d.tax
-  })
-
-  return Object.entries(grouped).map(([year, totals]) => ({
-    revenue: totals.pnl + totals.fee + totals.interest + totals.tax,
-    pnl: totals.pnl,
-    fee: -totals.fee,
-    interest: -totals.interest,
-    tax: -totals.tax,
-    snapshot_date: year,
-  }))
+interface ProfitChartProps {
+  year: number
+  totalPnL: number
+  avgProfit: number
+  avgExpense: number
+  chartData: ProfitChartItem[]
 }
 
-// ---------- Main Chart Component ----------
-export function ProfitChart({ year }: { year: string }) {
-  const period = year === "All Time" ? "all" : Number(year)
-  const { data: monthlyData } = useMonthlyData(period)
+// ---------- Component ----------
+export function ProfitChart({
+  year,
+  totalPnL,
+  avgProfit,
+  avgExpense,
+  chartData,
+}: ProfitChartProps) {
 
-  let processedData: ChartData[] = []
+  const xAxisFormatter = (value: string | number) => {
+    const date = new Date(value)
 
-  if (year === "All Time") {
-    processedData = groupByYear(monthlyData)
-  } else {
-    processedData = (monthlyData)
-      .filter((d) => new Date(d.snapshot_date).getFullYear() === Number(year))
-      .sort((a, b) => new Date(a.snapshot_date).getTime() - new Date(b.snapshot_date).getTime())
-      .map((d) => ({
-        revenue: d.pnl + d.fee + d.interest + d.tax,
-        pnl: d.pnl,
-        fee: -d.fee,
-        interest: -d.interest,
-        tax: -d.tax,
-        snapshot_date: d.snapshot_date,
-      }))
+    if (isNaN(date.getTime())) {
+      return String(value)
+    }
+
+    return year === 9999
+      ? format(date, "yyyy")
+      : format(date, "MMM")
   }
-
-  const totalPnL = processedData.reduce((acc, curr) => acc + curr.pnl, 0)
-  const avgPnl = totalPnL / (processedData.length || 1)
-  const avgExpenses =
-    -processedData.reduce((acc, curr) => acc + curr.revenue - curr.pnl, 0) /
-    (processedData.length || 1)
 
   return (
     <ChartCard
       title="Net Profit"
       majorValue={totalPnL}
-      majorValueFormatter={(value) => formatNum(value)}
-      minorValue1={avgPnl}
-      minorValue1Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      majorValueFormatter={formatNum}
+      minorValue1={avgProfit}
+      minorValue1Formatter={(v) => `${compactNum(Math.abs(v))}`}
       minorText1="avg. profit"
-      minorValue2={avgExpenses}
-      minorValue2Formatter={(value) => `${compactNum(Math.abs(value))}`}
+      minorValue2={avgExpense}
+      minorValue2Formatter={(v) => `${compactNum(Math.abs(v))}`}
       minorText2="avg. cost"
       chartComponent={ChartBarStacked}
-      chartData={processedData}
+      chartData={chartData}
       chartConfig={{
         tax: { label: "Tax", color: "var(--chart-4)" },
         fee: { label: "Fee", color: "var(--chart-3)" },
@@ -103,13 +65,9 @@ export function ProfitChart({ year }: { year: string }) {
       }}
       chartClassName="h-full w-full"
       chartDataKeys={["tax", "fee", "interest", "revenue"]}
-      yAxisTickFormatter={(value) => compactNum(Number(value))}
-      xAxisTickFormatter={(value: string | number) => {
-        const date = new Date(value)
-        if (isNaN(date.getTime())) return String(value)
-        return year === "All Time" ? format(date, "yyyy") : format(date, "MMM")
-      }}
-      tooltipValueFormatter={(value) => formatNum(value)}
+      yAxisTickFormatter={(v) => compactNum(Number(v))}
+      xAxisTickFormatter={xAxisFormatter}
+      tooltipValueFormatter={(v) => formatNum(v)}
     />
   )
 }

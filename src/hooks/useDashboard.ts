@@ -19,7 +19,7 @@ type ProfitChart = {
   revenue: number
   fee: number
   interest: number
-  tax: number
+  tax: number 
   snapshot_date: string
 }
 

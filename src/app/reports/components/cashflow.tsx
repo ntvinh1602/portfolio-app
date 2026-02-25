@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Card,
   CardContent,
@@ -7,9 +9,6 @@ import {
 } from "@/components/ui/card"
 import { compactNum } from "@/lib/utils"
 import {
-  useReportsData
-} from "@/hooks"
-import {
   TrendingUp,
   TrendingDown,
   ArrowDownCircle,
@@ -17,32 +16,38 @@ import {
   ArrowUpCircle
 } from "lucide-react"
 
-export function Cashflow({
-  year,
-  className,
-}: {
-  year: string
+interface CashflowProps {
+  deposits: number
+  withdrawals: number
   className?: string
-}) {
-  const { yearlyData } = useReportsData()
+}
 
-  // Determine which year's data to display
-  const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearlyData?.find((item) => item.year === yearNum)
-  const inflow = yearData?.deposits ?? 0
-  const outflow = Math.abs(yearData?.withdrawals ?? 0)
-  const net = inflow - outflow
+export function Cashflow({
+  deposits,
+  withdrawals,
+  className
+}: CashflowProps) {
+
+  const inflow = deposits ?? 0
+  const outflow = Math.abs(withdrawals ?? 0)
+  const net = inflow + withdrawals
+  const isNegative = net < 0
 
   return (
-    <Card className={`gap-6 h-fit rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent ${className}`}>
+    <Card
+      className={`gap-6 h-fit rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent ${className ?? ""}`}
+    >
       <CardHeader>
         <CardTitle className="text-xl font-normal">Cashflow</CardTitle>
         <CardAction>
-          <ArrowLeftRight className="size-5 stroke-1"/>
+          <ArrowLeftRight className="size-5 stroke-1" />
         </CardAction>
       </CardHeader>
+
       <CardContent className="px-6 pb-6 flex flex-col gap-4">
-        <div className="flex font-light items-center justify-between group">
+        
+        {/* Deposits */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ArrowDownCircle className="size-5 stroke-1" />
             <p className="text-muted-foreground">Deposits</p>
@@ -53,7 +58,8 @@ export function Cashflow({
           </div>
         </div>
 
-        <div className="flex items-center justify-between group">
+        {/* Withdrawals */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ArrowUpCircle className="size-5 stroke-1" />
             <p className="text-muted-foreground">Withdrawals</p>
@@ -64,15 +70,16 @@ export function Cashflow({
           </div>
         </div>
 
+        {/* Net */}
         <div className="pt-4 border-t border-dashed">
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">Net Cashflow</p>
             <div className="flex items-center gap-1 font-thin [&_svg]:size-5">
-              {net !== null && net < 0
+              {isNegative
                 ? <TrendingDown className="text-red-700" />
                 : <TrendingUp className="text-green-500" />
               }
-              {net !== null && `${compactNum(Math.abs(net))}`}
+              {compactNum(Math.abs(net))}
             </div>
           </div>
         </div>

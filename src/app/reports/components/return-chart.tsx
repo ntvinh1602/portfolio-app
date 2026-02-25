@@ -1,49 +1,21 @@
-"use client"
-
 import { Areachart } from "@/components/charts/areachart"
 import { formatNum } from "@/lib/utils"
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { ChartCard } from "@/components/chart-card"
 import { format } from "date-fns"
-import {
-  useReturnChartData,
-  useReportsData
-} from "@/hooks"
+import { ChartCard } from "@/components/chart-card"
 
 interface ReturnChartProps {
-  year: string
+  year: number
+  equityReturn: number
+  vnIndexReturn: number
+  chartData: any[]
 }
 
-export function ReturnChart({ year }: ReturnChartProps) {
-  const { yearlyData } = useReportsData()
-
-  // Convert UI “All Time” to backend time parameter
-  const timeParam = year === "All Time" ? "all" : year
-  const { data, error } = useReturnChartData(timeParam)
-
-  if (error) {
-    return (
-      <Card className="relative flex flex-col gap-4 h-full rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
-        <CardHeader>
-          <CardDescription>Error</CardDescription>
-          <CardTitle className="text-red-500 text-lg">
-            {error instanceof Error ? error.message : "Internal Server Error"}
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    )
-  }
-  
-  const yearNum = year === "All Time" ? "All-Time" : year
-  const yearData = yearlyData?.find((item) => item.year === yearNum)
-  const equityReturn = yearData?.equity_ret ?? 0
-  const vnIndexReturn = yearData?.vn_ret ?? 0
-
+export function ReturnChart({
+  year,
+  equityReturn,
+  vnIndexReturn,
+  chartData,
+}: ReturnChartProps) {
   return (
     <ChartCard
       title="Equity Return"
@@ -53,7 +25,7 @@ export function ReturnChart({ year }: ReturnChartProps) {
       minorValue1Formatter={(value) => `${formatNum(value, 1)}%`}
       minorText1="VN-Index"
       chartComponent={Areachart}
-      chartData={data}
+      chartData={chartData}
       chartConfig={{
         portfolio_value: {
           label: "Equity",
@@ -71,7 +43,9 @@ export function ReturnChart({ year }: ReturnChartProps) {
       xAxisTickFormatter={(value: string | number) => {
         const date = new Date(value)
         if (isNaN(date.getTime())) return String(value)
-        return year === "All Time" ? format(date, "MMM yyyy") : format(date, "dd MMM")
+        return year === 9999
+          ? format(date, "MMM yyyy")
+          : format(date, "dd MMM")
       }}
       tooltipValueFormatter={(value) => formatNum(value, 1)}
     />

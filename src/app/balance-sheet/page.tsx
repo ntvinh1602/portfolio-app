@@ -29,7 +29,6 @@ export default function Page() {
   return (
     <div className="flex flex-col gap-6">
       <Separator />
-
       <Card
         className="
           w-6/10 mx-auto p-6

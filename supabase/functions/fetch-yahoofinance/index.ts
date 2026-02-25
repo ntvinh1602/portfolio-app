@@ -5,7 +5,7 @@ import YahooFinance from "https://esm.sh/yahoo-finance2@@3.11.2" // ✅ upgraded
 
 // === CONFIG ===
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+const serviceRoleKey = Deno.env.get("SB_SECRET_KEY")!
 const supabase = createClient(supabaseUrl, serviceRoleKey)
 const today = new Date().toISOString().split("T")[0]
 

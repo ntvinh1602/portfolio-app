@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "gen-types-remote": "npx supabase gen types --lang=typescript --project-id \"pamvtxbkdjnvkzeutmjk\" > src/types/database.types.ts",
-    "gen-types-local": "npx supabase gen types --lang=typescript --local > src/types/database.types.ts",
+    "gen-types": "npx supabase gen types --lang=typescript --project-id \"pamvtxbkdjnvkzeutmjk\" > src/types/database.types.ts",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
