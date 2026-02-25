@@ -94,6 +94,16 @@ CREATE TYPE "public"."asset_class" AS ENUM (
 ALTER TYPE "public"."asset_class" OWNER TO "postgres";
 
 
+CREATE TYPE "public"."benchmark_point" AS (
+	"snapshot_date" "date",
+	"portfolio_value" numeric,
+	"vni_value" numeric
+);
+
+
+ALTER TYPE "public"."benchmark_point" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."cashflow_ops" AS ENUM (
     'deposit',
     'withdraw',
@@ -103,6 +113,16 @@ CREATE TYPE "public"."cashflow_ops" AS ENUM (
 
 
 ALTER TYPE "public"."cashflow_ops" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."equity_point" AS (
+	"snapshot_date" "date",
+	"net_equity" numeric,
+	"cumulative_cashflow" numeric
+);
+
+
+ALTER TYPE "public"."equity_point" OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
@@ -359,6 +379,250 @@ $$;
 
 
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  raw_data public.equity_point[];
+  result_data public.equity_point[];
+
+  data_count int;
+  every numeric;
+
+  i int;
+  a int := 0;
+
+  range_start int;
+  range_end int;
+
+  avg_x numeric;
+  avg_y numeric;
+
+  max_area numeric;
+  point_area numeric;
+
+  selected public.equity_point;
+  prev public.equity_point;
+
+  final_result jsonb;
+BEGIN
+  -- Load dataset into memory
+  SELECT array_agg(
+           ROW(snapshot_date, net_equity, cumulative_cashflow)::public.equity_point
+           ORDER BY snapshot_date
+         )
+  INTO raw_data
+  FROM public.daily_snapshots
+  WHERE snapshot_date BETWEEN p_start_date AND p_end_date;
+
+  data_count := array_length(raw_data, 1);
+
+  IF data_count IS NULL OR data_count = 0 THEN
+    RETURN '[]'::jsonb;
+  END IF;
+
+  IF data_count <= p_threshold THEN
+    RETURN (
+      SELECT jsonb_agg(to_jsonb(x))
+      FROM unnest(raw_data) x
+    );
+  END IF;
+
+  result_data := ARRAY[ raw_data[1] ];
+  every := (data_count - 2.0) / (p_threshold - 2.0);
+
+  FOR i IN 0..p_threshold - 3 LOOP
+
+    range_start := floor(a * every)::int + 2;
+    range_end := floor((a + 1) * every)::int + 1;
+
+    IF range_end > data_count THEN
+      range_end := data_count;
+    END IF;
+
+    SELECT
+      AVG(EXTRACT(EPOCH FROM r.snapshot_date)),
+      AVG(r.net_equity)
+    INTO avg_x, avg_y
+    FROM unnest(raw_data[range_start:range_end]) r;
+
+    max_area := -1;
+    prev := result_data[array_length(result_data,1)];
+
+    FOR selected IN
+      SELECT * FROM unnest(raw_data[range_start:range_end])
+    LOOP
+      point_area := abs(
+        (EXTRACT(EPOCH FROM prev.snapshot_date) - avg_x)
+        * (selected.net_equity - prev.net_equity)
+        -
+        (EXTRACT(EPOCH FROM prev.snapshot_date)
+         - EXTRACT(EPOCH FROM selected.snapshot_date))
+        * (avg_y - prev.net_equity)
+      ) * 0.5;
+
+      IF point_area > max_area THEN
+        max_area := point_area;
+        raw_data[range_start] := selected;
+      END IF;
+    END LOOP;
+
+    result_data := result_data || raw_data[range_start];
+    a := a + 1;
+  END LOOP;
+
+  result_data := result_data || raw_data[data_count];
+
+  SELECT jsonb_agg(to_jsonb(x))
+  INTO final_result
+  FROM unnest(result_data) x;
+
+  RETURN final_result;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_first_portfolio_value numeric;
+  v_first_vni_value numeric;
+
+  raw_data public.benchmark_point[];
+  result_data public.benchmark_point[];
+
+  data_count int;
+  every numeric;
+
+  i int;
+  a int := 0;
+
+  range_start int;
+  range_end int;
+
+  avg_x numeric;
+  avg_y numeric;
+
+  max_area numeric;
+  point_area numeric;
+
+  selected RECORD;
+  prev RECORD;
+
+  final_result jsonb;
+BEGIN
+  -- Get normalization anchors
+  SELECT equity_index
+  INTO v_first_portfolio_value
+  FROM public.daily_snapshots
+  WHERE snapshot_date >= p_start_date
+  ORDER BY snapshot_date
+  LIMIT 1;
+
+  SELECT close
+  INTO v_first_vni_value
+  FROM public.daily_market_indices
+  WHERE symbol = 'VNINDEX'
+    AND date >= p_start_date
+  ORDER BY date
+  LIMIT 1;
+
+  -- Load dataset into memory array
+  SELECT array_agg(t ORDER BY snapshot_date)
+  INTO raw_data
+  FROM (
+    SELECT
+      pd.snapshot_date,
+      (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 AS portfolio_value,
+      (vni.close / NULLIF(v_first_vni_value, 0)) * 100 AS vni_value
+    FROM public.daily_snapshots pd
+    JOIN public.daily_market_indices vni
+      ON pd.snapshot_date = vni.date
+    WHERE pd.snapshot_date BETWEEN p_start_date AND p_end_date
+      AND vni.symbol = 'VNINDEX'
+  ) t;
+
+  data_count := array_length(raw_data, 1);
+
+  IF data_count IS NULL OR data_count = 0 THEN
+    RETURN '[]'::jsonb;
+  END IF;
+
+  -- If below threshold → return full set
+  IF data_count <= p_threshold THEN
+    RETURN (
+      SELECT jsonb_agg(to_jsonb(x))
+      FROM unnest(raw_data) x
+    );
+  END IF;
+
+  -- LTTB sampling
+  result_data := ARRAY[ raw_data[1] ];
+  every := (data_count - 2.0) / (p_threshold - 2.0);
+
+  FOR i IN 0..p_threshold - 3 LOOP
+
+    range_start := floor(a * every)::int + 2;
+    range_end := floor((a + 1) * every)::int + 1;
+
+    IF range_end > data_count THEN
+      range_end := data_count;
+    END IF;
+
+    -- Compute next bucket average
+    SELECT
+      AVG(EXTRACT(EPOCH FROM r.snapshot_date)),
+      AVG(r.portfolio_value)
+    INTO avg_x, avg_y
+    FROM unnest(raw_data[range_start:range_end]) r;
+
+    max_area := -1;
+    prev := result_data[array_length(result_data,1)];
+
+    FOR selected IN
+      SELECT * FROM unnest(raw_data[range_start:range_end])
+    LOOP
+      point_area := abs(
+        (EXTRACT(EPOCH FROM prev.snapshot_date) - avg_x)
+        * (selected.portfolio_value - prev.portfolio_value)
+        -
+        (EXTRACT(EPOCH FROM prev.snapshot_date)
+         - EXTRACT(EPOCH FROM selected.snapshot_date))
+        * (avg_y - prev.portfolio_value)
+      ) * 0.5;
+
+      IF point_area > max_area THEN
+        max_area := point_area;
+        raw_data[range_start] := selected;
+      END IF;
+    END LOOP;
+
+    result_data := result_data || raw_data[range_start];
+    a := a + 1;
+  END LOOP;
+
+  -- Add last point
+  result_data := result_data || raw_data[data_count];
+
+  -- Return JSON
+  SELECT jsonb_agg(to_jsonb(x))
+  INTO final_result
+  FROM unnest(result_data) x;
+
+  RETURN final_result;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_dnse_order"() RETURNS "trigger"
@@ -666,256 +930,6 @@ $$;
 
 
 ALTER FUNCTION "public"."rebuild_on_child_update"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("snapshot_date" "date", "portfolio_value" numeric, "vni_value" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_first_portfolio_value numeric;
-  v_first_vni_value numeric;
-  data_count INT;
-  -- LTTB implementation variables
-  data RECORD;
-  result_data RECORD;
-  avg_x NUMERIC;
-  avg_y NUMERIC;
-  range_start INT;
-  range_end INT;
-  point_area NUMERIC;
-  max_area NUMERIC;
-  point_to_add RECORD;
-  every NUMERIC;
-  i INT;
-  a INT := 0;
-BEGIN
-  -- Step 1: Find the first available values on or after the start date for normalization
-  SELECT dps.equity_index INTO v_first_portfolio_value
-  FROM public.daily_snapshots dps
-  WHERE dps.snapshot_date >= p_start_date
-  ORDER BY dps.snapshot_date
-  LIMIT 1;
-
-  SELECT md.close INTO v_first_vni_value
-  FROM public.daily_market_indices md
-  WHERE md.symbol = 'VNINDEX' AND md.date >= p_start_date
-  ORDER BY md.date
-  LIMIT 1;
-
-  -- Create a temporary table to hold the raw, joined, and normalized data
-  CREATE TEMP TABLE raw_data AS
-  WITH portfolio_data AS (
-    SELECT
-      dps.snapshot_date,
-      dps.equity_index
-    FROM public.daily_snapshots dps
-    WHERE dps.snapshot_date BETWEEN p_start_date AND p_end_date
-  ),
-  vni_data AS (
-    SELECT
-      md.date,
-      md.close
-    FROM public.daily_market_indices md
-    WHERE md.symbol = 'VNINDEX' AND md.date BETWEEN p_start_date AND p_end_date
-  )
-  SELECT
-    pd.snapshot_date,
-    (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 as portfolio_value,
-    (vni.close / NULLIF(v_first_vni_value, 0)) * 100 as vni_value,
-    ROW_NUMBER() OVER (ORDER BY pd.snapshot_date) as rn
-  FROM portfolio_data pd
-  INNER JOIN vni_data vni ON pd.snapshot_date = vni.date
-  ORDER BY pd.snapshot_date;
-
-  SELECT COUNT(*) INTO data_count FROM raw_data;
-
-  -- If the data count is below the threshold, return all points
-  IF data_count <= p_threshold THEN
-    RETURN QUERY SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd;
-    DROP TABLE raw_data;
-    RETURN;
-  END IF;
-
-  -- LTTB Downsampling
-  CREATE TEMP TABLE result_data_temp (
-    snapshot_date DATE,
-    portfolio_value NUMERIC,
-    vni_value NUMERIC
-  );
-
-  -- Always add the first point
-  INSERT INTO result_data_temp SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = 1;
-
-  every := (data_count - 2.0) / (p_threshold - 2.0);
-
-  FOR i IN 0..p_threshold - 3 LOOP
-    -- Calculate average for the next bucket
-    range_start := floor(a * every) + 2;
-    range_end := floor((a + 1) * every) + 1;
-
-    IF range_end > data_count THEN range_end := data_count;
-    END IF;
-    
-    IF range_start > range_end THEN CONTINUE;
-    END IF;
-
-    SELECT AVG(EXTRACT(EPOCH FROM rd.snapshot_date)) INTO avg_x
-    FROM raw_data rd
-    WHERE rn >= range_start AND rn <= range_end;
-
-    SELECT AVG(rd.portfolio_value) INTO avg_y
-    FROM raw_data rd
-    WHERE rn >= range_start AND rn <= range_end;
-
-    -- Find the point with the largest triangle area based on portfolio_value
-    max_area := -1;
-
-    SELECT * INTO result_data
-    FROM result_data_temp
-    ORDER BY snapshot_date
-    DESC LIMIT 1;
-
-    FOR data IN SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end LOOP
-      point_area := abs(
-        (EXTRACT(EPOCH FROM result_data.snapshot_date) - avg_x) * (data.portfolio_value - result_data.portfolio_value) -
-        (EXTRACT(EPOCH FROM result_data.snapshot_date) - EXTRACT(EPOCH FROM data.snapshot_date)) * (avg_y - result_data.portfolio_value)
-      ) * 0.5;
-
-      IF point_area > max_area THEN
-        max_area := point_area;
-        point_to_add := data;
-      END IF;
-    END LOOP;
-
-    -- Add the selected point to the results
-    INSERT INTO result_data_temp (snapshot_date, portfolio_value, vni_value)
-    VALUES (point_to_add.snapshot_date, point_to_add.portfolio_value, point_to_add.vni_value);
-    a := a + 1;
-  END LOOP;
-
-  -- Always add the last point
-  INSERT INTO result_data_temp SELECT rd.snapshot_date, rd.portfolio_value, rd.vni_value FROM raw_data rd WHERE rn = data_count;
-
-  RETURN QUERY SELECT r.snapshot_date, r.portfolio_value, r.vni_value FROM result_data_temp r ORDER BY r.snapshot_date;
-
-  DROP TABLE raw_data;
-  DROP TABLE result_data_temp;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS TABLE("snapshot_date" "date", "net_equity" numeric, "cumulative_cashflow" numeric)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  data_count INT;
-  data RECORD;
-  result_data RECORD;
-  avg_x NUMERIC;
-  avg_y NUMERIC;
-  range_start INT;
-  range_end INT;
-  point_area NUMERIC;
-  max_area NUMERIC;
-  point_to_add RECORD;
-  every NUMERIC;
-  i INT;
-  a INT := 0;
-BEGIN
-  -- Create temp table with both equity and cumulative_cashflow
-  CREATE TEMP TABLE raw_data AS
-  SELECT
-    dps.snapshot_date,
-    dps.net_equity::numeric AS net_equity,
-    dps.cumulative_cashflow::numeric AS cumulative_cashflow,
-    ROW_NUMBER() OVER (ORDER BY dps.snapshot_date) AS rn
-  FROM public.daily_snapshots dps
-  WHERE dps.snapshot_date >= p_start_date AND dps.snapshot_date <= p_end_date
-  ORDER BY dps.snapshot_date;
-
-  SELECT COUNT(*) INTO data_count FROM raw_data;
-
-  -- If data below threshold, return all
-  IF data_count <= p_threshold THEN
-    RETURN QUERY
-    SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
-    FROM raw_data rd;
-    DROP TABLE raw_data;
-    RETURN;
-  END IF;
-
-  -- Temporary result table
-  CREATE TEMP TABLE result_data_temp (
-    snapshot_date DATE,
-    net_equity NUMERIC,
-    cumulative_cashflow NUMERIC
-  );
-
-  -- Always add first point
-  INSERT INTO result_data_temp
-  SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
-  FROM raw_data rd
-  WHERE rn = 1;
-
-  every := (data_count - 2.0) / (p_threshold - 2.0);
-
-  FOR i IN 0..p_threshold - 3 LOOP
-    range_start := floor(a * every) + 2;
-    range_end := floor((a + 1) * every) + 1;
-
-    -- Compute average for the next bucket
-    SELECT
-      AVG(EXTRACT(EPOCH FROM rd.snapshot_date)),
-      AVG(rd.net_equity)
-    INTO avg_x, avg_y
-    FROM raw_data rd
-    WHERE rn >= range_start AND rn <= range_end;
-
-    max_area := -1;
-    SELECT * INTO result_data FROM result_data_temp ORDER BY snapshot_date DESC LIMIT 1;
-
-    FOR data IN
-      SELECT * FROM raw_data WHERE rn >= range_start AND rn <= range_end
-    LOOP
-      point_area := abs(
-        (EXTRACT(EPOCH FROM result_data.snapshot_date) - avg_x) * (data.net_equity - result_data.net_equity) -
-        (EXTRACT(EPOCH FROM result_data.snapshot_date) - EXTRACT(EPOCH FROM data.snapshot_date)) * (avg_y - result_data.net_equity)
-      ) * 0.5;
-
-      IF point_area > max_area THEN
-        max_area := point_area;
-        point_to_add := data;
-      END IF;
-    END LOOP;
-
-    INSERT INTO result_data_temp (snapshot_date, net_equity, cumulative_cashflow)
-    VALUES (point_to_add.snapshot_date, point_to_add.net_equity, point_to_add.cumulative_cashflow);
-
-    a := a + 1;
-  END LOOP;
-
-  -- Always add last point
-  INSERT INTO result_data_temp
-  SELECT rd.snapshot_date, rd.net_equity, rd.cumulative_cashflow
-  FROM raw_data rd
-  WHERE rn = data_count;
-
-  -- Return the final sampled points
-  RETURN QUERY
-  SELECT * FROM result_data_temp ORDER BY snapshot_date;
-
-  DROP TABLE raw_data;
-  DROP TABLE result_data_temp;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."trg_process_tx_cashflow_func"() RETURNS "trigger"
@@ -1329,19 +1343,58 @@ CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on
 ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') AS
+CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') AS
+ WITH "latest_data" AS (
+         SELECT DISTINCT ON ("dsp"."asset_id") "dsp"."asset_id",
+            "dsp"."price"
+           FROM "public"."daily_security_prices" "dsp"
+          ORDER BY "dsp"."asset_id", "dsp"."date" DESC
+        )
+ SELECT "a"."ticker",
+    "a"."name",
+    "a"."logo_url",
+    "sum"("tl"."quantity") AS "quantity",
+    "sum"(("tl"."debit" - "tl"."credit")) AS "cost_basis",
+    COALESCE("ld"."price", (1)::numeric) AS "price"
+   FROM (("public"."assets" "a"
+     JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
+     LEFT JOIN "latest_data" "ld" ON (("ld"."asset_id" = "a"."id")))
+  WHERE ("a"."asset_class" = 'stock'::"public"."asset_class")
+  GROUP BY "a"."id", "a"."ticker", "a"."name", "a"."logo_url", "ld"."price"
+ HAVING ("sum"("tl"."quantity") > (0)::numeric);
+
+
+ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
+
+
+CREATE MATERIALIZED VIEW "public"."dashboard_data" AS
  WITH "params" AS (
          SELECT CURRENT_DATE AS "today",
-            ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "start_of_year",
-            ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "start_of_month",
-            '2000-01-01'::"date" AS "start_of_all"
+            ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "ytd_date",
+            ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "mtd_date",
+            '2000-01-01'::"date" AS "inception_date",
+            ((CURRENT_DATE - '3 mons'::interval))::"date" AS "last3m_date",
+            ((CURRENT_DATE - '6 mons'::interval))::"date" AS "last6m_date",
+            ((CURRENT_DATE - '1 year'::interval))::"date" AS "last1y_date"
         ), "pnl" AS (
-         SELECT "public"."calculate_pnl"("params"."start_of_year", "params"."today") AS "pnl_ytd",
-            "public"."calculate_pnl"("params"."start_of_month", "params"."today") AS "pnl_mtd"
+         SELECT "public"."calculate_pnl"("params"."ytd_date", "params"."today") AS "pnl_ytd",
+            "public"."calculate_pnl"("params"."mtd_date", "params"."today") AS "pnl_mtd"
            FROM "params"
         ), "twr" AS (
-         SELECT "public"."calculate_twr"("params"."start_of_year", "params"."today") AS "twr_ytd",
-            "public"."calculate_twr"("params"."start_of_all", "params"."today") AS "twr_all"
+         SELECT "public"."calculate_twr"("params"."ytd_date", "params"."today") AS "twr_ytd",
+            "public"."calculate_twr"("params"."inception_date", "params"."today") AS "twr_all"
+           FROM "params"
+        ), "equity_chart" AS (
+         SELECT "public"."get_equity_chart"("params"."last3m_date", "params"."today", 150) AS "equitychart_3m",
+            "public"."get_equity_chart"("params"."last6m_date", "params"."today", 150) AS "equitychart_6m",
+            "public"."get_equity_chart"("params"."last1y_date", "params"."today", 150) AS "equitychart_1y",
+            "public"."get_equity_chart"("params"."inception_date", "params"."today", 150) AS "equitychart_all"
+           FROM "params"
+        ), "return_chart" AS (
+         SELECT "public"."get_return_chart"("params"."last3m_date", "params"."today", 150) AS "returnchart_3m",
+            "public"."get_return_chart"("params"."last6m_date", "params"."today", 150) AS "returnchart_6m",
+            "public"."get_return_chart"("params"."last1y_date", "params"."today", 150) AS "returnchart_1y",
+            "public"."get_return_chart"("params"."inception_date", "params"."today", 150) AS "returnchart_all"
            FROM "params"
         ), "balance" AS (
          SELECT "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
@@ -1357,8 +1410,8 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
         ), "monthly" AS (
          SELECT "sum"("last_12"."pnl") AS "total_pnl",
             "avg"("last_12"."pnl") AS "avg_profit",
-            "avg"((("last_12"."interest" + "last_12"."tax") + "last_12"."fee")) AS "avg_expense",
-            ( SELECT "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("last_12"."pnl", (0)::numeric) + COALESCE("last_12"."fee", (0)::numeric)) + COALESCE("last_12"."interest", (0)::numeric)) + COALESCE("last_12"."tax", (0)::numeric)), 'fee', COALESCE("last_12"."fee", (0)::numeric), 'interest', COALESCE("last_12"."interest", (0)::numeric), 'tax', COALESCE("last_12"."tax", (0)::numeric), 'snapshot_date', ("last_12"."snapshot_date")::"text") ORDER BY "last_12"."snapshot_date") AS "jsonb_agg") AS "profit_chart"
+            (- "avg"((("last_12"."interest" + "last_12"."tax") + "last_12"."fee"))) AS "avg_expense",
+            ( SELECT "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("last_12"."pnl", (0)::numeric) + COALESCE("last_12"."fee", (0)::numeric)) + COALESCE("last_12"."interest", (0)::numeric)) + COALESCE("last_12"."tax", (0)::numeric)), 'fee', COALESCE((- "last_12"."fee"), (0)::numeric), 'interest', COALESCE((- "last_12"."interest"), (0)::numeric), 'tax', COALESCE((- "last_12"."tax"), (0)::numeric), 'snapshot_date', ("last_12"."snapshot_date")::"text") ORDER BY "last_12"."snapshot_date") AS "jsonb_agg") AS "profit_chart"
            FROM ( SELECT "monthly_snapshots"."snapshot_date",
                     "monthly_snapshots"."pnl",
                     "monthly_snapshots"."interest",
@@ -1367,6 +1420,9 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
                    FROM "public"."monthly_snapshots"
                   ORDER BY "monthly_snapshots"."snapshot_date" DESC
                  LIMIT 12) "last_12"
+        ), "stock_positions" AS (
+         SELECT "jsonb_agg"("jsonb_build_object"('ticker', "stock_holdings"."ticker", 'name', "stock_holdings"."name", 'logo_url', "stock_holdings"."logo_url", 'quantity', "stock_holdings"."quantity", 'cost_basis', "stock_holdings"."cost_basis", 'price', "stock_holdings"."price") ORDER BY "stock_holdings"."ticker") AS "stock_list"
+           FROM "public"."stock_holdings"
         )
  SELECT "pnl"."pnl_ytd",
     "pnl"."pnl_mtd",
@@ -1382,15 +1438,28 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
     "monthly"."total_pnl",
     "monthly"."avg_profit",
     "monthly"."avg_expense",
-    "monthly"."profit_chart"
-   FROM (((("pnl"
+    "monthly"."profit_chart",
+    "stock_positions"."stock_list",
+    "equity_chart"."equitychart_3m",
+    "equity_chart"."equitychart_6m",
+    "equity_chart"."equitychart_1y",
+    "equity_chart"."equitychart_all",
+    "return_chart"."returnchart_3m",
+    "return_chart"."returnchart_6m",
+    "return_chart"."returnchart_1y",
+    "return_chart"."returnchart_all"
+   FROM ((((((("pnl"
      CROSS JOIN "twr")
      CROSS JOIN "balance")
      CROSS JOIN "debt")
-     CROSS JOIN "monthly");
+     CROSS JOIN "monthly")
+     CROSS JOIN "stock_positions")
+     CROSS JOIN "equity_chart")
+     CROSS JOIN "return_chart")
+  WITH NO DATA;
 
 
-ALTER VIEW "public"."dashboard_data" OWNER TO "postgres";
+ALTER MATERIALIZED VIEW "public"."dashboard_data" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
@@ -1461,31 +1530,6 @@ CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on'
 
 
 ALTER VIEW "public"."stock_annual_pnl" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') AS
- WITH "latest_data" AS (
-         SELECT DISTINCT ON ("dsp"."asset_id") "dsp"."asset_id",
-            "dsp"."price"
-           FROM "public"."daily_security_prices" "dsp"
-          ORDER BY "dsp"."asset_id", "dsp"."date" DESC
-        )
- SELECT "a"."ticker",
-    "a"."name",
-    "a"."logo_url",
-    "sum"("tl"."quantity") AS "quantity",
-    "sum"(("tl"."debit" - "tl"."credit")) AS "cost_basis",
-    COALESCE("ld"."price", (1)::numeric) AS "price",
-    ("sum"("tl"."quantity") * COALESCE("ld"."price", (1)::numeric)) AS "market_value"
-   FROM (("public"."assets" "a"
-     JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
-     LEFT JOIN "latest_data" "ld" ON (("ld"."asset_id" = "a"."id")))
-  WHERE ("a"."asset_class" = 'stock'::"public"."asset_class")
-  GROUP BY "a"."id", "a"."ticker", "a"."name", "a"."logo_url", "ld"."price"
- HAVING ("sum"("tl"."quantity") > (0)::numeric);
-
-
-ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
@@ -1729,6 +1773,10 @@ ALTER TABLE ONLY "public"."tx_legs"
 
 ALTER TABLE ONLY "public"."tx_stock"
     ADD CONSTRAINT "tx_stock_pkey" PRIMARY KEY ("tx_id");
+
+
+
+CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
 
 
 
@@ -2267,6 +2315,18 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
+GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "anon";
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "service_role";
@@ -2300,18 +2360,6 @@ GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "anon";
 GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."sampling_benchmark_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."sampling_equity_data"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
 
 
 
@@ -2360,13 +2408,13 @@ GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."asset_positions" TO "anon";
+GRANT ALL ON TABLE "public"."asset_positions" TO "anon";
 GRANT ALL ON TABLE "public"."asset_positions" TO "authenticated";
 GRANT ALL ON TABLE "public"."asset_positions" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."assets" TO "anon";
+GRANT ALL ON TABLE "public"."assets" TO "anon";
 GRANT ALL ON TABLE "public"."assets" TO "authenticated";
 GRANT ALL ON TABLE "public"."assets" TO "service_role";
 
@@ -2378,49 +2426,49 @@ GRANT ALL ON TABLE "public"."balance_sheet" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."currencies" TO "anon";
+GRANT ALL ON TABLE "public"."currencies" TO "anon";
 GRANT ALL ON TABLE "public"."currencies" TO "authenticated";
 GRANT ALL ON TABLE "public"."currencies" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."daily_exchange_rates" TO "anon";
+GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."daily_market_indices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."daily_security_prices" TO "anon";
+GRANT ALL ON TABLE "public"."daily_security_prices" TO "anon";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_security_prices" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."tx_cashflow" TO "anon";
+GRANT ALL ON TABLE "public"."tx_cashflow" TO "anon";
 GRANT ALL ON TABLE "public"."tx_cashflow" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_cashflow" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."tx_debt" TO "anon";
+GRANT ALL ON TABLE "public"."tx_debt" TO "anon";
 GRANT ALL ON TABLE "public"."tx_debt" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_debt" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."tx_entries" TO "anon";
+GRANT ALL ON TABLE "public"."tx_entries" TO "anon";
 GRANT ALL ON TABLE "public"."tx_entries" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_entries" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."tx_legs" TO "anon";
+GRANT ALL ON TABLE "public"."tx_legs" TO "anon";
 GRANT ALL ON TABLE "public"."tx_legs" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
 
@@ -2432,7 +2480,7 @@ GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."tx_stock" TO "anon";
+GRANT ALL ON TABLE "public"."tx_stock" TO "anon";
 GRANT ALL ON TABLE "public"."tx_stock" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_stock" TO "service_role";
 
@@ -2450,25 +2498,31 @@ GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."stock_holdings" TO "anon";
+GRANT ALL ON TABLE "public"."stock_holdings" TO "authenticated";
+GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."dashboard_data" TO "anon";
 GRANT ALL ON TABLE "public"."dashboard_data" TO "authenticated";
 GRANT ALL ON TABLE "public"."dashboard_data" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."dnse_orders" TO "anon";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
 GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."news_article_assets" TO "anon";
+GRANT ALL ON TABLE "public"."news_article_assets" TO "anon";
 GRANT ALL ON TABLE "public"."news_article_assets" TO "authenticated";
 GRANT ALL ON TABLE "public"."news_article_assets" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."news_articles" TO "anon";
+GRANT ALL ON TABLE "public"."news_articles" TO "anon";
 GRANT ALL ON TABLE "public"."news_articles" TO "authenticated";
 GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
 
@@ -2477,12 +2531,6 @@ GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "anon";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."stock_holdings" TO "anon";
-GRANT ALL ON TABLE "public"."stock_holdings" TO "authenticated";
-GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
 
 
 

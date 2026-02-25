@@ -15,6 +15,23 @@ type ReturnChart = {
   portfolio_value: number
 }
 
+type ProfitChart = {
+  revenue: number
+  fee: number
+  interest: number
+  tax: number
+  snapshot_date: string
+}
+
+type Stocks = {
+  ticker: string
+  name: string
+  logo_url: string
+  quantity: number
+  cost_basis: number
+  price: number
+}
+
 type Dashboard = {
   pnl_ytd: number
   pnl_mtd: number
@@ -30,21 +47,8 @@ type Dashboard = {
   total_pnl: number
   avg_profit: number
   avg_expense: number
-  profit_chart: {
-    revenue: number
-    fee: number
-    interest: number
-    tax: number
-    snapshot_date: string
-  }[]
-  stock_list: {
-    ticker: string
-    name: string
-    logo_url: string
-    quantity: number
-    cost_basis: number
-    price: number
-  }[]
+  profit_chart: ProfitChart[]
+  stock_list: Stocks[]
   equitychart_1y: EquityChart[]
   equitychart_3m: EquityChart[]
   equitychart_6m: EquityChart[]

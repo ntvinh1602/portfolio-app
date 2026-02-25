@@ -1,5 +1,3 @@
-"use client"
-
 import { ChartCard } from "@/components/chart-card"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"

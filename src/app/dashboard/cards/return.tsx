@@ -1,6 +1,3 @@
-"use client"
-
-import { useMemo } from "react"
 import { ChartCard } from "@/components/chart-card"
 import { formatNum } from "@/lib/utils"
 import { Areachart } from "@/components/charts/areachart"
@@ -31,21 +28,17 @@ export function ReturnChart({
   inceptionDate
 }: ReturnChartProps) {
 
-  const cagr = useMemo(() => {
-    const start = new Date(inceptionDate).getTime()
-    const now = Date.now()
+  const start = new Date(inceptionDate).getTime()
+  const now = Date.now()
 
-    const years =
-      (now - start) /
-      (1000 * 60 * 60 * 24 * 365.25)
+  const years =
+    (now - start) /
+    (1000 * 60 * 60 * 24 * 365.25)
 
-    if (years <= 0) return 0
-
-    return (
-      (Math.pow(1 + twrAll, 1 / years) - 1) *
-      100
-    )
-  }, [twrAll, inceptionDate])
+  const cagr =
+    years > 0
+      ? (Math.pow(1 + twrAll, 1 / years) - 1) * 100
+      : 0
 
   return (
     <ChartCard
