@@ -4,11 +4,11 @@ import {
   Settings,
   TrendingUp,
   LogOut,
-  TvMinimal,
-  Handshake,
-  Newspaper,
   Rss,
-  BookCheck
+  BarChart3,
+  Scale,
+  Repeat,
+  LayoutDashboard
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -27,22 +27,22 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: TvMinimal,
+      icon: LayoutDashboard,
     },
     {
       title: "Balance Sheet",
       url: "/balance-sheet",
-      icon: BookCheck,
+      icon: Scale,
     },
     {
-      title: "Reports",
-      url: "/reports",
-      icon: Newspaper,
+      title: "Annual Recaps",
+      url: "/annual-recaps",
+      icon: BarChart3,
     },
     {
       title: "Transactions",
       url: "/transactions",
-      icon: Handshake,
+      icon: Repeat,
     },
     {
       title: "News",
