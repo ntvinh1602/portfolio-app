@@ -32,7 +32,7 @@ export function Asset({
   const [priceChanged, setPriceChanged] = useState<"up" | "down" | null>(null)
   const totalAmount = quantity * price
   const pnlNet = totalAmount - costBasis
-  const pnlPct = (totalAmount / costBasis) - 1
+  const pnlPct = ((totalAmount / costBasis) - 1) * 100
 
   useEffect(() => {
     if (prevPrice) {
