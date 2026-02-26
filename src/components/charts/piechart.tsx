@@ -9,11 +9,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 
-type PieChartData = {
-  fill: string
-  [key: string]: unknown
-}
-
 export function Piechart({
   data,
   chartConfig,
@@ -29,7 +24,7 @@ export function Piechart({
   label_pos = 1.5,
   valueFormatter
 }: {
-  data: PieChartData[] | undefined
+  data: Record<string, unknown>[]
   chartConfig: ChartConfig
   dataKey: string
   nameKey: string
@@ -53,7 +48,7 @@ interface RenderLabelProps {
   midAngle: number
   innerRadius: number
   outerRadius: number
-  payload: PieChartData
+  payload: Record<string, unknown>
 }
 
   const renderLabel = ({
@@ -122,9 +117,14 @@ interface RenderLabelProps {
           strokeWidth={5}
           className="font-thin"
         >
-          {data?.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.fill} />
-          ))}
+          {data?.map((entry, index) => {
+            const key = entry[nameKey] as string
+            const color = chartConfig[key]?.color
+
+            return (
+              <Cell key={`cell-${index}`} fill={color} />
+            )
+          })}
 
           {centerText && (
             <Label

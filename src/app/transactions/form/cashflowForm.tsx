@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { useAssets } from "@/hooks/useAssets"
+import { useCashAssets } from "@/hooks/useCashAssets"
 import { cashflowSchema } from "./schema"
 import { mutate } from "swr"
 import { CASHFLOW_MEMO } from "@/lib/domain/cashflow_memo"
@@ -22,7 +22,7 @@ type FormValues = z.infer<typeof cashflowSchema>
 
 export function CashflowForm() {
   const supabase = createClient()
-  const { data: assetData } = useAssets()
+  const { data: assetData } = useCashAssets()
   const [loading, setLoading] = React.useState(false)
 
   const form = useForm<FormValues>({

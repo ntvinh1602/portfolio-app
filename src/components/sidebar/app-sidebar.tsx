@@ -48,12 +48,7 @@ const data = {
       title: "News",
       url: "/news",
       icon: Rss,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-    },
+    }
   ],
 }
 

@@ -13,18 +13,11 @@ import { useReports } from "@/hooks/useReports"
 
 export default function Page() {
   const [year, setYear] = useState(new Date().getFullYear())
-  const { data, isLoading, error } = useReports()
+  const { data, isLoading } = useReports()
 
-  const yearData = useMemo(
-    () => data.find((item) => item.year === year),
-    [data, year]
-  )
-
-  const startYear = data[0]?.year ?? new Date().getFullYear()
-
-  if (error) {
-    return <div className="text-red-500">{error.message}</div>
-  }
+  const yearMap = useMemo( () => Object.fromEntries(data.map(d => [d.year, d])), [data] )
+  const yearData = yearMap[year]
+  const startYear = data[0].year
 
   if (isLoading || !yearData) return null
 

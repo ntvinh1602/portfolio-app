@@ -27,6 +27,7 @@ type ComboboxProps = {
   items: ComboboxItem[]
   value?: string
   onChange: (value: string | undefined) => void
+  onSearchChange?: (value: string) => void   // ← ADD THIS
   placeholder?: string
   searchPlaceholder?: string
   emptyPlaceholder?: string
@@ -37,6 +38,7 @@ export function Combobox({
   items,
   value,
   onChange,
+  onSearchChange,   // ← ADD THIS
   placeholder = "Select an item...",
   searchPlaceholder = "Search...",
   emptyPlaceholder = "No item found.",
@@ -72,7 +74,12 @@ export function Combobox({
         }}
       >
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput
+            placeholder={searchPlaceholder}
+            onValueChange={(value) => {
+              onSearchChange?.(value)
+            }}
+          />
           <CommandList className="max-h-52">
             <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
             <CommandGroup>
@@ -80,7 +87,7 @@ export function Combobox({
                 <CommandItem
                   className="p-3"
                   key={item.value}
-                  value={item.label}
+                  value={item.value}
                   onSelect={() => {
                     onChange(item.value === value ? undefined : item.value)
                     setOpen(false)

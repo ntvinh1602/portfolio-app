@@ -1,37 +1,60 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { subMonths } from "date-fns"
+
 import { DatePicker } from "@/components/date-picker"
 import { DataTable } from "./table/data-table"
 import { columns } from "./table/columns"
 import { useTransactions } from "@/hooks/useTransactions"
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select"
+
 import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
+
 import {
   StockForm,
   CashflowForm,
   BorrowForm,
-  RepayForm
+  RepayForm,
 } from "./form"
+
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import { Separator } from "@/components/ui/separator"
 
 type Preset = "1M" | "3M" | "6M" | "1Y" | "CUSTOM"
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
+
+function getDateRangeFromPreset(preset: Preset) {
+  const now = new Date()
+
+  switch (preset) {
+    case "1M":
+      return { startDate: subMonths(now, 1), endDate: now }
+    case "3M":
+      return { startDate: subMonths(now, 3), endDate: now }
+    case "6M":
+      return { startDate: subMonths(now, 6), endDate: now }
+    case "1Y":
+      return { startDate: subMonths(now, 12), endDate: now }
+    default:
+      return { startDate: subMonths(now, 3), endDate: now }
+  }
+}
 
 const formConfig: Record<
   TransactionFormType,
@@ -60,39 +83,21 @@ const formConfig: Record<
 }
 
 export default function TransactionsPage() {
-  const [preset, setPreset] = useState<Preset>("3M")
-  const [dateRange, setDateRange] = useState({
-    startDate: subMonths(new Date(), 1),
-    endDate: new Date(),
-  })
+  const defaultPreset: Preset = "3M"
 
-  const { data, error } = useTransactions(dateRange)
+  const [preset, setPreset] = useState<Preset>(defaultPreset)
 
-  // Handle preset change
-  const handlePresetChange = (value: Preset) => {
-    setPreset(value)
-    if (value === "1M") {
-      setDateRange({
-        startDate: subMonths(new Date(), 1),
-        endDate: new Date(),
-      })
-    } else if (value === "3M") {
-      setDateRange({
-        startDate: subMonths(new Date(), 3),
-        endDate: new Date(),
-      })
-    } else if (value === "6M") {
-      setDateRange({
-        startDate: subMonths(new Date(), 6),
-        endDate: new Date(),
-      })
-    } else if (value === "1Y") {
-      setDateRange({
-        startDate: subMonths(new Date(), 12),
-        endDate: new Date(),
-      })
-    }
-  }
+  const [customRange, setCustomRange] = useState(
+    getDateRangeFromPreset(defaultPreset)
+  )
+
+  const dateRange = useMemo(() => {
+    if (preset === "CUSTOM") return customRange
+    return getDateRangeFromPreset(preset)
+  }, [preset, customRange])
+
+  const { data, error, isLoading } = useTransactions(dateRange)
+
   const [open, setOpen] = useState(false)
   const [activeForm, setActiveForm] =
     useState<TransactionFormType | null>(null)
@@ -106,19 +111,22 @@ export default function TransactionsPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <Separator/>
-      <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-2">
+      <Separator />
+
+      <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-4">
+
         {error && (
-          <div className="text-red-500 text-sm">
+          <div className="text-sm text-red-500">
             Error fetching transactions: {error.message}
           </div>
         )}
 
-        <DataTable columns={columns} data={data ?? []}>
+        <DataTable columns={columns} data={data} >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
-                <PlusIcon/>Transaction
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Transaction
               </Button>
             </DropdownMenuTrigger>
 
@@ -150,16 +158,17 @@ export default function TransactionsPage() {
               FormComponent={currentConfig.Component}
             />
           )}
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <Select
               value={preset}
-              onValueChange={(v) => handlePresetChange(v as Preset)}
+              onValueChange={(value) => setPreset(value as Preset)}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-44">
                 <SelectValue placeholder="Preset" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1M">Last 1 months</SelectItem>
+                <SelectItem value="1M">Last 1 month</SelectItem>
                 <SelectItem value="3M">Last 3 months</SelectItem>
                 <SelectItem value="6M">Last 6 months</SelectItem>
                 <SelectItem value="1Y">Last 1 year</SelectItem>
@@ -169,13 +178,19 @@ export default function TransactionsPage() {
 
             {preset === "CUSTOM" && (
               <DatePicker
-                dateFrom={dateRange.startDate}
-                dateTo={dateRange.endDate}
+                dateFrom={customRange.startDate}
+                dateTo={customRange.endDate}
                 onDateFromChange={(date) =>
-                  setDateRange((prev) => ({ ...prev, startDate: date }))
+                  setCustomRange((prev) => ({
+                    ...prev,
+                    startDate: date ?? prev.startDate,
+                  }))
                 }
                 onDateToChange={(date) =>
-                  setDateRange((prev) => ({ ...prev, endDate: date }))
+                  setCustomRange((prev) => ({
+                    ...prev,
+                    endDate: date ?? prev.endDate,
+                  }))
                 }
               />
             )}

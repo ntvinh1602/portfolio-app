@@ -12,26 +12,25 @@ import {
   FieldGroup,
 } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { useAssets } from "@/hooks/useAssets"
 import { stockSchema } from "./schema"
 import { mutate } from "swr"
+import { useAssetSearch } from "@/hooks/useAssetSearch"
 
 type FormValues = z.infer<typeof stockSchema>
 
 export function StockForm() {
   const supabase = createClient()
-  const { data: assetData } = useAssets()
   const [loading, setLoading] = React.useState(false)
-  
-  const stockTickers = React.useMemo(
+  const [search, setSearch] = React.useState("")
+  const { data: assets } = useAssetSearch(search, "stock")  
+
+  const stockOptions = React.useMemo(
     () =>
-      assetData
-        .filter((a) => a.asset_class === "stock")
-        .map((a) => ({
-          value: a.ticker,
-          label: a.name ? `${a.ticker} — ${a.name}` : a.ticker,
-        })),
-    [assetData]
+      assets.map((a) => ({
+        value: a.ticker, // IMPORTANT — use id, not ticker
+        label: `${a.ticker} — ${a.name}`,
+      })),
+    [assets]
   )
 
   const form = useForm<FormValues>({
@@ -102,9 +101,10 @@ export function StockForm() {
             control={form.control}
             name="ticker"
             label="Stock"
-            items={stockTickers}
+            items={stockOptions}
+            onSearchChange={setSearch}
             placeholder="Select a stock"
-            searchPlaceholder="Search for stock..."
+            searchPlaceholder="Enter ticker to search..."
           />
 
           <NumberField

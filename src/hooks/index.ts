@@ -1,5 +1,5 @@
 export * from "./use-mobile"
-export * from "./useAssets"
+export * from "./useCashAssets"
 export * from "./useBalanceSheet"
 export * from "./useCurrency"
 export * from "./useNews"

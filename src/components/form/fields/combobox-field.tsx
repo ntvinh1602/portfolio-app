@@ -12,6 +12,7 @@ interface ComboboxFieldProps<T extends FieldValues> {
   placeholder?: string
   searchPlaceholder?: string
   emptyPlaceholder?: string
+  onSearchChange?: (value: string) => void
 }
 
 export function ComboboxField<T extends FieldValues>({
@@ -22,6 +23,7 @@ export function ComboboxField<T extends FieldValues>({
   placeholder,
   searchPlaceholder,
   emptyPlaceholder,
+  onSearchChange,
 }: ComboboxFieldProps<T>) {
   return (
     <Controller
@@ -34,6 +36,7 @@ export function ComboboxField<T extends FieldValues>({
             items={items}
             value={field.value}
             onChange={field.onChange}
+            onSearchChange={onSearchChange}
             placeholder={placeholder}
             searchPlaceholder={searchPlaceholder}
             emptyPlaceholder={emptyPlaceholder}

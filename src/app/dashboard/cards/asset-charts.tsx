@@ -22,16 +22,13 @@ interface AssetCardProps {
 }
 
 export function AssetCard({
-  assets,
-  liabilities
+  assets: a,
+  liabilities: lb
 }: AssetCardProps) {
-  const totalAssets = liabilities.total_equity + liabilities.total_liabilities
+  const totalAssets = lb.total_equity + lb.total_liabilities
 
-  const leverage = liabilities.total_equity !== 0
-    ? (
-        liabilities.total_liabilities /
-        liabilities.total_equity
-      ).toFixed(2)
+  const leverage = lb.total_equity !== 0
+    ? (lb.total_liabilities / lb.total_equity).toFixed(2)
     : "∞"
 
   // --- Asset Chart ---
@@ -42,9 +39,18 @@ export function AssetCard({
   }
 
   const assetChartData = [
-    { asset: "cash", allocation: assets.cash, fill: "var(--chart-1)" },
-    { asset: "stock", allocation: assets.stock, fill: "var(--chart-2)" },
-    { asset: "fund", allocation: assets.fund, fill: "var(--chart-3)" }
+    {
+      asset: "cash",
+      allocation: a.cash
+    },
+    {
+      asset: "stock",
+      allocation: a.stock
+    },
+    {
+      asset: "fund",
+      allocation: a.fund
+    }
   ].filter((d) => d.allocation > 0)
 
   // --- Liability Chart ---
@@ -57,18 +63,15 @@ export function AssetCard({
   const liabilityChartData = [
     {
       liability: "equity",
-      allocation: liabilities.total_equity,
-      fill: "var(--chart-1)"
+      allocation: lb.total_equity
     },
     {
       liability: "debts",
-      allocation: liabilities.debts,
-      fill: "var(--chart-2)"
+      allocation: lb.debts
     },
     {
       liability: "margin",
-      allocation: liabilities.margin,
-      fill: "var(--chart-3)"
+      allocation: lb.margin
     }
   ].filter((d) => d.allocation > 0)
 
