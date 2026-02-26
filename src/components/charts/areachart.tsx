@@ -12,24 +12,21 @@ import { cn } from "@/lib/utils"
 export function Areachart({
   data,
   config,
-  className,
   xAxisDataKey,
-  dataKeys,
-  legend = false,
+  className,
   xAxisTickFormatter,
   yAxisTickFormatter,
-  valueFormatter,
+  tooltipFormatter,
 }: {
   data: Record<string, string | number>[]
   config: ChartConfig
-  className?: string
   xAxisDataKey: string
-  dataKeys: string[]
-  legend?: boolean
-  xAxisTickFormatter?: (value: string | number) => string
-  yAxisTickFormatter?: (value: string | number) => string
-  valueFormatter?: (value: number) => string
+  className?: string
+  xAxisTickFormatter?: (value: string) => string
+  yAxisTickFormatter?: (value: number) => string
+  tooltipFormatter?: (value: number) => string
 }) {
+  const dataKeys = Object.keys(config)
   return (
     <ChartContainer config={config} className={cn(className)}>
       <AreaChart data={data} margin={{ left: -15 }}>
@@ -76,7 +73,7 @@ export function Areachart({
         <ChartTooltip
           cursor={true}
           content={
-            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
+            <ChartTooltipContent indicator="line" valueFormatter={tooltipFormatter}/>
           }
         />
         {dataKeys.map((key) => (
@@ -91,10 +88,10 @@ export function Areachart({
             dot={false}
           />
         ))}
-        {legend && <ChartLegend 
+        <ChartLegend 
           content={<ChartLegendContent />}
           className="gap-4 justify-center pt-3 text-muted-foreground"
-        />}
+        />
       </AreaChart>
     </ChartContainer>
   )

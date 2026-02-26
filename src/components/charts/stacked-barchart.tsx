@@ -23,20 +23,19 @@ export function ChartBarStacked<
   config,
   className,
   labelKey,
-  dataKeys,
   xAxisTickFormatter,
   xAxisDataKey,
-  valueFormatter,
+  tooltipFormatter,
 }: {
   data: TData[]
   config: ChartConfig
   className?: string
   labelKey?: string
-  dataKeys: string[]
-  xAxisTickFormatter?: (value: string | number) => string
+  xAxisTickFormatter?: (value: string) => string
   xAxisDataKey: string
-  valueFormatter?: (value: number) => string
+  tooltipFormatter?: (value: number) => string
 }) {
+  const dataKeys = Object.keys(config)
   return (
     <ChartContainer config={config} className={className}>
       <BarChart
@@ -66,7 +65,7 @@ export function ChartBarStacked<
         />
         <ChartTooltip
           cursor={true}
-          content={<ChartTooltipContent valueFormatter={valueFormatter} />}
+          content={<ChartTooltipContent valueFormatter={tooltipFormatter} />}
         />
         <ChartLegend
           content={<ChartLegendContent />}

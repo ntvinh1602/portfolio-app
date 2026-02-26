@@ -43,7 +43,7 @@ export default function Page() {
     <div className="grid grid-cols-3 h-full px-0 gap-2 md:gap-6">
       <div className="flex flex-col col-span-3 md:col-span-1 gap-2 px-2 md:px-0 h-full">
         <EquityChart
-          dateRange={equityRange}
+          dateRange={returnRange}
           onDateRangeChange={setEquityRange}
           chartData={equityChart}
           totalEquity={data.total_equity}
@@ -79,7 +79,7 @@ export default function Page() {
           totalPnL={data.total_pnl}
           avgProfit={data.avg_profit}
           avgExpense={data.avg_expense}
-          profitChart={data.profit_chart}
+          chartData={data.profit_chart}
         />
       </div>
 

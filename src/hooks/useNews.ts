@@ -18,6 +18,9 @@ export function useNews() {
   const fetchNews = async (): Promise<NewsArticle[]> => {
     const supabase = createClient()
 
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
     const { data, error } = await supabase
       .from("news_articles")
       .select(`
@@ -34,6 +37,7 @@ export function useNews() {
           )
         )
       `)
+      .gte("published_at", oneWeekAgo.toISOString())
       .order("published_at", { ascending: false })
 
     if (error) throw new Error(error.message)
