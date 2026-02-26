@@ -91,6 +91,7 @@ export function ReturnChart({
           <CardTitle className="text-2xl font-light">
             {`${formatNum(twrYtd * 100, 1)}%`}
           </CardTitle>
+          <CardDescription className="text-xs">this year</CardDescription>
         </div>
         <CardAction className="flex items-center gap-4">
           <div className="flex flex-col items-end">
@@ -101,7 +102,7 @@ export function ReturnChart({
               }
               {`${formatNum(Math.abs(twrAll * 100), 1)}%`}
             </div>
-            <CardDescription className="text-xs">this year</CardDescription>
+            <CardDescription className="text-xs">all time</CardDescription>
           </div>
           <Separator
             orientation="vertical"

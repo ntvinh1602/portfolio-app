@@ -61,7 +61,6 @@ export function ProfitChart({
           <CardTitle className="text-2xl font-light">
             {formatNum(totalPnL)}
           </CardTitle>
-          <CardDescription className="text-xs">last 1y</CardDescription>
         </div>
         <CardAction className="flex items-center gap-4">
           <div className="flex flex-col items-end">

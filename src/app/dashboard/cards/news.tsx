@@ -21,7 +21,7 @@ export function NewsWidget() {
   const { data: articles } = useNews()
   const { data: dashboard } = useDashboard()
 
-  const [filter, setFilter] = useState<"all" | "related">("related")
+  const [filter, setFilter] = useState<"all" | "related">("all")
 
   // Create a fast lookup set of holding tickers
   const holdingTickers = useMemo(() => {
