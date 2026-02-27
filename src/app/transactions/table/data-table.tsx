@@ -52,7 +52,7 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([{ desc: true, id: "created_at" }])
-
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -135,7 +135,7 @@ export function DataTable<TData, TValue>({
                       </EmptyMedia>
                       <EmptyTitle>No Transaction</EmptyTitle>
                       <EmptyDescription>
-                        We can't find any transactions that match the filter during this period.
+                        We cant find any transactions that match the filter during this period.
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>

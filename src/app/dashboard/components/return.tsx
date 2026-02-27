@@ -14,6 +14,7 @@ import {  } from "@/components/ui/chart"
 import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ChartConfig } from "@/components/ui/chart"
+import { useState, useEffect } from "react"
 
 interface ReturnChartPoint {
   snapshot_date: string
@@ -52,7 +53,15 @@ export function ReturnChart({
 }: ReturnChartProps) {
 
   const start = new Date(inceptionDate).getTime()
-  const now = Date.now()
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now())
+    }, 60_000)
+
+    return () => clearInterval(interval)
+  }, [])
   const years = (now - start) / (1000 * 60 * 60 * 24 * 365.25)
 
   const cagr = years > 0

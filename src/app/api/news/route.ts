@@ -1,8 +1,9 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import type { Database } from "@/types/database.types"
 
 export async function GET() {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SECRET_KEY!
   )
@@ -34,12 +35,12 @@ export async function GET() {
   }
 
   const formatted =
-    data?.map((article: any) => ({
+    data?.map((article) => ({
       ...article,
       tickers:
-        article.news_article_assets?.map(
-          (rel: any) => rel.assets.ticker
-        ) ?? [],
+        article.news_article_assets
+          ?.map((rel) => rel.assets?.ticker)
+          .filter((t): t is string => Boolean(t)) ?? [],
     })) ?? []
 
   return NextResponse.json(formatted)

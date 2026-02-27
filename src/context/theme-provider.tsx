@@ -14,22 +14,14 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("default")
-  const [mounted, setMounted] = useState(false)
-
-  // Load saved theme
-  useEffect(() => {
-    const saved = localStorage.getItem("color-theme") as Theme | null
-    if (saved && THEMES.includes(saved)) {
-      setTheme(saved)
-    }
-    setMounted(true)
-  }, [])
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "default"
+    const saved = localStorage.getItem("color-theme")
+    return THEMES.includes(saved as Theme) ? (saved as Theme) : "default"
+  })
 
   // Sync theme to DOM + storage
   useEffect(() => {
-    if (!mounted) return
-
     document.documentElement.classList.remove(
       ...THEMES.map((t) => `theme-${t}`)
     )
@@ -39,10 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     localStorage.setItem("color-theme", theme)
-  }, [theme, mounted])
-
-  // Prevent hydration mismatch flash
-  if (!mounted) return null
+  }, [theme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

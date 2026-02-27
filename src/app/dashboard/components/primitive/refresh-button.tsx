@@ -33,8 +33,9 @@ export function RefreshButton() {
         undefined,
         { revalidate: true }
       )
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to refresh prices", { id: toastId })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to refresh prices"
+      toast.error(message, { id: toastId })
     } finally {
       setIsRefreshing(false)
     }

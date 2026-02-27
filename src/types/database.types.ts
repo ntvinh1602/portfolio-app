@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -113,76 +93,6 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_exchange_rates: {
-        Row: {
-          currency_code: string
-          date: string
-          rate: number
-        }
-        Insert: {
-          currency_code: string
-          date: string
-          rate: number
-        }
-        Update: {
-          currency_code?: string
-          date?: string
-          rate?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exchange_rates_currency_code_fkey"
-            columns: ["currency_code"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-        ]
-      }
-      daily_market_indices: {
-        Row: {
-          close: number | null
-          date: string
-          symbol: string
-        }
-        Insert: {
-          close?: number | null
-          date: string
-          symbol: string
-        }
-        Update: {
-          close?: number | null
-          date?: string
-          symbol?: string
-        }
-        Relationships: []
-      }
-      daily_security_prices: {
-        Row: {
-          asset_id: string
-          date: string
-          price: number
-        }
-        Insert: {
-          asset_id: string
-          date: string
-          price: number
-        }
-        Update: {
-          asset_id?: string
-          date?: string
-          price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_security_prices_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       dnse_orders: {
         Row: {
           average_price: number | null
@@ -248,6 +158,58 @@ export type Database = {
           },
         ]
       }
+      historical_fxrate: {
+        Row: {
+          currency_code: string
+          date: string
+          rate: number
+        }
+        Insert: {
+          currency_code: string
+          date: string
+          rate: number
+        }
+        Update: {
+          currency_code?: string
+          date?: string
+          rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rates_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      historical_prices: {
+        Row: {
+          asset_id: string
+          close: number
+          date: string
+        }
+        Insert: {
+          asset_id: string
+          close: number
+          date: string
+        }
+        Update: {
+          asset_id?: string
+          close?: number
+          date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_security_prices_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_article_assets: {
         Row: {
           article_id: string
@@ -308,6 +270,21 @@ export type Database = {
           source?: string
           title?: string
           url?: string
+        }
+        Relationships: []
+      }
+      refresh_queue: {
+        Row: {
+          created_at: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
         }
         Relationships: []
       }
@@ -620,6 +597,22 @@ export type Database = {
           },
         ]
       }
+      reports_data: {
+        Row: {
+          avg_expense: number | null
+          avg_profit: number | null
+          deposits: number | null
+          equity_ret: number | null
+          profit_chart: Json | null
+          return_chart: Json | null
+          stock_pnl: Json | null
+          total_pnl: number | null
+          vn_ret: number | null
+          withdrawals: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
       stock_annual_pnl: {
         Row: {
           logo_url: string | null
@@ -658,7 +651,7 @@ export type Database = {
           equity_ret: number | null
           vn_ret: number | null
           withdrawals: number | null
-          year: string | null
+          year: number | null
         }
         Relationships: []
       }
@@ -709,26 +702,11 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string; p_threshold: number }
         Returns: Json
       }
+      process_refresh_queue: { Args: never; Returns: undefined }
       process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_debt: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_stock: { Args: { p_tx_id: string }; Returns: undefined }
       rebuild_ledger: { Args: never; Returns: undefined }
-      sampling_benchmark_data: {
-        Args: { p_end_date: string; p_start_date: string; p_threshold: number }
-        Returns: {
-          portfolio_value: number
-          snapshot_date: string
-          vni_value: number
-        }[]
-      }
-      sampling_equity_data: {
-        Args: { p_end_date: string; p_start_date: string; p_threshold: number }
-        Returns: {
-          cumulative_cashflow: number
-          net_equity: number
-          snapshot_date: string
-        }[]
-      }
     }
     Enums: {
       asset_class:
@@ -742,7 +720,16 @@ export type Database = {
       cashflow_ops: "deposit" | "withdraw" | "income" | "expense"
     }
     CompositeTypes: {
-      [_ in never]: never
+      benchmark_point: {
+        snapshot_date: string | null
+        portfolio_value: number | null
+        vni_value: number | null
+      }
+      equity_point: {
+        snapshot_date: string | null
+        net_equity: number | null
+        cumulative_cashflow: number | null
+      }
     }
   }
 }
@@ -865,9 +852,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       asset_class: [
@@ -883,4 +867,3 @@ export const Constants = {
     },
   },
 } as const
-

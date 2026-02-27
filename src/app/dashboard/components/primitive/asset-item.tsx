@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardDescription, CardContent, CardTitle } from "@/components/ui/card"
 import Image from 'next/image'
@@ -19,32 +18,17 @@ export function Asset({
   quantity,
   price,
   costBasis,
-  prevPrice,
 }: {
   name: string
   logoUrl: string
   quantity: number
   price: number
   costBasis: number
-  prevPrice?: number | null
 }) {
   const isMobile = useIsMobile()
-  const [priceChanged, setPriceChanged] = useState<"up" | "down" | null>(null)
   const totalAmount = quantity * price
   const pnlNet = totalAmount - costBasis
   const pnlPct = ((totalAmount / costBasis) - 1) * 100
-
-  useEffect(() => {
-    if (prevPrice) {
-      if (price > prevPrice) {
-        setPriceChanged("up")
-      } else if (price < prevPrice) {
-        setPriceChanged("down")
-      }
-      const timer = setTimeout(() => setPriceChanged(null), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [price, prevPrice])
 
   return (
     <Card className="rounded-full py-3
@@ -70,13 +54,7 @@ export function Asset({
               </Badge>
               <Badge
                 variant="outline"
-                className={`font-light text-foreground/80 ${
-                  priceChanged === "up"
-                    ? "animate-flash-green"
-                    : priceChanged === "down"
-                      ? "animate-flash-red"
-                      : ""
-                }`}
+                className="font-light text-foreground/80"
               >
                 <ShoppingBag className="" />
                 {formatNum(price / 1000, 2)}
