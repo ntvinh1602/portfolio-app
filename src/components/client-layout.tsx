@@ -44,7 +44,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
               <div className="flex h-svh flex-col">
 
                 {/* HEADER (fixed height) */}
-                <header className="flex items-center w-full justify-between px-6 py-4 md:px-0 md:py-2 gap-2 shrink-0">
+                <header className="flex items-center w-full justify-between px-6 py-2 md:px-0 gap-2 shrink-0">
                   <div className="flex items-center gap-2">
                     <SidebarTrigger />
                     <Separator
