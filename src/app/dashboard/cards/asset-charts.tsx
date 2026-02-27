@@ -76,7 +76,7 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="flex min-h-60 py-0 border-0 rounded-none bg-transparent">
+    <Card className="flex min-h-60 py-0 border-0 rounded-none bg-transparent shadow-none">
       <CardContent className="flex h-full justify-between p-0 pb-4">
         <Piechart
           data={assetChartData}

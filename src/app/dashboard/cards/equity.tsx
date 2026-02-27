@@ -120,7 +120,7 @@ export function EquityChart({
           variant="default"
           spacing={1}
           size="sm"
-          className="self-end [&_[data-state=on]]:bg-primary/20"
+          className="self-end [&_[data-state=on]]:bg-primary/10"
         >
           <ToggleGroupItem value="3m">3M</ToggleGroupItem>
           <ToggleGroupItem value="6m">6M</ToggleGroupItem>

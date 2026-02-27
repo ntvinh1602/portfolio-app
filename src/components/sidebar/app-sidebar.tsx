@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ConfirmDialog } from "../confirmation"
+import { Separator } from "../ui/separator"
 
 const data = {
   navMenu: [
@@ -82,7 +83,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenuButton>
       </SidebarHeader>
       
-      <SidebarContent>
+      <div className="h-fit relative text-xs text-muted-foreground before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]
+      group-data-[collapsible=icon]:hidden
+      "/>
+      
+      <SidebarContent className="pt-2">
         <NavMenu items={data.navMenu} />
       </SidebarContent>
 

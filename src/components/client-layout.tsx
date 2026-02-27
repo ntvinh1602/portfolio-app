@@ -41,7 +41,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
               <Toaster />
 
               {/* FULL HEIGHT APP CONTAINER */}
-              <div className="flex h-svh flex-col overflow-hidden">
+              <div className="flex h-svh flex-col">
 
                 {/* HEADER (fixed height) */}
                 <header className="flex items-center w-full justify-between px-6 py-4 md:px-0 md:py-2 gap-2 shrink-0">
@@ -57,7 +57,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
                 </header>
 
                 {/* CONTENT AREA (critical fix) */}
-                <main className="flex-1 min-h-0 flex flex-col overflow-hidden pb-4">
+                <main className="flex-1 min-h-0 flex flex-col pb-4">
                   {children}
                 </main>
 

@@ -72,7 +72,7 @@ export function NewsWidget() {
             onClick={() => window.open(article.url, "_blank")}
           >
             <div className="flex items-start justify-between">
-              <p className="text-sm font-light leading-tight text-foreground/80 line-clamp-2 group-hover:text-primary">
+              <p className="text-sm font-light leading-tight text-foreground/90 line-clamp-2 group-hover:text-primary">
                 {article.title}
               </p>
 
@@ -80,17 +80,13 @@ export function NewsWidget() {
                 {article.tickers.slice(0, 1).map((ticker) => (
                   <Badge
                     key={ticker}
-                    variant="default"
-                    className="text-[10px] px-1"
+                    className="bg-primary/10 border-primary/20"
                   >
                     {ticker}
                   </Badge>
                 ))}
                 {article.tickers.length > 1 && (
-                  <Badge
-                    variant="default"
-                    className="text-[10px] px-1"
-                  >
+                  <Badge className="bg-primary/10 border-primary/20">
                     +{article.tickers.length - 1}
                   </Badge>
                 )}
