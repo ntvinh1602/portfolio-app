@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useNews } from "@/hooks/useNews"
 import {
   Card,
   CardHeader,
@@ -16,15 +15,19 @@ import {
   ToggleGroupItem
 } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import type { NewsArticle } from "@/types/news"
 
-type Props = {
+type NewsWidgetProps = {
   stockList: {
     ticker: string
   }[]
+  news: NewsArticle[]
 }
 
-export function NewsWidget({ stockList }: Props) {
-  const { data: articles } = useNews()
+export function NewsWidget({
+  stockList,
+  news
+}: NewsWidgetProps) {
 
   const [filter, setFilter] = useState<"all" | "related">("all")
 
@@ -35,15 +38,15 @@ export function NewsWidget({ stockList }: Props) {
 
   // Filter logic
   const filteredArticles = useMemo(() => {
-    if (!articles) return []
-    if (filter === "all") return articles
+    if (!news) return []
+    if (filter === "all") return news
 
-    return articles.filter((article) =>
+    return news.filter((article) =>
       article.tickers?.some((ticker) =>
         holdingTickers.has(ticker)
       )
     )
-  }, [articles, filter, holdingTickers])
+  }, [news, filter, holdingTickers])
 
   return (
     <Card className="relative flex flex-col gap-4 h-full 

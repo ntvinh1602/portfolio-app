@@ -5,7 +5,8 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { RefreshButton, Asset } from "./primitive"
+import { RefreshButton } from "./primitive/refresh-button"
+import { Asset } from "./primitive/asset-item"
 import { Button } from "@/components/ui/button"
 
 interface StockItem {

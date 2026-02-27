@@ -9,18 +9,19 @@ import {
   NetProfit,
   TradingViewWidget,
   NewsWidget,
-} from "./cards"
+} from "./components"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useMemo, useState } from "react"
 import type { Dashboard } from "@/types/dashboard"
 import type { NewsArticle } from "@/types/news"
 
-type Props = {
+export default function DashboardClient({
+  data,
+  news
+}: {
   data: Dashboard
   news: NewsArticle[]
-}
-
-export default function DashboardClient({ data, news }: Props) {
+}) {
   const isMobile = useIsMobile()
   const [equityRange, setEquityRange] = useState("1y")
   const [returnRange, setReturnRange] = useState("1y")
@@ -92,7 +93,10 @@ export default function DashboardClient({ data, news }: Props) {
       </div>
 
       <div className="grid grid-rows-2 gap-2 min-h-0">
-        <NewsWidget stockList={data.stock_list} />
+        <NewsWidget
+          stockList={data.stock_list}
+          news={news}
+        />
         {!isMobile && <TradingViewWidget />}
       </div>
 

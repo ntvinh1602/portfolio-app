@@ -99,7 +99,7 @@ Deno.serve(async (_req: Request) => {
 
     // @ts-ignore: dataToUpsert is not null here
     const { error: upsertError } = await supabase
-      .from('daily_exchange_rates')
+      .from('historical_fxrate')
       .upsert(dataToUpsert, { onConflict: 'currency_code,date' })
 
     if (upsertError) {

@@ -1,9 +1,9 @@
-import { ingestAllSources } from "@/lib/news-ingest/ingest"
+import { ingestAllSources } from "@/lib/rss/ingest"
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
 
-  if (authHeader !== `Bearer ${process.env.VERCEL_CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${process.env.VERCEL_SECRET}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
