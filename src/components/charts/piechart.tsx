@@ -89,7 +89,7 @@ interface RenderLabelProps {
           <ChartLegend
             content={<ChartLegendContent nameKey={nameKey} />}
             verticalAlign="bottom"
-            className="justify-center gap-4 pt-4"
+            className="justify-center gap-4"
           />
         )}
         {legend === "right" && (

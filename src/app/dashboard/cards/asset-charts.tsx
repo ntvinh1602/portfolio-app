@@ -21,6 +21,8 @@ interface AssetCardProps {
   liabilities: LiabilityBreakdown
 }
 
+const innerRadius = 65
+
 export function AssetCard({
   assets: a,
   liabilities: lb
@@ -33,9 +35,18 @@ export function AssetCard({
 
   // --- Asset Chart ---
   const assetChartCfg: ChartConfig = {
-    cash: { label: "Cash", color: "var(--chart-1)" },
-    stock: { label: "Stock", color: "var(--chart-2)" },
-    fund: { label: "Fund", color: "var(--chart-3)" }
+    cash: {
+      label: "Cash",
+      color: "var(--chart-1)"
+    },
+    stock: {
+      label: "Stock",
+      color: "var(--chart-2)"
+    },
+    fund: {
+      label: "Fund",
+      color: "var(--chart-3)"
+    }
   }
 
   const assetChartData = [
@@ -55,9 +66,18 @@ export function AssetCard({
 
   // --- Liability Chart ---
   const liabilityChartCfg: ChartConfig = {
-    equity: { label: "Equity", color: "var(--chart-1)" },
-    debts: { label: "Debts", color: "var(--chart-2)" },
-    margin: { label: "Margin", color: "var(--chart-3)" }
+    equity: {
+      label: "Equity",
+      color: "var(--chart-1)"
+    },
+    debts: {
+      label: "Debts",
+      color: "var(--chart-2)"
+    },
+    margin: { 
+      label: "Margin",
+      color: "var(--chart-3)"
+    }
   }
 
   const liabilityChartData = [
@@ -76,42 +96,38 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="flex min-h-60 py-0 border-0 rounded-none bg-transparent shadow-none">
-      <CardContent className="flex h-full justify-between p-0 pb-4">
-        <Piechart
-          data={assetChartData}
-          chartConfig={assetChartCfg}
-          dataKey="allocation"
-          nameKey="asset"
-          className="h-full w-fit"
-          innerRadius={65}
-          legend="bottom"
-          label={false}
-          margin_tb={0}
-          centerText="Total AUM"
-          centerValue={compactNum(totalAssets)}
-          valueFormatter={(v) =>
-            `${formatNum((v / totalAssets) * 100, 1)}%`
-          }
-        />
+    <Card className="grid grid-cols-2 min-h-60 p-0 pb-4 
+      border-0 rounded-none bg-transparent shadow-none"
+    >
+      <Piechart
+        data={assetChartData}
+        chartConfig={assetChartCfg}
+        dataKey="allocation"
+        nameKey="asset"
+        className="h-full"
+        innerRadius={innerRadius}
+        legend="bottom"
+        label={false}
+        margin_tb={0}
+        centerText="Total AUM"
+        centerValue={compactNum(totalAssets)}
+        valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+      />
 
-        <Piechart
-          data={liabilityChartData}
-          chartConfig={liabilityChartCfg}
-          dataKey="allocation"
-          nameKey="liability"
-          className="h-full w-fit"
-          innerRadius={65}
-          legend="bottom"
-          label={false}
-          margin_tb={0}
-          centerText="Leverage"
-          centerValue={leverage}
-          valueFormatter={(v) =>
-            `${formatNum((v / totalAssets) * 100, 1)}%`
-          }
-        />
-      </CardContent>
+      <Piechart
+        data={liabilityChartData}
+        chartConfig={liabilityChartCfg}
+        dataKey="allocation"
+        nameKey="liability"
+        className="h-full"
+        innerRadius={innerRadius}
+        legend="bottom"
+        label={false}
+        margin_tb={0}
+        centerText="Leverage"
+        centerValue={leverage}
+        valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+      />
     </Card>
   )
 }

@@ -69,9 +69,25 @@ function TradingViewWidgetComponent() {
   }, [])
 
   return (
-    <div className="border rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent tradingview-widget-container" ref={container}>
-      <div className="tradingview-widget-container__widget"></div>
-    </div>
+<div
+  ref={container}
+  className="relative flex flex-col h-full min-h-0 border rounded-xl
+    backdrop-blur-sm
+    shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]
+    before:content-['']
+    before:absolute
+    before:top-0
+    before:left-0
+    before:w-full
+    before:h-px
+    before:bg-gradient-to-r
+    before:from-transparent
+    before:via-ring/40
+    before:to-transparent
+    tradingview-widget-container"
+>
+  <div className="tradingview-widget-container__widget flex-1 min-h-0" />
+</div>
   )
 }
 

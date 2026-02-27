@@ -39,54 +39,57 @@ export default function Page() {
     }
   }, [data, returnRange])
 
-  return (
-    <div className="grid grid-cols-3 h-full px-0 gap-2 md:gap-6">
-      <div className="flex flex-col col-span-3 md:col-span-1 gap-2 px-2 md:px-0 h-full">
-        <EquityChart
-          dateRange={returnRange}
-          onDateRangeChange={setEquityRange}
-          chartData={equityChart}
-          totalEquity={data.total_equity}
-          pnlMtd={data.pnl_mtd}
-          pnlYtd={data.pnl_ytd}
-        />
-        <ReturnChart
-          dateRange={returnRange}
-          onDateRangeChange={setReturnRange}
-          chartData={returnChart}
-          twrYtd={data.twr_ytd}
-          twrAll={data.twr_all}
-          inceptionDate={'2021-11-09'}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full">
-        <Portfolio stocks={data.stock_list} />
-        <AssetCard
-          assets={{
-            cash: data.cash,
-            stock: data.stock,
-            fund: data.fund
-          }}
-          liabilities={{
-            total_equity: data.total_equity,
-            total_liabilities: data.total_liabilities,
-            debts: data.debts,
-            margin: data.margin
-          }}
-        />
-        <NetProfit
-          totalPnL={data.total_pnl}
-          avgProfit={data.avg_profit}
-          avgExpense={data.avg_expense}
-          chartData={data.profit_chart}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2 col-span-3 md:col-span-1 px-2 md:px-0 h-full">
-        <NewsWidget/>
-        {!isMobile && <TradingViewWidget/>}
-      </div>
+return (
+  <div className="grid grid-cols-3 h-full min-h-0 px-0 gap-2 md:gap-6">
+    {/* LEFT COLUMN */}
+    <div className="grid grid-rows-2 gap-2 min-h-0">
+      <EquityChart
+        dateRange={equityRange}
+        onDateRangeChange={setEquityRange}
+        chartData={equityChart}
+        totalEquity={data.total_equity}
+        pnlMtd={data.pnl_mtd}
+        pnlYtd={data.pnl_ytd}
+      />
+      <ReturnChart
+        dateRange={returnRange}
+        onDateRangeChange={setReturnRange}
+        chartData={returnChart}
+        twrYtd={data.twr_ytd}
+        twrAll={data.twr_all}
+        inceptionDate={'2021-11-09'}
+      />
     </div>
-  )
+
+    {/* MIDDLE COLUMN */}
+    <div className="grid grid-rows-[auto_auto_1fr] gap-2 min-h-0">
+      <Portfolio stocks={data.stock_list} />
+      <AssetCard
+        assets={{
+          cash: data.cash,
+          stock: data.stock,
+          fund: data.fund
+        }}
+        liabilities={{
+          total_equity: data.total_equity,
+          total_liabilities: data.total_liabilities,
+          debts: data.debts,
+          margin: data.margin
+        }}
+      />
+      <NetProfit
+        totalPnL={data.total_pnl}
+        avgProfit={data.avg_profit}
+        avgExpense={data.avg_expense}
+        chartData={data.profit_chart}
+      />
+    </div>
+
+    <div className="grid grid-rows-2 gap-2 min-h-0">
+      <NewsWidget />
+      {!isMobile && <TradingViewWidget />}
+    </div>
+
+  </div>
+)
 }

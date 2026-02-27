@@ -16,6 +16,7 @@ import {
   ToggleGroupItem
 } from "@/components/ui/toggle-group"
 import { useDashboard } from "@/hooks"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export function NewsWidget() {
   const { data: articles } = useNews()
@@ -41,11 +42,9 @@ export function NewsWidget() {
     )
   }, [articles, filter, holdingTickers])
 
-  // Show only the 5 latest after filtering
-  const latest = filteredArticles.slice(0, 5)
-
   return (
-    <Card className="min-h-130 backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
+    <Card className="relative flex flex-col gap-4 h-full 
+      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
       <CardHeader>
         <CardTitle className="text-lg font-normal">Latest News</CardTitle>
         <CardAction>
@@ -64,8 +63,9 @@ export function NewsWidget() {
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-3">
-        {latest.map((article) => (
+      <CardContent className="flex flex-col flex-1 min-h-0 gap-3">
+        <ScrollArea className="flex-1 min-h-0">
+        {filteredArticles.map((article) => (
           <div
             key={article.id}
             className="group cursor-pointer rounded-md transition py-2"
@@ -106,11 +106,13 @@ export function NewsWidget() {
           </div>
         ))}
 
-        {latest.length === 0 && (
+        {filteredArticles.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
             No news available
           </p>
         )}
+
+        </ScrollArea>
       </CardContent>
     </Card>
   )
