@@ -13,118 +13,86 @@ interface Order {
   feeRate: number;
 }
 
-interface OrderID {
-  id: number
-}
-
 // Initialize Supabase client
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SB_SECRET_KEY') ?? ''
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SB_SECRET_KEY") ?? ""
 );
-
-const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-const TELEGRAM_SIGNAL_GROUP_ID = Deno.env.get('TELEGRAM_SIGNAL_GROUP_ID');
-
-// Helper to send Telegram messages
-async function sendTelegramMessage(text: string) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_SIGNAL_GROUP_ID) {
-    console.warn('Telegram credentials not set — skipping notification.');
-    return;
-  }
-
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const body = {
-    chat_id: TELEGRAM_SIGNAL_GROUP_ID,
-    text,
-    parse_mode: 'Markdown',
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    console.error('Failed to send Telegram message:', await res.text());
-  }
-}
 
 serve(async (_req: Request) => {
   try {
-    const username = Deno.env.get('DNSE_USERNAME');
-    const password = Deno.env.get('DNSE_PASSWORD');
+    const username = Deno.env.get("DNSE_USERNAME");
+    const password = Deno.env.get("DNSE_PASSWORD");
+    const accountNo = Deno.env.get("DNSE_ACCOUNTID");
 
-    if (!username || !password) {
-      throw new Error('DNSE_USERNAME and DNSE_PASSWORD environment variables are not set');
+    if (!username || !password || !accountNo) {
+      throw new Error(
+        "Missing DNSE_USERNAME, DNSE_PASSWORD, or DNSE_ACCOUNTID environment variables"
+      );
     }
 
     // Step 1: Login
-    const loginResponse = await fetch('https://api.dnse.com.vn/auth-service/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    const loginResponse = await fetch(
+      "https://api.dnse.com.vn/auth-service/login",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      }
+    );
 
     if (!loginResponse.ok) {
-      const errorData = await loginResponse.json();
-      throw new Error(`Login failed: ${JSON.stringify(errorData)}`);
+      const errorData = await loginResponse.text();
+      throw new Error(`Login failed: ${errorData}`);
     }
 
     const loginData = await loginResponse.json();
     const token = loginData.token;
-    if (!token) throw new Error('Login successful, but no token received.');
+
+    if (!token) {
+      throw new Error("Login successful but no token received.");
+    }
 
     // Step 2: Fetch Orders
-    const accountNo = Deno.env.get('DNSE_ACCOUNTID');
-    if (!accountNo) throw new Error('DNSE_ACCOUNTID environment variable is not set');
-
-    const response = await fetch(`https://api.dnse.com.vn/order-service/v2/orders?accountNo=${accountNo}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `https://api.dnse.com.vn/order-service/v2/orders?accountNo=${accountNo}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Failed to fetch transactions: ${JSON.stringify(errorData)}`);
+      const errorData = await response.text();
+      throw new Error(`Failed to fetch orders: ${errorData}`);
     }
 
-    const { orders: dnseOrders }: { orders: Order[] } = await response.json();
+    const { orders: dnseOrders }: { orders: Order[] } =
+      await response.json();
 
-    // Step 3: Upsert filled orders — but only notify new ones
-    const filledOrders = dnseOrders.filter(o => o.orderStatus === 'Filled');
+    // Step 3: Filter only filled orders
+    const filledOrders = dnseOrders.filter(
+      (o) => o.orderStatus === "Filled"
+    );
 
-    // Fetch existing order IDs
-    const { data: existingOrders, error: fetchError }= await supabase
-      .from('dnse_orders')
-      .select('id');
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch existing orders: ${fetchError.message}`);
+    if (filledOrders.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "No filled orders to sync.",
+        }),
+        { headers: { "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
-    const existingIds = new Set((existingOrders as OrderID[]).map(o => o.id));
-
-    // Filter to only new ones
-    const newOrders = filledOrders.filter(order => !existingIds.has(order.id));
-
-    if (newOrders.length === 0) {
-      console.log('No new filled orders.');
-      return new Response(JSON.stringify({ success: true, message: 'No new filled orders.' }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
-
-    // Upsert (in case of race condition / redundancy)
+    // Step 4: Upsert into database (ignore duplicates)
     const { error: upsertError } = await supabase
-      .from('dnse_orders')
+      .from("dnse_orders")
       .upsert(
-        newOrders.map(order => ({
+        filledOrders.map((order) => ({
           id: order.id,
           side: order.side,
           symbol: order.symbol,
@@ -133,41 +101,36 @@ serve(async (_req: Request) => {
           average_price: order.averagePrice,
           modified_date: order.modifiedDate,
           tax: order.taxRate * order.fillQuantity * order.averagePrice,
-          fee: order.feeRate * order.fillQuantity * order.averagePrice
-            + (order.side === 'NS' ? order.fillQuantity * 0.3 : 0),
+          fee:
+            order.feeRate * order.fillQuantity * order.averagePrice +
+            (order.side === "NS" ? order.fillQuantity * 0.3 : 0),
         })),
-        { onConflict: 'id', ignoreDuplicates: true }
+        {
+          onConflict: "id",
+          ignoreDuplicates: true,
+        }
       );
 
-    if (upsertError) throw new Error(`Database error: ${upsertError.message}`);
-
-    // Notify only for new ones
-    for (const order of newOrders) {
-      const message =
-        `📈 *New Filled Trade*\n\n` +
-        `*Symbol:* ${order.symbol}\n` +
-        `*Side:* ${order.side === 'NB' ? 'Buy' : 'Sell'}\n` +
-        `*Quantity:* ${order.fillQuantity}\n` +
-        `*Price:* ${order.averagePrice.toFixed(2)}\n` +
-        `*Date:* ${new Date(order.modifiedDate).toLocaleString('vi-VN')}`;
-      await sendTelegramMessage(message);
+    if (upsertError) {
+      throw new Error(`Database error: ${upsertError.message}`);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Upserted and notified ${newOrders.length} new filled orders.`,
+        message: `Synced ${filledOrders.length} filled orders.`,
       }),
-      { headers: { 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { "Content-Type": "application/json" }, status: 200 }
     );
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Critical error in upsert-dnse-orders:', errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+
+    console.error("Critical error in dnse order sync:", errorMessage);
 
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
-      { headers: { 'Content-Type': 'application/json' }, status: 500 }
+      { headers: { "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
