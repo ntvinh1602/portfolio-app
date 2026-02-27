@@ -15,20 +15,23 @@ import {
   ToggleGroup,
   ToggleGroupItem
 } from "@/components/ui/toggle-group"
-import { useDashboard } from "@/hooks"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-export function NewsWidget() {
+type Props = {
+  stockList: {
+    ticker: string
+  }[]
+}
+
+export function NewsWidget({ stockList }: Props) {
   const { data: articles } = useNews()
-  const { data: dashboard } = useDashboard()
 
   const [filter, setFilter] = useState<"all" | "related">("all")
 
   // Create a fast lookup set of holding tickers
   const holdingTickers = useMemo(() => {
-    if (!dashboard?.stock_list) return new Set<string>()
-    return new Set(dashboard.stock_list.map((s) => s.ticker))
-  }, [dashboard])
+    return new Set(stockList.map((s) => s.ticker))
+  }, [stockList])
 
   // Filter logic
   const filteredArticles = useMemo(() => {

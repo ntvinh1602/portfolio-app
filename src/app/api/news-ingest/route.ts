@@ -1,4 +1,4 @@
-import { ingestAllSources } from "@/lib/news/ingest"
+import { ingestAllSources } from "@/lib/news-ingest/ingest"
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

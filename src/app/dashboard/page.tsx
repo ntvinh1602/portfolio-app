@@ -1,95 +1,61 @@
-"use client"
+import DashboardClient from "./client"
+import { headers } from "next/headers"
 
-import { useDashboard } from "@/hooks"
-import {
-  AssetCard,
-  Portfolio,
-  EquityChart,
-  ReturnChart,
-  NetProfit,
-  TradingViewWidget,
-  NewsWidget,
-} from "./cards"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useMemo, useState } from "react"
+async function getBaseUrl() {
+  const h = await headers()
+  const host = h.get("host")!
+  const protocol =
+    process.env.NODE_ENV === "development"
+      ? "http"
+      : "https"
 
-export default function Page() {
-  const isMobile = useIsMobile()
-  const [equityRange, setEquityRange] = useState("1y")
-  const [returnRange, setReturnRange] = useState("1y")
-  const { data } = useDashboard()
+  return `${protocol}://${host}`
+}
 
-  const equityChart = useMemo(() => {
-    switch (equityRange) {
-      case "3m": return data.equitychart_3m
-      case "6m": return data.equitychart_6m
-      case "1y": return data.equitychart_1y
-      case "all": return data.equitychart_all
-      default: return []
-    }
-  }, [data, equityRange])
+async function getDashboard() {
+  const baseUrl = await getBaseUrl()
 
-  const returnChart = useMemo(() => {
-    switch (returnRange) {
-      case "3m": return data.returnchart_3m
-      case "6m": return data.returnchart_6m
-      case "1y": return data.returnchart_1y
-      case "all": return data.returnchart_all
-      default: return []
-    }
-  }, [data, returnRange])
+  const res = await fetch(`${baseUrl}/api/dashboard`, {
+    next: {
+      tags: ["dashboard"],
+      revalidate: 1800, // optional TTL fallback
+    },
+  })
 
-return (
-  <div className="grid grid-cols-3 h-full min-h-0 px-0 gap-2 md:gap-6">
-    {/* LEFT COLUMN */}
-    <div className="grid grid-rows-2 gap-2 min-h-0">
-      <EquityChart
-        dateRange={equityRange}
-        onDateRangeChange={setEquityRange}
-        chartData={equityChart}
-        totalEquity={data.total_equity}
-        pnlMtd={data.pnl_mtd}
-        pnlYtd={data.pnl_ytd}
-      />
-      <ReturnChart
-        dateRange={returnRange}
-        onDateRangeChange={setReturnRange}
-        chartData={returnChart}
-        twrYtd={data.twr_ytd}
-        twrAll={data.twr_all}
-        inceptionDate={'2021-11-09'}
-      />
-    </div>
+  if (!res.ok) {
+    throw new Error("Failed to fetch dashboard")
+  }
 
-    {/* MIDDLE COLUMN */}
-    <div className="grid grid-rows-[auto_auto_1fr] gap-2 min-h-0">
-      <Portfolio stocks={data.stock_list} />
-      <AssetCard
-        assets={{
-          cash: data.cash,
-          stock: data.stock,
-          fund: data.fund
-        }}
-        liabilities={{
-          total_equity: data.total_equity,
-          total_liabilities: data.total_liabilities,
-          debts: data.debts,
-          margin: data.margin
-        }}
-      />
-      <NetProfit
-        totalPnL={data.total_pnl}
-        avgProfit={data.avg_profit}
-        avgExpense={data.avg_expense}
-        chartData={data.profit_chart}
-      />
-    </div>
+  return res.json()
+}
 
-    <div className="grid grid-rows-2 gap-2 min-h-0">
-      <NewsWidget />
-      {!isMobile && <TradingViewWidget />}
-    </div>
+async function getNews() {
+  const baseUrl = await getBaseUrl()
 
-  </div>
-)
+  const res = await fetch(`${baseUrl}/api/news`, {
+    next: {
+      tags: ["news"],
+      revalidate: 900,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch news")
+  }
+
+  return res.json()
+}
+
+export default async function Page() {
+  const [dashboard, news] = await Promise.all([
+    getDashboard(),
+    getNews(),
+  ])
+
+  return (
+    <DashboardClient
+      data={dashboard}
+      news={news}
+    />
+  )
 }
