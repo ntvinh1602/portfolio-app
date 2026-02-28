@@ -381,6 +381,20 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."enqueue_refresh_data"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  insert into public.refresh_queue default values;
+  return null;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."enqueue_refresh_data"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -647,6 +661,57 @@ $$;
 
 
 ALTER FUNCTION "public"."process_dnse_order"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."process_refresh_queue"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  pending_count integer;
+  vercel_secret text;
+  response jsonb;
+begin
+  -- Check if anything is queued
+  select count(*) into pending_count from public.refresh_queue;
+
+  if pending_count = 0 then
+    return;
+  end if;
+
+  -- Clear queue first (acts as debounce)
+  delete from public.refresh_queue;
+
+  -- Concurrent refresh (allowed because NOT inside trigger)
+  refresh materialized view concurrently public.daily_snapshots;
+  refresh materialized view public.dashboard_data;
+
+  -- Get secret from Vault
+  select decrypted_secret
+  into vercel_secret
+  from vault.decrypted_secrets
+  where name = 'VERCEL_SECRET';
+
+  if vercel_secret is null then
+    raise exception 'VERCEL_SECRET not found in vault';
+  end if;
+
+  -- Call Next.js revalidate endpoint
+  select net.http_post(
+    url := 'https://msyq.vercel.app/api/revalidate',
+    headers := jsonb_build_object(
+      'x-revalidate-secret', vercel_secret,
+      'Content-Type', 'application/json'
+    ),
+    body := '{}'::jsonb
+  )
+  into response;
+
+end;
+$$;
+
+
+ALTER FUNCTION "public"."process_refresh_queue"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") RETURNS "void"
@@ -919,20 +984,6 @@ $$;
 ALTER FUNCTION "public"."rebuild_ledger"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."rebuild_on_child_update"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    AS $$
-begin
-    -- Rebuild the entire ledger whenever a child transaction changes
-    perform public.rebuild_ledger();
-    return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."rebuild_on_child_update"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."trg_process_tx_cashflow_func"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -1021,24 +1072,14 @@ CREATE TABLE IF NOT EXISTS "public"."currencies" (
 ALTER TABLE "public"."currencies" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."daily_exchange_rates" (
+CREATE TABLE IF NOT EXISTS "public"."historical_fxrate" (
     "currency_code" "text" NOT NULL,
     "date" "date" NOT NULL,
     "rate" numeric(14,2) NOT NULL
 );
 
 
-ALTER TABLE "public"."daily_exchange_rates" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."daily_market_indices" (
-    "date" "date" NOT NULL,
-    "symbol" "text" NOT NULL,
-    "close" numeric
-);
-
-
-ALTER TABLE "public"."daily_market_indices" OWNER TO "postgres";
+ALTER TABLE "public"."historical_fxrate" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."historical_prices" (
@@ -1139,7 +1180,7 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
          SELECT "pos"."snapshot_date",
             "pos"."currency_code",
             ( SELECT "der"."rate"
-                   FROM "public"."daily_exchange_rates" "der"
+                   FROM "public"."historical_fxrate" "der"
                   WHERE (("der"."currency_code" = "pos"."currency_code") AND ("der"."date" <= "pos"."snapshot_date"))
                   ORDER BY "der"."date" DESC
                  LIMIT 1) AS "rate"
@@ -1503,6 +1544,30 @@ CREATE TABLE IF NOT EXISTS "public"."news_articles" (
 ALTER TABLE "public"."news_articles" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."refresh_queue" (
+    "id" bigint NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."refresh_queue" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."refresh_queue_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNED BY "public"."refresh_queue"."id";
+
+
+
 CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
  WITH "capital_legs" AS (
          SELECT "tl"."tx_id",
@@ -1775,6 +1840,10 @@ CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
 ALTER VIEW "public"."tx_summary" OWNER TO "postgres";
 
 
+ALTER TABLE ONLY "public"."refresh_queue" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."refresh_queue_id_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_pkey" PRIMARY KEY ("id");
 
@@ -1800,13 +1869,8 @@ ALTER TABLE ONLY "public"."dnse_orders"
 
 
 
-ALTER TABLE ONLY "public"."daily_exchange_rates"
+ALTER TABLE ONLY "public"."historical_fxrate"
     ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("currency_code", "date");
-
-
-
-ALTER TABLE ONLY "public"."daily_market_indices"
-    ADD CONSTRAINT "market_data_pkey" PRIMARY KEY ("date", "symbol");
 
 
 
@@ -1822,6 +1886,11 @@ ALTER TABLE ONLY "public"."news_articles"
 
 ALTER TABLE ONLY "public"."news_articles"
     ADD CONSTRAINT "news_articles_url_key" UNIQUE ("url");
+
+
+
+ALTER TABLE ONLY "public"."refresh_queue"
+    ADD CONSTRAINT "refresh_queue_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1859,6 +1928,10 @@ CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snaps
 
 
 
+CREATE INDEX "historical_prices_date_idx" ON "public"."historical_prices" USING "btree" ("date");
+
+
+
 CREATE INDEX "tx_legs_asset_id_idx" ON "public"."tx_legs" USING "btree" ("asset_id");
 
 
@@ -1875,10 +1948,10 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
                   WHERE ("historical_prices"."asset_id" = "a"."id")
                   ORDER BY "historical_prices"."date" DESC
                  LIMIT 1) "sp" ON (true))
-             LEFT JOIN LATERAL ( SELECT "daily_exchange_rates"."rate"
-                   FROM "public"."daily_exchange_rates"
-                  WHERE ("daily_exchange_rates"."currency_code" = "a"."currency_code")
-                  ORDER BY "daily_exchange_rates"."date" DESC
+             LEFT JOIN LATERAL ( SELECT "historical_fxrate"."rate"
+                   FROM "public"."historical_fxrate"
+                  WHERE ("historical_fxrate"."currency_code" = "a"."currency_code")
+                  ORDER BY "historical_fxrate"."date" DESC
                  LIMIT 1) "er" ON (true))
           WHERE ("a"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"]))
           GROUP BY "a"."ticker"
@@ -1935,6 +2008,18 @@ CREATE OR REPLACE TRIGGER "after_dnse_order_insert" AFTER INSERT ON "public"."dn
 
 
 
+CREATE OR REPLACE TRIGGER "refresh_after_fx_rate" AFTER INSERT OR UPDATE ON "public"."historical_fxrate" FOR EACH STATEMENT EXECUTE FUNCTION "public"."enqueue_refresh_data"();
+
+
+
+CREATE OR REPLACE TRIGGER "refresh_after_prices" AFTER INSERT OR UPDATE ON "public"."historical_prices" FOR EACH STATEMENT EXECUTE FUNCTION "public"."enqueue_refresh_data"();
+
+
+
+CREATE OR REPLACE TRIGGER "refresh_after_tx_legs" AFTER INSERT ON "public"."tx_legs" FOR EACH STATEMENT EXECUTE FUNCTION "public"."enqueue_refresh_data"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_process_tx_cashflow" AFTER INSERT ON "public"."tx_cashflow" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_cashflow_func"();
 
 
@@ -1944,18 +2029,6 @@ CREATE OR REPLACE TRIGGER "trg_process_tx_debt" AFTER INSERT ON "public"."tx_deb
 
 
 CREATE OR REPLACE TRIGGER "trg_process_tx_stock" AFTER INSERT ON "public"."tx_stock" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_stock_func"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_rebuild_on_cashflow_update" AFTER UPDATE ON "public"."tx_cashflow" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_rebuild_on_debt_update" AFTER UPDATE ON "public"."tx_debt" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_rebuild_on_stock_update" AFTER UPDATE ON "public"."tx_stock" FOR EACH STATEMENT EXECUTE FUNCTION "public"."rebuild_on_child_update"();
 
 
 
@@ -1974,7 +2047,7 @@ ALTER TABLE ONLY "public"."dnse_orders"
 
 
 
-ALTER TABLE ONLY "public"."daily_exchange_rates"
+ALTER TABLE ONLY "public"."historical_fxrate"
     ADD CONSTRAINT "exchange_rates_currency_code_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
@@ -2041,6 +2114,10 @@ CREATE POLICY "Access for authenticated users" ON "public"."news_articles" TO "a
 
 
 
+CREATE POLICY "Access for authenticated users" ON "public"."refresh_queue" TO "authenticated" USING (true);
+
+
+
 CREATE POLICY "Access for authenticated users" ON "public"."tx_cashflow" TO "authenticated" USING (true);
 
 
@@ -2061,11 +2138,7 @@ CREATE POLICY "Access for authenticated users" ON "public"."tx_stock" TO "authen
 
 
 
-CREATE POLICY "Authenticated users can access exchange rates" ON "public"."daily_exchange_rates" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Authenticated users can access market indices" ON "public"."daily_market_indices" TO "authenticated" USING (true);
+CREATE POLICY "Authenticated users can access exchange rates" ON "public"."historical_fxrate" TO "authenticated" USING (true);
 
 
 
@@ -2094,13 +2167,10 @@ ALTER TABLE "public"."assets" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."daily_exchange_rates" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."daily_market_indices" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."dnse_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."historical_fxrate" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."historical_prices" ENABLE ROW LEVEL SECURITY;
@@ -2110,6 +2180,9 @@ ALTER TABLE "public"."news_article_assets" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."news_articles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."refresh_queue" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."tx_cashflow" ENABLE ROW LEVEL SECURITY;
@@ -2394,6 +2467,12 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
+GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "anon";
+GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) TO "service_role";
@@ -2409,6 +2488,12 @@ GRANT ALL ON FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "anon";
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_dnse_order"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."process_refresh_queue"() TO "anon";
+GRANT ALL ON FUNCTION "public"."process_refresh_queue"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_refresh_queue"() TO "service_role";
 
 
 
@@ -2433,12 +2518,6 @@ GRANT ALL ON FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") TO "service_
 GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "anon";
 GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "anon";
-GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."rebuild_on_child_update"() TO "service_role";
 
 
 
@@ -2511,15 +2590,9 @@ GRANT ALL ON TABLE "public"."currencies" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "anon";
-GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_exchange_rates" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "anon";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "authenticated";
-GRANT ALL ON TABLE "public"."daily_market_indices" TO "service_role";
+GRANT ALL ON TABLE "public"."historical_fxrate" TO "anon";
+GRANT ALL ON TABLE "public"."historical_fxrate" TO "authenticated";
+GRANT ALL ON TABLE "public"."historical_fxrate" TO "service_role";
 
 
 
@@ -2604,6 +2677,18 @@ GRANT ALL ON TABLE "public"."news_article_assets" TO "service_role";
 GRANT ALL ON TABLE "public"."news_articles" TO "anon";
 GRANT ALL ON TABLE "public"."news_articles" TO "authenticated";
 GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."refresh_queue" TO "anon";
+GRANT ALL ON TABLE "public"."refresh_queue" TO "authenticated";
+GRANT ALL ON TABLE "public"."refresh_queue" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "service_role";
 
 
 

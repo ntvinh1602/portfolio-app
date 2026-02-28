@@ -76,7 +76,7 @@ serve(async (req: Request) => {
 
     // 5️⃣ Single upsert
     const { error: upsertError } = await supabase
-      .from("daily_security_prices")
+      .from("historical_prices")
       .upsert(rows, { onConflict: "asset_id,date" })
 
     if (upsertError) throw upsertError

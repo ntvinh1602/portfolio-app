@@ -1,1 +1,0 @@
-drop table if exists daily_market_indices;
