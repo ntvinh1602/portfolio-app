@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  Settings,
   TrendingUp,
   LogOut,
   Rss,
@@ -21,7 +20,6 @@ import {
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ConfirmDialog } from "../confirmation"
-import { Separator } from "../ui/separator"
 
 const data = {
   navMenu: [
@@ -31,14 +29,14 @@ const data = {
       icon: LayoutDashboard,
     },
     {
-      title: "Balance Sheet",
-      url: "/balance-sheet",
-      icon: Scale,
-    },
-    {
       title: "Annual Recaps",
       url: "/annual-recaps",
       icon: BarChart3,
+    },
+    {
+      title: "Balance Sheet",
+      url: "/balance-sheet",
+      icon: Scale,
     },
     {
       title: "Transactions",

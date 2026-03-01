@@ -17,7 +17,7 @@ export async function getNews() {
   const res = await fetch(`${baseUrl}/api/news`, {
     next: {
       tags: ["news"],
-      revalidate: 1800,
+      revalidate: 86400,
     },
   })
 

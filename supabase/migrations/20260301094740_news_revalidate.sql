@@ -381,6 +381,48 @@ $$;
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."create_tx_cashflow_legs"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+    perform public.process_tx_cashflow(new.tx_id);
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."create_tx_cashflow_legs"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."create_tx_debt_legs"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+    perform public.process_tx_debt(new.tx_id);
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."create_tx_debt_legs"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."create_tx_stock_legs"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+    perform public.process_tx_stock(new.tx_id);
+    return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."create_tx_stock_legs"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."enqueue_refresh_data"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -641,7 +683,8 @@ ALTER FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "
 
 
 CREATE OR REPLACE FUNCTION "public"."process_dnse_order"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   -- Only process fully filled orders
@@ -673,16 +716,17 @@ declare
   response jsonb;
 begin
   -- Check if anything is queued
-  select count(*) into pending_count from public.refresh_queue;
+  select count(*) into pending_count
+  from public.refresh_queue;
 
   if pending_count = 0 then
     return;
   end if;
 
-  -- Clear queue first (acts as debounce)
+  -- Clear queue first (debounce behavior)
   delete from public.refresh_queue;
 
-  -- Concurrent refresh (allowed because NOT inside trigger)
+  -- Refresh materialized views
   refresh materialized view concurrently public.daily_snapshots;
   refresh materialized view public.dashboard_data;
 
@@ -696,14 +740,16 @@ begin
     raise exception 'VERCEL_SECRET not found in vault';
   end if;
 
-  -- Call Next.js revalidate endpoint
+  -- Call Next.js revalidate endpoint with tag payload
   select net.http_post(
     url := 'https://msyq.vercel.app/api/revalidate',
     headers := jsonb_build_object(
       'x-revalidate-secret', vercel_secret,
       'Content-Type', 'application/json'
     ),
-    body := '{}'::jsonb
+    body := jsonb_build_object(
+      'tags', jsonb_build_array('analytics')
+    )
   )
   into response;
 
@@ -715,7 +761,8 @@ ALTER FUNCTION "public"."process_refresh_queue"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   r tx_cashflow%rowtype;
@@ -798,7 +845,7 @@ ALTER FUNCTION "public"."process_tx_cashflow"("p_tx_id" "uuid") OWNER TO "postgr
 
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 declare
@@ -849,7 +896,8 @@ ALTER FUNCTION "public"."process_tx_debt"("p_tx_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 declare
   r tx_stock%rowtype;
@@ -944,7 +992,8 @@ ALTER FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") OWNER TO "postgres"
 
 
 CREATE OR REPLACE FUNCTION "public"."rebuild_ledger"() RETURNS "void"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 declare
     r record;
@@ -984,43 +1033,43 @@ $$;
 ALTER FUNCTION "public"."rebuild_ledger"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."trg_process_tx_cashflow_func"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."revalidate_news"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
+declare
+  vercel_secret text;
+  response jsonb;
 begin
-    perform public.process_tx_cashflow(new.tx_id);
-    return new;
+  -- Get secret from Vault
+  select decrypted_secret
+  into vercel_secret
+  from vault.decrypted_secrets
+  where name = 'VERCEL_SECRET';
+
+  if vercel_secret is null then
+    raise exception 'VERCEL_SECRET not found in vault';
+  end if;
+
+  -- Call Next.js revalidate endpoint
+  select net.http_post(
+    url := 'https://msyq.vercel.app/api/revalidate',
+    headers := jsonb_build_object(
+      'x-revalidate-secret', vercel_secret,
+      'Content-Type', 'application/json'
+    ),
+    body := jsonb_build_object(
+      'tags', jsonb_build_array('news')
+    )
+  )
+  into response;
+
+  return null; -- AFTER trigger does not modify row
 end;
 $$;
 
 
-ALTER FUNCTION "public"."trg_process_tx_cashflow_func"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."trg_process_tx_debt_func"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    AS $$
-begin
-    perform public.process_tx_debt(new.tx_id);
-    return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."trg_process_tx_debt_func"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."trg_process_tx_stock_func"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    AS $$
-begin
-    perform public.process_tx_stock(new.tx_id);
-    return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."trg_process_tx_stock_func"() OWNER TO "postgres";
+ALTER FUNCTION "public"."revalidate_news"() OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -1410,7 +1459,7 @@ ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
 
 
 CREATE MATERIALIZED VIEW "public"."dashboard_data" AS
- WITH "params" AS (
+ WITH "periods" AS (
          SELECT CURRENT_DATE AS "today",
             ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "ytd_date",
             ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "mtd_date",
@@ -1419,52 +1468,52 @@ CREATE MATERIALIZED VIEW "public"."dashboard_data" AS
             ((CURRENT_DATE - '6 mons'::interval))::"date" AS "last6m_date",
             ((CURRENT_DATE - '1 year'::interval))::"date" AS "last1y_date"
         ), "pnl" AS (
-         SELECT "public"."calculate_pnl"("params"."ytd_date", "params"."today") AS "pnl_ytd",
-            "public"."calculate_pnl"("params"."mtd_date", "params"."today") AS "pnl_mtd"
-           FROM "params"
+         SELECT "public"."calculate_pnl"("periods"."ytd_date", "periods"."today") AS "pnl_ytd",
+            "public"."calculate_pnl"("periods"."mtd_date", "periods"."today") AS "pnl_mtd"
+           FROM "periods"
         ), "twr" AS (
-         SELECT "public"."calculate_twr"("params"."ytd_date", "params"."today") AS "twr_ytd",
-            "public"."calculate_twr"("params"."inception_date", "params"."today") AS "twr_all"
-           FROM "params"
+         SELECT "public"."calculate_twr"("periods"."ytd_date", "periods"."today") AS "twr_ytd",
+            "public"."calculate_twr"("periods"."inception_date", "periods"."today") AS "twr_all"
+           FROM "periods"
         ), "equity_chart" AS (
-         SELECT "public"."get_equity_chart"("params"."last3m_date", "params"."today", 150) AS "equitychart_3m",
-            "public"."get_equity_chart"("params"."last6m_date", "params"."today", 150) AS "equitychart_6m",
-            "public"."get_equity_chart"("params"."last1y_date", "params"."today", 150) AS "equitychart_1y",
-            "public"."get_equity_chart"("params"."inception_date", "params"."today", 150) AS "equitychart_all"
-           FROM "params"
+         SELECT "public"."get_equity_chart"("periods"."last3m_date", "periods"."today", 150) AS "equitychart_3m",
+            "public"."get_equity_chart"("periods"."last6m_date", "periods"."today", 150) AS "equitychart_6m",
+            "public"."get_equity_chart"("periods"."last1y_date", "periods"."today", 150) AS "equitychart_1y",
+            "public"."get_equity_chart"("periods"."inception_date", "periods"."today", 150) AS "equitychart_all"
+           FROM "periods"
         ), "return_chart" AS (
-         SELECT "public"."get_return_chart"("params"."last3m_date", "params"."today", 150) AS "returnchart_3m",
-            "public"."get_return_chart"("params"."last6m_date", "params"."today", 150) AS "returnchart_6m",
-            "public"."get_return_chart"("params"."last1y_date", "params"."today", 150) AS "returnchart_1y",
-            "public"."get_return_chart"("params"."inception_date", "params"."today", 150) AS "returnchart_all"
-           FROM "params"
+         SELECT "public"."get_return_chart"("periods"."last3m_date", "periods"."today", 150) AS "returnchart_3m",
+            "public"."get_return_chart"("periods"."last6m_date", "periods"."today", 150) AS "returnchart_6m",
+            "public"."get_return_chart"("periods"."last1y_date", "periods"."today", 150) AS "returnchart_1y",
+            "public"."get_return_chart"("periods"."inception_date", "periods"."today", 150) AS "returnchart_all"
+           FROM "periods"
         ), "balance" AS (
-         SELECT "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
-            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'liability'::"public"."asset_class")) AS "total_liabilities",
-            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'fund'::"public"."asset_class")) AS "fund",
-            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'stock'::"public"."asset_class")) AS "stock",
-            "sum"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."asset_class" = 'cash'::"public"."asset_class")) AS "cash",
-            "max"("balance_sheet"."total_value") FILTER (WHERE ("balance_sheet"."ticker" = 'MARGIN'::"text")) AS "margin"
-           FROM "public"."balance_sheet"
+         SELECT "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
+            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'liability'::"public"."asset_class")) AS "total_liabilities",
+            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'fund'::"public"."asset_class")) AS "fund",
+            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'stock'::"public"."asset_class")) AS "stock",
+            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'cash'::"public"."asset_class")) AS "cash",
+            "max"("bs"."total_value") FILTER (WHERE ("bs"."ticker" = 'MARGIN'::"text")) AS "margin"
+           FROM "public"."balance_sheet" "bs"
         ), "debt" AS (
-         SELECT "sum"(("outstanding_debts"."principal" + "outstanding_debts"."interest")) AS "debts"
-           FROM "public"."outstanding_debts"
+         SELECT "sum"(("od"."principal" + "od"."interest")) AS "debts"
+           FROM "public"."outstanding_debts" "od"
         ), "monthly" AS (
          SELECT "sum"("last_12"."pnl") AS "total_pnl",
             "avg"("last_12"."pnl") AS "avg_profit",
             (- "avg"((("last_12"."interest" + "last_12"."tax") + "last_12"."fee"))) AS "avg_expense",
             ( SELECT "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("last_12"."pnl", (0)::numeric) + COALESCE("last_12"."fee", (0)::numeric)) + COALESCE("last_12"."interest", (0)::numeric)) + COALESCE("last_12"."tax", (0)::numeric)), 'fee', COALESCE((- "last_12"."fee"), (0)::numeric), 'interest', COALESCE((- "last_12"."interest"), (0)::numeric), 'tax', COALESCE((- "last_12"."tax"), (0)::numeric), 'snapshot_date', ("last_12"."snapshot_date")::"text") ORDER BY "last_12"."snapshot_date") AS "jsonb_agg") AS "profit_chart"
-           FROM ( SELECT "monthly_snapshots"."snapshot_date",
-                    "monthly_snapshots"."pnl",
-                    "monthly_snapshots"."interest",
-                    "monthly_snapshots"."tax",
-                    "monthly_snapshots"."fee"
-                   FROM "public"."monthly_snapshots"
-                  ORDER BY "monthly_snapshots"."snapshot_date" DESC
+           FROM ( SELECT "ms"."snapshot_date",
+                    "ms"."pnl",
+                    "ms"."interest",
+                    "ms"."tax",
+                    "ms"."fee"
+                   FROM "public"."monthly_snapshots" "ms"
+                  ORDER BY "ms"."snapshot_date" DESC
                  LIMIT 12) "last_12"
         ), "stock_positions" AS (
-         SELECT "jsonb_agg"("jsonb_build_object"('ticker', "stock_holdings"."ticker", 'name', "stock_holdings"."name", 'logo_url', "stock_holdings"."logo_url", 'quantity', "stock_holdings"."quantity", 'cost_basis', "stock_holdings"."cost_basis", 'price', "stock_holdings"."price") ORDER BY "stock_holdings"."ticker") AS "stock_list"
-           FROM "public"."stock_holdings"
+         SELECT "jsonb_agg"("jsonb_build_object"('ticker', "sh"."ticker", 'name', "sh"."name", 'logo_url', "sh"."logo_url", 'quantity', "sh"."quantity", 'cost_basis', "sh"."cost_basis", 'price', "sh"."price") ORDER BY "sh"."ticker") AS "stock_list"
+           FROM "public"."stock_holdings" "sh"
         )
  SELECT "pnl"."pnl_ytd",
     "pnl"."pnl_mtd",
@@ -1943,27 +1992,23 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
             "sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value"
            FROM ((("public"."assets" "a"
              JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
-             LEFT JOIN LATERAL ( SELECT "historical_prices"."close" AS "price"
-                   FROM "public"."historical_prices"
-                  WHERE ("historical_prices"."asset_id" = "a"."id")
-                  ORDER BY "historical_prices"."date" DESC
+             LEFT JOIN LATERAL ( SELECT "hp"."close" AS "price"
+                   FROM "public"."historical_prices" "hp"
+                  WHERE ("hp"."asset_id" = "a"."id")
+                  ORDER BY "hp"."date" DESC
                  LIMIT 1) "sp" ON (true))
-             LEFT JOIN LATERAL ( SELECT "historical_fxrate"."rate"
-                   FROM "public"."historical_fxrate"
-                  WHERE ("historical_fxrate"."currency_code" = "a"."currency_code")
-                  ORDER BY "historical_fxrate"."date" DESC
+             LEFT JOIN LATERAL ( SELECT "hfx"."rate"
+                   FROM "public"."historical_fxrate" "hfx"
+                  WHERE ("hfx"."currency_code" = "a"."currency_code")
+                  ORDER BY "hfx"."date" DESC
                  LIMIT 1) "er" ON (true))
           WHERE ("a"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"]))
           GROUP BY "a"."ticker"
         ), "debt_interest" AS (
-         SELECT COALESCE("sum"(("d"."principal" * ("power"(((1)::numeric + (("d"."rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "e"."created_at"))) - (1)::numeric))), (0)::numeric) AS "coalesce"
-           FROM ("public"."tx_debt" "d"
-             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
-          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT (EXISTS ( SELECT 1
-                   FROM "public"."tx_debt" "x"
-                  WHERE ("x"."repay_tx" = "d"."tx_id")))))
+         SELECT "sum"("outstanding_debts"."interest") AS "sum"
+           FROM "public"."outstanding_debts"
         ), "pnl" AS (
-         SELECT (("sum"("s_1"."market_value") - "sum"("s_1"."cost_basis")) - ( SELECT "debt_interest"."coalesce"
+         SELECT (("sum"("s_1"."market_value") - "sum"("s_1"."cost_basis")) - ( SELECT "debt_interest"."sum"
                    FROM "debt_interest")) AS "?column?"
            FROM "stock" "s_1"
         ), "margin" AS (
@@ -1976,7 +2021,7 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
             "a"."name",
             "a"."asset_class",
                 CASE
-                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN ( SELECT "debt_interest"."coalesce"
+                    WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN ( SELECT "debt_interest"."sum"
                        FROM "debt_interest")
                     WHEN ("a"."ticker" = 'UNREALIZED'::"text") THEN ( SELECT "pnl"."?column?"
                        FROM "pnl")
@@ -2020,15 +2065,19 @@ CREATE OR REPLACE TRIGGER "refresh_after_tx_legs" AFTER INSERT ON "public"."tx_l
 
 
 
-CREATE OR REPLACE TRIGGER "trg_process_tx_cashflow" AFTER INSERT ON "public"."tx_cashflow" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_cashflow_func"();
+CREATE OR REPLACE TRIGGER "revalidate_after_news" AFTER INSERT ON "public"."news_articles" FOR EACH STATEMENT EXECUTE FUNCTION "public"."revalidate_news"();
 
 
 
-CREATE OR REPLACE TRIGGER "trg_process_tx_debt" AFTER INSERT ON "public"."tx_debt" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_debt_func"();
+CREATE OR REPLACE TRIGGER "tx_legs_after_tx_cashflow" AFTER INSERT ON "public"."tx_cashflow" FOR EACH ROW EXECUTE FUNCTION "public"."create_tx_cashflow_legs"();
 
 
 
-CREATE OR REPLACE TRIGGER "trg_process_tx_stock" AFTER INSERT ON "public"."tx_stock" FOR EACH ROW EXECUTE FUNCTION "public"."trg_process_tx_stock_func"();
+CREATE OR REPLACE TRIGGER "tx_legs_after_tx_debt" AFTER INSERT ON "public"."tx_debt" FOR EACH ROW EXECUTE FUNCTION "public"."create_tx_debt_legs"();
+
+
+
+CREATE OR REPLACE TRIGGER "tx_legs_after_tx_stock" AFTER INSERT ON "public"."tx_stock" FOR EACH ROW EXECUTE FUNCTION "public"."create_tx_stock_legs"();
 
 
 
@@ -2102,59 +2151,55 @@ ALTER TABLE ONLY "public"."tx_stock"
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."asset_positions" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read asset_positions" ON "public"."asset_positions" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."news_article_assets" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read assets" ON "public"."assets" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."news_articles" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read currencies" ON "public"."currencies" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."refresh_queue" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read dnse_orders" ON "public"."dnse_orders" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."tx_cashflow" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read historical_fxrate" ON "public"."historical_fxrate" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."tx_debt" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read historical_prices" ON "public"."historical_prices" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."tx_entries" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read news_article_assets" ON "public"."news_article_assets" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."tx_legs" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read news_articles" ON "public"."news_articles" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Access for authenticated users" ON "public"."tx_stock" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read tx_cashflow" ON "public"."tx_cashflow" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Authenticated users can access exchange rates" ON "public"."historical_fxrate" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read tx_debt" ON "public"."tx_debt" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Authenticated users can access stock prices" ON "public"."historical_prices" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read tx_entries" ON "public"."tx_entries" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Logged in users can access assets" ON "public"."assets" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read tx_legs" ON "public"."tx_legs" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Logged in users can access currency" ON "public"."currencies" TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Users can read DNSE orders" ON "public"."dnse_orders" TO "authenticated" USING (true);
+CREATE POLICY "Auth users can read tx_stock" ON "public"."tx_stock" FOR SELECT TO "authenticated" USING (true);
 
 
 
@@ -2467,6 +2512,24 @@ GRANT ALL ON FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_dat
 
 
 
+GRANT ALL ON FUNCTION "public"."create_tx_cashflow_legs"() TO "anon";
+GRANT ALL ON FUNCTION "public"."create_tx_cashflow_legs"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."create_tx_cashflow_legs"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."create_tx_debt_legs"() TO "anon";
+GRANT ALL ON FUNCTION "public"."create_tx_debt_legs"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."create_tx_debt_legs"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."create_tx_stock_legs"() TO "anon";
+GRANT ALL ON FUNCTION "public"."create_tx_stock_legs"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."create_tx_stock_legs"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enqueue_refresh_data"() TO "service_role";
@@ -2521,21 +2584,9 @@ GRANT ALL ON FUNCTION "public"."rebuild_ledger"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "anon";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_cashflow_func"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "anon";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_debt_func"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "anon";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."trg_process_tx_stock_func"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."revalidate_news"() TO "anon";
+GRANT ALL ON FUNCTION "public"."revalidate_news"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."revalidate_news"() TO "service_role";
 
 
 
@@ -2626,8 +2677,8 @@ GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."daily_snapshots" TO "anon";
-GRANT ALL ON TABLE "public"."daily_snapshots" TO "authenticated";
+GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."daily_snapshots" TO "anon";
+GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."daily_snapshots" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
@@ -2656,8 +2707,8 @@ GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."dashboard_data" TO "anon";
-GRANT ALL ON TABLE "public"."dashboard_data" TO "authenticated";
+GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."dashboard_data" TO "anon";
+GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."dashboard_data" TO "authenticated";
 GRANT ALL ON TABLE "public"."dashboard_data" TO "service_role";
 
 
