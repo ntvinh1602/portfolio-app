@@ -7,38 +7,17 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { createFlight } from "@/lib/server/flights"
 
-import { TextField, SelectField, ComboboxField } from "@/components/form/fields"
+import {
+  TextField,
+  SelectField,
+  ComboboxField,
+  DateTimeField
+} from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import { FieldGroup, Field } from "@/components/ui/field"
-
-// =============================
-// Schema
-// =============================
-
-const flightSchema = z
-  .object({
-    flightNumber: z.string().min(2, "Required"),
-    airlineId: z.string().uuid("Invalid airline"),
-    aircraftId: z.string().uuid("Invalid aircraft"),
-    departureAirportId: z.string().uuid("Invalid airport"),
-    arrivalAirportId: z.string().uuid("Invalid airport"),
-    departureTimeLocal: z.string().min(1, "Required"),
-    arrivalTimeLocal: z.string().min(1, "Required"),
-    notes: z.string().optional(),
-  })
-  .refine(
-    (data) => data.departureAirportId !== data.arrivalAirportId,
-    {
-      message: "Departure and arrival airports must differ",
-      path: ["arrivalAirportId"],
-    }
-  )
+import { flightSchema } from "./schema"
 
 export type FlightFormValues = z.infer<typeof flightSchema>
-
-// =============================
-// Props
-// =============================
 
 interface FlightFormProps {
   airlines: { id: string; name: string }[]
@@ -46,10 +25,6 @@ interface FlightFormProps {
   airports: { id: string; iata_code: string; name: string }[]
   onSuccess?: () => void
 }
-
-// =============================
-// Component
-// =============================
 
 export default function FlightForm({
   airlines,
@@ -73,10 +48,6 @@ export default function FlightForm({
     },
   })
 
-  // =============================
-  // Memoized Options
-  // =============================
-
   const airlineOptions = React.useMemo(
     () => airlines.map((a) => ({ value: a.id, label: a.name })),
     [airlines]
@@ -99,10 +70,6 @@ export default function FlightForm({
       })),
     [airports]
   )
-
-  // =============================
-  // Submit
-  // =============================
 
   const handleSubmit = form.handleSubmit(async (values) => {
     setLoading(true)
@@ -141,15 +108,24 @@ export default function FlightForm({
     }
   })
 
-  // =============================
-  // Render
-  // =============================
-
   return (
     <div className="flex flex-col gap-6">
       <form id="flight-form" onSubmit={handleSubmit}>
         <FieldGroup>
+          <div className="flex gap-2">
+            <DateTimeField
+              control={form.control}
+              name="departureTimeLocal"
+              label="Departure (Local Time)"
+            />
+            <DateTimeField
+              control={form.control}
+              name="arrivalTimeLocal"
+              label="Arrival (Local Time)"
+            />
+          </div>
 
+          <div className="flex gap-2">
           <TextField
             control={form.control}
             name="flightNumber"
@@ -163,6 +139,8 @@ export default function FlightForm({
             label="Airline"
             options={airlineOptions}
           />
+
+          </div>
 
           <SelectField<FlightFormValues>
             control={form.control}
@@ -189,20 +167,6 @@ export default function FlightForm({
             placeholder="Select arrival airport"
             searchPlaceholder="Search airport..."
             emptyPlaceholder="No airport found"
-          />
-
-          <TextField
-            control={form.control}
-            name="departureTimeLocal"
-            label="Departure (Local Time)"
-            type="datetime-local"
-          />
-
-          <TextField
-            control={form.control}
-            name="arrivalTimeLocal"
-            label="Arrival (Local Time)"
-            type="datetime-local"
           />
 
           <TextField

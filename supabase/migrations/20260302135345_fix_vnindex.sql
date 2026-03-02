@@ -20,6 +20,12 @@ CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
 
 
 
+CREATE SCHEMA IF NOT EXISTS "flight";
+
+
+ALTER SCHEMA "flight" OWNER TO "postgres";
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
 
 
@@ -60,6 +66,13 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "postgis" WITH SCHEMA "extensions";
 
 
 
@@ -123,6 +136,77 @@ CREATE TYPE "public"."equity_point" AS (
 
 
 ALTER TYPE "public"."equity_point" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "flight"."compute_flight_geometry"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+  dep extensions.geography(Point, 4326);
+  arr extensions.geography(Point, 4326);
+begin
+  select geom into dep from flight.airports where id = new.departure_airport_id;
+  select geom into arr from flight.airports where id = new.arrival_airport_id;
+
+  -- create straight great-circle line
+  new.route := extensions.ST_MakeLine(dep::extensions.geometry, arr::extensions.geometry)::extensions.geography;
+
+  -- compute distance
+  new.distance_km := extensions.ST_Distance(dep, arr) / 1000;
+
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "flight"."compute_flight_geometry"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'flight'
+    AS $$
+declare
+  dep_tz text;
+  arr_tz text;
+  dep_utc timestamptz;
+  arr_utc timestamptz;
+begin
+  select timezone into dep_tz
+  from flight.airports
+  where id = p_departure_airport_id;
+
+  select timezone into arr_tz
+  from flight.airports
+  where id = p_arrival_airport_id;
+
+  -- Convert local timestamp (without tz) into UTC
+  dep_utc := (p_departure_local::timestamp at time zone dep_tz);
+  arr_utc := (p_arrival_local::timestamp at time zone arr_tz);
+
+  insert into flight.flights (
+    flight_number,
+    airline_id,
+    aircraft_id,
+    departure_airport_id,
+    arrival_airport_id,
+    departure_time,
+    arrival_time
+  )
+  values (
+    p_flight_number,
+    p_airline_id,
+    p_aircraft_id,
+    p_departure_airport_id,
+    p_arrival_airport_id,
+    dep_utc,
+    arr_utc
+  );
+end;
+$$;
+
+
+ALTER FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
@@ -194,7 +278,13 @@ begin
     quantity,
     fx_rate
   )
-  values (v_tx_id, p_asset_id, p_operation, p_quantity, v_fx_rate);
+  values (
+    v_tx_id,
+    p_asset_id,
+    p_operation::cashflow_ops,
+    p_quantity,
+    v_fx_rate
+  );
 end;
 $$;
 
@@ -587,7 +677,7 @@ BEGIN
   INTO v_first_vni_value
   FROM historical_prices hp
     join assets a on a.id = hp.asset_id
-  WHERE a.ticker = 'VNINDEX'
+  WHERE a.ticker = '^VNINDEX'
     AND hp.date >= p_start_date
   ORDER BY hp.date
   LIMIT 1;
@@ -604,7 +694,7 @@ BEGIN
     JOIN historical_prices hp ON pd.snapshot_date = hp.date
     join assets a on a.id = hp.asset_id
     WHERE pd.snapshot_date BETWEEN p_start_date AND p_end_date
-      AND a.ticker = 'VNINDEX'
+      AND a.ticker = '^VNINDEX'
   ) t;
 
   data_count := array_length(raw_data, 1);
@@ -1076,6 +1166,75 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "flight"."aircrafts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "icao_code" "text" NOT NULL,
+    "model" "text"
+);
+
+
+ALTER TABLE "flight"."aircrafts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "flight"."airlines" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL
+);
+
+
+ALTER TABLE "flight"."airlines" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "flight"."airports" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "iata_code" "text" NOT NULL,
+    "icao_code" "text",
+    "name" "text" NOT NULL,
+    "city" "text",
+    "country" "text",
+    "lat" double precision NOT NULL,
+    "lng" double precision NOT NULL,
+    "geom" "extensions"."geography"(Point,4326) GENERATED ALWAYS AS (("extensions"."st_setsrid"("extensions"."st_makepoint"("lng", "lat"), 4326))::"extensions"."geography") STORED,
+    "timezone" "text" NOT NULL,
+    CONSTRAINT "timezone_format_check" CHECK (("timezone" ~ '^[A-Za-z_]+/[A-Za-z_]+$'::"text"))
+);
+
+
+ALTER TABLE "flight"."airports" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "flight"."flights" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "airline_id" "text",
+    "flight_number" "text",
+    "departure_airport_id" "uuid" NOT NULL,
+    "arrival_airport_id" "uuid" NOT NULL,
+    "departure_time" timestamp with time zone,
+    "arrival_time" timestamp with time zone,
+    "seat" "text",
+    "aircraft_id" "text",
+    "notes" "text",
+    "route" "extensions"."geography"(LineString,4326),
+    "distance_km" numeric,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "flight"."flights" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "flight"."flights_geojson" AS
+ SELECT "id",
+    "airline_id" AS "airline",
+    "flight_number",
+    "distance_km",
+    ("extensions"."st_asgeojson"("route"))::json AS "geometry"
+   FROM "flight"."flights";
+
+
+ALTER VIEW "flight"."flights_geojson" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."asset_positions" (
     "asset_id" "uuid" NOT NULL,
     "quantity" numeric(18,2) DEFAULT 0 NOT NULL,
@@ -1363,10 +1522,10 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
            FROM "generate_series"('2021-11-01 00:00:00+00'::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "d"("d")
         ), "monthly_transactions" AS (
          SELECT ("date_trunc"('month'::"text", "t"."created_at"))::"date" AS "month",
-            ("sum"("s"."fee") + "sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%fee%'::"text"))) AS "total_fees",
-            "sum"("s"."tax") AS "total_taxes",
-            "sum"("d"."interest") AS "loan_interest",
-            "sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%interest%'::"text")) AS "margin_interest"
+            (COALESCE("sum"("s"."fee"), (0)::numeric) + COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%fee%'::"text")), (0)::numeric)) AS "total_fees",
+            COALESCE("sum"("s"."tax"), (0)::numeric) AS "total_taxes",
+            COALESCE("sum"("d"."interest"), (0)::numeric) AS "loan_interest",
+            COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%interest%'::"text")), (0)::numeric) AS "margin_interest"
            FROM ((("public"."tx_entries" "t"
              LEFT JOIN "public"."tx_debt" "d" ON (("d"."tx_id" = "t"."id")))
              LEFT JOIN "public"."tx_stock" "s" ON (("s"."tx_id" = "t"."id")))
@@ -1651,7 +1810,7 @@ CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on'
  WITH "vn_asset" AS (
          SELECT "assets"."id"
            FROM "public"."assets"
-          WHERE ("assets"."ticker" = 'VNINDEX'::"text")
+          WHERE ("assets"."ticker" = '^VNINDEX'::"text")
         ), "annual_cashflow" AS (
          SELECT (EXTRACT(year FROM "daily_snapshots"."snapshot_date"))::integer AS "year",
             "sum"(GREATEST("daily_snapshots"."net_cashflow", (0)::numeric)) AS "deposits",
@@ -1893,6 +2052,41 @@ ALTER TABLE ONLY "public"."refresh_queue" ALTER COLUMN "id" SET DEFAULT "nextval
 
 
 
+ALTER TABLE ONLY "flight"."aircrafts"
+    ADD CONSTRAINT "aircrafts_icao_code_key" UNIQUE ("icao_code");
+
+
+
+ALTER TABLE ONLY "flight"."aircrafts"
+    ADD CONSTRAINT "aircrafts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "flight"."airlines"
+    ADD CONSTRAINT "airlines_name_key" UNIQUE ("name");
+
+
+
+ALTER TABLE ONLY "flight"."airlines"
+    ADD CONSTRAINT "airlines_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "flight"."airports"
+    ADD CONSTRAINT "airports_iata_code_key" UNIQUE ("iata_code");
+
+
+
+ALTER TABLE ONLY "flight"."airports"
+    ADD CONSTRAINT "airports_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "flight"."flights"
+    ADD CONSTRAINT "flights_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_pkey" PRIMARY KEY ("id");
 
@@ -1973,6 +2167,14 @@ ALTER TABLE ONLY "public"."tx_stock"
 
 
 
+CREATE INDEX "airports_geom_idx" ON "flight"."airports" USING "gist" ("geom");
+
+
+
+CREATE INDEX "flights_route_idx" ON "flight"."flights" USING "gist" ("route");
+
+
+
 CREATE UNIQUE INDEX "daily_snapshots_snapshot_date_idx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
 
 
@@ -2049,6 +2251,10 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
 
 
 
+CREATE OR REPLACE TRIGGER "calc_flight_geometry_after_flights" BEFORE INSERT OR UPDATE ON "flight"."flights" FOR EACH ROW EXECUTE FUNCTION "flight"."compute_flight_geometry"();
+
+
+
 CREATE OR REPLACE TRIGGER "after_dnse_order_insert" AFTER INSERT ON "public"."dnse_orders" FOR EACH ROW EXECUTE FUNCTION "public"."process_dnse_order"();
 
 
@@ -2078,6 +2284,16 @@ CREATE OR REPLACE TRIGGER "tx_legs_after_tx_debt" AFTER INSERT ON "public"."tx_d
 
 
 CREATE OR REPLACE TRIGGER "tx_legs_after_tx_stock" AFTER INSERT ON "public"."tx_stock" FOR EACH ROW EXECUTE FUNCTION "public"."create_tx_stock_legs"();
+
+
+
+ALTER TABLE ONLY "flight"."flights"
+    ADD CONSTRAINT "flights_arrival_airport_id_fkey" FOREIGN KEY ("arrival_airport_id") REFERENCES "flight"."airports"("id");
+
+
+
+ALTER TABLE ONLY "flight"."flights"
+    ADD CONSTRAINT "flights_departure_airport_id_fkey" FOREIGN KEY ("departure_airport_id") REFERENCES "flight"."airports"("id");
 
 
 
@@ -2250,6 +2466,12 @@ ALTER TABLE "public"."tx_stock" ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
+
+
+
+GRANT USAGE ON SCHEMA "flight" TO "anon";
+GRANT USAGE ON SCHEMA "flight" TO "authenticated";
+GRANT USAGE ON SCHEMA "flight" TO "service_role";
 
 
 
@@ -2476,6 +2698,2187 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON FUNCTION "flight"."compute_flight_geometry"() TO "anon";
+GRANT ALL ON FUNCTION "flight"."compute_flight_geometry"() TO "authenticated";
+GRANT ALL ON FUNCTION "flight"."compute_flight_geometry"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") TO "anon";
+GRANT ALL ON FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "anon";
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "service_role";
@@ -2617,6 +5020,99 @@ GRANT ALL ON FUNCTION "public"."revalidate_news"() TO "service_role";
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON TABLE "flight"."aircrafts" TO "anon";
+GRANT ALL ON TABLE "flight"."aircrafts" TO "authenticated";
+GRANT ALL ON TABLE "flight"."aircrafts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "flight"."airlines" TO "anon";
+GRANT ALL ON TABLE "flight"."airlines" TO "authenticated";
+GRANT ALL ON TABLE "flight"."airlines" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "flight"."airports" TO "anon";
+GRANT ALL ON TABLE "flight"."airports" TO "authenticated";
+GRANT ALL ON TABLE "flight"."airports" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "flight"."flights" TO "anon";
+GRANT ALL ON TABLE "flight"."flights" TO "authenticated";
+GRANT ALL ON TABLE "flight"."flights" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "flight"."flights_geojson" TO "anon";
+GRANT ALL ON TABLE "flight"."flights_geojson" TO "authenticated";
+GRANT ALL ON TABLE "flight"."flights_geojson" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."asset_positions" TO "anon";
 GRANT ALL ON TABLE "public"."asset_positions" TO "authenticated";
 GRANT ALL ON TABLE "public"."asset_positions" TO "service_role";
@@ -2677,8 +5173,8 @@ GRANT ALL ON TABLE "public"."tx_legs" TO "service_role";
 
 
 
-GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."daily_snapshots" TO "anon";
-GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."daily_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."daily_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."daily_snapshots" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
@@ -2707,8 +5203,8 @@ GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
 
 
 
-GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."dashboard_data" TO "anon";
-GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."dashboard_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."dashboard_data" TO "anon";
+GRANT ALL ON TABLE "public"."dashboard_data" TO "authenticated";
 GRANT ALL ON TABLE "public"."dashboard_data" TO "service_role";
 
 
@@ -2770,6 +5266,24 @@ GRANT ALL ON TABLE "public"."tx_summary" TO "service_role";
 
 
 
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON SEQUENCES TO "service_role";
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON FUNCTIONS TO "service_role";
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "flight" GRANT ALL ON TABLES TO "service_role";
 
 
 

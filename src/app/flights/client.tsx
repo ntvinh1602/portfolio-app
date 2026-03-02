@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import FlightForm from "./components/flightsForm"
+import FlightForm from "./form/flightsForm"
 
 interface FlightsClientProps {
   airlines: { id: string; name: string }[]
