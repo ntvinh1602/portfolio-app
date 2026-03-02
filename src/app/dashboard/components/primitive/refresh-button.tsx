@@ -25,7 +25,7 @@ export function RefreshButton() {
 
       toast.success(data.message, {
         id: toastId,
-        description: `Stocks: ${data.stocks}, Cryptos: ${data.cryptos}, Indices: ${data.indices}`,
+        description: `Updated items: ${data.updated}`,
       })
       
       await mutate(
