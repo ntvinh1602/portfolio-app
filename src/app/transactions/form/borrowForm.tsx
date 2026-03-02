@@ -20,7 +20,9 @@ export function BorrowForm() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(borrowSchema),
-    defaultValues: {},
+    defaultValues: {
+      lender: ""
+    },
   })
 
   async function onSubmit(data: FormValues) {

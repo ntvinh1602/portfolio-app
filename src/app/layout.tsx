@@ -42,6 +42,23 @@ export default function RootLayout({ children }: Readonly<{
       lang="en"
       className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  const theme = localStorage.getItem("color-theme");
+                  const themes = ["default","green","violet","rose"];
+                  if (theme && themes.includes(theme) && theme !== "default") {
+                    document.documentElement.classList.add("theme-" + theme);
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased bg-fixed">
         <ClientLayout>
           {children}

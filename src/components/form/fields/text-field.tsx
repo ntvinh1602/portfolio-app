@@ -28,7 +28,7 @@ export function TextField<T extends FieldValues>({
           {label && <FieldLabel>{label}</FieldLabel>}
           <Input
             type="text"
-            value={field.value}
+            value={field.value ?? ""}
             onChange={(e) => field.onChange(e.target.value)}
             inputMode="text"
             placeholder={placeholder}
