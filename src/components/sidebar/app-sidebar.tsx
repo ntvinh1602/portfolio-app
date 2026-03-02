@@ -8,7 +8,8 @@ import {
   Scale,
   Repeat,
   LayoutDashboard,
-  Plane
+  Plane,
+  Map
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -52,8 +53,13 @@ const data = {
   ],
   flights: [
     {
-      title: "Flights",
-      url: "/flights",
+      title: "Map",
+      url: "/flights/map",
+      icon: Map,
+    },
+    {
+      title: "History",
+      url: "/flights/history",
       icon: Plane,
     },
   ]

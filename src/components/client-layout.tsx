@@ -11,8 +11,14 @@ import { Separator } from "@/components/ui/separator"
 import { ThemeDropdown } from "./theme-picker"
 
 function formatTitle(pathname: string): string {
-  const segment = pathname.replace(/^\/+/, "").split("/")[0] // first segment only
-  if (!segment) return "Dashboard"
+  const segments = pathname.replace(/^\/+/, "").split("/").filter(Boolean)
+
+  if (segments.length === 0) return "Dashboard"
+
+  const segment =
+    segments.length > 1
+      ? segments[segments.length - 1]
+      : segments[0]
 
   return segment
     .split("-")

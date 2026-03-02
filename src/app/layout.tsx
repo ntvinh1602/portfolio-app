@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Roboto_Flex, Roboto_Condensed } from "next/font/google"
 import "./globals.css"
 import { ClientLayout } from "@/components/client-layout"
+import "leaflet/dist/leaflet.css"
 
 const RobotoFlex = Roboto_Flex({
   variable: "--font-roboto-flex",
