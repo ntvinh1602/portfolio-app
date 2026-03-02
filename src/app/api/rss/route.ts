@@ -1,6 +1,6 @@
 import { ingestAllSources } from "@/lib/rss/ingest"
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization")
 
   if (authHeader !== `Bearer ${process.env.VERCEL_SECRET}`) {

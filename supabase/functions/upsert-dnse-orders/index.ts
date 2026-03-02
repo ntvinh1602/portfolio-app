@@ -94,7 +94,7 @@ serve(async (_req: Request) => {
       .upsert(
         filledOrders.map((order) => ({
           id: order.id,
-          side: order.side,
+          side: (order.side === "NB" ? "buy" : "sell"),
           symbol: order.symbol,
           order_status: order.orderStatus,
           fill_quantity: order.fillQuantity,

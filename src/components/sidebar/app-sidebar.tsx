@@ -7,7 +7,8 @@ import {
   BarChart3,
   Scale,
   Repeat,
-  LayoutDashboard
+  LayoutDashboard,
+  Plane
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -22,7 +23,7 @@ import { createClient } from "@/lib/supabase/client"
 import { ConfirmDialog } from "../confirmation"
 
 const data = {
-  navMenu: [
+  fund: [
     {
       title: "Dashboard",
       url: "/dashboard",
@@ -49,6 +50,13 @@ const data = {
       icon: Rss,
     }
   ],
+  flights: [
+    {
+      title: "Flights",
+      url: "/flights",
+      icon: Plane,
+    },
+  ]
 }
 
 
@@ -81,12 +89,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenuButton>
       </SidebarHeader>
       
-      <div className="h-fit relative text-xs text-muted-foreground before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]
-      group-data-[collapsible=icon]:hidden
-      "/>
-      
       <SidebarContent className="pt-2">
-        <NavMenu items={data.navMenu} />
+        <NavMenu items={data.fund} group="Fund" />
+        <NavMenu items={data.flights} group="Flights" />
       </SidebarContent>
 
       <SidebarFooter>

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -16,11 +17,24 @@ type NavItem = {
   icon: LucideIcon
 }
 
-export function NavMenu({ items }: { items: NavItem[] }) {
+export function NavMenu({
+  items,
+  group
+}: {
+  items: NavItem[]
+  group: string
+}) {
   const pathname = usePathname()
 
   return (
-    <SidebarGroup className="gap-4">
+    <SidebarGroup className="gap-2">
+      <div>
+        <SidebarGroupLabel className="text-xs">
+          {group}
+        </SidebarGroupLabel>
+        <div className="relative before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]
+        group-data-[collapsible=icon]:hidden"/>
+      </div>
       <SidebarMenu>
         {items.map((item) => {
           const isActive =
