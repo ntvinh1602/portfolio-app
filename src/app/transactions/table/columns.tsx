@@ -4,8 +4,8 @@ import { formatNum } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
 import { operation, category } from "./labels"
-import { DataTableRowActions } from "./row-action"
-import { DataTableColumnHeader } from "./header"
+import { DataTableRowActions } from "@/components/table/row-action"
+import { DataTableColumnHeader } from "@/components/table/header"
 
 export type Transaction = {
     id: string

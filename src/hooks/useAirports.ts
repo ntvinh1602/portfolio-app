@@ -29,7 +29,7 @@ export function useAirports() {
   })
 
   return {
-    airports: data ?? [],
+    data: data ?? [],
     isLoading,
     error,
   }

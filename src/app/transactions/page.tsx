@@ -96,7 +96,7 @@ export default function TransactionsPage() {
     return getDateRangeFromPreset(preset)
   }, [preset, customRange])
 
-  const { data, error, isLoading } = useTransactions(dateRange)
+  const { data, error } = useTransactions(dateRange)
 
   const [open, setOpen] = useState(false)
   const [activeForm, setActiveForm] =

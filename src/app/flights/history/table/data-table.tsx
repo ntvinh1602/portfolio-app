@@ -32,14 +32,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DataTableToolbar } from "./toolbar"
-import { DataTablePagination } from "@/components/table/pagination"
+import { DataTablePagination } from "@/components/table"
 import { FolderX } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+  data: TData[] | undefined
   children?: React.ReactNode // ✅ new prop for extra filters or controls
 }
 
@@ -48,10 +48,11 @@ export function DataTable<TData, TValue>({
   data,
   children,
 }: DataTableProps<TData, TValue>) {
+  if (!data) return null
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = React.useState<SortingState>([{ desc: true, id: "created_at" }])
+  const [sorting, setSorting] = React.useState<SortingState>([{ desc: true, id: "departure_time" }])
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
@@ -133,9 +134,9 @@ export function DataTable<TData, TValue>({
                       <EmptyMedia variant="icon">
                         <FolderX />
                       </EmptyMedia>
-                      <EmptyTitle>No Transaction</EmptyTitle>
+                      <EmptyTitle>No Flights Found</EmptyTitle>
                       <EmptyDescription>
-                        We cant find any transactions that match the filter during this period.
+                        No flights match the current filters.
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>

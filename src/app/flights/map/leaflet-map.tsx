@@ -1,9 +1,13 @@
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet"
-import type { FeatureCollection } from "geojson"
+import type { FeatureCollection, LineString } from "geojson"
+import type { RoutesGeoJSONProperties } from "@/hooks/useFlightRoutes"
 import type { Airport } from "@/hooks/useAirports"
+import L from "leaflet"
+
+type RoutesGeoJSON = FeatureCollection<LineString, RoutesGeoJSONProperties>
 
 type Props = {
-  routes: FeatureCollection
+  routes: RoutesGeoJSON
   airports: Airport[]
 }
 
@@ -40,13 +44,74 @@ export default function LeafletMap({ routes, airports }: Props) {
 
         <GeoJSON
           data={routes}
+          style={() => ({
+            color: "transparent",
+            weight: 14,     // 👈 big hitbox
+            opacity: 0,
+          })}
+          onEachFeature={(feature, layer) => {
+            if (!(layer instanceof L.Path)) return
+
+            const {
+              airport_a_iata,
+              airport_b_iata,
+              airport_a_name,
+              airport_b_name,
+              airport_a_city,
+              airport_b_city,
+              route_frequency,
+              flights_by_direction,
+              distance_km,
+            } = feature.properties
+
+            let flightsHtml = ""
+
+            if (flights_by_direction) {
+              const directions =
+                flights_by_direction as Record<
+                  string,
+                  Record<string, string[]>
+                >
+
+              for (const [direction, airlines] of Object.entries(directions)) {
+                flightsHtml += `<strong>${direction}</strong><br/>`
+
+                for (const [airline, flightNumbers] of Object.entries(airlines)) {
+                  flightsHtml += `
+                    &nbsp;&nbsp;${airline}: 
+                    ${flightNumbers?.join(", ") ?? ""}
+                    <br/>
+                  `
+                }
+
+                flightsHtml += "<br/>"
+              }
+            }
+
+            layer.bindPopup(`
+              <div style="font-size:14px; line-height:1.5;">
+                <strong>${airport_a_iata} ↔ ${airport_b_iata}</strong><br/>
+                ${airport_a_name} (${airport_a_city ?? ""})<br/>
+                ${airport_b_name} (${airport_b_city ?? ""})<br/></br>
+
+                <strong>Total Flights:</strong> ${route_frequency}<br/>
+                <strong>Distance:</strong> ${distance_km ?? "N/A"} km<br/><br/>
+
+                ${flightsHtml || "No airline data"}
+              </div>
+            `)
+          }}
+        />
+        <GeoJSON
+          data={routes}
           style={(feature) => {
-            const freq = feature?.properties?.route_frequency ?? 1
+            const freq = feature?.properties.route_frequency ?? 1
             return {
               color: getColor(freq, maxFreq),
-              weight: 2,
+              weight: 2,              // 👈 stays thin
               lineCap: "round",
               lineJoin: "round",
+              interactive: false,     // 👈 IMPORTANT
             }
           }}
         />

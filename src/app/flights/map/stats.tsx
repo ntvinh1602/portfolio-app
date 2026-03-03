@@ -30,7 +30,9 @@ export function SingleStats({
       before:bg-gradient-to-r 
       before:from-transparent 
       before:via-ring/40 
-      before:to-transparent"
+      before:to-transparent
+      hover:bg-primary/10
+      hover:border-primary"
     >
       <CardHeader className="flex-col gap-1 items-center">
         <CardTitle className="text-2xl font-bold text-foreground/90">

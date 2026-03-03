@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic"
 import { useMemo } from "react"
-import { useFlightsGeoJSON } from "@/hooks/useFlightsGeoJSON"
+import { useRoutesGeoJSON } from "@/hooks/useFlightRoutes"
+import { useFlights } from "@/hooks/useFlights"
 import { useAirports } from "@/hooks/useAirports"
 import { SingleStats } from "./stats"
 import { Earth, Plane, PlaneTakeoff, Route, TicketsPlane } from "lucide-react"
@@ -10,47 +11,46 @@ import { Earth, Plane, PlaneTakeoff, Route, TicketsPlane } from "lucide-react"
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 
 export default function FlightsPage() {
-  const { data, isLoading: loadingFlights, error: flightsError } =
-    useFlightsGeoJSON()
+  const { data: routes, isLoading: loadingRoutes, error: routesError } =
+    useRoutesGeoJSON()
 
-  const { airports, isLoading: loadingAirports, error: airportsError } =
+  const { data: flights, isLoading: loadingFlights, error: flightsError } =
+    useFlights()
+
+  const { data: airports, isLoading: loadingAirports, error: airportsError } =
     useAirports()
 
   const stats = useMemo(() => {
-    const features = data.features
-
-    const flightsCount = features.length
-
-    const totalDistance = features.reduce(
-      (sum, f) => sum + (f.properties.distance_km ?? 0),
+    const flightsCount = flights?.length
+    const totalDistance = flights?.reduce(
+      (sum, f) => sum + (f.distance_km ?? 0),
       0
     )
-
     const uniqueAircraftModels = new Set(
-      features
-        .map((f) => f.properties.aircraft_model)
+      flights?.map((f) => f.aircraft_model)
         .filter(Boolean)
     )
-
     const uniqueAirports = new Set(
-      features.flatMap((f) => [
-        f.properties.departure_airport_id,
-        f.properties.arrival_airport_id,
-      ])
+      flights
+        ?.flatMap((f) => [f.departure_airport, f.arrival_airport])
+        .filter((code): code is string => typeof code === "string")
     )
-
     const uniqueCountries = new Set(
-      features.flatMap((f) => [
-        f.properties.departure_country,
-        f.properties.arrival_country,
+      flights?.flatMap((f) => [
+        f.departure_country,
+        f.arrival_country,
       ]).filter(Boolean)
     )
 
     return [
-      { title: "Flights", figure: flightsCount, icon: TicketsPlane },
+      {
+        title: "Flights",
+        figure: flightsCount,
+        icon: TicketsPlane
+      },
       {
         title: "Total Distance (km)",
-        figure: Math.round(totalDistance),
+        figure: Math.round(totalDistance ?? 0),
         icon: Route,
       },
       {
@@ -69,12 +69,12 @@ export default function FlightsPage() {
         icon: Plane,
       },
     ]
-  }, [data])
+  }, [flights])
 
-  if (loadingFlights || loadingAirports)
+  if (loadingFlights || loadingAirports || loadingRoutes)
     return <p>Loading flight data...</p>
 
-  if (flightsError || airportsError)
+  if (flightsError || airportsError || routesError)
     return <p>Failed to load flight data.</p>
 
   return (
@@ -84,14 +84,14 @@ export default function FlightsPage() {
           <SingleStats
             key={stat.title}
             title={stat.title}
-            figure={stat.figure}
+            figure={stat.figure ?? 0}
             icon={stat.icon}
           />
         ))}
       </div>
 
       <div className="relative h-full rounded-xl overflow-hidden border backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]">
-        <LeafletMap routes={data} airports={airports} />
+        <LeafletMap routes={routes} airports={airports} />
       </div>
     </div>
   )
