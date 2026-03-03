@@ -1,12 +1,18 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import type { Database } from "@/types/database.types"
 
+type ArticleRow =
+  Database["public"]["Tables"]["news_articles"]["Row"] & {
+    news_article_assets: {
+      assets: {
+        ticker: string | null
+      }[]
+    }[]
+  }
+
 export async function GET() {
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
-  )
+  const supabase = await createClient()
 
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
@@ -34,12 +40,16 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  const typedData = data as ArticleRow[] | null
+
   const formatted =
-    data?.map((article) => ({
+    typedData?.map((article) => ({
       ...article,
       tickers:
         article.news_article_assets
-          ?.map((rel) => rel.assets?.ticker)
+          ?.flatMap((rel) =>
+            rel.assets.map((a) => a.ticker)
+          )
           .filter((t): t is string => Boolean(t)) ?? [],
     })) ?? []
 

@@ -1,17 +1,6 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
 import { NEWS_SOURCES } from "./sources"
 import { NormalizedArticle } from "./sources"
-
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SECRET_KEY
-
-  if (!url || !key) {
-    throw new Error("Missing Supabase server environment variables")
-  }
-
-  return createClient(url, key)
-}
 
 function extractTickers(text: string): string[] {
   const matches = text.match(/(?<!\.)\b[A-Z]{3}\b/g)
@@ -20,7 +9,7 @@ function extractTickers(text: string): string[] {
 }
 
 export async function ingestAllSources() {
-  const supabase = getAdminClient()
+  const supabase = await createClient()
   let totalInserted = 0
   let totalLinked = 0
 
