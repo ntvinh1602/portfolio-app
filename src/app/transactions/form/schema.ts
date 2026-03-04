@@ -20,9 +20,7 @@ export const stockSchema = z.object({
 export const cashflowSchema = z.object({
   operation: z.enum(["deposit", "withdraw", "income", "expense"]),
   asset: z.string().uuid(),
-  quantity: z.coerce.number()
-    .int("Quantity must be a whole number")
-    .positive("Quantity must be positive"),
+  quantity: z.coerce.number().positive("Quantity must be positive"),
   fx_rate: z.coerce.number().min(1, "FX Rate cant be less than 1").optional(),
   memo: z.string()
 })
