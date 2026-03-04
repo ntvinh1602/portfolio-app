@@ -1,10 +1,9 @@
-import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const supabase = await createClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("reports_data")
     .select()
     

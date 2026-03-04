@@ -1,8 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
-export const runtime = "nodejs"
-
 export async function GET() {
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
