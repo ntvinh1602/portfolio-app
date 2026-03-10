@@ -71,7 +71,7 @@ function TradingViewWidgetComponent() {
   return (
 <div
   ref={container}
-  className="relative flex flex-col h-full min-h-0 border rounded-xl
+  className="flex flex-col h-full min-h-0 border rounded-xl
     backdrop-blur-sm
     shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]
     before:content-['']

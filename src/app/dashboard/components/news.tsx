@@ -49,7 +49,7 @@ export function NewsWidget({
   }, [news, filter, holdingTickers])
 
   return (
-    <Card className="relative flex flex-col gap-4 h-full 
+    <Card className="flex flex-col gap-4 h-full 
       backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
       <CardHeader>
         <CardTitle className="text-lg font-normal">Latest News</CardTitle>
