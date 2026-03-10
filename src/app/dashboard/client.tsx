@@ -46,7 +46,7 @@ export default function DashboardClient({
   }, [data, returnRange])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 h-full min-h-0 px-0 gap-2 md:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 flex-1 min-h-0 px-0 gap-2 md:gap-6">
       <div className="flex flex-col flex-1 gap-2 h-full">
         <EquityChart
           dateRange={equityRange}

@@ -60,7 +60,7 @@ export default function RootLayout({ children }: Readonly<{
           }}
         />
       </head>
-      <body className="antialiased bg-fixed">
+      <body className="antialiased bg-fixed min-h-dvh">
         <ClientLayout>
           {children}
         </ClientLayout>
