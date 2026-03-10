@@ -96,7 +96,7 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="grid grid-cols-2 min-h-60 p-0 pb-4 
+    <Card className="grid grid-cols-2 min-h-50 p-0 pb-4 
       border-0 rounded-none bg-transparent shadow-none"
     >
       <Piechart
