@@ -41,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{
   return (
     <html
       lang="en"
-      className={`${RobotoFlex.variable} ${RobotoCondensed.variable}`} suppressHydrationWarning
+      className={`${RobotoFlex.variable} ${RobotoCondensed.variable} h-full`} suppressHydrationWarning
     >
       <head>
         <script
@@ -60,7 +60,7 @@ export default function RootLayout({ children }: Readonly<{
           }}
         />
       </head>
-      <body className="antialiased bg-fixed min-h-dvh">
+      <body className="antialiased bg-fixed h-full">
         <ClientLayout>
           {children}
         </ClientLayout>

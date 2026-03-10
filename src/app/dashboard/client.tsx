@@ -46,8 +46,8 @@ export default function DashboardClient({
   }, [data, returnRange])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 flex-1 min-h-0 px-0 gap-2 md:gap-6">
-      <div className="flex flex-col flex-1 gap-2 h-full">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-6 flex-1 min-h-0">
+      <div className="flex flex-col flex-1 gap-2 min-h-0">
         <EquityChart
           dateRange={equityRange}
           onDateRangeChange={setEquityRange}
@@ -66,7 +66,7 @@ export default function DashboardClient({
         />
       </div>
       
-      <div className="flex flex-col flex-1 gap-2 h-full">
+      <div className="flex flex-col flex-1 gap-2 min-h-0">
         <Portfolio stocks={data.stock_list} />
         <AssetCard
           assets={{
@@ -89,12 +89,15 @@ export default function DashboardClient({
         />
       </div>
 
-      <div className="flex flex-col flex-1 gap-2 h-full">
-        <NewsWidget
-          stockList={data.stock_list}
-          news={news}
-        />
-        {!isMobile && <TradingViewWidget />}
+      <div className="flex flex-col flex-1 gap-2 min-h-0">
+        <div className="flex flex-col min-h-0 flex-1">
+          <NewsWidget stockList={data.stock_list} news={news} />
+        </div>
+        {!isMobile && (
+          <div className="flex flex-col min-h-0 flex-1"> 
+            <TradingViewWidget />
+          </div>
+        )}
       </div>
 
     </div>

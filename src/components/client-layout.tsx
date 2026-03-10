@@ -32,7 +32,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
   const pageTitle = formatTitle(pathname)
 
   return (
-    <div className="h-full">
+    <div className="flex flex-col h-full">
       {isLoginPage ? ( // On /login → no sidebar
         <>
           <Toaster />
@@ -47,7 +47,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
               <Toaster />
 
               {/* FULL HEIGHT APP CONTAINER */}
-              <div className="flex min-h-dvh flex-col">
+              <div className="flex min-h-dvh flex-col h-full">
 
                 {/* HEADER (fixed height) */}
                 <header className="flex items-center w-full justify-between px-6 py-2 md:px-0 gap-2 shrink-0">
