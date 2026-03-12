@@ -42,7 +42,7 @@ function TradingViewWidgetComponent() {
       "changeMode": "price-and-percent",
       symbols: [
         ["Bitcoin", "BINANCE:BTCUSDT|1D"],
-        ["Crude Oil WTI", "TVC:USOIL|1D"],
+        ["Crude Oil", "TVC:USOIL|1D"],
         ["Gold", "CAPITALCOM:GOLD|1M"],
         ["Silver", "CAPITALCOM:SILVER|1M"]
       ],
