@@ -1,17 +1,16 @@
-import { DNSEClient } from "@/lib/dnse"
-import { NextResponse } from "next/server"
-
-const client = new DNSEClient({
-  apiKey: process.env.DNSE_API_KEY!,
-  apiSecret: process.env.DNSE_API_SECRET!,
-  baseUrl: "https://openapi.dnse.com.vn",
-})
+import { getAccounts } from "@/lib/dnse/accounts"
 
 export async function GET() {
-  const { status, body } = await client.getAccounts({dryRun: true})
+  try {
+    const accounts = await getAccounts()
 
-  return NextResponse.json({
-    status,
-    body,
-  })
+    return Response.json({
+      accounts,
+    })
+  } catch (error) {
+    return Response.json(
+      { error: "Failed to fetch accounts" },
+      { status: 500 }
+    )
+  }
 }
