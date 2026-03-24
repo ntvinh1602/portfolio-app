@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, memo } from "react"
+import { useEffect, useRef, memo } from "react"
 
 function TradingViewWidgetComponent() {
   const container = useRef<HTMLDivElement>(null)
@@ -41,10 +41,9 @@ function TradingViewWidgetComponent() {
       "valuesTracking": "1",
       "changeMode": "price-and-percent",
       symbols: [
-        ["Bitcoin", "BINANCE:BTCUSDT|1D"],
-        ["Crude Oil", "TVC:USOIL|1D"],
-        ["Gold", "CAPITALCOM:GOLD|1M"],
-        ["Silver", "CAPITALCOM:SILVER|1M"]
+        ["Brent Oil", "TVC:UKOIL|1W"],
+        ["Gold", "CAPITALCOM:GOLD|1W"],
+        ["Bitcoin", "BINANCE:BTCUSDT|1W"]
       ],
       dateRanges: [
         "1d|5",
