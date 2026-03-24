@@ -41,9 +41,9 @@ function TradingViewWidgetComponent() {
       "valuesTracking": "1",
       "changeMode": "price-and-percent",
       symbols: [
-        ["Brent Oil", "TVC:UKOIL|1W"],
-        ["Gold", "CAPITALCOM:GOLD|1W"],
-        ["Bitcoin", "BINANCE:BTCUSDT|1W"]
+        ["Brent Oil", "TVC:UKOIL|7D"],
+        ["Gold", "CAPITALCOM:GOLD|7D"],
+        ["Bitcoin", "BINANCE:BTCUSDT|7D"]
       ],
       dateRanges: [
         "1d|5",
