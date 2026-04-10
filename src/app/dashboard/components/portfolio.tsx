@@ -27,9 +27,16 @@ export function Portfolio({
   stocks,
   maxVisible = 3
 }: PortfolioProps) {
-  const hasMore = stocks.length > maxVisible
-  const hiddenCount = hasMore ? stocks.length - maxVisible : 0
-  const displayedStocks = hasMore ? stocks.slice(0, maxVisible) : stocks
+  // Sort by market value (quantity * price) descending
+  const sortedStocks = [...stocks].sort(
+    (a, b) => b.quantity * b.price - a.quantity * a.price
+  )
+
+  const hasMore = sortedStocks.length > maxVisible
+  const hiddenCount = hasMore ? sortedStocks.length - maxVisible : 0
+  const displayedStocks = hasMore
+    ? sortedStocks.slice(0, maxVisible)
+    : sortedStocks
 
   return (
     <Card
@@ -46,7 +53,7 @@ export function Portfolio({
       </CardHeader>
 
       <CardContent className="h-fit flex flex-col gap-1">
-        {stocks.length > 0 ? (
+        {sortedStocks.length > 0 ? (
           <>
             {displayedStocks.map((stock) => (
               <Asset

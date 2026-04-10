@@ -94,7 +94,7 @@ export default function Page() {
               />
             ))}
 
-            <div className="my-4 border-t border-border" />
+            <div className="my-4" />
 
             <BSItem header label="Equity" value={totalEquity} />
 
