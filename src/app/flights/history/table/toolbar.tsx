@@ -4,37 +4,38 @@ import { Table } from "@tanstack/react-table"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { category, operation } from "./labels"
+import { seatTypes } from "./labels"
 import {
   DataTableFacetedFilter,
   DataTableViewOptions
 } from "@/components/table"
 
-
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
+  airlineOptions?: { label: string; value: string }[]
 }
 
 export function DataTableToolbar<TData>({
   table,
+  airlineOptions = [],
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
   return (
     <div className="flex w-full items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
-        {table.getColumn("category") && (
+        {airlineOptions.length > 0 && table.getColumn("airline_name") && (
           <DataTableFacetedFilter
-            column={table.getColumn("category")}
-            title="Category"
-            options={category}
+            column={table.getColumn("airline_name")}
+            title="Airline"
+            options={airlineOptions}
           />
         )}
-        {table.getColumn("operation") && (
+        {table.getColumn("seat_type") && (
           <DataTableFacetedFilter
-            column={table.getColumn("operation")}
-            title="Operation"
-            options={operation}
+            column={table.getColumn("seat_type")}
+            title="Seat"
+            options={seatTypes}
           />
         )}
         {isFiltered && (
@@ -48,17 +49,17 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-        <div className="flex gap-2">
+      <div className="flex gap-2">
         <Input
-          placeholder="Search transactions..."
-          value={(table.getColumn("memo")?.getFilterValue() as string) ?? ""}
+          placeholder="Search flight number..."
+          value={(table.getColumn("flight_number")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("memo")?.setFilterValue(event.target.value)
+            table.getColumn("flight_number")?.setFilterValue(event.target.value)
           }
           className="w-[150px] lg:w-[250px]"
         />
         <DataTableViewOptions table={table} />
-        </div>
+      </div>
     </div>
   )
 }

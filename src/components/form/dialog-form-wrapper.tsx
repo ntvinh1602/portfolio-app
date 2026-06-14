@@ -13,7 +13,8 @@ type FormDialogWrapperProps = {
   onOpenChange: (open: boolean) => void
   title: string
   subtitle?: string
-  FormComponent: React.ComponentType
+  FormComponent: React.ComponentType<{ onSuccess?: () => void }>
+  onSuccess?: () => void
 }
 
 export function FormDialogWrapper({
@@ -22,7 +23,13 @@ export function FormDialogWrapper({
   title,
   subtitle,
   FormComponent,
+  onSuccess,
 }: FormDialogWrapperProps) {
+  const handleSuccess = () => {
+    onSuccess?.()
+    onOpenChange(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex flex-col gap-4">
@@ -30,7 +37,7 @@ export function FormDialogWrapper({
           <DialogTitle>{title}</DialogTitle>
           {subtitle && <DialogDescription>{subtitle}</DialogDescription>}
         </DialogHeader>
-        <FormComponent />
+        <FormComponent onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   )

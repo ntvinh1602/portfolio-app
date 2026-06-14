@@ -40,13 +40,15 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[] | undefined
-  children?: React.ReactNode // ✅ new prop for extra filters or controls
+  children?: React.ReactNode
+  airlineOptions?: { label: string; value: string }[]
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   children,
+  airlineOptions,
 }: DataTableProps<TData, TValue>) {
   if (!data) return null
   const [rowSelection, setRowSelection] = React.useState({})
@@ -85,7 +87,7 @@ export function DataTable<TData, TValue>({
       {/* --- Filter Bar --- */}
       <div className="flex w-full items-center justify-between gap-2">
         {children && <div className="flex items-center gap-2">{children}</div>}
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} airlineOptions={airlineOptions} />
       </div>
 
       {/* --- Table --- */}

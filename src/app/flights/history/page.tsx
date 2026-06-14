@@ -2,9 +2,9 @@ import FlightsClient from "./client"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function FlightsPage() {
-  const supabase = await createClient() // ✅ await here
+  const supabase = await createClient()
 
-  const [airlinesRes, aircraftsRes, airportsRes] = await Promise.all([
+  const [airlinesRes, aircraftsRes, airportsRes, flightsRes] = await Promise.all([
     supabase.schema("flight")
       .from("airlines")
       .select("id, name")
@@ -19,12 +19,18 @@ export default async function FlightsPage() {
       .from("airports")
       .select("id, iata_code, name")
       .order("iata_code"),
+
+    supabase.schema("flight")
+      .from("flights_readable")
+      .select("*")
+      .order("departure_time", { ascending: false }),
   ])
 
   ;[
     { name: "Airlines", res: airlinesRes },
     { name: "Aircrafts", res: aircraftsRes },
     { name: "Airports", res: airportsRes },
+    { name: "Flights", res: flightsRes },
   ].forEach(({ name, res }) => {
     if (res.error) {
       console.error(`${name} error:`, res.error)
@@ -39,6 +45,7 @@ export default async function FlightsPage() {
           airlines={airlinesRes.data ?? []}
           aircrafts={aircraftsRes.data ?? []}
           airports={airportsRes.data ?? []}
+          flights={flightsRes.data ?? []}
         />
       </div>
     </div>

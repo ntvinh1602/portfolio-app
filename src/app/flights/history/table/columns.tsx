@@ -3,7 +3,6 @@
 import { formatNum } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
-import { operation, category } from "./labels"
 import { DataTableRowActions, DataTableColumnHeader } from "@/components/table"
 
 export type Flight = {
@@ -56,8 +55,7 @@ export const columns: ColumnDef<Flight>[] = [
       <DataTableColumnHeader column={column} title="Route" />
     ),
     cell: ({ row }) => {
-      const dep = row.getValue("departure_airport") as string
-      const arr = row.getValue("arrival_airport") as string
+      const { departure_airport: dep, arrival_airport: arr } = row.original
 
       return (
         <div className="font-medium">
@@ -96,16 +94,27 @@ export const columns: ColumnDef<Flight>[] = [
       <DataTableColumnHeader column={column} title="Seat" />
     ),
     cell: ({ row }) => {
-      const seat = row.getValue("seat") as string
-      const type = row.getValue("seat_type") as string
-      const position = row.getValue("seat_position") as string
+      const { seat, seat_type, seat_position } = row.original
 
-      return (
-        <div>
-          {seat} • {type} • {position}
-        </div>
-      )
+      const parts = [seat, seat_type, seat_position].filter(Boolean)
+      return <div>{parts.length > 0 ? parts.join(" • ") : "—"}</div>
     },
+  },
+  {
+    accessorKey: "seat_type",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Seat Type" />
+    ),
+    cell: ({ row }) => {
+      const value = row.getValue("seat_type") as string
+      const labels: Record<string, string> = {
+        economy: "Economy",
+        premium_economy: "Premium Economy",
+        business: "Business",
+      }
+      return <div>{labels[value] ?? value}</div>
+    },
+    enableHiding: true,
   },
   {
     accessorKey: "distance_km",
