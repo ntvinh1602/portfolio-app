@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+  async redirects() {
+    return [
+      {
+        source: "/flights/history",
+        destination: "/flights/cards",
+        permanent: true,
+      },
+    ]
+  },
   env: {},
   allowedDevOrigins: ['192.168.100.5'],
   images: {

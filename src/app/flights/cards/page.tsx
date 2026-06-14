@@ -1,36 +1,47 @@
-import FlightsClient from "./client"
+import FlightsCardsClient from "./client"
 import { createClient } from "@/lib/supabase/server"
 
-export default async function FlightsPage() {
+export const dynamic = "force-dynamic"
+
+export default async function FlightsCardsPage() {
   const supabase = await createClient()
 
-  const [airlinesRes, aircraftsRes, airportsRes, flightsRes] = await Promise.all([
-    supabase.schema("flight")
+  const [
+    airlinesRes,
+    aircraftsRes,
+    airportsRes,
+    earliestFlightRes,
+  ] = await Promise.all([
+    supabase
+      .schema("flight")
       .from("airlines")
       .select("id, name")
       .order("name"),
 
-    supabase.schema("flight")
+    supabase
+      .schema("flight")
       .from("aircrafts")
       .select("id, icao_code, model")
       .order("icao_code"),
 
-    supabase.schema("flight")
+    supabase
+      .schema("flight")
       .from("airports")
       .select("id, iata_code, name")
       .order("iata_code"),
 
-    supabase.schema("flight")
+    supabase
+      .schema("flight")
       .from("flights_readable")
-      .select("*")
-      .order("departure_time", { ascending: false }),
+      .select("departure_time")
+      .order("departure_time", { ascending: true })
+      .limit(1),
   ])
 
   ;[
     { name: "Airlines", res: airlinesRes },
     { name: "Aircrafts", res: aircraftsRes },
     { name: "Airports", res: airportsRes },
-    { name: "Flights", res: flightsRes },
   ].forEach(({ name, res }) => {
     if (res.error) {
       console.error(`${name} error:`, res.error)
@@ -38,14 +49,19 @@ export default async function FlightsPage() {
     }
   })
 
+  const earliestYear =
+    earliestFlightRes.data?.[0]?.departure_time
+      ? new Date(earliestFlightRes.data[0].departure_time).getFullYear()
+      : new Date().getFullYear()
+
   return (
     <div className="min-h-screen bg-background px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <FlightsClient
+      <div className="mx-auto max-w-3xl">
+        <FlightsCardsClient
           airlines={airlinesRes.data ?? []}
           aircrafts={aircraftsRes.data ?? []}
           airports={airportsRes.data ?? []}
-          flights={flightsRes.data ?? []}
+          earliestYear={earliestYear}
         />
       </div>
     </div>

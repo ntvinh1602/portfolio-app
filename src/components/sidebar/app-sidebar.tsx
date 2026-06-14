@@ -9,7 +9,7 @@ import {
   Repeat,
   LayoutDashboard,
   Plane,
-  Map
+  Map,
 } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
@@ -59,7 +59,7 @@ const data = {
     },
     {
       title: "History",
-      url: "/flights/history",
+      url: "/flights/cards",
       icon: Plane,
     },
   ]
