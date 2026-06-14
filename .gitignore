@@ -42,3 +42,8 @@ next-env.d.ts
 
 # deno
 /.vscode/
+
+# agents
+.agents
+.claude
+.mcp.json
