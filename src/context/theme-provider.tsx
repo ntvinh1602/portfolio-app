@@ -2,39 +2,46 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 
-type Theme = "default" | "green" | "violet" | "rose"
-
-const THEMES: Theme[] = ["default", "green", "violet", "rose"]
+type Theme = "light" | "dark"
 
 type ThemeContextType = {
   theme: Theme
   setTheme: (theme: Theme) => void
+  toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
+function resolveTheme(): Theme {
+  if (typeof window === "undefined") return "dark"
+  return window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark"
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "default"
-    const saved = localStorage.getItem("color-theme")
-    return THEMES.includes(saved as Theme) ? (saved as Theme) : "default"
+    if (typeof window === "undefined") return "dark"
+    const saved = localStorage.getItem("theme")
+    if (saved === "dark" || saved === "light") return saved
+    return resolveTheme()
   })
 
   // Sync theme to DOM + storage
   useEffect(() => {
-    document.documentElement.classList.remove(
-      ...THEMES.map((t) => `theme-${t}`)
-    )
-
-    if (theme !== "default") {
-      document.documentElement.classList.add(`theme-${theme}`)
+    const root = document.documentElement
+    if (theme === "dark") {
+      root.classList.add("dark")
+    } else {
+      root.classList.remove("dark")
     }
-
-    localStorage.setItem("color-theme", theme)
+    localStorage.setItem("theme", theme)
   }, [theme])
 
+  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"))
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

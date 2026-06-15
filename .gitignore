@@ -44,6 +44,6 @@ next-env.d.ts
 /.vscode/
 
 # agents
-.agents
-.claude
+/.agents/
+/.claude/
 .mcp.json

@@ -1,4 +1,10 @@
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,  
+} from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { compactNum, formatNum } from "@/lib/utils"
@@ -96,9 +102,26 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="grid grid-cols-2 min-h-50 p-0 pb-4 
-      border-0 rounded-none bg-transparent shadow-none"
+    <Card className="flex flex-col gap-4 min-h-90
+      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] 
+      before:content-[''] 
+      before:absolute 
+      before:top-0 
+      before:left-0 
+      before:w-full 
+      before:h-px 
+      before:bg-gradient-to-r 
+      before:from-transparent 
+      before:via-ring/40 
+      before:to-transparent"
     >
+      <CardHeader className="flex justify-between items-center">
+        <CardTitle className="text-lg font-normal">Allocation</CardTitle>
+        <CardAction className="flex gap-2">
+        </CardAction>
+      </CardHeader>
+
+      <CardContent className="flex gap-4 h-full">
       <Piechart
         data={assetChartData}
         chartConfig={assetChartCfg}
@@ -128,6 +151,7 @@ export function AssetCard({
         centerValue={leverage}
         valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
       />
+      </CardContent>
     </Card>
   )
 }

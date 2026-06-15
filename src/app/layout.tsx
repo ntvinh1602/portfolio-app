@@ -1,18 +1,11 @@
 import type { Metadata } from "next"
-import { Roboto_Flex, Roboto_Condensed } from "next/font/google"
+import { Manrope } from "next/font/google"
 import "./globals.css"
 import { ClientLayout } from "@/components/client-layout"
 import "leaflet/dist/leaflet.css"
+import { cn } from "@/lib/utils";
 
-const RobotoFlex = Roboto_Flex({
-  variable: "--font-roboto-flex",
-  subsets: ["latin"],
-})
-
-const RobotoCondensed = Roboto_Condensed({
-  variable: "--font-roboto-condensed",
-  subsets: ["latin"],
-})
+const figtree = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Portfolio Tracker",
@@ -41,7 +34,7 @@ export default function RootLayout({ children }: Readonly<{
   return (
     <html
       lang="en"
-      className={`${RobotoFlex.variable} ${RobotoCondensed.variable} h-full`} suppressHydrationWarning
+      className={cn("h-full", "font-sans", figtree.variable)} suppressHydrationWarning
     >
       <head>
         <script
@@ -49,10 +42,16 @@ export default function RootLayout({ children }: Readonly<{
             __html: `
               (function () {
                 try {
-                  const theme = localStorage.getItem("color-theme");
-                  const themes = ["default","green","violet","rose"];
-                  if (theme && themes.includes(theme) && theme !== "default") {
-                    document.documentElement.classList.add("theme-" + theme);
+                  const theme = localStorage.getItem("theme");
+                  if (theme === "light") {
+                    // User explicitly chose light
+                  } else if (theme === "dark") {
+                    document.documentElement.classList.add("dark");
+                  } else {
+                    // No saved preference — default to dark unless system says light
+                    if (!window.matchMedia("(prefers-color-scheme: light)").matches) {
+                      document.documentElement.classList.add("dark");
+                    }
                   }
                 } catch (e) {}
               })();

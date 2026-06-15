@@ -9,6 +9,7 @@ import { ThemeProvider } from "../context/theme-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { ThemeDropdown } from "./theme-picker"
+import { TooltipProvider } from "./ui/tooltip"
 
 function formatTitle(pathname: string): string {
   const segments = pathname.replace(/^\/+/, "").split("/").filter(Boolean)
@@ -41,34 +42,36 @@ export function ClientLayout({ children }: { children: ReactNode }) {
       ) : ( // On other pages → show sidebar layout
         <ThemeProvider>
           <SidebarProvider>
-            <AppSidebar collapsible="icon" />
+            <TooltipProvider>
+              <AppSidebar collapsible="icon" />
 
-            <SidebarInset className="md:px-4">
-              <Toaster />
+              <SidebarInset className="md:px-4">
+                <Toaster />
 
-              {/* FULL HEIGHT APP CONTAINER */}
-              <div className="flex min-h-dvh flex-col h-full">
+                {/* FULL HEIGHT APP CONTAINER */}
+                <div className="flex min-h-dvh flex-col h-full">
 
-                {/* HEADER (fixed height) */}
-                <header className="flex items-center w-full justify-between px-6 py-2 md:px-0 gap-2 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <SidebarTrigger />
-                    <Separator
-                      orientation="vertical"
-                      className="data-[orientation=vertical]:h-4 -ml-2"
-                    />
-                    <h1 className="text-base">{pageTitle}</h1>
-                  </div>
-                  <ThemeDropdown />
-                </header>
+                  {/* HEADER (fixed height) */}
+                  <header className="flex items-center w-full justify-between px-6 py-2 md:px-0 gap-2 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <SidebarTrigger />
+                      <Separator
+                        orientation="vertical"
+                        className="data-[orientation=vertical]:h-4 -ml-2"
+                      />
+                      <h1 className="text-base">{pageTitle}</h1>
+                    </div>
+                    <ThemeDropdown />
+                  </header>
 
-                {/* CONTENT AREA (critical fix) */}
-                <main className="flex-1 min-h-0 flex flex-col pb-4">
-                  {children}
-                </main>
+                  {/* CONTENT AREA (critical fix) */}
+                  <main className="flex-1 min-h-0 flex flex-col pb-4">
+                    {children}
+                  </main>
 
-              </div>
-            </SidebarInset>
+                </div>
+              </SidebarInset>
+            </TooltipProvider>
           </SidebarProvider>
         </ThemeProvider>
       )}
