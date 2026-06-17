@@ -58,7 +58,7 @@ const data = {
         },
         {
           title: "History",
-          url: "/flights/cards",
+          url: "/flights/history",
         }
       ]
     }

@@ -53,16 +53,17 @@ export function ReturnChart({
 }: ReturnChartProps) {
 
   const start = new Date(inceptionDate).getTime()
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
+    setNow(Date.now())
     const interval = setInterval(() => {
       setNow(Date.now())
     }, 60_000)
 
     return () => clearInterval(interval)
   }, [])
-  const years = (now - start) / (1000 * 60 * 60 * 24 * 365.25)
+  const years = ((now ?? Date.now()) - start) / (1000 * 60 * 60 * 24 * 365.25)
 
   const cagr = years > 0
     ? (Math.pow(1 + twrAll, 1 / years) - 1) * 100

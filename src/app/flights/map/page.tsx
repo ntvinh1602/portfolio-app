@@ -5,8 +5,16 @@ import { useMemo } from "react"
 import { useRoutesGeoJSON } from "@/hooks/useFlightRoutes"
 import { useFlights } from "@/hooks/useFlights"
 import { useAirports } from "@/hooks/useAirports"
-import { SingleStats } from "./stats"
+import { formatNum } from "@/lib/utils"
 import { Earth, Plane, PlaneTakeoff, Route, TicketsPlane } from "lucide-react"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle
+} from "@/components/ui/item"
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 
@@ -78,17 +86,22 @@ export default function FlightsPage() {
     return <p>Failed to load flight data.</p>
 
   return (
-    <div className="flex flex-col h-full gap-2">
-      <div className="flex gap-2">
+    <div className="flex flex-col h-full gap-4 px-4 pb-4">
+      <ItemGroup className="grid grid-cols-1 xl:grid-cols-5">
         {stats.map((stat) => (
-          <SingleStats
-            key={stat.title}
-            title={stat.title}
-            figure={stat.figure ?? 0}
-            icon={stat.icon}
-          />
+          <Item variant="muted" key={stat.title}>
+            <ItemMedia variant="icon">
+              <stat.icon />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle className="text-2xl">
+                {formatNum(stat.figure ?? 0)}
+              </ItemTitle>
+              <ItemDescription>{stat.title}</ItemDescription>
+            </ItemContent>
+          </Item>          
         ))}
-      </div>
+      </ItemGroup>
 
       <div className="relative h-full rounded-xl overflow-hidden border backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]">
         <LeafletMap routes={routes} airports={airports} />

@@ -71,7 +71,7 @@ function TradingViewWidgetComponent() {
   return (
     <div
       ref={container}
-      className="bg-card shadow-md max-h-120 border rounded-4xl tradingview-widget-container"
+      className="bg-card shadow-md border rounded-4xl tradingview-widget-container"
     >
       <div className="tradingview-widget-container__widget" />
     </div>

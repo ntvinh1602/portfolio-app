@@ -1,5 +1,8 @@
 import FlightsCardsClient from "./client"
 import { createClient } from "@/lib/supabase/server"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
 
 export const dynamic = "force-dynamic"
 
@@ -55,15 +58,11 @@ export default async function FlightsCardsPage() {
       : new Date().getFullYear()
 
   return (
-    <div className="min-h-screen bg-background px-6 py-10">
-      <div className="mx-auto max-w-3xl">
-        <FlightsCardsClient
-          airlines={airlinesRes.data ?? []}
-          aircrafts={aircraftsRes.data ?? []}
-          airports={airportsRes.data ?? []}
-          earliestYear={earliestYear}
-        />
-      </div>
-    </div>
+    <FlightsCardsClient
+      airlines={airlinesRes.data ?? []}
+      aircrafts={aircraftsRes.data ?? []}
+      airports={airportsRes.data ?? []}
+      earliestYear={earliestYear}
+    />
   )
 }

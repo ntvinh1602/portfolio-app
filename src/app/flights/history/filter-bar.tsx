@@ -61,13 +61,13 @@ export function FilterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col items-center gap-3">
       {/* Year filter */}
       <Select
         value={filters.year ?? "all"}
         onValueChange={(v) => setFilter("year", v === "all" ? null : v)}
       >
-        <SelectTrigger className="w-[120px] rounded-xl">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Year" />
         </SelectTrigger>
         <SelectContent>
@@ -85,7 +85,7 @@ export function FilterBar({
         value={filters.airline ?? "all"}
         onValueChange={(v) => setFilter("airline", v === "all" ? null : v)}
       >
-        <SelectTrigger className="w-[170px] rounded-xl">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Airline" />
         </SelectTrigger>
         <SelectContent>
@@ -103,8 +103,8 @@ export function FilterBar({
         type="multiple"
         value={filters.seatTypes}
         onValueChange={(v) => setFilter("seatTypes", v)}
-        className="gap-0"
         variant="outline"
+        spacing={0}
       >
         {SEAT_TYPES.map((s) => (
           <ToggleGroupItem
@@ -122,7 +122,7 @@ export function FilterBar({
         placeholder="Flight number…"
         value={filters.search}
         onChange={(e) => setFilter("search", e.target.value)}
-        className="flex-1 min-w-0 rounded-xl"
+        className="w-full"
       />
 
       {/* Reset */}

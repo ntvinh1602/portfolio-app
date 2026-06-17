@@ -20,15 +20,26 @@ function resolveTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark"
-    const saved = localStorage.getItem("theme")
-    if (saved === "dark" || saved === "light") return saved
-    return resolveTheme()
-  })
+  // Always initialize to "dark" to match the server render.
+  // The inline <script> in <head> already sets the correct class
+  // before hydration, so the first render is always consistent.
+  const [theme, setTheme] = useState<Theme>("dark")
+  const [mounted, setMounted] = useState(false)
 
-  // Sync theme to DOM + storage
+  // Hydrate the actual theme preference from localStorage after mount
   useEffect(() => {
+    const saved = localStorage.getItem("theme")
+    if (saved === "dark" || saved === "light") {
+      setTheme(saved)
+    } else {
+      setTheme(resolveTheme())
+    }
+    setMounted(true)
+  }, [])
+
+  // Sync theme to DOM + storage (skip the initial server-matching render)
+  useEffect(() => {
+    if (!mounted) return
     const root = document.documentElement
     if (theme === "dark") {
       root.classList.add("dark")
@@ -36,7 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove("dark")
     }
     localStorage.setItem("theme", theme)
-  }, [theme])
+  }, [theme, mounted])
 
   const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"))
 

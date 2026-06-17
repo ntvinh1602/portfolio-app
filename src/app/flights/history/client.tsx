@@ -9,6 +9,7 @@ import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightCard, type Flight } from "./flight-card"
 import { InfiniteList } from "./infinite-list"
 import { FilterBar, type FilterState } from "./filter-bar"
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface FlightsCardsClientProps {
   airlines: { id: string; name: string }[]
@@ -121,71 +122,76 @@ export default function FlightsCardsClient({
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header + filters */}
-      <div className="pb-4 border-b border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Flight History
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+    <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
+      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
+
+        {/* Header + filters */}
+        <Card className="h-fit max-w-90">
+          <CardHeader>
+            <CardTitle>Filter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FilterBar
+              filters={filters}
+              onFiltersChange={setFilters}
+              airlineOptions={airlineOptions}
+              availableYears={availableYears}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Infinite card list */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Flights List</CardTitle>
+            <CardDescription>
               {isSuccess
                 ? `${count} flight${count !== 1 ? "s" : ""} found`
                 : "Loading..."}
-            </p>
-          </div>
-
-          <Button onClick={() => setOpen(true)} className="rounded-2xl">
-            Add Flight
-          </Button>
-        </div>
-
-        {/* Filter bar */}
-        <FilterBar
-          filters={filters}
-          onFiltersChange={setFilters}
-          airlineOptions={airlineOptions}
-          availableYears={availableYears}
-        />
+            </CardDescription>
+            <CardAction>
+              <Button onClick={() => setOpen(true)} className="rounded-2xl w-full">
+                Add Flight
+              </Button>
+              <FormDialogWrapper
+                open={open}
+                onOpenChange={setOpen}
+                title="Add Flight"
+                subtitle="Log a new flight into your travel history"
+                onSuccess={handleFlightAdded}
+                FormComponent={(props: { onSuccess?: () => void }) => (
+                  <FlightForm
+                    {...props}
+                    airlines={airlines}
+                    aircrafts={aircrafts}
+                    airports={airports}
+                  />
+                )}
+              />
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <InfiniteList
+              hasMore={hasMore}
+              isFetching={isFetching}
+              isLoading={isLoading}
+              count={count}
+              fetchNextPage={fetchNextPage}
+              renderEndMessage={renderEndMessage}
+            >
+              <div className="grid gap-2">
+                {flights.map((flight, i) => (
+                  <FlightCard
+                    key={`${flight.flight_number}-${flight.departure_time}-${i}`}
+                    flight={flight}
+                    airportNames={airportNames}
+                  />
+                ))}
+              </div>
+            </InfiniteList>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Form dialog */}
-      <FormDialogWrapper
-        open={open}
-        onOpenChange={setOpen}
-        title="Add Flight"
-        subtitle="Log a new flight into your travel history"
-        onSuccess={handleFlightAdded}
-        FormComponent={(props: { onSuccess?: () => void }) => (
-          <FlightForm
-            {...props}
-            airlines={airlines}
-            aircrafts={aircrafts}
-            airports={airports}
-          />
-        )}
-      />
-
-      {/* Infinite card list */}
-      <InfiniteList
-        hasMore={hasMore}
-        isFetching={isFetching}
-        isLoading={isLoading}
-        count={count}
-        fetchNextPage={fetchNextPage}
-        renderEndMessage={renderEndMessage}
-      >
-        <div className="grid gap-4">
-          {flights.map((flight, i) => (
-            <FlightCard
-              key={`${flight.flight_number}-${flight.departure_time}-${i}`}
-              flight={flight}
-              airportNames={airportNames}
-            />
-          ))}
-        </div>
-      </InfiniteList>
     </div>
   )
 }

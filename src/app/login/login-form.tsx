@@ -43,7 +43,7 @@ export function LoginForm({
     if (error) {
       setError(error.message)
     } else {
-      router.push("/dashboard")
+      router.push("/fund/dashboard")
     }
 
     setIsLoading(false)
@@ -51,7 +51,7 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="w-full">
+      <Card>
         <CardHeader>
           <CardTitle>Hello there!</CardTitle>
           <CardDescription>

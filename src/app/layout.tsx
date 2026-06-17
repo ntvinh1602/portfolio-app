@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 import { Manrope } from "next/font/google"
 import "./globals.css"
-import { ClientLayout } from "@/components/client-layout"
 import "leaflet/dist/leaflet.css"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { ClientLayout } from "@/components/client-layout"
 
 const figtree = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
 
