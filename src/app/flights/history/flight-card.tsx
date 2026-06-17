@@ -1,10 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { Plane, Hash, Armchair, Star, ArrowLeftRight } from "lucide-react"
 import { formatNum } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
 import {
   Item,
   ItemMedia,
@@ -41,32 +39,7 @@ const seatTypeLabels: Record<string, string> = {
 }
 
 function AirlineLogo({ logo }: { logo: string | null }) {
-  const [url, setUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!logo) {
-      setUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const supabase = createClient()
-
-    supabase.storage
-      .from("airlines")
-      .createSignedUrl(logo, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) {
-          setUrl(data.signedUrl)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [logo])
-
-  if (!url) {
+  if (!logo) {
     return (
       <div className="flex size-full items-center justify-center rounded-xl bg-primary/10">
         <Plane className="size-5 text-primary rotate-45" />
@@ -76,7 +49,7 @@ function AirlineLogo({ logo }: { logo: string | null }) {
 
   return (
     <Image
-      src={url}
+      src={`https://${process.env.NEXT_PUBLIC_BLOB_STORE_ID}.public.blob.vercel-storage.com/${logo}`}
       alt=""
       width={44}
       height={44}
