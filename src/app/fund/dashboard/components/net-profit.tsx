@@ -43,16 +43,14 @@ export function NetProfit({
   chartData
 }: NetProfitProps) {
   return (
-    <Card className="flex flex-col gap-0 flex-1
-      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent"
-    >
+    <Card className="flex flex-col gap-0">
       <CardHeader className="flex-col gap-1 items-center">
         <CardDescription>Net Profit</CardDescription>
         <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl font-light">
+          <CardTitle className="text-2xl">
             {formatNum(totalPnL)}
           </CardTitle>
-          <CardDescription className="text-xs">last 1y</CardDescription>
+          <CardDescription>last 1y</CardDescription>
         </div>
         <CardAction className="flex items-center gap-4">
           <div className="flex flex-col items-end">
@@ -82,11 +80,11 @@ export function NetProfit({
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4 h-full">
+      <CardContent className="flex flex-col gap-4">
         <ChartBarStacked
           data={chartData}
           config={NetProfitConfig}
-          className="h-full w-full"
+          className="w-full"
           xAxisDataKey={"snapshot_date"}
           xAxisTickFormatter={(v) => format(new Date(v), "MMM yy")}
           tooltipFormatter={(v) => formatNum(v)}

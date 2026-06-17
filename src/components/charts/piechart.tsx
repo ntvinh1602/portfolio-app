@@ -17,11 +17,9 @@ export function Piechart({
   className,
   innerRadius = 50,
   legend,
-  label,
   centerText,
   centerValue,
   margin_tb = 10,
-  label_pos = 1.5,
   valueFormatter
 }: {
   data: Record<string, unknown>[]
@@ -31,53 +29,12 @@ export function Piechart({
   className?: string
   innerRadius?: number
   legend?: string
-  label?: boolean
   centerText?: string
   centerValue?: string
   margin_tb?: number
   label_pos?: number
   valueFormatter?: (value: number) => string
 }) {
-  const totalValue = data?.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0) || 0
-
-  const RADIAN = Math.PI / 180
-
-interface RenderLabelProps {
-  cx: number
-  cy: number
-  midAngle: number
-  innerRadius: number
-  outerRadius: number
-  payload: Record<string, unknown>
-}
-
-  const renderLabel = ({
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    payload
-  }: RenderLabelProps) => {
-    const radius = innerRadius + (outerRadius - innerRadius) * label_pos
-    const x = cx + radius * Math.cos(-midAngle * RADIAN)
-    const y = cy + radius * Math.sin(-midAngle * RADIAN)
-    const value = Number(payload[dataKey]) || 0
-    const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : 0
-
-    return (
-      <text
-        x={x}
-        y={y}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="var(--foreground)"
-        className="text-xs font-light"
-      >
-        {`${percentage}%`}
-      </text>
-    )
-  }
 
   return (
     <ChartContainer
@@ -102,9 +59,9 @@ interface RenderLabelProps {
           />
         )}
         <ChartTooltip
-          cursor={true}
+          cursor={false}
           content={
-            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter}/>
+            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter} />
           }
         />
         <Pie
@@ -112,7 +69,6 @@ interface RenderLabelProps {
           dataKey={dataKey}
           nameKey={nameKey}
           labelLine={false}
-          label={label !== false && renderLabel}
           innerRadius={`${innerRadius}%`}
           strokeWidth={5}
           className="font-thin"
@@ -135,19 +91,19 @@ interface RenderLabelProps {
                       x={viewBox.cx}
                       y={viewBox.cy}
                       textAnchor="middle"
-                      dominantBaseline="auto"
+                      dominantBaseline="middle"
                     >
                       <tspan
                         x={viewBox.cx}
-                        y={viewBox.cy}
-                        className="fill-foreground text-lg md:text-xl font-light"
+                        y={(viewBox.cy || 0) - 20}
+                        className="fill-foreground text-lg md:text-2xl font-medium"
                       >
                         {centerValue}
                       </tspan>
                       <tspan
                         x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 15}
-                        className="fill-muted-foreground font-light"
+                        y={viewBox.cy}
+                        className="fill-muted-foreground text-sm"
                       >
                         {centerText}
                       </tspan>

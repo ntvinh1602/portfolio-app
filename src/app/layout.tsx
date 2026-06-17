@@ -59,7 +59,7 @@ export default function RootLayout({ children }: Readonly<{
           }}
         />
       </head>
-      <body className="antialiased bg-fixed h-full">
+      <body className="antialiased bg-fixed">
         <ClientLayout>
           {children}
         </ClientLayout>

@@ -4,8 +4,8 @@ import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "../context/theme-provider"
 
-export function ThemeDropdown() {
-  const { theme, toggleTheme } = useTheme()
+export function ThemeSwitch() {
+  const { toggleTheme } = useTheme()
 
   return (
     <Button

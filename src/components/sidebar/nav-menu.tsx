@@ -1,60 +1,72 @@
 "use client"
 
-import { type LucideIcon } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { ChevronRight, type LucideIcon } from "lucide-react"
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-
-type NavItem = {
-  title: string
-  url: string
-  icon: LucideIcon
-}
 
 export function NavMenu({
   items,
-  group
 }: {
-  items: NavItem[]
-  group: string
+  items: {
+    title: string
+    url: string
+    icon?: LucideIcon
+    isActive?: boolean
+    items?: {
+      title: string
+      url: string
+    }[]
+  }[]
 }) {
-  const pathname = usePathname()
-
   return (
-    <SidebarGroup className="gap-2">
-      <div>
-        <SidebarGroupLabel className="text-xs">
-          {group}
-        </SidebarGroupLabel>
-        <div className="relative before:absolute before:left-0 before:bottom-0 before:h-[1px] before:w-full before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent before:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.4)]
-        group-data-[collapsible=icon]:hidden"/>
-      </div>
+    <SidebarGroup>
+      <SidebarGroupLabel>Pages</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => {
-          const isActive =
-            item.url !== "#" &&
-            (pathname === item.url || pathname.startsWith(item.url + "/"))
-
-          return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title} isActive={isActive} size="lg">
-                <Link
-                  href={item.url}
-                  className="flex items-center gap-3"
-                >
-                  <item.icon className="transition duration-300 data-[active=true]:text-primary data-[active=true]:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)] hover:text-primary hover:drop-shadow-[0_4px_6px_oklch(from_var(--primary)_l_c_h/0.7)]" />
-                  <span className="">{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
+        {items.map((item) => (
+          <Collapsible
+            key={item.title}
+            asChild
+            defaultOpen={item.isActive}
+            className="group/collapsible"
+          >
+            <SidebarMenuItem>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton tooltip={item.title}>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {item.items?.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton asChild size="md" className="py-5">
+                        <a href={subItem.url}>
+                          <span>{subItem.title}</span>
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
             </SidebarMenuItem>
-          )
-        })}
+          </Collapsible>
+        ))}
       </SidebarMenu>
     </SidebarGroup>
   )

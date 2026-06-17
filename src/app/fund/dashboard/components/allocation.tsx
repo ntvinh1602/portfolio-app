@@ -102,55 +102,41 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="flex flex-col gap-4 min-h-90
-      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] 
-      before:content-[''] 
-      before:absolute 
-      before:top-0 
-      before:left-0 
-      before:w-full 
-      before:h-px 
-      before:bg-gradient-to-r 
-      before:from-transparent 
-      before:via-ring/40 
-      before:to-transparent"
-    >
+    <Card className="flex flex-col gap-4">
       <CardHeader className="flex justify-between items-center">
-        <CardTitle className="text-lg font-normal">Allocation</CardTitle>
+        <CardTitle>Allocation</CardTitle>
         <CardAction className="flex gap-2">
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex gap-4 h-full">
-      <Piechart
-        data={assetChartData}
-        chartConfig={assetChartCfg}
-        dataKey="allocation"
-        nameKey="asset"
-        className="h-full"
-        innerRadius={innerRadius}
-        legend="bottom"
-        label={false}
-        margin_tb={0}
-        centerText="Total AUM"
-        centerValue={compactNum(totalAssets)}
-        valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
-      />
+      <CardContent className="grid grid-cols-2 gap-4 h-full">
+        <Piechart
+          data={assetChartData}
+          chartConfig={assetChartCfg}
+          dataKey="allocation"
+          nameKey="asset"
+          className="w-full"
+          innerRadius={innerRadius}
+          legend="bottom"
+          margin_tb={0}
+          centerText="Total AUM"
+          centerValue={compactNum(totalAssets)}
+          valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+        />
 
-      <Piechart
-        data={liabilityChartData}
-        chartConfig={liabilityChartCfg}
-        dataKey="allocation"
-        nameKey="liability"
-        className="h-full"
-        innerRadius={innerRadius}
-        legend="bottom"
-        label={false}
-        margin_tb={0}
-        centerText="Leverage"
-        centerValue={leverage}
-        valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
-      />
+        <Piechart
+          data={liabilityChartData}
+          chartConfig={liabilityChartCfg}
+          dataKey="allocation"
+          nameKey="liability"
+          className="w-full"
+          innerRadius={innerRadius}
+          legend="bottom"
+          margin_tb={0}
+          centerText="Leverage"
+          centerValue={leverage}
+          valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+        />
       </CardContent>
     </Card>
   )

@@ -5,32 +5,47 @@ import { usePathname } from "next/navigation"
 import { AppSidebar } from "./sidebar/app-sidebar"
 import { Toaster } from "./ui/sonner"
 import { SidebarProvider, SidebarInset } from "./ui/sidebar"
-import { ThemeProvider } from "../context/theme-provider"
+import { ThemeProvider } from "@/context/theme-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { ThemeDropdown } from "./theme-picker"
+import { ThemeSwitch } from "./theme-switch"
 import { TooltipProvider } from "./ui/tooltip"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
-function formatTitle(pathname: string): string {
-  const segments = pathname.replace(/^\/+/, "").split("/").filter(Boolean)
-
-  if (segments.length === 0) return "Dashboard"
-
-  const segment =
-    segments.length > 1
-      ? segments[segments.length - 1]
-      : segments[0]
-
+function formatSegment(segment: string): string {
   return segment
     .split("-")
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ")
 }
 
+function getBreadcrumbs(pathname: string): { label: string; href?: string }[] {
+  const segments = pathname.replace(/^\/+/, "").split("/").filter(Boolean)
+
+  if (segments.length === 0) {
+    return [{ label: "Dashboard" }]
+  }
+
+  return segments.map((segment, i) => {
+    const label = formatSegment(segment)
+    const isLast = i === segments.length - 1
+    if (isLast) return { label }
+    const href = "/" + segments.slice(0, i + 1).join("/")
+    return { label, href }
+  })
+}
+
 export function ClientLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login"
-  const pageTitle = formatTitle(pathname)
+  const breadcrumbs = getBreadcrumbs(pathname)
 
   return (
     <div className="flex flex-col h-full">
@@ -41,38 +56,56 @@ export function ClientLayout({ children }: { children: ReactNode }) {
         </>
       ) : ( // On other pages → show sidebar layout
         <ThemeProvider>
-          <SidebarProvider>
-            <TooltipProvider>
+          <TooltipProvider>
+            <SidebarProvider>
               <AppSidebar collapsible="icon" />
-
               <SidebarInset className="md:px-4">
                 <Toaster />
-
-                {/* FULL HEIGHT APP CONTAINER */}
-                <div className="flex min-h-dvh flex-col h-full">
-
-                  {/* HEADER (fixed height) */}
-                  <header className="flex items-center w-full justify-between px-6 py-2 md:px-0 gap-2 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <SidebarTrigger />
+                <header className="flex h-16 shrink-0 justify-between items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                  <div className="flex items-center gap-2 px-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <div>
                       <Separator
                         orientation="vertical"
-                        className="data-[orientation=vertical]:h-4 -ml-2"
+                        className="mr-2 data-[orientation=vertical]:h-4"
                       />
-                      <h1 className="text-base">{pageTitle}</h1>
                     </div>
-                    <ThemeDropdown />
-                  </header>
+                    <Breadcrumb>
+                      <BreadcrumbList>
+                        {breadcrumbs.map((crumb, i) => (
+                          <div key={crumb.label} className="flex items-center gap-2">
+                            {i > 0 && (
+                              <BreadcrumbSeparator className="hidden md:block" />
+                            )}
+                            <BreadcrumbItem
+                              className={
+                                i < breadcrumbs.length - 1
+                                  ? "hidden md:block"
+                                  : undefined
+                              }
+                            >
+                              {crumb.href ? (
+                                <BreadcrumbLink href={crumb.href}>
+                                  {crumb.label}
+                                </BreadcrumbLink>
+                              ) : (
+                                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                              )}
+                            </BreadcrumbItem>
+                          </div>
+                        ))}
+                      </BreadcrumbList>
+                    </Breadcrumb>
+                  </div>
+                  <ThemeSwitch />
+                </header>
 
-                  {/* CONTENT AREA (critical fix) */}
-                  <main className="flex-1 min-h-0 flex flex-col pb-4">
-                    {children}
-                  </main>
-
+                <div className="flex flex-1 flex-col">
+                  {children}
                 </div>
               </SidebarInset>
-            </TooltipProvider>
-          </SidebarProvider>
+            </SidebarProvider>
+          </TooltipProvider>
         </ThemeProvider>
       )}
     </div>

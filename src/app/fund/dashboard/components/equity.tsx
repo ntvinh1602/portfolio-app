@@ -64,29 +64,17 @@ export function EquityChart({
   }
 
   return (
-    <Card className="flex flex-col gap-0 flex-1
-      backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] 
-      before:content-[''] 
-      before:absolute 
-      before:top-0 
-      before:left-0 
-      before:w-full 
-      before:h-px 
-      before:bg-gradient-to-r 
-      before:from-transparent 
-      before:via-ring/40 
-      before:to-transparent"
-    >
+    <Card className="flex flex-col gap-0">
       <CardHeader className="flex-col gap-1 items-center">
         <CardDescription>Equity</CardDescription>
         <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl font-light">
+          <CardTitle className="text-2xl">
             {formatNum(totalEquity)}
           </CardTitle>
         </div>
         <CardAction className="flex items-center gap-4">
           <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
               {pnlMtd < 0
                 ? <TrendingDown className="text-red-700" />
                 : <TrendingUp className="text-green-500" />
@@ -100,7 +88,7 @@ export function EquityChart({
             className="data-[orientation=vertical]:h-8 -mr-1"
           />
           <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
+            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
               {pnlYtd < 0
                 ? <TrendingDown className="text-red-700" />
                 : <TrendingUp className="text-green-500" />
@@ -112,15 +100,13 @@ export function EquityChart({
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4 h-full">
+      <CardContent className="flex flex-col gap-4">
         <ToggleGroup
           type="single"
           onValueChange={onDateRangeChange}
           defaultValue="1y"
-          variant="default"
           spacing={1}
-          size="sm"
-          className="self-end [&_[data-state=on]]:bg-primary/10"
+          className="self-end"
         >
           <ToggleGroupItem value="3m">3M</ToggleGroupItem>
           <ToggleGroupItem value="6m">6M</ToggleGroupItem>
@@ -131,7 +117,7 @@ export function EquityChart({
           data={chartData}
           config={equityChartConfig}
           xAxisDataKey={"snapshot_date"}
-          className="h-full w-full"
+          className="w-full"
           xAxisTickFormatter={xAxisTickFormatter}
           yAxisTickFormatter={(v) => compactNum(v)}
           tooltipFormatter={(v) => formatNum(v)}
