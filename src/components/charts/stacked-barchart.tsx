@@ -75,7 +75,6 @@ export function ChartBarStacked<
           <Bar
             key={key}
             dataKey={key}
-            layout="vertical"
             stackId={key === "revenue" ? undefined : "a"}
             fill={`var(--color-${key})`}
           >
@@ -86,7 +85,7 @@ export function ChartBarStacked<
                 offset={8}
                 className="fill-foreground font-thin"
                 fontSize={12}
-                formatter={(value: number) => compactNum(value)}
+                formatter={(value) => compactNum(Number(value))}
               />
             )}
           </Bar>

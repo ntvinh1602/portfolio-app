@@ -69,7 +69,6 @@ export function ExpenseChart({
           className="w-full"
           innerRadius={60}
           legend="bottom"
-          label
           label_pos={1.5}
           margin_tb={1}
           centerText="Total Expenses"
