@@ -96,14 +96,14 @@ export function Piechart({
                       <tspan
                         x={viewBox.cx}
                         y={(viewBox.cy || 0) - 20}
-                        className="fill-foreground text-lg md:text-2xl font-medium"
+                        className="fill-foreground text-lg md:text-xl font-medium"
                       >
                         {centerValue}
                       </tspan>
                       <tspan
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        className="fill-muted-foreground text-sm"
+                        className="fill-muted-foreground text-sm font-medium"
                       >
                         {centerText}
                       </tspan>

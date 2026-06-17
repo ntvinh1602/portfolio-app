@@ -1,8 +1,5 @@
 import FlightsCardsClient from "./client"
 import { createClient } from "@/lib/supabase/server"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
 
 export const dynamic = "force-dynamic"
 

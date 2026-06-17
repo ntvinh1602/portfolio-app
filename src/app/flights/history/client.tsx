@@ -9,7 +9,15 @@ import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightCard, type Flight } from "./flight-card"
 import { InfiniteList } from "./infinite-list"
 import { FilterBar, type FilterState } from "./filter-bar"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
+import { ListFilter } from "lucide-react"
 
 interface FlightsCardsClientProps {
   airlines: { id: string; name: string }[]
@@ -123,12 +131,15 @@ export default function FlightsCardsClient({
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
-      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
+      <div className="flex flex-col 2xl:flex-row gap-4 px-4 mx-auto">
 
         {/* Header + filters */}
-        <Card className="h-fit max-w-90">
+        <Card className="h-fit w-fit mx-auto">
           <CardHeader>
             <CardTitle>Filter</CardTitle>
+            <CardAction>
+              <ListFilter/>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <FilterBar
@@ -141,7 +152,7 @@ export default function FlightsCardsClient({
         </Card>
 
         {/* Infinite card list */}
-        <Card>
+        <Card className="max-w-200">
           <CardHeader>
             <CardTitle>Flights List</CardTitle>
             <CardDescription>

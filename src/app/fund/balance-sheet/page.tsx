@@ -3,6 +3,7 @@
 import { useBalanceSheetData } from "@/hooks/useBalanceSheet"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -16,27 +17,13 @@ import {
   ItemDescription,
 } from "@/components/ui/item"
 import { formatNum } from "@/lib/utils"
+import { Box, DollarSign, HandCoins } from "lucide-react"
 
 interface BSItem {
   ticker: string
   name: string
   asset_class: string
   total_value: number | null
-}
-
-function SectionHeader({
-  label,
-  total,
-}: {
-  label: string
-  total: number
-}) {
-  return (
-    <CardHeader>
-      <CardDescription>{label}</CardDescription>
-      <CardTitle className="text-2xl">{formatNum(total)}</CardTitle>
-    </CardHeader>
-  )
 }
 
 function FlatItemList({ items }: { items: BSItem[] }) {
@@ -115,25 +102,41 @@ export default function Page() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
       <div className="grid grid-cols-1 gap-4 px-4 xl:w-6/10 xl:mx-auto xl:grid-cols-2">
-        <div className="flex flex-col flex-1 gap-4">
-          <Card>
-            <SectionHeader label="Assets" total={totalAssets} />
-            <CardContent>
-              <GroupedItemList groups={groupedAssets} />
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardDescription>Assets</CardDescription>
+            <CardTitle className="text-2xl">{formatNum(totalAssets)}</CardTitle>
+            <CardAction>
+              <Box className="stroke-1"/>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <GroupedItemList groups={groupedAssets} />
+          </CardContent>
+        </Card>
 
         <div className="flex flex-col flex-1 gap-4">
           <Card>
-            <SectionHeader label="Liabilities" total={totalLiabilities} />
+            <CardHeader>
+              <CardDescription>Liabilities</CardDescription>
+              <CardTitle className="text-2xl">{formatNum(totalLiabilities)}</CardTitle>
+              <CardAction>
+                <HandCoins className="stroke-1"/>
+              </CardAction>
+            </CardHeader>
             <CardContent>
               <FlatItemList items={liabilities} />
             </CardContent>
           </Card>
 
           <Card>
-            <SectionHeader label="Equity" total={totalEquity} />
+            <CardHeader>
+              <CardDescription>Equity</CardDescription>
+              <CardTitle className="text-2xl">{formatNum(totalEquity)}</CardTitle>
+              <CardAction>
+                <DollarSign className="stroke-1"/>
+              </CardAction>
+            </CardHeader>
             <CardContent>
               <FlatItemList items={equities} />
             </CardContent>

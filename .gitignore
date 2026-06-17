@@ -43,7 +43,8 @@ next-env.d.ts
 # deno
 /.vscode/
 
-# agents
+# vibecoding
 /.agents/
 /.claude/
+/.playwright-mcp/
 .mcp.json

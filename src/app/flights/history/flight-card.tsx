@@ -1,8 +1,20 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { format } from "date-fns"
-import { Plane, MapPin, Clock, Hash, User, Armchair, Star, ArrowLeftRight } from "lucide-react"
+import { Plane, Hash, Armchair, Star, ArrowLeftRight } from "lucide-react"
 import { formatNum } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import {
+  Item,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemFooter,
+} from "@/components/ui/item"
+import Image from "next/image"
+import { Badge } from "@/components/ui/badge"
 
 export type Flight = {
   flight_number: string
@@ -14,6 +26,7 @@ export type Flight = {
   departure_country: string
   arrival_country: string
   airline_name: string
+  airline_logo: string | null
   aircraft_model: string
   seat: string | null
   seat_type: string
@@ -25,6 +38,52 @@ const seatTypeLabels: Record<string, string> = {
   economy: "Economy",
   premium_economy: "Premium Economy",
   business: "Business",
+}
+
+function AirlineLogo({ logo }: { logo: string | null }) {
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!logo) {
+      setUrl(null)
+      return
+    }
+
+    let cancelled = false
+    const supabase = createClient()
+
+    supabase.storage
+      .from("airlines")
+      .createSignedUrl(logo, 3600)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) {
+          setUrl(data.signedUrl)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [logo])
+
+  if (!url) {
+    return (
+      <div className="flex size-full items-center justify-center rounded-xl bg-primary/10">
+        <Plane className="size-5 text-primary rotate-45" />
+      </div>
+    )
+  }
+
+  return (
+    <Image
+      src={url}
+      alt=""
+      width={44}
+      height={44}
+      className="bg-foreground"
+      objectFit="contain"
+    />
+  )
 }
 
 interface FlightCardProps {
@@ -42,84 +101,60 @@ export function FlightCard({ flight, airportNames }: FlightCardProps) {
     : null
 
   return (
-    <div
-      className="
-        group rounded-2xl border border-border bg-card
-        p-5 transition-all duration-200
-        hover:border-primary/40 hover:shadow-lg
-        hover:shadow-primary/5
-      "
-    >
-      {/* Top row: route + date */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Plane className="size-5 text-primary rotate-45" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-              <span className="truncate">{flight.departure_airport}</span>
-              <span className="text-muted-foreground shrink-0">→</span>
-              <span className="truncate">{flight.arrival_airport}</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
-              <MapPin className="size-3 shrink-0" />
-              <span className="truncate">{depName} → {arrName}</span>
-            </div>
-          </div>
-        </div>
+    <Item variant="outline">
+      <ItemMedia variant="image">
+        <AirlineLogo logo={flight.airline_logo} />
+      </ItemMedia>
 
-        <div className="text-right shrink-0">
-          <div className="text-sm font-medium">
-            {format(new Date(flight.departure_time), "MMM d, yyyy")}
-          </div>
-          <div className="flex items-center justify-end gap-1 mt-0.5 text-xs text-muted-foreground">
-            <Clock className="size-3" />
-            <span>
-              {format(new Date(flight.departure_time), "HH:mm")}
-              {" – "}
-              {format(new Date(flight.arrival_time), "HH:mm")}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ItemContent className="min-w-0">
+        <ItemTitle>
+          {flight.departure_airport} → {flight.arrival_airport}
+        </ItemTitle>
+        <ItemDescription className="hidden sm:block truncate">
+          {depName} → {arrName}
+        </ItemDescription>
+      </ItemContent>
 
-      {/* Bottom row: details */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground border-t border-border pt-3">
-        <div className="flex items-center gap-1.5">
-          <Hash className="size-3.5" />
-          <span>{flight.flight_number}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <User className="size-3.5" />
-          <span>{flight.airline_name}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Plane className="size-3.5" />
-          <span>{flight.aircraft_model}</span>
-        </div>
-        {flight.seat && (
-          <div className="flex items-center gap-1.5">
-            <Armchair className="size-3.5" />
-            <span>{flight.seat}</span>
-          </div>
-        )}
-        {seatClass && (
-          <div className="flex items-center gap-1.5">
-            <Star className="size-3.5" />
-            <span>{seatClass}</span>
-          </div>
-        )}
-        {seatPosition && (
-          <div className="flex items-center gap-1.5">
-            <ArrowLeftRight className="size-3.5" />
-            <span>{seatPosition}</span>
-          </div>
-        )}
-        <div className="ml-auto font-medium text-foreground/80">
-          {formatNum(flight.distance_km)} km
-        </div>
-      </div>
-    </div>
+      <ItemContent className="items-end">
+        <ItemTitle>
+          {format(new Date(flight.departure_time), "MMM d, yyyy")}
+        </ItemTitle>
+        <ItemDescription >
+          {format(new Date(flight.departure_time), "HH:mm")}
+          -
+          {format(new Date(flight.arrival_time), "HH:mm")}
+        </ItemDescription>
+      </ItemContent>
+
+      {/* ---- Detail tags ---- */}
+      <ItemFooter className="border-t pt-4">
+        <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center">
+          <Badge variant="secondary">
+            <Hash /> {flight.flight_number}
+          </Badge>
+          <Badge variant="secondary">
+            <Plane /> {flight.airline_name}
+          </Badge>
+          <Badge variant="secondary">
+            <Plane /> {flight.aircraft_model}
+          </Badge>
+          <Badge variant="secondary">
+            <Armchair /> {flight.seat}
+          </Badge>
+          <Badge variant="secondary">
+            <Star /> {seatClass}
+          </Badge>
+          <Badge variant="secondary">
+            <ArrowLeftRight /> {seatPosition}
+          </Badge>
+        </ItemContent>
+        <ItemContent className="flex items-center">
+          <ItemDescription>Distance</ItemDescription>
+          <ItemTitle>
+            {formatNum(flight.distance_km)} km
+          </ItemTitle>
+        </ItemContent>
+      </ItemFooter>
+    </Item>
   )
 }

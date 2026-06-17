@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <TrendingUp className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Portfolio Tracker</span>
+                  <span className="font-medium">Master Ledger</span>
                   <span className="">v1.0.0</span>
                 </div>
               </a>

@@ -105,8 +105,6 @@ export function AssetCard({
     <Card className="flex flex-col gap-4">
       <CardHeader className="flex justify-between items-center">
         <CardTitle>Allocation</CardTitle>
-        <CardAction className="flex gap-2">
-        </CardAction>
       </CardHeader>
 
       <CardContent className="grid grid-cols-2 gap-4 h-full">
@@ -115,7 +113,7 @@ export function AssetCard({
           chartConfig={assetChartCfg}
           dataKey="allocation"
           nameKey="asset"
-          className="w-full"
+          className="w-full max-h-50"
           innerRadius={innerRadius}
           legend="bottom"
           margin_tb={0}
@@ -129,7 +127,7 @@ export function AssetCard({
           chartConfig={liabilityChartCfg}
           dataKey="allocation"
           nameKey="liability"
-          className="w-full"
+          className="w-full max-h-50"
           innerRadius={innerRadius}
           legend="bottom"
           margin_tb={0}

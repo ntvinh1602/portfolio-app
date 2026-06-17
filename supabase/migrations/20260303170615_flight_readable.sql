@@ -17,6 +17,7 @@ select
   arr.country as arrival_country,
 
   al.name as airline_name,
+  al.logo as airline_logo,
   ac.model as aircraft_model,
 
   f.seat,
