@@ -1,7 +1,7 @@
 "use client"
 
 import { format } from "date-fns"
-import { Plane, Hash, Armchair, Star, ArrowLeftRight } from "lucide-react"
+import { Plane, Armchair, Star, ArrowLeftRight, PlaneTakeoff, PlaneLanding, Users, Tag } from "lucide-react"
 import { formatNum } from "@/lib/utils"
 import {
   Item,
@@ -54,7 +54,6 @@ function AirlineLogo({ logo }: { logo: string | null }) {
       width={44}
       height={44}
       className="bg-foreground"
-      objectFit="contain"
     />
   )
 }
@@ -80,21 +79,23 @@ export function FlightCard({ flight, airportNames }: FlightCardProps) {
       </ItemMedia>
 
       <ItemContent className="min-w-0">
-        <ItemTitle>
-          {flight.departure_airport} → {flight.arrival_airport}
+        <ItemTitle className="gap-1">
+          <PlaneTakeoff className="size-3"/>{flight.departure_airport}
+          <span className="text-muted-foreground hidden sm:block">- {depName}</span>
         </ItemTitle>
-        <ItemDescription className="hidden sm:block truncate">
-          {depName} → {arrName}
-        </ItemDescription>
+        <ItemTitle className="gap-1">
+          <PlaneLanding className="size-3"/>{flight.arrival_airport}
+          <span className="text-muted-foreground hidden sm:block">- {arrName}</span>
+        </ItemTitle>
       </ItemContent>
 
       <ItemContent className="items-end">
         <ItemTitle>
           {format(new Date(flight.departure_time), "MMM d, yyyy")}
         </ItemTitle>
-        <ItemDescription >
+        <ItemDescription>
           {format(new Date(flight.departure_time), "HH:mm")}
-          -
+          {" "}-{" "}
           {format(new Date(flight.arrival_time), "HH:mm")}
         </ItemDescription>
       </ItemContent>
@@ -103,10 +104,10 @@ export function FlightCard({ flight, airportNames }: FlightCardProps) {
       <ItemFooter className="border-t pt-4">
         <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center">
           <Badge variant="secondary">
-            <Hash /> {flight.flight_number}
+            <Tag /> {flight.flight_number}
           </Badge>
           <Badge variant="secondary">
-            <Plane /> {flight.airline_name}
+            <Users /> {flight.airline_name}
           </Badge>
           <Badge variant="secondary">
             <Plane /> {flight.aircraft_model}

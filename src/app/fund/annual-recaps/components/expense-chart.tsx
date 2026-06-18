@@ -6,10 +6,11 @@ import {
   CardAction,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { compactNum } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
 
 interface ProfitChartItem {
@@ -26,8 +27,7 @@ interface ExpenseChartProps {
 }
 
 export function ExpenseChart({
-  profitChart,
-  className,
+  profitChart
 }: ExpenseChartProps) {
 
   // Aggregate total expenses
@@ -50,29 +50,28 @@ export function ExpenseChart({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card
-      className={`gap-0 h-fit rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent ${className ?? ""}`}
-    >
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl font-normal">Expenses</CardTitle>
+        <CardDescription>
+          Total Expenses
+        </CardDescription>
+        <CardTitle className="text-2xl">{formatNum(totalExpenses)}</CardTitle>
         <CardAction>
-          <HandCoins className="size-5 stroke-1" />
+          <HandCoins className="stroke-1" />
         </CardAction>
       </CardHeader>
 
-      <CardContent className="px-0 flex h-fit justify-between">
+      <CardContent className="h-full">
         <Piechart
           data={expenseChartData}
           chartConfig={expenseChartCfg}
           dataKey="allocation"
           nameKey="liability"
-          className="w-full"
+          className="w-full max-h-50"
           innerRadius={60}
-          legend="bottom"
+          legend="right"
           label_pos={1.5}
           margin_tb={1}
-          centerText="Total Expenses"
-          centerValue={compactNum(totalExpenses)}
         />
       </CardContent>
     </Card>

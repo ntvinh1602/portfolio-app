@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { ListFilter } from "lucide-react"
+import { ListFilter, PlusIcon } from "lucide-react"
 
 interface FlightsCardsClientProps {
   airlines: { id: string; name: string }[]
@@ -138,7 +138,7 @@ export default function FlightsCardsClient({
           <CardHeader>
             <CardTitle>Filter</CardTitle>
             <CardAction>
-              <ListFilter/>
+              <ListFilter className="stroke-1"/>
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -161,8 +161,8 @@ export default function FlightsCardsClient({
                 : "Loading..."}
             </CardDescription>
             <CardAction>
-              <Button onClick={() => setOpen(true)} className="rounded-2xl w-full">
-                Add Flight
+              <Button onClick={() => setOpen(true)} className="rounded-2xl">
+                <PlusIcon/>Add Flight
               </Button>
               <FormDialogWrapper
                 open={open}

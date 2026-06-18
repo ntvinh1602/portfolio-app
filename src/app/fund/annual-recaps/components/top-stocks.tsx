@@ -47,25 +47,20 @@ export function TopStocks({ year, stockData }: TopStocksProps) {
     .slice(0, 10)
 
   return (
-    <Card className="relative h-full rounded-xl backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)] before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-px before:bg-gradient-to-r before:from-transparent before:via-ring/40 before:to-transparent">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl font-normal">
-          Best Performers
-        </CardTitle>
-        <CardDescription>
-          Based on total realized P/L
-        </CardDescription>
+        <CardTitle>Best Performers</CardTitle>
+        <CardDescription>Based on total realized P/L</CardDescription>
         <CardAction>
-          <Trophy className="stroke-1 size-5" />
+          <Trophy className="stroke-1" />
         </CardAction>
       </CardHeader>
 
       <CardContent>
         <div className="flex flex-col gap-2">
-          {topPerformers.map((stock, index) => (
+          {topPerformers.map((stock) => (
             <Asset
               key={stock.ticker}
-              rank={index + 1}
               ticker={stock.ticker}
               name={stock.name}
               logoUrl={stock.logo_url}

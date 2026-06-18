@@ -1,10 +1,10 @@
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const ALL_TIME_VALUE = 9999
 const ALL_TIME_LABEL = "All Time"
@@ -31,27 +31,20 @@ export function YearPicker({
     year === ALL_TIME_VALUE ? ALL_TIME_LABEL : year.toString()
 
   return (
-    <SidebarGroup className="gap-2 w-30 shrink-0">
-      <SidebarMenu>
-        {options.map((year) => {
-          const isActive = value === year
-
-          return (
-            <SidebarMenuItem key={year}>
-              <SidebarMenuButton
-                isActive={isActive}
-                size="lg"
-                onClick={() => onChange?.(year)}
-                className="flex items-center gap-3"
-              >
-                <span className="font-light">
-                  {formatLabel(year)}
-                </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )
-        })}
-      </SidebarMenu>
-    </SidebarGroup>
+    <Select
+      value={value?.toString() ?? ""}
+      onValueChange={(v) => onChange?.(Number(v))}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select year" />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((year) => (
+          <SelectItem key={year} value={year.toString()}>
+            {formatLabel(year)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

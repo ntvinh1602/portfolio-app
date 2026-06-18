@@ -1,7 +1,15 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Loader2 } from "lucide-react"
+import { FileXCorner } from "lucide-react"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { Spinner } from "@/components/ui/spinner"
 
 interface InfiniteListProps {
   children: React.ReactNode
@@ -74,10 +82,17 @@ export function InfiniteList({
     return (
       <div className="flex items-center justify-center py-20">
         {renderLoader?.() ?? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading flights...</p>
-          </div>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Spinner />
+              </EmptyMedia>
+              <EmptyTitle>Searching Flights...</EmptyTitle>
+              <EmptyDescription>
+                Retrieving your flights... Almost done!
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )}
       </div>
     )
@@ -87,7 +102,17 @@ export function InfiniteList({
     return (
       <div className="flex items-center justify-center py-20">
         {renderEmpty?.() ?? (
-          <p className="text-sm text-muted-foreground">No flights found.</p>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileXCorner />
+              </EmptyMedia>
+              <EmptyTitle>No Flights Found</EmptyTitle>
+              <EmptyDescription>
+                Unable to find any flights matching the conditions.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )}
       </div>
     )
@@ -100,7 +125,7 @@ export function InfiniteList({
       {/* Loading indicator */}
       {isFetching && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <Spinner />
           <span className="ml-2 text-sm text-muted-foreground">
             Loading more...
           </span>
