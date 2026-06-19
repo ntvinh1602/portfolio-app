@@ -87,9 +87,9 @@ export function InfiniteList({
               <EmptyMedia variant="icon">
                 <Spinner />
               </EmptyMedia>
-              <EmptyTitle>Searching Flights...</EmptyTitle>
+              <EmptyTitle>Loading...</EmptyTitle>
               <EmptyDescription>
-                Retrieving your flights... Almost done!
+                Retrieving your data... Almost done!
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -107,9 +107,9 @@ export function InfiniteList({
               <EmptyMedia variant="icon">
                 <FileXCorner />
               </EmptyMedia>
-              <EmptyTitle>No Flights Found</EmptyTitle>
+              <EmptyTitle>No results found</EmptyTitle>
               <EmptyDescription>
-                Unable to find any flights matching the conditions.
+                Unable to find any items matching the conditions.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -137,7 +137,7 @@ export function InfiniteList({
         <div className="py-8 text-center">
           {renderEndMessage?.(count) ?? (
             <p className="text-sm text-muted-foreground">
-              All {count} flights loaded.
+              All {count} items loaded.
             </p>
           )}
         </div>

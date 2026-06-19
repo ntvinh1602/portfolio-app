@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import {
   Item,
   ItemMedia,
@@ -14,12 +13,6 @@ import {
   CardTitle
 } from "@/components/ui/card"
 import Image from "next/image"
-import {
-  TrendingUp,
-  TrendingDown,
-  Coins,
-  ShoppingBag,
-} from "lucide-react"
 import { formatNum, compactNum, cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { RefreshButton } from "./primitive/refresh-button"
@@ -65,15 +58,10 @@ function Asset({
       </ItemMedia>
       <ItemContent className="min-w-0">
         <ItemTitle className="block max-w-[180px] truncate">{name}</ItemTitle>
-        <ItemDescription className="flex gap-1">
-          <Badge variant="secondary">
-            <Coins/>
-            {!isMobile ? formatNum(quantity) : compactNum(quantity)}
-          </Badge>
-          <Badge variant="secondary">
-            <ShoppingBag/>
-            {formatNum(price / 1000, 2)}
-          </Badge>
+        <ItemDescription className="text-xs">
+          {formatNum(quantity)}
+          {" units @ "}
+          {formatNum(price / 1000, 2)}
         </ItemDescription>
       </ItemContent>
       <ItemContent className="items-end">
@@ -86,13 +74,14 @@ function Asset({
             isPositive ? "text-green-600" : "text-red-600"
           )}
         >
-          {isPositive ? (
-            <TrendingUp className="size-3.5" />
+          {!isMobile ? (
+            <span>
+              {compactNum(pnlNet)}
+              {" ("}{formatNum(pnlPct, 1)}{"%)"}
+            </span>
           ) : (
-            <TrendingDown className="size-3.5" />
+            <span>{formatNum(pnlPct, 1)}%</span>
           )}
-          {!isMobile && <span>{compactNum(Math.abs(pnlNet))}</span>}
-          <span>{formatNum(pnlPct, 1)}%</span>
         </ItemDescription>
       </ItemContent>
     </Item>

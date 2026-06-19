@@ -1,9 +1,8 @@
 {
-  "name": "portfolio-app",
+  "name": "master-portfolio",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "gen-types": "npx supabase gen types --lang=typescript --project-id \"pamvtxbkdjnvkzeutmjk\" > src/types/database.types.ts",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",

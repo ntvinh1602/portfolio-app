@@ -20,7 +20,7 @@ import { CASHFLOW_MEMO } from "@/lib/domain/cashflow_memo"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
-export function CashflowForm() {
+export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
   const supabase = createClient()
   const { data: assetData } = useCashAssets()
   const [loading, setLoading] = React.useState(false)
@@ -89,6 +89,7 @@ export function CashflowForm() {
       } else {
         toast.success("Cashflow event added", { description: data.memo })
         form.reset()
+        onSuccess?.()
       }
       
       await mutate(

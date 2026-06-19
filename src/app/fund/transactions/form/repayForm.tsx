@@ -15,7 +15,7 @@ import { mutate } from "swr"
 
 type FormValues = z.infer<typeof repaySchema>
 
-export function RepayForm() {
+export function RepayForm({ onSuccess }: { onSuccess?: () => void }) {
   const supabase = createClient()
   const [loading, setLoading] = React.useState(false)
   const [debtOptions, setDebtOptions] = React.useState<
@@ -62,6 +62,7 @@ export function RepayForm() {
       } else {
         toast.success("Repay event added")
         form.reset()
+        onSuccess?.()
       }
       
       await mutate(

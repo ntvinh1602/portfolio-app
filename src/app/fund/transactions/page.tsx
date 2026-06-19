@@ -1,42 +1,41 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { subMonths } from "date-fns"
-
-import { DatePicker } from "@/components/date-picker"
-import { DataTable } from "./table/data-table"
-import { columns } from "./table/columns"
-import { useTransactions } from "@/hooks/useTransactions"
+import { startOfDay, endOfDay } from "date-fns"
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
-import { PlusIcon } from "lucide-react"
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
-
+import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
+import { InfiniteList } from "@/components/ui/infinite-list"
+import { useInfiniteQuery } from "@/hooks/use-infinite-query"
+import { TransactionCard, type Transaction } from "./transaction-card"
+import {
+  TransactionFilter,
+  type TransactionFilterState,
+  type Preset,
+} from "./transaction-filter"
 import {
   StockForm,
   CashflowForm,
   BorrowForm,
   RepayForm,
 } from "./form"
+import { PlusIcon, ListFilter } from "lucide-react"
 
-import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import { Separator } from "@/components/ui/separator"
-
-type Preset = "1M" | "3M" | "6M" | "1Y" | "CUSTOM"
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 
 function getDateRangeFromPreset(preset: Preset) {
@@ -58,7 +57,7 @@ function getDateRangeFromPreset(preset: Preset) {
 
 const formConfig: Record<
   TransactionFormType,
-  { title: string; subtitle?: string; Component: React.ComponentType }
+  { title: string; subtitle?: string; Component: React.ComponentType<{ onSuccess?: () => void }> }
 > = {
   stock: {
     title: "Add Stock Trades",
@@ -86,21 +85,85 @@ export default function TransactionsPage() {
   const defaultPreset: Preset = "3M"
 
   const [preset, setPreset] = useState<Preset>(defaultPreset)
-
   const [customRange, setCustomRange] = useState(
     getDateRangeFromPreset(defaultPreset)
   )
+  const [filters, setFilters] = useState<TransactionFilterState>({
+    categories: [],
+    operation: null,
+    search: "",
+  })
+  const [refreshCounter, setRefreshCounter] = useState(0)
 
   const dateRange = useMemo(() => {
     if (preset === "CUSTOM") return customRange
     return getDateRangeFromPreset(preset)
   }, [preset, customRange])
 
-  const { data, error } = useTransactions(dateRange)
+  const startISO = useMemo(
+    () => startOfDay(dateRange.startDate).toISOString(),
+    [dateRange.startDate]
+  )
+  const endISO = useMemo(
+    () => endOfDay(dateRange.endDate).toISOString(),
+    [dateRange.endDate]
+  )
+
+  // Build a trailing query that applies date range and all active filters
+  const trailingQuery = useCallback(
+    (query: any) => {
+      query = query
+        .gte("created_at", startISO)
+        .lte("created_at", endISO)
+
+      if (filters.categories.length > 0) {
+        query = query.in("category", filters.categories)
+      }
+      if (filters.operation) {
+        query = query.eq("operation", filters.operation)
+      }
+      if (filters.search) {
+        query = query.ilike("memo", `%${filters.search}%`)
+      }
+
+      return query.order("created_at", { ascending: false })
+    },
+    [startISO, endISO, filters]
+  )
+
+  // When the trailing query shape changes, the store is recreated
+  const trailingQueryKey = useMemo(
+    () =>
+      JSON.stringify({
+        startISO,
+        endISO,
+        categories: filters.categories,
+        operation: filters.operation,
+        search: filters.search,
+        refreshCounter,
+      }),
+    [startISO, endISO, filters, refreshCounter]
+  )
+
+  const {
+    data: transactions,
+    count,
+    isSuccess,
+    isLoading,
+    isFetching,
+    error,
+    hasMore,
+    fetchNextPage,
+  } = useInfiniteQuery<Transaction>({
+    tableName: "tx_summary" as any,
+    columns: "*",
+    pageSize: 12,
+    trailingQuery,
+    trailingQueryKey,
+  })
 
   const [open, setOpen] = useState(false)
-  const [activeForm, setActiveForm] =
-    useState<TransactionFormType | null>(null)
+  const [activeForm, setActiveForm] = useState<TransactionFormType | null>(null)
 
   const handleOpenForm = (type: TransactionFormType) => {
     setActiveForm(type)
@@ -110,90 +173,119 @@ export default function TransactionsPage() {
   const currentConfig = activeForm ? formConfig[activeForm] : null
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex flex-col flex-1 min-h-0 w-8/10 mt-4 mx-auto gap-4">
+    <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
+      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
 
-        {error && (
-          <div className="text-sm text-red-500">
-            Error fetching transactions: {error.message}
-          </div>
-        )}
-
-        <DataTable columns={columns} data={data} >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <PlusIcon />
-                Transaction
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-[180px]">
-              <DropdownMenuItem onClick={() => handleOpenForm("stock")}>
-                Stock Event
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOpenForm("cashflow")}>
-                Cashflow Event
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOpenForm("borrow")}>
-                Borrow Event
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOpenForm("repay")}>
-                Repay Event
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {currentConfig && (
-            <FormDialogWrapper
-              open={open}
-              onOpenChange={(value) => {
-                setOpen(value)
-                if (!value) setActiveForm(null)
-              }}
-              title={currentConfig.title}
-              subtitle={currentConfig.subtitle}
-              FormComponent={currentConfig.Component}
+        {/* Filter card */}
+        <Card className="h-fit w-fit mx-auto">
+          <CardHeader>
+            <CardTitle>Filter</CardTitle>
+            <CardAction>
+              <ListFilter className="stroke-1" />
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <TransactionFilter
+              filters={filters}
+              onFiltersChange={setFilters}
+              preset={preset}
+              onPresetChange={setPreset}
+              customStartDate={customRange.startDate}
+              customEndDate={customRange.endDate}
+              onCustomStartDateChange={(date) =>
+                setCustomRange((prev) => ({
+                  ...prev,
+                  startDate: date ?? prev.startDate,
+                }))
+              }
+              onCustomEndDateChange={(date) =>
+                setCustomRange((prev) => ({
+                  ...prev,
+                  endDate: date ?? prev.endDate,
+                }))
+              }
             />
-          )}
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center gap-3">
-            <Select
-              value={preset}
-              onValueChange={(value) => setPreset(value as Preset)}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Preset" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1M">Last 1 month</SelectItem>
-                <SelectItem value="3M">Last 3 months</SelectItem>
-                <SelectItem value="6M">Last 6 months</SelectItem>
-                <SelectItem value="1Y">Last 1 year</SelectItem>
-                <SelectItem value="CUSTOM">Custom...</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Transaction list card */}
+        <Card className="sm:min-w-120">
+          <CardHeader>
+            <CardTitle>Transactions</CardTitle>
+            <CardDescription>
+              {isSuccess
+                ? `${count} transaction${count !== 1 ? "s" : ""} found`
+                : "Loading..."}
+            </CardDescription>
+            <CardAction>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="rounded-2xl">
+                    <PlusIcon />
+                    Transaction
+                  </Button>
+                </DropdownMenuTrigger>
 
-            {preset === "CUSTOM" && (
-              <DatePicker
-                dateFrom={customRange.startDate}
-                dateTo={customRange.endDate}
-                onDateFromChange={(date) =>
-                  setCustomRange((prev) => ({
-                    ...prev,
-                    startDate: date ?? prev.startDate,
-                  }))
-                }
-                onDateToChange={(date) =>
-                  setCustomRange((prev) => ({
-                    ...prev,
-                    endDate: date ?? prev.endDate,
-                  }))
-                }
-              />
-            )}
-          </div>
-        </DataTable>
+                <DropdownMenuContent align="end" className="w-[180px]">
+                  <DropdownMenuItem onClick={() => handleOpenForm("stock")}>
+                    Stock Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenForm("cashflow")}>
+                    Cashflow Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenForm("borrow")}>
+                    Borrow Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenForm("repay")}>
+                    Repay Event
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {currentConfig && (
+                <FormDialogWrapper
+                  open={open}
+                  onOpenChange={(value) => {
+                    setOpen(value)
+                    if (!value) setActiveForm(null)
+                  }}
+                  title={currentConfig.title}
+                  subtitle={currentConfig.subtitle}
+                  FormComponent={currentConfig.Component}
+                  onSuccess={() => setRefreshCounter((c) => c + 1)}
+                />
+              )}
+            </CardAction>
+          </CardHeader>
+
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              {/* Error banner */}
+              {error && (
+                <div className="text-sm text-red-500">
+                  Error fetching transactions: {error.message}
+                </div>
+              )}
+
+              {/* Infinite card list */}
+              <InfiniteList
+                hasMore={hasMore}
+                isFetching={isFetching}
+                isLoading={isLoading}
+                count={count}
+                fetchNextPage={fetchNextPage}
+              >
+                {transactions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {transactions.map((tx) => (
+                      <TransactionCard key={tx.id} transaction={tx} />
+                    ))}
+                  </div>
+                )}
+              </InfiniteList>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

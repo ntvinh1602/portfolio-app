@@ -14,7 +14,7 @@ import { mutate } from "swr"
 
 type FormValues = z.infer<typeof borrowSchema>
 
-export function BorrowForm() {
+export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
   const supabase = createClient()
   const [loading, setLoading] = React.useState(false)
 
@@ -39,6 +39,7 @@ export function BorrowForm() {
       } else {
         toast.success("Debt added")
         form.reset()
+        onSuccess?.()
       }
       
       await mutate(

@@ -7,7 +7,7 @@ import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import FlightForm from "@/app/flights/form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightCard, type Flight } from "./flight-card"
-import { InfiniteList } from "./infinite-list"
+import { InfiniteList } from "@/components/ui/infinite-list"
 import { FilterBar, type FilterState } from "./filter-bar"
 import {
   Card,

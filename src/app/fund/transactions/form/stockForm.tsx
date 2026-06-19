@@ -18,7 +18,7 @@ import { useAssetSearch } from "@/hooks/useAssetSearch"
 
 type FormValues = z.infer<typeof stockSchema>
 
-export function StockForm() {
+export function StockForm({ onSuccess }: { onSuccess?: () => void }) {
   const supabase = createClient()
   const [loading, setLoading] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -66,6 +66,7 @@ export function StockForm() {
           description: `${data.side.toUpperCase()} ${data.quantity} ${data.ticker} @ ${data.price}`,
         })
         form.reset()
+        onSuccess?.()
       }
       
       await mutate(
