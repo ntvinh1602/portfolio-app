@@ -1,29 +1,17 @@
-import { headers } from "next/headers"
-
-async function getBaseUrl() {
-  const h = await headers()
-  const host = h.get("host")!
-  const protocol =
-    process.env.NODE_ENV === "development"
-      ? "http"
-      : "https"
-
-  return `${protocol}://${host}`
-}
+import { supabaseAdmin } from "@/lib/supabase/admin"
+import { cacheLife, cacheTag } from "next/cache"
+import type { Dashboard } from "@/types/dashboard"
 
 export async function getDashboard() {
-  const baseUrl = await getBaseUrl()
+  'use cache'
+  cacheTag('dashboard', 'analytics')
+  cacheLife('days')
 
-  const res = await fetch(`${baseUrl}/api/dashboard`, {
-    next: {
-      tags: ["dashboard", "analytics"],
-      revalidate: 86400,
-    },
-  })
+  const { data, error } = await supabaseAdmin
+    .from("dashboard_data")
+    .select()
+    .single()
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch dashboard")
-  }
-
-  return res.json()
+  if (error) throw new Error(error.message)
+  return data as Dashboard
 }

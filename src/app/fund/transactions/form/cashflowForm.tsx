@@ -5,11 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useWatch, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import {
-  NumberField,
-  ComboboxField,
-  RadioGroupField
-} from "@/components/form/fields"
+import { NumberField } from "@/components/form/fields/number-field"
+import { ComboboxField } from "@/components/form/fields/combobox-field"
+import { RadioGroupField } from "@/components/form/fields/radiogroup-field"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"

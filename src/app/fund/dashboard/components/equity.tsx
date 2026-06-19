@@ -10,7 +10,6 @@ import {
   CardContent,  
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import {  } from "@/components/ui/chart"
 import { ChartConfig } from "@/components/ui/chart"
 import {
   Item,

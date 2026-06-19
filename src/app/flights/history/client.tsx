@@ -190,7 +190,10 @@ export default function FlightsCardsClient({
               fetchNextPage={fetchNextPage}
               renderEndMessage={renderEndMessage}
             >
-              <div className="grid gap-2">
+              <div
+                className="grid gap-2"
+                style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
+              >
                 {flights.map((flight, i) => (
                   <FlightCard
                     key={`${flight.flight_number}-${flight.departure_time}-${i}`}

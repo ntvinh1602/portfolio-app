@@ -7,12 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { createFlight } from "@/lib/server/flights"
 
-import {
-  TextField,
-  SelectField,
-  ComboboxField,
-  DateTimeField
-} from "@/components/form/fields"
+import { TextField } from "@/components/form/fields/text-field"
+import { SelectField } from "@/components/form/fields/select-field"
+import { ComboboxField } from "@/components/form/fields/combobox-field"
+import { DateTimeField } from "@/components/form/fields/datetime-field"
 import { Button } from "@/components/ui/button"
 import { FieldGroup, Field } from "@/components/ui/field"
 import { flightSchema } from "./schema"

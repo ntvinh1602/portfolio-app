@@ -86,18 +86,28 @@ export default function Page() {
   const { bsData, totalAssets, totalLiabilities, totalEquity } =
     useBalanceSheetData()
 
-  const assets = bsData.filter(
-    (r) => r.asset_class !== "equity" && r.asset_class !== "liability"
+  // Single pass to partition items and group assets by class
+  const { assets, liabilities, equities, groupedAssets } = bsData.reduce(
+    (acc, item) => {
+      if (item.asset_class === "equity") {
+        acc.equities.push(item)
+      } else if (item.asset_class === "liability") {
+        acc.liabilities.push(item)
+      } else {
+        acc.assets.push(item)
+        const key = item.asset_class
+        if (!acc.groupedAssets[key]) acc.groupedAssets[key] = []
+        acc.groupedAssets[key].push(item)
+      }
+      return acc
+    },
+    {
+      assets: [] as BSItem[],
+      liabilities: [] as BSItem[],
+      equities: [] as BSItem[],
+      groupedAssets: {} as Record<string, BSItem[]>,
+    }
   )
-  const liabilities = bsData.filter((r) => r.asset_class === "liability")
-  const equities = bsData.filter((r) => r.asset_class === "equity")
-
-  const groupedAssets = assets.reduce((acc, item) => {
-    const key = item.asset_class
-    if (!acc[key]) acc[key] = []
-    acc[key].push(item)
-    return acc
-  }, {} as Record<string, typeof assets>)
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">

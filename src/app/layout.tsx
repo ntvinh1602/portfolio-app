@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { Manrope } from "next/font/google"
 import "./globals.css"
-import "leaflet/dist/leaflet.css"
 import { cn } from "@/lib/utils"
 import { ClientLayout } from "@/components/client-layout"
 

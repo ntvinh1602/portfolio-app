@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { subMonths } from "date-fns"
 import { startOfDay, endOfDay } from "date-fns"
 
@@ -36,9 +36,7 @@ import { PlusIcon, ListFilter } from "lucide-react"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 
-function getDateRangeFromPreset(preset: Preset) {
-  const now = new Date()
-
+function getDateRangeFromPreset(preset: Preset, now: Date) {
   switch (preset) {
     case "1M":
       return { startDate: subMonths(now, 1), endDate: now }
@@ -82,10 +80,15 @@ const formConfig: Record<
 export default function TransactionsPage() {
   const defaultPreset: Preset = "3M"
 
+  // Defer Date.now()/new Date() to useEffect — cacheComponents requires
+  // deterministic values during server render.
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => { setNow(new Date()) }, [])
+
   const [preset, setPreset] = useState<Preset>(defaultPreset)
-  const [customRange, setCustomRange] = useState(
-    getDateRangeFromPreset(defaultPreset)
-  )
+  const [customRange, setCustomRange] = useState<{
+    startDate: Date; endDate: Date
+  } | null>(null)
   const [filters, setFilters] = useState<TransactionFilterState>({
     categories: [],
     operation: null,
@@ -93,10 +96,21 @@ export default function TransactionsPage() {
   })
   const [refreshCounter, setRefreshCounter] = useState(0)
 
+  // Once the client clock is available, initialise the date range
+  useEffect(() => {
+    if (now && !customRange) {
+      setCustomRange(getDateRangeFromPreset(defaultPreset, now))
+    }
+  }, [now, customRange])
+
+  // Fallback range used during SSR — the real range kicks in after hydration
+  // and the useInfiniteQuery store is recreated via trailingQueryKey change.
+  const fallbackRange = { startDate: new Date(0), endDate: new Date(0) }
   const dateRange = useMemo(() => {
+    if (!customRange) return fallbackRange
     if (preset === "CUSTOM") return customRange
-    return getDateRangeFromPreset(preset)
-  }, [preset, customRange])
+    return getDateRangeFromPreset(preset, now ?? new Date())
+  }, [preset, customRange, now])
 
   const startISO = useMemo(
     () => startOfDay(dateRange.startDate).toISOString(),
@@ -188,19 +202,19 @@ export default function TransactionsPage() {
               onFiltersChange={setFilters}
               preset={preset}
               onPresetChange={setPreset}
-              customStartDate={customRange.startDate}
-              customEndDate={customRange.endDate}
+              customStartDate={customRange?.startDate ?? new Date(0)}
+              customEndDate={customRange?.endDate ?? new Date(0)}
               onCustomStartDateChange={(date) =>
-                setCustomRange((prev) => ({
-                  ...prev,
-                  startDate: date ?? prev.startDate,
-                }))
+                setCustomRange((prev) => {
+                  const base = prev ?? { startDate: new Date(0), endDate: new Date(0) }
+                  return { ...base, startDate: date ?? base.startDate }
+                })
               }
               onCustomEndDateChange={(date) =>
-                setCustomRange((prev) => ({
-                  ...prev,
-                  endDate: date ?? prev.endDate,
-                }))
+                setCustomRange((prev) => {
+                  const base = prev ?? { startDate: new Date(0), endDate: new Date(0) }
+                  return { ...base, endDate: date ?? base.endDate }
+                })
               }
             />
           </CardContent>
@@ -274,7 +288,10 @@ export default function TransactionsPage() {
                 fetchNextPage={fetchNextPage}
               >
                 {transactions.length > 0 && (
-                  <div className="flex flex-col gap-2">
+                  <div
+                    className="flex flex-col gap-2"
+                    style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
+                  >
                     {transactions.map((tx) => (
                       <TransactionCard key={tx.id} transaction={tx} />
                     ))}

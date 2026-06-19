@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import {
   Select,
   SelectContent,
@@ -11,7 +12,7 @@ const ALL_TIME_LABEL = "All Time"
 
 export function YearPicker({
   startYear = 2000,
-  endYear = new Date().getFullYear(),
+  endYear,
   value,
   onChange,
 }: {
@@ -20,8 +21,13 @@ export function YearPicker({
   value?: number
   onChange?: (value: number) => void
 }) {
+  // Defer Date.now() to useEffect — cacheComponents requires deterministic
+  // values during server render.
+  const [endYearState, setEndYearState] = useState(0)
+  useEffect(() => { setEndYearState(new Date().getFullYear()) }, [])
+  const finalEndYear = endYear ?? endYearState
   const years = Array.from(
-    { length: endYear - startYear + 1 },
+    { length: finalEndYear - startYear + 1 },
     (_, i) => startYear + i
   )
 

@@ -5,40 +5,57 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// --- Cached Intl.NumberFormat instances ---
+// Creating Intl.NumberFormat is expensive — cache by config key to avoid
+// re-instantiating on every call (these are called on every render tick).
+
+const formatCache = new Map<string, Intl.NumberFormat>()
+const compactFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  compactDisplay: "short",
+})
+
+function getFormatter(fractionDigits: number): Intl.NumberFormat {
+  const key = `fd:${fractionDigits}`
+  let fmt = formatCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    })
+    formatCache.set(key, fmt)
+  }
+  return fmt
+}
+
 // Format number based on currency and decimal places
 export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
   if (currency) {
-    const options = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-    }).resolvedOptions()
+    const cacheKey = `cur:${currency}:${fractionDigits}`
+    let currencyFmt = formatCache.get(cacheKey)
+    if (!currencyFmt) {
+      // Resolve the minimum fraction digits for this currency
+      const resolvedFractionDigits = fractionDigits > 0
+        ? fractionDigits
+        : new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+          }).resolvedOptions().minimumFractionDigits
 
-    const finalFractionDigits = fractionDigits > 0
-      ? fractionDigits
-      : options.minimumFractionDigits
+      currencyFmt = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: resolvedFractionDigits,
+        maximumFractionDigits: resolvedFractionDigits,
+      })
+      formatCache.set(cacheKey, currencyFmt)
+    }
 
-    const formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: finalFractionDigits,
-      maximumFractionDigits: finalFractionDigits,
-    })
-
-    return `${formatter.format(amount)} ${currency}`
+    return `${currencyFmt.format(amount)} ${currency}`
   }
 
-  const formatter = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  })
-
-  return formatter.format(amount)
+  return getFormatter(fractionDigits).format(amount)
 }
 
 // Compact number format (10K, 10M etc.)
 export function compactNum(amount: number) {
-  const formatted = new Intl.NumberFormat("en-US", {
-      notation: "compact",
-      compactDisplay: "short",
-    }).format(amount)
-
-  return formatted
+  return compactFormatter.format(amount)
 }

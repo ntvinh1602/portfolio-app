@@ -7,12 +7,11 @@ import {
   CardTitle,
   CardAction,
   CardDescription,
-  CardContent,  
+  CardContent,
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import {  } from "@/components/ui/chart"
-import { ChartConfig } from "@/components/ui/chart"
 import { useState, useEffect } from "react"
+import { ChartConfig } from "@/components/ui/chart"
 import {
   Item,
   ItemContent,
@@ -55,23 +54,26 @@ export function ReturnChart({
   inceptionDate
 }: ReturnChartProps) {
 
+  // Compute CAGR from a ticking "now" that refreshes every minute.
+  // Use state + effect (not Date.now() during render) to keep the server
+  // and client renders deterministic — cacheComponents requires this.
   const start = new Date(inceptionDate).getTime()
   const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
     setNow(Date.now())
-    const interval = setInterval(() => {
-      setNow(Date.now())
-    }, 60_000)
-
+    const interval = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(interval)
   }, [])
-  const years = ((now ?? Date.now()) - start) / (1000 * 60 * 60 * 24 * 365.25)
+
+  const years = now !== null
+    ? (now - start) / (1000 * 60 * 60 * 24 * 365.25)
+    : 0
 
   const cagr = years > 0
     ? (Math.pow(1 + twrAll, 1 / years) - 1) * 100
     : 0
-  
+
   const xAxisTickFormatter = (value: string) => {
     const date = parseISO(value)
     if (isNaN(date.getTime())) return value // handles cases like "2023" or "2023-Q1"

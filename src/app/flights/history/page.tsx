@@ -1,9 +1,20 @@
+import { Suspense } from "react"
 import FlightsCardsClient from "./client"
 import { createClient } from "@/lib/supabase/server"
 
-export const dynamic = "force-dynamic"
+export default function FlightsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading flights...</p>
+      </div>
+    }>
+      <FlightsContent />
+    </Suspense>
+  )
+}
 
-export default async function FlightsCardsPage() {
+async function FlightsContent() {
   const supabase = await createClient()
 
   const [

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
   env: {},
   allowedDevOrigins: ['192.168.100.5'],

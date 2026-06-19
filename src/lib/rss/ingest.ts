@@ -2,8 +2,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NEWS_SOURCES } from "./sources"
 import { NormalizedArticle } from "./sources"
 
+const TICKER_RE = /(?<!\.)\b[A-Z]{3}\b/g
+
 function extractTickers(text: string): string[] {
-  const matches = text.match(/(?<!\.)\b[A-Z]{3}\b/g)
+  const matches = text.match(TICKER_RE)
   if (!matches) return []
   return [...new Set(matches)]
 }

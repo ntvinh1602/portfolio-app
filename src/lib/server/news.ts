@@ -1,33 +1,46 @@
-import { headers } from "next/headers"
-
-async function getBaseUrl() {
-  const h = await headers()
-  const host = h.get("host")!
-  const protocol =
-    process.env.NODE_ENV === "development"
-      ? "http"
-      : "https"
-
-  return `${protocol}://${host}`
-}
+import { supabaseAdmin } from "@/lib/supabase/admin"
+import { cacheLife, cacheTag } from "next/cache"
+import type { NewsArticle } from "@/types/news"
 
 export async function getNews() {
-  const baseUrl = await getBaseUrl()
+  'use cache'
+  cacheTag('news')
+  cacheLife('days')
 
-  const res = await fetch(`${baseUrl}/api/news`, 
-    process.env.NODE_ENV === "development"
-      ? { cache: "no-store" }
-      : {
-          next: {
-            tags: ["news"],
-            revalidate: 86400,
-          },
-        }
-  )
+  const oneWeekAgo = new Date()
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch news")
+  const { data, error } = await supabaseAdmin
+    .from("news_articles")
+    .select(`
+      id,
+      title,
+      url,
+      source,
+      excerpt,
+      published_at,
+      created_at,
+      news_article_assets (
+        assets (
+          ticker
+        )
+      )
+    `)
+    .gte("published_at", oneWeekAgo.toISOString())
+    .order("published_at", { ascending: false })
+
+  if (error) {
+    console.error("NEWS FETCH ERROR:", error)
+    throw new Error(error.message)
   }
 
-  return res.json()
+  return (
+    data?.map((article) => ({
+      ...article,
+      tickers:
+        article.news_article_assets
+          ?.map((rel: any) => rel.assets?.ticker)
+          .filter((t: any): t is string => Boolean(t)) ?? [],
+    })) ?? []
+  ) as NewsArticle[]
 }

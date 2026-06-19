@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Card,
   CardHeader,
@@ -10,7 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistance } from "date-fns"
 import {
   ToggleGroup,
   ToggleGroupItem
@@ -34,6 +34,13 @@ export function NewsWidget({
 }: NewsWidgetProps) {
 
   const [filter, setFilter] = useState<"all" | "related">("all")
+  const [now, setNow] = useState<Date | null>(null)
+
+  useEffect(() => {
+    setNow(new Date())
+    const interval = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Create a fast lookup set of holding tickers
   const holdingTickers = useMemo(() => {
@@ -112,9 +119,7 @@ export function NewsWidget({
                     <ItemTitle>{article.title}</ItemTitle>
                     <ItemDescription className="text-xs">
                       
-                      {article.source} - {formatDistanceToNow(new Date(article.published_at), {
-                        addSuffix: true,
-                      })}
+                      {article.source} - {now ? formatDistance(new Date(article.published_at), now, { addSuffix: true }) : ""}
                     </ItemDescription>
                   </ItemContent>
                 </Item>
