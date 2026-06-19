@@ -12,10 +12,15 @@ import {
   Item,
   ItemContent,
   ItemDescription,
-  ItemGroup,
   ItemMedia,
   ItemTitle
 } from "@/components/ui/item"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 
@@ -58,7 +63,7 @@ export default function FlightsPage() {
         icon: TicketsPlane
       },
       {
-        title: "Total Distance (km)",
+        title: "Total Distance",
         figure: Math.round(totalDistance ?? 0),
         icon: Route,
       },
@@ -88,23 +93,39 @@ export default function FlightsPage() {
 
   return (
     <div className="flex flex-col h-full gap-4 px-4 pb-4">
-      <ItemGroup className="grid grid-cols-1 xl:grid-cols-5">
-        {stats.map((stat) => (
-          <Item variant="muted" key={stat.title}>
-            <ItemMedia variant="icon">
-              <stat.icon />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle className="text-2xl">
-                {formatNum(stat.figure ?? 0)}
-              </ItemTitle>
-              <ItemDescription>{stat.title}</ItemDescription>
-            </ItemContent>
-          </Item>          
-        ))}
-      </ItemGroup>
-
-      <div className="relative h-full rounded-xl overflow-hidden border backdrop-blur-sm shadow-[0_0_20px_oklch(from_var(--ring)_l_c_h_/0.15)]">
+      <Carousel
+        opts={{
+          align: "start",
+          loop: true,
+        }}
+        plugins={[
+          Autoplay({
+            delay: 2000,
+          }),
+        ]}
+      >
+        <CarouselContent>
+          {stats.map((stat) => (
+            <CarouselItem
+              key={stat.title}
+              className="sm:basis-1/2 md:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
+            >
+              <Item variant="muted">
+                <ItemMedia variant="icon">
+                  <stat.icon />
+                </ItemMedia>
+                <ItemContent> 
+                  <ItemTitle className="text-2xl">
+                    {formatNum(stat.figure ?? 0)}
+                  </ItemTitle>
+                  <ItemDescription>{stat.title}</ItemDescription>
+                </ItemContent>
+              </Item>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      <div className="relative h-full rounded-2xl overflow-hidden border">
         <LeafletMap routes={routes} airports={airports} />
       </div>
     </div>
