@@ -125,7 +125,7 @@ export default function FlightsPage() {
           ))}
         </CarouselContent>
       </Carousel>
-      <div className="relative h-full rounded-2xl overflow-hidden border">
+      <div className="relative h-full rounded-2xl overflow-hidden border isolate">
         <LeafletMap routes={routes} airports={airports} />
       </div>
     </div>
