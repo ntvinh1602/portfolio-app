@@ -33,7 +33,7 @@ interface TransactionFilterProps {
   onCustomEndDateChange: (date: Date | undefined) => void
 }
 
-export function TransactionFilter({
+export function TxnFilter({
   filters,
   onFiltersChange,
   preset,

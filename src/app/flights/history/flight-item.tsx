@@ -63,7 +63,7 @@ interface FlightCardProps {
   airportNames: Map<string, string> // IATA code → full name
 }
 
-export function FlightCard({ flight, airportNames }: FlightCardProps) {
+export function FlightItem({ flight, airportNames }: FlightCardProps) {
   const depName = airportNames.get(flight.departure_airport) ?? flight.departure_airport
   const arrName = airportNames.get(flight.arrival_airport) ?? flight.arrival_airport
 

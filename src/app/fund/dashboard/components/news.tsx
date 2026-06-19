@@ -101,7 +101,7 @@ export function NewsWidget({
                   key={article.id}
                   variant="muted"
                   size="xs"
-                  className="cursor-pointer hover:border-ring transition-colors"
+                  className="cursor-pointer hover:bg-accent transition-colors"
                   onClick={() => window.open(article.url, "_blank")}
                 >
                   <ItemMedia className="flex flex-col gap-1 min-w-10">

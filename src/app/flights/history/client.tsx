@@ -4,11 +4,11 @@ import { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import FlightForm from "@/app/flights/form/flightsForm"
+import FlightForm from "./form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
-import { FlightCard, type Flight } from "./flight-card"
+import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
-import { FilterBar, type FilterState } from "./filter-bar"
+import { FlightFilter, type FilterState } from "./flight-filter"
 import {
   Card,
   CardAction,
@@ -142,7 +142,7 @@ export default function FlightsCardsClient({
             </CardAction>
           </CardHeader>
           <CardContent>
-            <FilterBar
+            <FlightFilter
               filters={filters}
               onFiltersChange={setFilters}
               airlineOptions={airlineOptions}
@@ -195,7 +195,7 @@ export default function FlightsCardsClient({
                 style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
               >
                 {flights.map((flight, i) => (
-                  <FlightCard
+                  <FlightItem
                     key={`${flight.flight_number}-${flight.departure_time}-${i}`}
                     flight={flight}
                     airportNames={airportNames}

@@ -32,7 +32,7 @@ interface FilterBarProps {
   availableYears: string[]
 }
 
-export function FilterBar({
+export function FlightFilter({
   filters,
   onFiltersChange,
   airlineOptions,

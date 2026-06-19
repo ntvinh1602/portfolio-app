@@ -22,12 +22,12 @@ import {
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import { InfiniteList } from "@/components/infinite-list"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
-import { TransactionCard, type Transaction } from "./transaction-card"
+import { TxnItem, type Transaction } from "./txn-item"
 import {
-  TransactionFilter,
+  TxnFilter,
   type TransactionFilterState,
   type Preset,
-} from "./transaction-filter"
+} from "./txn-filter"
 import { StockForm } from "./form/stockForm"
 import { CashflowForm } from "./form/cashflowForm"
 import { BorrowForm } from "./form/borrowForm"
@@ -197,7 +197,7 @@ export default function TransactionsPage() {
             </CardAction>
           </CardHeader>
           <CardContent>
-            <TransactionFilter
+            <TxnFilter
               filters={filters}
               onFiltersChange={setFilters}
               preset={preset}
@@ -233,8 +233,7 @@ export default function TransactionsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="rounded-2xl">
-                    <PlusIcon />
-                    Transaction
+                    <PlusIcon />Add Event
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -293,7 +292,7 @@ export default function TransactionsPage() {
                     style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
                   >
                     {transactions.map((tx) => (
-                      <TransactionCard key={tx.id} transaction={tx} />
+                      <TxnItem key={tx.id} transaction={tx} />
                     ))}
                   </div>
                 )}

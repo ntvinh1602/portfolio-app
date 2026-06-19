@@ -54,6 +54,7 @@ function Asset({
           width={44}
           height={44}
           className="object-cover"
+          loading="eager"
         />
       </ItemMedia>
       <ItemContent className="min-w-0">

@@ -24,7 +24,7 @@ interface TransactionCardProps {
   transaction: Transaction
 }
 
-export function TransactionCard({ transaction }: TransactionCardProps) {
+export function TxnItem({ transaction }: TransactionCardProps) {
   const operationConfig = operation.find((o) => o.value === transaction.operation)
   const OperationIcon = operationConfig?.icon
 

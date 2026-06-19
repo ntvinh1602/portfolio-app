@@ -1,5 +1,5 @@
 "use server"
-import type { FlightFormValues } from "@/app/flights/form/flightsForm"
+import type { FlightFormValues } from "@/app/flights/history/form/flightsForm"
 import { createClient } from "@/lib/supabase/server"
 
 export async function createFlight(values: FlightFormValues) {
