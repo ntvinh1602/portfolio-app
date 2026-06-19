@@ -78,8 +78,8 @@ export function EquityChart({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {pnlMtd < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{compactNum(Math.abs(pnlMtd))}
                 </ItemTitle>
                 <ItemDescription className="text-xs">this month</ItemDescription>
@@ -89,8 +89,8 @@ export function EquityChart({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {pnlMtd < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{compactNum(Math.abs(pnlYtd))}</ItemTitle>
                 <ItemDescription className="text-xs">this year</ItemDescription>
               </ItemContent>

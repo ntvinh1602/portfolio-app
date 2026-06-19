@@ -33,6 +33,7 @@ import { CashflowForm } from "./form/cashflowForm"
 import { BorrowForm } from "./form/borrowForm"
 import { RepayForm } from "./form/repayForm"
 import { PlusIcon, ListFilter } from "lucide-react"
+import { ItemGroup } from "@/components/ui/item"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 
@@ -273,7 +274,7 @@ export default function TransactionsPage() {
             <div className="flex flex-col gap-4">
               {/* Error banner */}
               {error && (
-                <div className="text-sm text-red-500">
+                <div className="text-sm text-destructive">
                   Error fetching transactions: {error.message}
                 </div>
               )}
@@ -291,9 +292,11 @@ export default function TransactionsPage() {
                     className="flex flex-col gap-2"
                     style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
                   >
-                    {transactions.map((tx) => (
-                      <TxnItem key={tx.id} transaction={tx} />
-                    ))}
+                    <ItemGroup>
+                      {transactions.map((tx) => (
+                        <TxnItem key={tx.id} transaction={tx} />
+                      ))}
+                    </ItemGroup>
                   </div>
                 )}
               </InfiniteList>

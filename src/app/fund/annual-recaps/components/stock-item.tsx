@@ -33,8 +33,8 @@ export function Asset({
       <ItemContent>
         <ItemTitle>
           {totalAmount !== null && totalAmount < 0
-            ? <TrendingDown className="text-red-700 size-4" />
-            : <TrendingUp className="text-green-500 size-4" />
+            ? <TrendingDown className="text-destructive size-4" />
+            : <TrendingUp className="text-primary size-4" />
           }
           {formatNum(totalAmount)}
         </ItemTitle>

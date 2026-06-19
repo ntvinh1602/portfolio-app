@@ -10,6 +10,7 @@ import {
   ItemTitle,
   ItemDescription,
   ItemFooter,
+  ItemSeparator,
 } from "@/components/ui/item"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
@@ -100,8 +101,9 @@ export function FlightItem({ flight, airportNames }: FlightCardProps) {
         </ItemDescription>
       </ItemContent>
 
-      {/* ---- Detail tags ---- */}
-      <ItemFooter className="border-t pt-4">
+      <ItemSeparator/>
+      
+      <ItemFooter>
         <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center">
           <Badge variant="secondary">
             <Tag /> {flight.flight_number}

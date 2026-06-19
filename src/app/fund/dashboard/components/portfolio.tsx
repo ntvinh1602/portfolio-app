@@ -72,7 +72,7 @@ function Asset({
         <ItemDescription
           className={cn(
             "flex items-center gap-1 text-xs",
-            isPositive ? "text-green-600" : "text-red-600"
+            isPositive ? "text-primary" : "text-destructive"
           )}
         >
           {!isMobile ? (

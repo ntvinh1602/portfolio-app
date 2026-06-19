@@ -64,8 +64,8 @@ export function ProfitChart({
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
               {avgProfit < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
+                ? <TrendingDown className="text-destructive" />
+                : <TrendingUp className="text-primary" />
               }
               {compactNum(Math.abs(avgProfit))}
             </div>
@@ -78,8 +78,8 @@ export function ProfitChart({
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
               {avgExpense < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
+                ? <TrendingDown className="text-destructive" />
+                : <TrendingUp className="text-primary" />
               }
               {compactNum(Math.abs(avgExpense))}
             </div>

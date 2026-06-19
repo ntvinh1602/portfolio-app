@@ -62,8 +62,8 @@ export function NetProfit({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {avgProfit < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{compactNum(Math.abs(avgProfit))}
                 </ItemTitle>
                 <ItemDescription className="text-xs">avg. profit</ItemDescription>
@@ -73,8 +73,8 @@ export function NetProfit({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {avgExpense < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{compactNum(Math.abs(avgExpense))}
                 </ItemTitle>
                 <ItemDescription className="text-xs">avg. cost</ItemDescription>

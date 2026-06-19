@@ -4,11 +4,11 @@ import "./globals.css"
 import { cn } from "@/lib/utils"
 import { ClientLayout } from "@/components/client-layout"
 
-const figtree = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
+const manrope = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Portfolio Tracker",
-  description: "Double-entry accounting portfolio tracking app.",
+  title: "Master Portfolio",
+  description: "A personal finance dashboard for tracking investments — plus a flight log for travel history",
   
   // Disable indexing for search engines
   robots: {
@@ -26,15 +26,11 @@ export const metadata: Metadata = {
   },
 }
 
-
 export default function RootLayout({ children }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full", "font-sans", figtree.variable)} suppressHydrationWarning
-    >
+    <html lang="en" className={cn("font-sans", manrope.variable)}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -58,7 +54,7 @@ export default function RootLayout({ children }: Readonly<{
           }}
         />
       </head>
-      <body className="antialiased bg-fixed">
+      <body className="antialiased text-foreground">
         <ClientLayout>
           {children}
         </ClientLayout>

@@ -18,6 +18,7 @@ import {
   CardTitle
 } from "@/components/ui/card"
 import { ListFilter, PlusIcon } from "lucide-react"
+import { ItemGroup } from "@/components/ui/item"
 
 interface FlightsCardsClientProps {
   airlines: { id: string; name: string }[]
@@ -194,13 +195,15 @@ export default function FlightsCardsClient({
                 className="grid gap-2"
                 style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
               >
-                {flights.map((flight, i) => (
-                  <FlightItem
-                    key={`${flight.flight_number}-${flight.departure_time}-${i}`}
-                    flight={flight}
-                    airportNames={airportNames}
-                  />
-                ))}
+                <ItemGroup>
+                  {flights.map((flight, i) => (
+                    <FlightItem
+                      key={`${flight.flight_number}-${flight.departure_time}-${i}`}
+                      flight={flight}
+                      airportNames={airportNames}
+                    />
+                  ))}
+                </ItemGroup>
               </div>
             </InfiniteList>
           </CardContent>

@@ -30,15 +30,15 @@ export function TxnItem({ transaction }: TransactionCardProps) {
 
   return (
     <Item variant="outline" size="sm">
-      <ItemMedia variant="image" className="border">
-        {OperationIcon && <OperationIcon className="stroke-1 size-4"/>}
+      <ItemMedia variant="icon">
+        {OperationIcon && <OperationIcon/>}
       </ItemMedia>
 
-      <ItemContent className="min-w-0">
+      <ItemContent>
         <ItemTitle>
           {transaction.memo}
         </ItemTitle>
-        <ItemDescription>
+        <ItemDescription className="text-xs">
           {format(new Date(transaction.created_at), "yyyy-MM-dd HH:mm")}
         </ItemDescription>
       </ItemContent>
@@ -47,7 +47,7 @@ export function TxnItem({ transaction }: TransactionCardProps) {
         <ItemTitle>
           {formatNum(transaction.value)}
         </ItemTitle>
-        <ItemDescription>
+        <ItemDescription className="text-xs">
           {operationConfig?.label ?? transaction.operation}
         </ItemDescription>
       </ItemContent>

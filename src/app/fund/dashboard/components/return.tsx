@@ -100,8 +100,8 @@ export function ReturnChart({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {twrAll < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{`${formatNum(Math.abs(twrAll * 100), 1)}%`}
                 </ItemTitle>
                 <ItemDescription className="text-xs">all time</ItemDescription>
@@ -111,8 +111,8 @@ export function ReturnChart({
               <ItemContent className="items-end">
                 <ItemTitle>
                   {cagr < 0
-                    ? <TrendingDown className="text-red-700 size-3" />
-                    : <TrendingUp className="text-green-500 size-3" />
+                    ? <TrendingDown className="text-destructive size-4" />
+                    : <TrendingUp className="text-primary size-4" />
                   }{`${formatNum(Math.abs(cagr), 1)}%`}
                 </ItemTitle>
                 <ItemDescription className="text-xs">annualized</ItemDescription>

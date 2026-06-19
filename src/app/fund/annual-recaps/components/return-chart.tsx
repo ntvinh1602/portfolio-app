@@ -64,8 +64,8 @@ export function ReturnChart({
             <CardDescription>Equity Return</CardDescription>
             <CardTitle className="flex items-center text-xl font-light gap-1">
               {equityReturn < 0
-                ? <TrendingDown className="text-red-700 h-6 w-6" />
-                : <TrendingUp className="text-green-500 h-6 w-6" />
+                ? <TrendingDown className="text-destructive h-6 w-6" />
+                : <TrendingUp className="text-primary h-6 w-6" />
               }
               <span className="tabular-nums">
                 {formatNum(Math.abs(equityReturn), 1)}%
@@ -80,8 +80,8 @@ export function ReturnChart({
             <CardDescription>VN-Index</CardDescription>
             <CardTitle className="flex items-center text-xl font-light gap-1">
               {vnIndexReturn < 0
-                ? <TrendingDown className="text-red-700 h-6 w-6" />
-                : <TrendingUp className="text-green-500 h-6 w-6" />
+                ? <TrendingDown className="text-destructive h-6 w-6" />
+                : <TrendingUp className="text-primary h-6 w-6" />
               }
               <span className="tabular-nums">
                 {formatNum(Math.abs(vnIndexReturn), 1)}%
