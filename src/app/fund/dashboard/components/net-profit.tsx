@@ -10,8 +10,14 @@ import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
-import { Separator } from "@/components/ui/separator"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle
+} from "@/components/ui/item"
 
 interface ProfitChartPoint {
   snapshot_date: string
@@ -43,40 +49,38 @@ export function NetProfit({
   chartData
 }: NetProfitProps) {
   return (
-    <Card className="flex flex-col gap-0">
-      <CardHeader className="flex-col gap-1 items-center">
+    <Card>
+      <CardHeader>
         <CardDescription>Net Profit</CardDescription>
-        <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl">
-            {formatNum(totalPnL)}
-          </CardTitle>
-          <CardDescription>last 1y</CardDescription>
-        </div>
-        <CardAction className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {avgProfit < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {compactNum(Math.abs(avgProfit))}
-            </div>
-            <CardDescription className="text-xs">avg. profit</CardDescription>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {avgExpense < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {compactNum(Math.abs(avgExpense))}
-            </div>
-            <CardDescription className="text-xs">avg. cost</CardDescription>
-          </div>
+        <CardTitle className="text-xl sm:text-2xl flex gap-1 items-baseline">
+          {formatNum(totalPnL)}
+          <span className="text-sm text-muted-foreground">last 1y</span>
+        </CardTitle>
+        <CardAction>
+          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {avgProfit < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{compactNum(Math.abs(avgProfit))}
+                </ItemTitle>
+                <ItemDescription className="text-xs">avg. profit</ItemDescription>
+              </ItemContent>
+            </Item>
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {avgExpense < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{compactNum(Math.abs(avgExpense))}
+                </ItemTitle>
+                <ItemDescription className="text-xs">avg. cost</ItemDescription>
+              </ItemContent>
+            </Item>
+          </ItemGroup>
         </CardAction>
       </CardHeader>
 

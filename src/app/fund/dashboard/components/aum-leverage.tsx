@@ -2,12 +2,14 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardAction,
-  CardContent,  
+  CardContent,
+  CardDescription,
+  CardAction,  
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
-import { compactNum, formatNum } from "@/lib/utils"
+import { formatNum } from "@/lib/utils"
+import { GaugeCircle, Wallet } from "lucide-react"
 
 interface AssetBreakdown {
   cash: number
@@ -102,40 +104,52 @@ export function AssetCard({
   ].filter((d) => d.allocation > 0)
 
   return (
-    <Card className="flex flex-col gap-4">
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Allocation</CardTitle>
-      </CardHeader>
+    <div className="grid grid-cols-2 gap-4">
+      <Card>
+        <CardHeader>
+          <CardDescription>Total AUM</CardDescription>
+          <CardTitle className="text-base sm:text-xl">{formatNum(totalAssets)}</CardTitle>
+          <CardAction>
+            <Wallet className="stroke-1"/>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <Piechart
+            data={assetChartData}
+            chartConfig={assetChartCfg}
+            dataKey="allocation"
+            nameKey="asset"
+            className="w-full max-h-50"
+            innerRadius={innerRadius}
+            legend="right"
+            margin_tb={0}
+            valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardDescription>Leverage</CardDescription>
+          <CardTitle className="text-base sm:text-xl">{leverage}</CardTitle>
+          <CardAction>
+            <GaugeCircle className="stroke-1"/>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <Piechart
+            data={liabilityChartData}
+            chartConfig={liabilityChartCfg}
+            dataKey="allocation"
+            nameKey="liability"
+            className="w-full max-h-50"
+            innerRadius={innerRadius}
+            legend="right"
+            margin_tb={0}
+            valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
+          />
+        </CardContent>
+      </Card>
+    </div>
 
-      <CardContent className="grid grid-cols-2 gap-4 h-full">
-        <Piechart
-          data={assetChartData}
-          chartConfig={assetChartCfg}
-          dataKey="allocation"
-          nameKey="asset"
-          className="w-full max-h-50"
-          innerRadius={innerRadius}
-          legend="bottom"
-          margin_tb={0}
-          centerText="Total AUM"
-          centerValue={compactNum(totalAssets)}
-          valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
-        />
-
-        <Piechart
-          data={liabilityChartData}
-          chartConfig={liabilityChartCfg}
-          dataKey="allocation"
-          nameKey="liability"
-          className="w-full max-h-50"
-          innerRadius={innerRadius}
-          legend="bottom"
-          margin_tb={0}
-          centerText="Leverage"
-          centerValue={leverage}
-          valueFormatter={(v) => `${formatNum((v / totalAssets) * 100, 1)}%`}
-        />
-      </CardContent>
-    </Card>
   )
 }

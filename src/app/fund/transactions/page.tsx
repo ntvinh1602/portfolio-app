@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import { InfiniteList } from "@/components/ui/infinite-list"
+import { InfiniteList } from "@/components/infinite-list"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { TransactionCard, type Transaction } from "./transaction-card"
 import {
@@ -28,12 +28,10 @@ import {
   type TransactionFilterState,
   type Preset,
 } from "./transaction-filter"
-import {
-  StockForm,
-  CashflowForm,
-  BorrowForm,
-  RepayForm,
-} from "./form"
+import { StockForm } from "./form/stockForm"
+import { CashflowForm } from "./form/cashflowForm"
+import { BorrowForm } from "./form/borrowForm"
+import { RepayForm } from "./form/repayForm"
 import { PlusIcon, ListFilter } from "lucide-react"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"

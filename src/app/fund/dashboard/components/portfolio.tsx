@@ -15,7 +15,7 @@ import {
 import Image from "next/image"
 import { formatNum, compactNum, cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { RefreshButton } from "./primitive/refresh-button"
+import { RefreshButton } from "./refresh-button"
 
 interface StockItem {
   ticker: string

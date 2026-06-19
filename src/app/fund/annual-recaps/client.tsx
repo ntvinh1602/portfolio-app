@@ -1,23 +1,19 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import {
-  YearPicker,
-  ProfitChart,
-  ExpenseChart,
-  TopStocks,
-  Cashflow,
-  ReturnChart,
-} from "./components"
+import { YearPicker } from "./components/year-picker"
+import { ProfitChart } from "./components/profit-chart"
+import { ExpenseChart } from "./components/expense-chart"
+import { TopStocks } from "./components/top-stocks"
+import { Cashflow } from "./components/cashflow"
+import { ReturnChart } from "./components/return-chart"
 import type { Recaps } from "@/types/recaps"
 
 export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
   const [year, setYear] = useState(new Date().getFullYear())
-
   const yearMap = useMemo( () => Object.fromEntries(recaps.map(d => [d.year, d])), [recaps] )
   const yearData = yearMap[year]
   const startYear = recaps[0].year
-
   if (!yearData) return null
 
   return (
@@ -34,7 +30,7 @@ export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
             stockData={yearData.stock_pnl}
           />
         </div>
-        
+
         <div className="flex flex-col flex-1 gap-4">
           <ProfitChart
             year={year}
@@ -56,7 +52,6 @@ export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
             deposits={yearData.deposits}
             withdrawals={yearData.withdrawals}
           />
-
           <ExpenseChart profitChart={yearData.profit_chart} />
         </div>
       </div>

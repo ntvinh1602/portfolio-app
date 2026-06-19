@@ -11,10 +11,15 @@ import {
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import {  } from "@/components/ui/chart"
-import { Separator } from "@/components/ui/separator"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ChartConfig } from "@/components/ui/chart"
 import { useState, useEffect } from "react"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle
+} from "@/components/ui/item"
 
 interface ReturnChartPoint {
   snapshot_date: string
@@ -25,7 +30,6 @@ interface ReturnChartPoint {
 
 interface ReturnChartProps {
   dateRange: string
-  onDateRangeChange: (range: string) => void
   chartData: ReturnChartPoint[]
   twrYtd: number
   twrAll: number
@@ -45,7 +49,6 @@ const returnChartConfig: ChartConfig = {
 
 export function ReturnChart({
   dateRange,
-  onDateRangeChange,
   chartData,
   twrYtd,
   twrAll,
@@ -82,57 +85,42 @@ export function ReturnChart({
   }
 
   return (
-    <Card className="flex flex-col gap-0">
-      <CardHeader className="flex-col gap-1 items-center">
+    <Card>
+      <CardHeader>
         <CardDescription>Return</CardDescription>
-        <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl">
-            {`${formatNum(twrYtd * 100, 1)}%`}
-          </CardTitle>
-          <CardDescription>this year</CardDescription>
-        </div>
-        <CardAction className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
-              {twrAll < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {`${formatNum(Math.abs(twrAll * 100), 1)}%`}
-            </div>
-            <CardDescription className="text-xs">all time</CardDescription>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
-              {cagr < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {`${formatNum(Math.abs(cagr), 1)}%`}
-            </div>
-            <CardDescription className="text-xs">annualized</CardDescription>
-          </div>
+        <CardTitle className="text-xl sm:text-2xl flex gap-1 items-baseline">
+          {`${formatNum(twrYtd * 100, 1)}%`}
+          <span className="text-sm text-muted-foreground">this year</span>
+        </CardTitle>
+        <CardAction>
+          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {twrAll < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{`${formatNum(Math.abs(twrAll * 100), 1)}%`}
+                </ItemTitle>
+                <ItemDescription className="text-xs">all time</ItemDescription>
+              </ItemContent>
+            </Item>
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {cagr < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{`${formatNum(Math.abs(cagr), 1)}%`}
+                </ItemTitle>
+                <ItemDescription className="text-xs">annualized</ItemDescription>
+              </ItemContent>
+            </Item>
+          </ItemGroup>
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        <ToggleGroup
-          type="single"
-          onValueChange={onDateRangeChange}
-          defaultValue="1y"
-          variant="default"
-          spacing={1}
-          className="self-end"
-        >
-          <ToggleGroupItem value="3m">3M</ToggleGroupItem>
-          <ToggleGroupItem value="6m">6M</ToggleGroupItem>
-          <ToggleGroupItem value="1y">1Y</ToggleGroupItem>
-          <ToggleGroupItem value="all">All</ToggleGroupItem>
-        </ToggleGroup>
+      <CardContent>
         <Areachart
           data={chartData}
           config={returnChartConfig}

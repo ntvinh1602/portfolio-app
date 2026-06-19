@@ -7,6 +7,7 @@ import {
   CardTitle,
   CardContent,
   CardAction,
+  CardDescription,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
@@ -16,6 +17,9 @@ import {
 } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { NewsArticle } from "@/types/news"
+import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { FileXCorner } from "lucide-react"
 
 type NewsWidgetProps = {
   stockList: {
@@ -51,66 +55,73 @@ export function NewsWidget({
   return (
     <Card className="flex flex-col max-h-120">
       <CardHeader>
-        <CardTitle>Latest News</CardTitle>
+        <CardTitle>What's going on?</CardTitle>
+        <CardDescription>Market news in the last 7 days</CardDescription>
         <CardAction>
           <ToggleGroup
             type="single"
+            variant="outline"
             value={filter}
             onValueChange={(val) => {
               if (val) setFilter(val as "all" | "related")
             }}
-            spacing={1}
+            spacing={0}
           >
-            <ToggleGroupItem value="all">All</ToggleGroupItem>
-            <ToggleGroupItem value="related">Portfolio</ToggleGroupItem>
+            <ToggleGroupItem value="all">All news</ToggleGroupItem>
+            <ToggleGroupItem value="related">Holdings</ToggleGroupItem>
           </ToggleGroup>
         </CardAction>
       </CardHeader>
 
       <CardContent className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <div className="pr-3 pb-(--card-spacing)">
-            {filteredArticles.map((article) => (
-              <div
-                key={article.id}
-                className="group cursor-pointer rounded-md transition py-2"
-                onClick={() => window.open(article.url, "_blank")}
-              >
-                <div className="flex items-start justify-between">
-                  <p className="text-sm font-light leading-tight text-foreground/90 line-clamp-2 group-hover:text-primary">
-                    {article.title}
-                  </p>
-
-                  <div className="flex gap-1 flex-shrink-0 ml-2">
+        {filteredArticles.length === 0 ? (
+          <Empty className="h-full">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileXCorner />
+              </EmptyMedia>
+              <EmptyTitle>No articles</EmptyTitle>
+              <EmptyDescription>
+                No articles available from the last 7 days.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ScrollArea className="h-full">
+            <ItemGroup>
+              {filteredArticles.map((article) => (
+                <Item
+                  key={article.id}
+                  variant="muted"
+                  size="xs"
+                  className="cursor-pointer hover:border-ring transition-colors"
+                  onClick={() => window.open(article.url, "_blank")}
+                >
+                  <ItemMedia className="flex flex-col gap-1 min-w-10">
                     {article.tickers.slice(0, 1).map((ticker) => (
-                      <Badge key={ticker}>{ticker}</Badge>
+                      <Badge key={ticker}>
+                        {ticker}
+                        
+                      </Badge>
                     ))}
                     {article.tickers.length > 1 && (
-                      <Badge>+{article.tickers.length - 1}</Badge>
+                      <span className="text-xs">+{article.tickers.length - 1}</span>
                     )}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(article.published_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {article.source}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {filteredArticles.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No news available
-              </p>
-            )}
-          </div>
-        </ScrollArea>
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{article.title}</ItemTitle>
+                    <ItemDescription className="text-xs">
+                      
+                      {article.source} - {formatDistanceToNow(new Date(article.published_at), {
+                        addSuffix: true,
+                      })}
+                    </ItemDescription>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
+          </ScrollArea>
+        )}
       </CardContent>
     </Card>
   )

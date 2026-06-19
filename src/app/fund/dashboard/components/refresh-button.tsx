@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { mutate } from 'swr'
+import { Spinner } from "@/components/ui/spinner"
 
 export function RefreshButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -42,20 +42,17 @@ export function RefreshButton() {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <Button 
+      size="sm"
+      variant="outline"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="rounded-full"
+      className="rounded-2xl"
     >
-      <div
-        className={`flex items-center justify-center rounded-full p-1 transition-transform ${
-          isRefreshing ? "animate-spin" : ""
-        }`}
-      >
-        <RefreshCw className="size-4 text-foreground/80" />
-      </div>
+      {isRefreshing
+        ? <div className="flex items-center gap-1"><Spinner/>Updating</div>
+        : <span>Update Price</span>
+      }
     </Button>
   )
 }

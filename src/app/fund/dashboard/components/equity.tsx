@@ -11,9 +11,14 @@ import {
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import {  } from "@/components/ui/chart"
-import { Separator } from "@/components/ui/separator"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ChartConfig } from "@/components/ui/chart"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle
+} from "@/components/ui/item"
 
 interface EquityChartPoint {
   snapshot_date: string
@@ -24,7 +29,6 @@ interface EquityChartPoint {
 
 interface EquityChartProps {
   dateRange: string
-  onDateRangeChange: (range: string) => void
   chartData: EquityChartPoint[]
   totalEquity: number
   pnlMtd: number
@@ -44,7 +48,6 @@ const equityChartConfig: ChartConfig = {
 
 export function EquityChart({
   dateRange,
-  onDateRangeChange,
   chartData,
   totalEquity,
   pnlMtd,
@@ -64,55 +67,40 @@ export function EquityChart({
   }
 
   return (
-    <Card className="flex flex-col gap-0">
-      <CardHeader className="flex-col gap-1 items-center">
+    <Card>
+      <CardHeader>
         <CardDescription>Equity</CardDescription>
-        <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl">
-            {formatNum(totalEquity)}
-          </CardTitle>
-        </div>
-        <CardAction className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
-              {pnlMtd < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {compactNum(Math.abs(pnlMtd))}
-            </div>
-            <CardDescription className="text-xs">this month</CardDescription>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 text-sm [&_svg]:size-5">
-              {pnlYtd < 0
-                ? <TrendingDown className="text-red-700" />
-                : <TrendingUp className="text-green-500" />
-              }
-              {compactNum(Math.abs(pnlYtd))}
-            </div>
-            <CardDescription className="text-xs">this year</CardDescription>
-          </div>
+        <CardTitle className="text-xl sm:text-2xl">
+          {formatNum(totalEquity)}
+        </CardTitle>
+        <CardAction>
+          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {pnlMtd < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{compactNum(Math.abs(pnlMtd))}
+                </ItemTitle>
+                <ItemDescription className="text-xs">this month</ItemDescription>
+              </ItemContent>
+            </Item>
+            <Item size="xs">
+              <ItemContent className="items-end">
+                <ItemTitle>
+                  {pnlMtd < 0
+                    ? <TrendingDown className="text-red-700 size-3" />
+                    : <TrendingUp className="text-green-500 size-3" />
+                  }{compactNum(Math.abs(pnlYtd))}</ItemTitle>
+                <ItemDescription className="text-xs">this year</ItemDescription>
+              </ItemContent>
+            </Item>
+          </ItemGroup>
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        <ToggleGroup
-          type="single"
-          onValueChange={onDateRangeChange}
-          defaultValue="1y"
-          spacing={1}
-          className="self-end"
-        >
-          <ToggleGroupItem value="3m">3M</ToggleGroupItem>
-          <ToggleGroupItem value="6m">6M</ToggleGroupItem>
-          <ToggleGroupItem value="1y">1Y</ToggleGroupItem>
-          <ToggleGroupItem value="all">All</ToggleGroupItem>
-        </ToggleGroup>
+      <CardContent>
         <Areachart
           data={chartData}
           config={equityChartConfig}
