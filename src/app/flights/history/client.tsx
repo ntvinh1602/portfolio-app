@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import FlightForm from "./form/flightsForm"
@@ -42,7 +41,7 @@ export default function FlightsCardsClient({
   airports,
   earliestYear,
 }: FlightsCardsClientProps) {
-  const router = useRouter()
+  const [refreshCounter, setRefreshCounter] = useState(0)
   const [open, setOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     year: null,
@@ -88,7 +87,7 @@ export default function FlightsCardsClient({
     [filters]
   )
 
-  // When the trailing query shape changes, the store is recreated
+  // When the trailing query shape or refresh counter changes, the store is recreated
   const trailingQueryKey = useMemo(
     () =>
       JSON.stringify({
@@ -96,8 +95,9 @@ export default function FlightsCardsClient({
         airline: filters.airline,
         seatTypes: filters.seatTypes,
         search: filters.search,
+        refreshCounter,
       }),
-    [filters]
+    [filters, refreshCounter]
   )
 
   const {
@@ -118,8 +118,8 @@ export default function FlightsCardsClient({
   })
 
   const handleFlightAdded = useCallback(() => {
-    router.refresh()
-  }, [router])
+    setRefreshCounter((c) => c + 1)
+  }, [])
 
   const renderEndMessage = useCallback(
     (total: number) => (

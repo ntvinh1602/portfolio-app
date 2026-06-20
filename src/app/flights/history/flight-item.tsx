@@ -50,10 +50,11 @@ function AirlineLogo({ logo }: { logo: string | null }) {
 
   return (
     <Image
-      src={`${process.env.NEXT_PUBLIC_BLOB_STORE_URL}/${logo}`}
+      src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logo-img/${logo}`}
       alt=""
       width={44}
       height={44}
+      unoptimized
       className="bg-foreground"
     />
   )
