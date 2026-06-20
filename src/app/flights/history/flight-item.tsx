@@ -50,7 +50,7 @@ function AirlineLogo({ logo }: { logo: string | null }) {
 
   return (
     <Image
-      src={`https://${process.env.NEXT_PUBLIC_BLOB_STORE_ID}.public.blob.vercel-storage.com/${logo}`}
+      src={`${process.env.NEXT_PUBLIC_BLOB_STORE_URL}/${logo}`}
       alt=""
       width={44}
       height={44}

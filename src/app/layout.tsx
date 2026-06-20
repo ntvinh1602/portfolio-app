@@ -30,30 +30,8 @@ export default function RootLayout({ children }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", manrope.variable)}>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  const theme = localStorage.getItem("theme");
-                  if (theme === "light") {
-                    // User explicitly chose light
-                  } else if (theme === "dark") {
-                    document.documentElement.classList.add("dark");
-                  } else {
-                    // No saved preference — default to dark unless system says light
-                    if (!window.matchMedia("(prefers-color-scheme: light)").matches) {
-                      document.documentElement.classList.add("dark");
-                    }
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", manrope.variable, "dark")}>
+      <head />
       <body className="antialiased text-foreground">
         <ClientLayout>
           {children}
