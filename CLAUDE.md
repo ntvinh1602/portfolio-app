@@ -11,8 +11,6 @@ npm run lint      # ESLint
 npm run start     # Start production server
 ```
 
-The local dev server runs on `http://localhost:3000`. Login credentials for dev server is available in .env file
-
 ## Architecture Overview
 
 This is a **Next.js 16 App Router** personal finance dashboard with two domains: **fund management** (investments, balance sheet, transactions) and **flight tracking** (travel log, route map). It uses **Supabase** (Postgres + Auth) and is styled with **Tailwind CSS v4 + shadcn/ui** (Radix primitives).
@@ -58,11 +56,9 @@ The `flight` schema is used for flight-related tables; all fund-related tables a
 ### Key Libraries
 
 - **shadcn/ui** with `radix-luma` style, `zinc` base color, CSS variables, Lucide icons
-- **@tanstack/react-table** for table components
 - **Recharts** for chart components (area, pie, stacked bar — wrapped in `src/components/charts/`)
 - **react-leaflet** + Leaflet for the flight route map
 - **React Hook Form** + Zod for form validation (schemas live next to forms, e.g., `form/schema.ts`)
-- **@dnd-kit** for drag-and-drop (sortable lists)
 - **SWR** for client-side data fetching
 - **date-fns** for date manipulation
 - **yahoo-finance2** for market data
@@ -81,4 +77,7 @@ The `flight` schema is used for flight-related tables; all fund-related tables a
 - Form components follow the pattern: schema (Zod) → form definition (React Hook Form) → field components
 - Feature-specific hooks are co-located in `hooks/` directories within the feature folder (e.g., `src/app/fund/transactions/hooks/use-transaction-filters.ts`), not in the global `src/hooks/`. Global hooks cover cross-cutting concerns (data fetching, shared state).
 - Number formatting: use `formatNum()` and `compactNum()` from `src/lib/utils.ts` — these cache `Intl.NumberFormat` instances for performance
-- When the user asks to commit and push, review `CLAUDE.md` first and update it to reflect any architectural changes, new patterns, or conventions introduced in the diff. Do this before staging commits.
+
+### Instructions
+- When asked to commit and push changes, review `CLAUDE.md` and update it to reflect any architectural changes, new patterns, or conventions introduced in the diff first before staging commits.
+- When visiting the app on dev server, it might redirect to `/login`. Use dev credentials provided in the .env file to login.
