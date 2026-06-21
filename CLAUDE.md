@@ -21,7 +21,7 @@ This is a **Next.js 16 App Router** personal finance dashboard with two domains:
 
 The app uses **two distinct data-fetching paths**:
 
-1. **Server Components with `"use cache"`** — Dashboard, Annual Recaps, and Flights Map stats are fetched server-side using Next.js Cache Components. These functions live in `src/lib/server/` and use `cacheTag()` + `cacheLife('days')`. The revalidation endpoint at `/api/revalidate` calls `revalidateTag()` to bust the cache.
+1. **Server Components with `"use cache"`** — Dashboard, Annual Recaps, and Flights Map (stats, routes GeoJSON, airports) are fetched server-side using Next.js Cache Components. These functions live in `src/lib/server/` and use `cacheTag()` + `cacheLife('days')`. The revalidation endpoint at `/api/revalidate` calls `revalidateTag()` to bust the cache.
 
 2. **Client-side SWR hooks** — Balance Sheet, cash assets, currency rates, and asset search use SWR hooks in `src/hooks/` that call Supabase directly from the browser. These are configured with `revalidateOnFocus: false` and long deduping intervals.
 

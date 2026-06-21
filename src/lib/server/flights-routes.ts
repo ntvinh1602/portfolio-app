@@ -1,8 +1,6 @@
-"use client"
-
-import useSWR from "swr"
+import { supabaseAdmin } from "@/lib/supabase/admin"
+import { cacheLife, cacheTag } from "next/cache"
 import type { FeatureCollection, Feature, LineString } from "geojson"
-import { createClient } from "@/lib/supabase/client"
 
 export interface RoutesGeoJSONProperties {
   id: string
@@ -29,20 +27,22 @@ type RoutesFeatureCollection = FeatureCollection<
   RoutesGeoJSONProperties
 >
 
-// ---------- Fetcher ----------
-async function fetchRoutesGeoJSON(): Promise<RoutesFeatureCollection> {
-  const supabase = createClient()
+export async function getRoutesGeoJSON() {
+  "use cache"
+  cacheTag("flights")
+  cacheLife("days")
 
-  const { data, error } = await supabase
+  const db = supabaseAdmin as any
+  const { data, error } = await db
     .schema("flight")
     .from("routes_geojson")
     .select("*")
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
 
   const features: Feature<LineString, RoutesGeoJSONProperties>[] =
-    (data ?? []).map((row) => ({
-      type: "Feature",
+    (data ?? []).map((row: any) => ({
+      type: "Feature" as const,
       geometry: row.geometry,
       properties: {
         id: row.id,
@@ -67,27 +67,7 @@ async function fetchRoutesGeoJSON(): Promise<RoutesFeatureCollection> {
     }))
 
   return {
-    type: "FeatureCollection",
+    type: "FeatureCollection" as const,
     features,
-  }
-}
-
-// ---------- Hook ----------
-export function useRoutesGeoJSON() {
-  const { data, error, isLoading, mutate } = useSWR(
-    ["routesGeoJSON"],
-    fetchRoutesGeoJSON,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 1000 * 60 * 10, // 10 minutes
-    }
-  )
-
-  return {
-    data: data ?? { type: "FeatureCollection", features: [] },
-    error,
-    isLoading,
-    mutate,
-  }
+  } as RoutesFeatureCollection
 }
