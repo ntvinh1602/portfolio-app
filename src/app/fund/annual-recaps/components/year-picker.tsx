@@ -1,11 +1,5 @@
 import { useState, useEffect } from "react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 
 const ALL_TIME_VALUE = 9999
 const ALL_TIME_LABEL = "All Time"
@@ -24,11 +18,13 @@ export function YearPicker({
   // Defer Date.now() to useEffect — cacheComponents requires deterministic
   // values during server render.
   const [endYearState, setEndYearState] = useState(0)
-  useEffect(() => { setEndYearState(new Date().getFullYear()) }, [])
+  useEffect(() => {
+    setEndYearState(new Date().getFullYear())
+  }, [])
   const finalEndYear = endYear ?? endYearState
   const years = Array.from(
     { length: finalEndYear - startYear + 1 },
-    (_, i) => startYear + i
+    (_, i) => startYear + i,
   )
 
   const options = [ALL_TIME_VALUE, ...years.slice().reverse()]
@@ -37,20 +33,19 @@ export function YearPicker({
     year === ALL_TIME_VALUE ? ALL_TIME_LABEL : year.toString()
 
   return (
-    <Select
+    <NativeSelect
       value={value?.toString() ?? ""}
-      onValueChange={(v) => onChange?.(Number(v))}
+      onChange={(e) => {
+        const v = e.target.value
+        onChange?.(Number(v))
+      }}
+      className="w-full"
     >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select year" />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((year) => (
-          <SelectItem key={year} value={year.toString()}>
-            {formatLabel(year)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {options.map((year) => (
+        <NativeSelectOption key={year} value={year.toString()}>
+          {formatLabel(year)}
+        </NativeSelectOption>
+      ))}
+    </NativeSelect>
   )
 }

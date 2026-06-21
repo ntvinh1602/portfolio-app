@@ -53,7 +53,7 @@ function Asset({
           alt={name}
           width={44}
           height={44}
-          className="object-cover"
+          unoptimized
           loading="eager"
         />
       </ItemMedia>

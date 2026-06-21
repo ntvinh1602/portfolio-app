@@ -22,7 +22,7 @@ export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
 
   return (
     <div className="@container/main flex flex-1 flex-col px-4 pb-4">
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 max-w-720 gap-4 mx-auto">
         <div className="flex flex-col gap-4">
           <YearPicker
             value={year}
@@ -36,6 +36,13 @@ export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
         </div>
 
         <div className="flex flex-col flex-1 gap-4">
+          <div className="grid grid-cols-2 gap-4 h-fit">
+            <Cashflow
+              deposits={yearData.deposits}
+              withdrawals={yearData.withdrawals}
+            />
+            <ExpenseChart profitChart={yearData.profit_chart} />
+          </div>
           <ProfitChart
             year={year}
             totalPnL={yearData.total_pnl}
@@ -49,14 +56,6 @@ export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
             vnIndexReturn={yearData.vn_ret}
             chartData={yearData.return_chart}
           />
-        </div>
-        
-        <div className="flex flex-col flex-1 gap-4">
-          <Cashflow
-            deposits={yearData.deposits}
-            withdrawals={yearData.withdrawals}
-          />
-          <ExpenseChart profitChart={yearData.profit_chart} />
         </div>
       </div>
     </div>

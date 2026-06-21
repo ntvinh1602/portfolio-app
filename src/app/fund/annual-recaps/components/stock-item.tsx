@@ -1,7 +1,12 @@
-import Image from 'next/image'
-import { TrendingUp, TrendingDown } from "lucide-react"
+import Image from "next/image"
 import { formatNum } from "@/lib/utils"
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 
 export function Asset({
   ticker,
@@ -14,16 +19,16 @@ export function Asset({
   logoUrl: string
   totalAmount: number
 }) {
-
   return (
-    <Item variant="muted" size="xs">
-      <ItemMedia>
+    <Item variant="muted">
+      <ItemMedia variant="image">
         <Image
           src={logoUrl}
           alt={name}
           width={44}
           height={44}
-          className="rounded-2xl bg-background"
+          unoptimized
+          loading="eager"
         />
       </ItemMedia>
       <ItemContent className="min-w-0">
@@ -31,13 +36,7 @@ export function Asset({
         <ItemDescription className="truncate">{name}</ItemDescription>
       </ItemContent>
       <ItemContent>
-        <ItemTitle>
-          {totalAmount !== null && totalAmount < 0
-            ? <TrendingDown className="text-destructive size-4" />
-            : <TrendingUp className="text-primary size-4" />
-          }
-          {formatNum(totalAmount)}
-        </ItemTitle>
+        <ItemTitle>{formatNum(totalAmount)}</ItemTitle>
       </ItemContent>
     </Item>
   )

@@ -111,7 +111,7 @@ export default function Page() {
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
-      <div className="grid grid-cols-1 gap-4 px-4 xl:w-6/10 xl:mx-auto xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 px-4 w-full xl:w-7/10 2xl:w-6/10 mx-auto xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardDescription>Assets</CardDescription>
