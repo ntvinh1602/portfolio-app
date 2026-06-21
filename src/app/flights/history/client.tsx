@@ -16,7 +16,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card"
 import { ListFilter, PlusIcon } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
@@ -43,7 +43,7 @@ export default function FlightsCardsClient() {
 
   const airlineOptions = useMemo(
     () => airlines.map((a) => ({ label: a.name, value: a.name })),
-    [airlines]
+    [airlines],
   )
 
   const availableYears = useMemo(() => {
@@ -77,22 +77,21 @@ export default function FlightsCardsClient() {
   const renderEndMessage = useCallback(
     (total: number) => (
       <p className="text-sm text-muted-foreground">
-        You&apos;ve reached the end — all {total} flights loaded.
+        You have reached the end — all {total} flights loaded.
       </p>
     ),
-    []
+    [],
   )
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
-      <div className="flex flex-col 2xl:flex-row gap-4 px-4 mx-auto">
-
+      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
         {/* Header + filters */}
         <Card className="h-fit w-fit mx-auto">
           <CardHeader>
             <CardTitle>Filter</CardTitle>
             <CardAction>
-              <ListFilter className="stroke-1"/>
+              <ListFilter className="stroke-1" />
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -106,7 +105,7 @@ export default function FlightsCardsClient() {
         </Card>
 
         {/* Infinite card list */}
-        <Card className="max-w-200">
+        <Card className="max-w-140">
           <CardHeader>
             <CardTitle>Flights List</CardTitle>
             <CardDescription>
@@ -116,7 +115,8 @@ export default function FlightsCardsClient() {
             </CardDescription>
             <CardAction>
               <Button onClick={() => setOpen(true)} className="rounded-2xl">
-                <PlusIcon/>Add Flight
+                <PlusIcon />
+                Add Flight
               </Button>
               <FormDialogWrapper
                 open={open}
@@ -146,10 +146,7 @@ export default function FlightsCardsClient() {
               fetchNextPage={fetchNextPage}
               renderEndMessage={renderEndMessage}
             >
-              <div
-                className="grid gap-2"
-                style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}
-              >
+              <div className="grid gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
                 <ItemGroup>
                   {flights.map((flight, i) => (
                     <FlightItem

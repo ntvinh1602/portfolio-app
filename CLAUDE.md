@@ -11,7 +11,7 @@ npm run lint      # ESLint
 npm run start     # Start production server
 ```
 
-The app runs on `http://localhost:3000`. There are no tests yet.
+The local dev server runs on `http://localhost:3000`. Login credentials for dev server is available in .env file
 
 ## Architecture Overview
 

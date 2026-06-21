@@ -1,7 +1,17 @@
 "use client"
 
 import { format } from "date-fns"
-import { Plane, Armchair, Star, ArrowLeftRight, PlaneTakeoff, PlaneLanding, Users, Tag } from "lucide-react"
+import {
+  Plane,
+  Armchair,
+  Star,
+  ArrowLeftRight,
+  Users,
+  Tag,
+  EllipsisVertical,
+  SquarePen,
+  Trash2,
+} from "lucide-react"
 import { formatNum } from "@/lib/utils"
 import {
   Item,
@@ -10,29 +20,34 @@ import {
   ItemTitle,
   ItemDescription,
   ItemFooter,
-  ItemSeparator,
 } from "@/components/ui/item"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export type Flight = {
   flight_number: string
   tail_number: string | null
   departure_time: string
   arrival_time: string
-  departure_airport: string
-  arrival_airport: string
+  departure_airport_code: string
+  arrival_airport_code: string
   departure_airport_name: string
   arrival_airport_name: string
-  departure_country: string
-  arrival_country: string
   airline_name: string
-  airline_logo: string | null
+  airline_logo: string
   aircraft_model: string
   seat: string | null
   seat_type: string
   seat_position: string | null
   distance_km: number
+  duration: string
 }
 
 const seatTypeLabels: Record<string, string> = {
@@ -41,97 +56,115 @@ const seatTypeLabels: Record<string, string> = {
   business: "Business",
 }
 
-function AirlineLogo({ logo }: { logo: string | null }) {
-  if (!logo) {
-    return (
-      <div className="flex size-full items-center justify-center rounded-xl bg-primary/10">
-        <Plane className="size-5 text-primary rotate-45" />
-      </div>
-    )
-  }
-
-  return (
-    <Image
-      src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logo-img/${logo}`}
-      alt=""
-      width={44}
-      height={44}
-      unoptimized
-      className="bg-foreground"
-    />
-  )
-}
-
 interface FlightCardProps {
   flight: Flight
 }
 
 export function FlightItem({ flight }: FlightCardProps) {
-  const depName = flight.departure_airport_name
-  const arrName = flight.arrival_airport_name
-
-  const seatClass = (flight.seat_type && seatTypeLabels[flight.seat_type]) ?? flight.seat_type
+  const seatClass =
+    (flight.seat_type && seatTypeLabels[flight.seat_type]) ?? flight.seat_type
   const seatPosition = flight.seat_position
-    ? flight.seat_position.charAt(0).toUpperCase() + flight.seat_position.slice(1)
+    ? flight.seat_position.charAt(0).toUpperCase() +
+      flight.seat_position.slice(1)
     : null
+
+  const details = [
+    {
+      key: "flight",
+      icon: Tag,
+      value: flight.flight_number,
+    },
+    {
+      key: "airline",
+      icon: Users,
+      value: flight.airline_name,
+    },
+    {
+      key: "aircraft",
+      icon: Plane,
+      value: flight.aircraft_model,
+    },
+    {
+      key: "seat",
+      icon: Armchair,
+      value: flight.seat,
+    },
+    {
+      key: "class",
+      icon: Star,
+      value: seatClass,
+    },
+    {
+      key: "position",
+      icon: ArrowLeftRight,
+      value: seatPosition,
+    },
+  ] as const
 
   return (
     <Item variant="outline">
-      <ItemMedia variant="image">
-        <AirlineLogo logo={flight.airline_logo} />
-      </ItemMedia>
-
-      <ItemContent className="min-w-0">
-        <ItemTitle className="gap-1">
-          <PlaneTakeoff className="size-3"/>{flight.departure_airport}
-          <span className="text-muted-foreground hidden sm:block">- {depName}</span>
-        </ItemTitle>
-        <ItemTitle className="gap-1">
-          <PlaneLanding className="size-3"/>{flight.arrival_airport}
-          <span className="text-muted-foreground hidden sm:block">- {arrName}</span>
-        </ItemTitle>
-      </ItemContent>
-
-      <ItemContent className="items-end">
-        <ItemTitle>
-          {format(new Date(flight.departure_time), "MMM d, yyyy")}
-        </ItemTitle>
+      <ItemContent>
+        <ItemTitle>{flight.departure_airport_code}</ItemTitle>
+        <ItemDescription className="hidden sm:block">
+          {flight.departure_airport_name}
+        </ItemDescription>
         <ItemDescription>
-          {format(new Date(flight.departure_time), "HH:mm")}
-          {" "}-{" "}
-          {format(new Date(flight.arrival_time), "HH:mm")}
+          {format(new Date(flight.departure_time), "HH:mm, dd MMM yyyy")}
+        </ItemDescription>
+      </ItemContent>
+      <ItemMedia className="flex-col">
+        <Plane className="size-4 rotate-45" />
+        <span className="text-xs font-medium">
+          {formatNum(flight.distance_km)} km
+        </span>
+        <span className="text-xs font-medium">{flight.duration}</span>
+      </ItemMedia>
+      <ItemContent className="items-end">
+        <ItemTitle>{flight.arrival_airport_code}</ItemTitle>
+        <ItemDescription className="hidden sm:block">
+          {flight.arrival_airport_name}
+        </ItemDescription>
+        <ItemDescription>
+          {format(new Date(flight.arrival_time), "HH:mm, dd MMM yyyy")}
         </ItemDescription>
       </ItemContent>
 
-      <ItemSeparator/>
-      
-      <ItemFooter>
-        <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center">
-          <Badge variant="secondary">
-            <Tag /> {flight.flight_number}
-          </Badge>
-          <Badge variant="secondary">
-            <Users /> {flight.airline_name}
-          </Badge>
-          <Badge variant="secondary">
-            <Plane /> {flight.aircraft_model}
-          </Badge>
-          <Badge variant="secondary">
-            <Armchair /> {flight.seat}
-          </Badge>
-          <Badge variant="secondary">
-            <Star /> {seatClass}
-          </Badge>
-          <Badge variant="secondary">
-            <ArrowLeftRight /> {seatPosition}
-          </Badge>
+      <ItemFooter className="bg-muted/50 px-3 py-2 rounded-2xl">
+        <ItemMedia variant="image" className="hidden sm:block">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logo-img/${flight.airline_logo}`}
+            alt=""
+            width={44}
+            height={44}
+            unoptimized
+          />
+        </ItemMedia>
+
+        <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center gap-2">
+          {details.map(({ key, icon: Icon, value }) => (
+            <Badge key={key} variant="ghost" className="pointer-events-none">
+              <Icon />
+              {value}
+            </Badge>
+          ))}
         </ItemContent>
-        <ItemContent className="flex items-center">
-          <ItemDescription>Distance</ItemDescription>
-          <ItemTitle>
-            {formatNum(flight.distance_km)} km
-          </ItemTitle>
-        </ItemContent>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon-lg" variant="ghost">
+              <EllipsisVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+              <SquarePen />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive">
+              <Trash2 />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </ItemFooter>
     </Item>
   )
