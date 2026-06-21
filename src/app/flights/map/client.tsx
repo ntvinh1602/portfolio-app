@@ -2,8 +2,6 @@
 
 import "leaflet/dist/leaflet.css"
 import dynamic from "next/dynamic"
-import { useRoutesGeoJSON } from "@/hooks/useFlightRoutes"
-import { useAirports } from "@/hooks/useAirports"
 import { formatNum } from "@/lib/utils"
 import {
   Clock,
@@ -14,6 +12,9 @@ import {
   TicketsPlane,
 } from "lucide-react"
 import type { LifetimeStats } from "@/lib/server/flights-stats"
+import type { RoutesGeoJSONProperties } from "@/lib/server/flights-routes"
+import type { Airport } from "@/lib/server/flights-airports"
+import type { FeatureCollection, LineString } from "geojson"
 import {
   Item,
   ItemContent,
@@ -30,23 +31,15 @@ import Autoplay from "embla-carousel-autoplay"
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 
+type RoutesGeoJSON = FeatureCollection<LineString, RoutesGeoJSONProperties>
+
 type Props = {
   stats: LifetimeStats
+  routes: RoutesGeoJSON
+  airports: Airport[]
 }
 
-export default function FlightsMapClient({ stats }: Props) {
-  const {
-    data: routes,
-    isLoading: loadingRoutes,
-    error: routesError,
-  } = useRoutesGeoJSON()
-
-  const {
-    data: airports,
-    isLoading: loadingAirports,
-    error: airportsError,
-  } = useAirports()
-
+export default function FlightsMapClient({ stats, routes, airports }: Props) {
   const statItems = [
     {
       title: "Flights",
@@ -79,12 +72,6 @@ export default function FlightsMapClient({ stats }: Props) {
       icon: Clock,
     },
   ]
-
-  if (loadingRoutes || loadingAirports)
-    return <p>Loading flight data...</p>
-
-  if (routesError || airportsError)
-    return <p>Failed to load flight data.</p>
 
   return (
     <div className="flex flex-col h-full gap-4 px-4 pb-4">
