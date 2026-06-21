@@ -19,6 +19,12 @@
       "skillPath": "skills/next-upgrade/SKILL.md",
       "computedHash": "e3aeb1f9e8a68d24df0c1c2e3c8ab97ede09a7251a2c76988318d02254346979"
     },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "computedHash": "32cf6cf8733ae75ae41f5241347bca74459629f90bcfbd4e25540ede5d4b8f95"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",

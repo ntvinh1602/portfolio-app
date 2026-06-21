@@ -54,11 +54,6 @@ export default function FlightsMapClient({ stats }: Props) {
       icon: TicketsPlane,
     },
     {
-      title: "Total Distance",
-      figure: `${formatNum(Math.round(stats.total_distance ?? 0))} km`,
-      icon: Route,
-    },
-    {
       title: "Airports",
       figure: stats.airports_count,
       icon: PlaneTakeoff,
@@ -74,17 +69,20 @@ export default function FlightsMapClient({ stats }: Props) {
       icon: Plane,
     },
     {
+      title: "Total Distance",
+      figure: `${formatNum(Math.round(stats.total_distance ?? 0))} km`,
+      icon: Route,
+    },
+    {
       title: "Total Duration",
       figure: stats.total_duration,
       icon: Clock,
     },
   ]
 
-  if (loadingRoutes || loadingAirports)
-    return <p>Loading flight data...</p>
+  if (loadingRoutes || loadingAirports) return <p>Loading flight data...</p>
 
-  if (routesError || airportsError)
-    return <p>Failed to load flight data.</p>
+  if (routesError || airportsError) return <p>Failed to load flight data.</p>
 
   return (
     <div className="flex flex-col h-full gap-4 px-4 pb-4">
@@ -103,14 +101,14 @@ export default function FlightsMapClient({ stats }: Props) {
           {statItems.map((stat) => (
             <CarouselItem
               key={stat.title}
-              className="sm:basis-1/2 md:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
+              className="basis-1/2 xl:basis-1/4 2xl:basis-1/6"
             >
               <Item variant="outline">
                 <ItemMedia variant="icon">
                   <stat.icon />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle className="text-2xl">
+                  <ItemTitle className="text-xl xl:text-2xl">
                     {stat.figure}
                   </ItemTitle>
                   <ItemDescription>{stat.title}</ItemDescription>
