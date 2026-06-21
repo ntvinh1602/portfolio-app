@@ -22,6 +22,8 @@ export type Flight = {
   arrival_time: string
   departure_airport: string
   arrival_airport: string
+  departure_airport_name: string
+  arrival_airport_name: string
   departure_country: string
   arrival_country: string
   airline_name: string
@@ -62,12 +64,11 @@ function AirlineLogo({ logo }: { logo: string | null }) {
 
 interface FlightCardProps {
   flight: Flight
-  airportNames: Map<string, string> // IATA code → full name
 }
 
-export function FlightItem({ flight, airportNames }: FlightCardProps) {
-  const depName = airportNames.get(flight.departure_airport) ?? flight.departure_airport
-  const arrName = airportNames.get(flight.arrival_airport) ?? flight.arrival_airport
+export function FlightItem({ flight }: FlightCardProps) {
+  const depName = flight.departure_airport_name
+  const arrName = flight.arrival_airport_name
 
   const seatClass = (flight.seat_type && seatTypeLabels[flight.seat_type]) ?? flight.seat_type
   const seatPosition = flight.seat_position

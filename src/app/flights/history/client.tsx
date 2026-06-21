@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import FlightForm from "./form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
-import { FlightFilter, type FilterState } from "./flight-filter"
+import { FlightFilter } from "./flight-filter"
+import { useFlightsFilters } from "./hooks/use-flights-filters"
 import {
   Card,
   CardAction,
@@ -41,64 +42,22 @@ export default function FlightsCardsClient({
   airports,
   earliestYear,
 }: FlightsCardsClientProps) {
-  const [refreshCounter, setRefreshCounter] = useState(0)
+  const {
+    filters,
+    setFilters,
+    trailingQuery,
+    trailingQueryKey,
+    triggerRefresh,
+  } = useFlightsFilters()
+
   const [open, setOpen] = useState(false)
-  const [filters, setFilters] = useState<FilterState>({
-    year: null,
-    airline: null,
-    seatTypes: [],
-    search: "",
-  })
 
   const airlineOptions = useMemo(
     () => airlines.map((a) => ({ label: a.name, value: a.name })),
     [airlines]
   )
 
-  const airportNames = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const a of airports) {
-      map.set(a.iata_code, a.name)
-    }
-    return map
-  }, [airports])
-
   const availableYears = useMemo(() => buildYears(earliestYear), [earliestYear])
-
-  // Build a trailing query that applies all active filters
-  const trailingQuery = useCallback(
-    (query: any) => {
-      if (filters.year) {
-        query = query
-          .gte("departure_time", `${filters.year}-01-01`)
-          .lte("departure_time", `${filters.year}-12-31`)
-      }
-      if (filters.airline) {
-        query = query.eq("airline_name", filters.airline)
-      }
-      if (filters.seatTypes.length > 0) {
-        query = query.in("seat_type", filters.seatTypes)
-      }
-      if (filters.search) {
-        query = query.ilike("flight_number", `%${filters.search}%`)
-      }
-      return query.order("departure_time", { ascending: false })
-    },
-    [filters]
-  )
-
-  // When the trailing query shape or refresh counter changes, the store is recreated
-  const trailingQueryKey = useMemo(
-    () =>
-      JSON.stringify({
-        year: filters.year,
-        airline: filters.airline,
-        seatTypes: filters.seatTypes,
-        search: filters.search,
-        refreshCounter,
-      }),
-    [filters, refreshCounter]
-  )
 
   const {
     data: flights,
@@ -106,6 +65,7 @@ export default function FlightsCardsClient({
     isSuccess,
     isLoading,
     isFetching,
+    error,
     hasMore,
     fetchNextPage,
   } = useInfiniteQuery<Flight>({
@@ -116,10 +76,6 @@ export default function FlightsCardsClient({
     trailingQuery,
     trailingQueryKey,
   })
-
-  const handleFlightAdded = useCallback(() => {
-    setRefreshCounter((c) => c + 1)
-  }, [])
 
   const renderEndMessage = useCallback(
     (total: number) => (
@@ -170,7 +126,7 @@ export default function FlightsCardsClient({
                 onOpenChange={setOpen}
                 title="Add Flight"
                 subtitle="Log a new flight into your travel history"
-                onSuccess={handleFlightAdded}
+                onSuccess={triggerRefresh}
                 FormComponent={(props: { onSuccess?: () => void }) => (
                   <FlightForm
                     {...props}
@@ -183,6 +139,13 @@ export default function FlightsCardsClient({
             </CardAction>
           </CardHeader>
           <CardContent>
+            {/* Error banner */}
+            {error && (
+              <div className="text-sm text-destructive mb-4">
+                Error fetching flights: {error.message}
+              </div>
+            )}
+
             <InfiniteList
               hasMore={hasMore}
               isFetching={isFetching}
@@ -200,7 +163,6 @@ export default function FlightsCardsClient({
                     <FlightItem
                       key={`${flight.flight_number}-${flight.departure_time}-${i}`}
                       flight={flight}
-                      airportNames={airportNames}
                     />
                   ))}
                 </ItemGroup>
