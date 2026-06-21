@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 
 const ALLOWED_TAGS = new Set([
   "analytics",
-  "news"
+  "flights",
+  "news",
 ])
 
 export async function POST(req: Request) {

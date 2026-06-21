@@ -21,7 +21,7 @@ This is a **Next.js 16 App Router** personal finance dashboard with two domains:
 
 The app uses **two distinct data-fetching paths**:
 
-1. **Server Components with `"use cache"`** — Dashboard and Annual Recaps data is fetched server-side using Next.js Cache Components. These functions live in `src/lib/server/` and use `cacheTag()` + `cacheLife('days')`. The revalidation endpoint at `/api/revalidate` calls `revalidateTag()` to bust the cache.
+1. **Server Components with `"use cache"`** — Dashboard, Annual Recaps, and Flights Map stats are fetched server-side using Next.js Cache Components. These functions live in `src/lib/server/` and use `cacheTag()` + `cacheLife('days')`. The revalidation endpoint at `/api/revalidate` calls `revalidateTag()` to bust the cache.
 
 2. **Client-side SWR hooks** — Balance Sheet, cash assets, currency rates, and asset search use SWR hooks in `src/hooks/` that call Supabase directly from the browser. These are configured with `revalidateOnFocus: false` and long deduping intervals.
 
@@ -53,7 +53,7 @@ The `flight` schema is used for flight-related tables; all fund-related tables a
 
 ### Cache Invalidation
 
-`/api/revalidate` accepts a POST with `{ tags: ["analytics", "news"] }` and an `x-revalidate-secret` header. Only `analytics` and `news` tags are whitelisted. This is called by Supabase database webhooks to update dashboard data when underlying tables change.
+`/api/revalidate` accepts a POST with `{ tags: ["analytics", "flights", "news"] }` and an `x-revalidate-secret` header. Only `analytics`, `flights`, and `news` tags are whitelisted. This is called by Supabase database webhooks to update dashboard data when underlying tables change.
 
 ### Key Libraries
 
