@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
 import FlightForm from "./form/flightsForm"
@@ -9,6 +9,7 @@ import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
 import { FlightFilter } from "./flight-filter"
 import { useFlightsFilters } from "./hooks/use-flights-filters"
+import { useFlightReferenceData } from "./hooks/use-flight-reference-data"
 import {
   Card,
   CardAction,
@@ -20,28 +21,7 @@ import {
 import { ListFilter, PlusIcon } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
 
-interface FlightsCardsClientProps {
-  airlines: { id: string; name: string }[]
-  aircrafts: { id: string; icao_code: string; model?: string | null }[]
-  airports: { id: string; iata_code: string; name: string }[]
-  earliestYear: number
-}
-
-function buildYears(earliestYear: number): string[] {
-  const currentYear = new Date().getFullYear()
-  const years: string[] = []
-  for (let y = currentYear; y >= earliestYear; y--) {
-    years.push(String(y))
-  }
-  return years
-}
-
-export default function FlightsCardsClient({
-  airlines,
-  aircrafts,
-  airports,
-  earliestYear,
-}: FlightsCardsClientProps) {
+export default function FlightsCardsClient() {
   const {
     filters,
     setFilters,
@@ -50,14 +30,31 @@ export default function FlightsCardsClient({
     triggerRefresh,
   } = useFlightsFilters()
 
+  const { airlines } = useFlightReferenceData()
+
   const [open, setOpen] = useState(false)
+
+  // Defer new Date() to useEffect — Cache Components requires deterministic
+  // values during server render.
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => {
+    setNow(new Date())
+  }, [])
 
   const airlineOptions = useMemo(
     () => airlines.map((a) => ({ label: a.name, value: a.name })),
     [airlines]
   )
 
-  const availableYears = useMemo(() => buildYears(earliestYear), [earliestYear])
+  const availableYears = useMemo(() => {
+    if (!now) return []
+    const currentYear = now.getFullYear()
+    const years: string[] = []
+    for (let y = currentYear; y >= currentYear - 10; y--) {
+      years.push(String(y))
+    }
+    return years
+  }, [now])
 
   const {
     data: flights,
@@ -128,12 +125,7 @@ export default function FlightsCardsClient({
                 subtitle="Log a new flight into your travel history"
                 onSuccess={triggerRefresh}
                 FormComponent={(props: { onSuccess?: () => void }) => (
-                  <FlightForm
-                    {...props}
-                    airlines={airlines}
-                    aircrafts={aircrafts}
-                    airports={airports}
-                  />
+                  <FlightForm {...props} />
                 )}
               />
             </CardAction>

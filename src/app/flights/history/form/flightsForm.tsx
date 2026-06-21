@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { createFlight } from "@/lib/server/flights"
+import { useFlightReferenceData } from "../hooks/use-flight-reference-data"
 
 import { TextField } from "@/components/form/fields/text-field"
 import { SelectField } from "@/components/form/fields/select-field"
@@ -18,19 +19,12 @@ import { flightSchema } from "./schema"
 export type FlightFormValues = z.infer<typeof flightSchema>
 
 interface FlightFormProps {
-  airlines: { id: string; name: string }[]
-  aircrafts: { id: string; icao_code: string; model?: string | null }[]
-  airports: { id: string; iata_code: string; name: string }[]
   onSuccess?: () => void
 }
 
-export default function FlightForm({
-  airlines,
-  aircrafts,
-  airports,
-  onSuccess,
-}: FlightFormProps) {
+export default function FlightForm({ onSuccess }: FlightFormProps) {
   const [loading, setLoading] = React.useState(false)
+  const { airlines, aircrafts, airports, isLoading: refLoading } = useFlightReferenceData()
 
   const form = useForm<FlightFormValues>({
     resolver: zodResolver(flightSchema),
@@ -105,6 +99,14 @@ export default function FlightForm({
       setLoading(false)
     }
   })
+
+  if (refLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <p className="text-sm text-muted-foreground">Loading reference data...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
