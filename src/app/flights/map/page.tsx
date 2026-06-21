@@ -13,7 +13,7 @@ import {
   ItemContent,
   ItemDescription,
   ItemMedia,
-  ItemTitle
+  ItemTitle,
 } from "@/components/ui/item"
 import {
   Carousel,
@@ -25,42 +25,49 @@ import Autoplay from "embla-carousel-autoplay"
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 
 export default function FlightsPage() {
-  const { data: routes, isLoading: loadingRoutes, error: routesError } =
-    useRoutesGeoJSON()
+  const {
+    data: routes,
+    isLoading: loadingRoutes,
+    error: routesError,
+  } = useRoutesGeoJSON()
 
-  const { data: flights, isLoading: loadingFlights, error: flightsError } =
-    useFlights()
+  const {
+    data: flights,
+    isLoading: loadingFlights,
+    error: flightsError,
+  } = useFlights()
 
-  const { data: airports, isLoading: loadingAirports, error: airportsError } =
-    useAirports()
+  const {
+    data: airports,
+    isLoading: loadingAirports,
+    error: airportsError,
+  } = useAirports()
 
   const stats = useMemo(() => {
     const flightsCount = flights?.length
     const totalDistance = flights?.reduce(
       (sum, f) => sum + (f.distance_km ?? 0),
-      0
+      0,
     )
     const uniqueAircraftModels = new Set(
-      flights?.map((f) => f.aircraft_model)
-        .filter(Boolean)
+      flights?.map((f) => f.aircraft_model).filter(Boolean),
     )
     const uniqueAirports = new Set(
       flights
         ?.flatMap((f) => [f.departure_airport, f.arrival_airport])
-        .filter((code): code is string => typeof code === "string")
+        .filter((code): code is string => typeof code === "string"),
     )
     const uniqueCountries = new Set(
-      flights?.flatMap((f) => [
-        f.departure_country,
-        f.arrival_country,
-      ]).filter(Boolean)
+      flights
+        ?.flatMap((f) => [f.departure_country, f.arrival_country])
+        .filter(Boolean),
     )
 
     return [
       {
         title: "Flights",
         figure: flightsCount,
-        icon: TicketsPlane
+        icon: TicketsPlane,
       },
       {
         title: "Total Distance",
@@ -110,11 +117,11 @@ export default function FlightsPage() {
               key={stat.title}
               className="sm:basis-1/2 md:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
             >
-              <Item variant="muted">
+              <Item variant="outline">
                 <ItemMedia variant="icon">
                   <stat.icon />
                 </ItemMedia>
-                <ItemContent> 
+                <ItemContent>
                   <ItemTitle className="text-2xl">
                     {formatNum(stat.figure ?? 0)}
                   </ItemTitle>
@@ -125,7 +132,7 @@ export default function FlightsPage() {
           ))}
         </CarouselContent>
       </Carousel>
-      <div className="relative h-full rounded-2xl overflow-hidden border isolate">
+      <div className="relative h-full rounded-2xl overflow-hidden isolate">
         <LeafletMap routes={routes} airports={airports} />
       </div>
     </div>
