@@ -388,11 +388,8 @@ s3_access_key = "env(S3_ACCESS_KEY)"
 s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.fetch-exchange-rates]
-verify-jwt = false
 
 [functions.fetch-yahoofinance]
-verify-jwt = false
 
 [functions.upsert-dnse-orders]
-verify-jwt = false
 
