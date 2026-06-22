@@ -44,8 +44,6 @@ next-env.d.ts
 /.vscode/
 
 # vibecoding
-/.agents/
 /.claude/
 /.playwright/
 /.playwright-cli/
-.mcp.json

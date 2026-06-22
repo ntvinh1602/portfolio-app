@@ -1,7 +1,7 @@
 # Supabase
 /.branches/
 .temp
-config.toml
+seed.sql
 
 # dotenvx
 .env.keys
