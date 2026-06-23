@@ -12,6 +12,273 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  flight: {
+    Tables: {
+      aircrafts: {
+        Row: {
+          icao_code: string
+          id: string
+          model: string | null
+        }
+        Insert: {
+          icao_code: string
+          id?: string
+          model?: string | null
+        }
+        Update: {
+          icao_code?: string
+          id?: string
+          model?: string | null
+        }
+        Relationships: []
+      }
+      airlines: {
+        Row: {
+          id: string
+          logo: string | null
+          name: string
+        }
+        Insert: {
+          id?: string
+          logo?: string | null
+          name: string
+        }
+        Update: {
+          id?: string
+          logo?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      airports: {
+        Row: {
+          city: string | null
+          country: string | null
+          geom: unknown
+          iata_code: string
+          icao_code: string | null
+          id: string
+          lat: number
+          lng: number
+          name: string
+          timezone: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          geom?: unknown
+          iata_code: string
+          icao_code?: string | null
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          timezone: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          geom?: unknown
+          iata_code?: string
+          icao_code?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          timezone?: string
+        }
+        Relationships: []
+      }
+      flights: {
+        Row: {
+          aircraft_id: string | null
+          airline_id: string | null
+          arrival_airport_id: string
+          arrival_time: string | null
+          departure_airport_id: string
+          departure_time: string | null
+          flight_number: string | null
+          id: string
+          notes: string | null
+          seat: string | null
+          seat_position:
+            | Database["flight"]["Enums"]["seat_position_enum"]
+            | null
+          seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
+          tail_number: string | null
+        }
+        Insert: {
+          aircraft_id?: string | null
+          airline_id?: string | null
+          arrival_airport_id: string
+          arrival_time?: string | null
+          departure_airport_id: string
+          departure_time?: string | null
+          flight_number?: string | null
+          id?: string
+          notes?: string | null
+          seat?: string | null
+          seat_position?:
+            | Database["flight"]["Enums"]["seat_position_enum"]
+            | null
+          seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
+          tail_number?: string | null
+        }
+        Update: {
+          aircraft_id?: string | null
+          airline_id?: string | null
+          arrival_airport_id?: string
+          arrival_time?: string | null
+          departure_airport_id?: string
+          departure_time?: string | null
+          flight_number?: string | null
+          id?: string
+          notes?: string | null
+          seat?: string | null
+          seat_position?:
+            | Database["flight"]["Enums"]["seat_position_enum"]
+            | null
+          seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
+          tail_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flights_aircrafts_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircrafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flights_airlines_id_fkey"
+            columns: ["airline_id"]
+            isOneToOne: false
+            referencedRelation: "airlines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flights_arrival_airport_id_fkey"
+            columns: ["arrival_airport_id"]
+            isOneToOne: false
+            referencedRelation: "airports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flights_arrival_airport_id_fkey"
+            columns: ["arrival_airport_id"]
+            isOneToOne: false
+            referencedRelation: "routes_geojson"
+            referencedColumns: ["airport_a_id"]
+          },
+          {
+            foreignKeyName: "flights_arrival_airport_id_fkey"
+            columns: ["arrival_airport_id"]
+            isOneToOne: false
+            referencedRelation: "routes_geojson"
+            referencedColumns: ["airport_b_id"]
+          },
+          {
+            foreignKeyName: "flights_departure_airport_id_fkey"
+            columns: ["departure_airport_id"]
+            isOneToOne: false
+            referencedRelation: "airports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flights_departure_airport_id_fkey"
+            columns: ["departure_airport_id"]
+            isOneToOne: false
+            referencedRelation: "routes_geojson"
+            referencedColumns: ["airport_a_id"]
+          },
+          {
+            foreignKeyName: "flights_departure_airport_id_fkey"
+            columns: ["departure_airport_id"]
+            isOneToOne: false
+            referencedRelation: "routes_geojson"
+            referencedColumns: ["airport_b_id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      flights_readable: {
+        Row: {
+          aircraft_model: string | null
+          airline_logo: string | null
+          airline_name: string | null
+          arrival_airport_code: string | null
+          arrival_airport_name: string | null
+          arrival_time: string | null
+          departure_airport_code: string | null
+          departure_airport_name: string | null
+          departure_time: string | null
+          distance_km: number | null
+          duration: string | null
+          flight_number: string | null
+          seat: string | null
+          seat_position:
+            | Database["flight"]["Enums"]["seat_position_enum"]
+            | null
+          seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
+          tail_number: string | null
+        }
+        Relationships: []
+      }
+      lifetime_stats: {
+        Row: {
+          airframe_count: number | null
+          airports_count: number | null
+          country_count: number | null
+          flights_count: number | null
+          total_distance: number | null
+          total_duration: string | null
+        }
+        Relationships: []
+      }
+      routes_geojson: {
+        Row: {
+          airport_a_city: string | null
+          airport_a_country: string | null
+          airport_a_iata: string | null
+          airport_a_id: string | null
+          airport_a_name: string | null
+          airport_b_city: string | null
+          airport_b_country: string | null
+          airport_b_iata: string | null
+          airport_b_id: string | null
+          airport_b_name: string | null
+          distance_km: number | null
+          flights_by_direction: Json | null
+          geometry: Json | null
+          id: string | null
+          route_frequency: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      insert_flight_with_timezone: {
+        Args: {
+          p_aircraft_id: string
+          p_airline_id: string
+          p_arrival_airport_id: string
+          p_arrival_local: string
+          p_departure_airport_id: string
+          p_departure_local: string
+          p_flight_number: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      seat_position_enum: "window" | "middle" | "aisle"
+      seat_type_enum: "economy" | "premium_economy" | "business"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -877,6 +1144,12 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  flight: {
+    Enums: {
+      seat_position_enum: ["window", "middle", "aisle"],
+      seat_type_enum: ["economy", "premium_economy", "business"],
+    },
+  },
   graphql_public: {
     Enums: {},
   },

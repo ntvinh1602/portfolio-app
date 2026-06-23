@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
 
 export type Airport = {
@@ -10,12 +10,12 @@ export type Airport = {
 }
 
 export async function getAirports() {
-  "use cache"
+  "use cache: private"
   cacheTag("flights")
   cacheLife("days")
 
-  const db = supabaseAdmin as any
-  const { data, error } = await db
+  const supabase = await createClient()
+  const { data, error } = await supabase
     .schema("flight")
     .from("airports")
     .select("id, iata_code, name, lat, lng")
