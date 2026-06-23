@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import FlightForm from "../form/flightsForm"
+import FlightForm from "@flight/form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
-import { FlightFilter } from "./flight-filter"
-import { useFlightsFilters } from "../hooks/use-flights-filters"
-import { useFlightReferenceData } from "../hooks/use-flight-reference-data"
+import { FlightFilter } from "./filter"
+import { useFlightsFilters } from "@flight/hooks/use-flights-filters"
 import {
   Card,
   CardAction,
@@ -20,8 +19,23 @@ import {
 } from "@/components/ui/card"
 import { ListFilter, PlusIcon } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
+import StatusLabel from "@/components/status-label"
 
-export default function FlightsCardsClient() {
+interface FlightsListProps {
+  airlineFilterOptions: { label: string; value: string }[]
+  availableYears: string[]
+  airlineFormOptions: { label: string; value: string }[]
+  aircraftFormOptions: { label: string; value: string }[]
+  airportFormOptions: { label: string; value: string }[]
+}
+
+export default function FlightsList({
+  airlineFilterOptions,
+  availableYears,
+  airlineFormOptions,
+  aircraftFormOptions,
+  airportFormOptions,
+}: FlightsListProps) {
   const {
     filters,
     setFilters,
@@ -30,31 +44,7 @@ export default function FlightsCardsClient() {
     triggerRefresh,
   } = useFlightsFilters()
 
-  const { airlines } = useFlightReferenceData()
-
   const [open, setOpen] = useState(false)
-
-  // Defer new Date() to useEffect — Cache Components requires deterministic
-  // values during server render.
-  const [now, setNow] = useState<Date | null>(null)
-  useEffect(() => {
-    setNow(new Date())
-  }, [])
-
-  const airlineOptions = useMemo(
-    () => airlines.map((a) => ({ label: a.name, value: a.name })),
-    [airlines],
-  )
-
-  const availableYears = useMemo(() => {
-    if (!now) return []
-    const currentYear = now.getFullYear()
-    const years: string[] = []
-    for (let y = currentYear; y >= currentYear - 10; y--) {
-      years.push(String(y))
-    }
-    return years
-  }, [now])
 
   const {
     data: flights,
@@ -98,7 +88,7 @@ export default function FlightsCardsClient() {
             <FlightFilter
               filters={filters}
               onFiltersChange={setFilters}
-              airlineOptions={airlineOptions}
+              airlineOptions={airlineFilterOptions}
               availableYears={availableYears}
             />
           </CardContent>
@@ -125,38 +115,40 @@ export default function FlightsCardsClient() {
                 subtitle="Log a new flight into your travel history"
                 onSuccess={triggerRefresh}
                 FormComponent={(props: { onSuccess?: () => void }) => (
-                  <FlightForm {...props} />
+                  <FlightForm
+                    {...props}
+                    airlineOptions={airlineFormOptions}
+                    aircraftOptions={aircraftFormOptions}
+                    airportOptions={airportFormOptions}
+                  />
                 )}
               />
             </CardAction>
           </CardHeader>
           <CardContent>
-            {/* Error banner */}
-            {error && (
-              <div className="text-sm text-destructive mb-4">
-                Error fetching flights: {error.message}
-              </div>
+            {error ? (
+              <StatusLabel type="error" />
+            ) : (
+              <InfiniteList
+                hasMore={hasMore}
+                isFetching={isFetching}
+                isLoading={isLoading}
+                count={count}
+                fetchNextPage={fetchNextPage}
+                renderEndMessage={renderEndMessage}
+              >
+                <div className="grid gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
+                  <ItemGroup>
+                    {flights.map((flight, i) => (
+                      <FlightItem
+                        key={`${flight.flight_number}-${flight.departure_time}-${i}`}
+                        flight={flight}
+                      />
+                    ))}
+                  </ItemGroup>
+                </div>
+              </InfiniteList>
             )}
-
-            <InfiniteList
-              hasMore={hasMore}
-              isFetching={isFetching}
-              isLoading={isLoading}
-              count={count}
-              fetchNextPage={fetchNextPage}
-              renderEndMessage={renderEndMessage}
-            >
-              <div className="grid gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
-                <ItemGroup>
-                  {flights.map((flight, i) => (
-                    <FlightItem
-                      key={`${flight.flight_number}-${flight.departure_time}-${i}`}
-                      flight={flight}
-                    />
-                  ))}
-                </ItemGroup>
-              </div>
-            </InfiniteList>
           </CardContent>
         </Card>
       </div>

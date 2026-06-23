@@ -1,11 +1,4 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  LabelList,
-} from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, LabelList } from "recharts"
 import {
   ChartConfig,
   ChartContainer,
@@ -17,7 +10,7 @@ import {
 import { compactNum } from "@/lib/utils"
 
 export function ChartBarStacked<
-  TData extends Record<string, string | number | undefined>
+  TData extends Record<string, string | number | undefined>,
 >({
   data,
   config,

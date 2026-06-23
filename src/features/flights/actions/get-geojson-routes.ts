@@ -24,7 +24,7 @@ type RoutesFeatureCollection = FeatureCollection<
   RoutesGeoJSONProperties
 >
 
-export async function getRoutesGeoJSON() {
+export default async function getRoutesGeoJSON() {
   "use cache: private"
   cacheTag("flights")
   cacheLife("days")

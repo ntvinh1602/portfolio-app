@@ -10,7 +10,7 @@ export type LifetimeStats = {
   total_duration: string
 }
 
-export async function getLifetimeStats() {
+export default async function getLifetimeStats() {
   "use cache: private"
   cacheTag("flights")
   cacheLife("days")

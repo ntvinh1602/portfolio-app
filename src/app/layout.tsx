@@ -2,12 +2,11 @@ import type { Metadata } from "next"
 import { Manrope } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
-import { ClientLayout } from "@/components/client-layout"
 
 const manrope = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Master Portfolio",
+  title: "Master Ledger",
   description: "A personal finance dashboard for tracking investments — plus a flight log for travel history",
   
   // Disable indexing for search engines
@@ -32,10 +31,8 @@ export default function RootLayout({ children }: Readonly<{
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", manrope.variable, "dark")}>
       <head />
-      <body className="antialiased text-foreground">
-        <ClientLayout>
-          {children}
-        </ClientLayout>
+      <body className="antialiased text-foreground bg-background">
+        {children}
       </body>
     </html>
   )

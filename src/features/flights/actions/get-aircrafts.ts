@@ -1,15 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
 
-export type Airport = {
+export type Aircraft = {
   id: string
-  iata_code: string
-  name: string
-  lat: number
-  lng: number
+  icao_code: string
+  model: string | null
 }
 
-export default async function getAirports() {
+export default async function getAircrafts() {
   "use cache: private"
   cacheTag("flights")
   cacheLife("days")
@@ -17,9 +15,10 @@ export default async function getAirports() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .schema("flight")
-    .from("airports")
-    .select("id, iata_code, name, lat, lng")
+    .from("aircrafts")
+    .select("id, icao_code, model")
+    .order("icao_code")
 
   if (error) throw new Error(error.message)
-  return data as Airport[]
+  return data as Aircraft[]
 }

@@ -1,15 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { FileXCorner } from "lucide-react"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
+import StatusLabel from "./status-label"
 
 interface InfiniteListProps {
   children: React.ReactNode
@@ -73,47 +66,26 @@ export function InfiniteList({
     const documentBottom = document.documentElement.scrollHeight
 
     // Page doesn't fill the viewport — load more immediately
-    if (documentBottom <= window.innerHeight || scrollBottom >= documentBottom - 100) {
+    if (
+      documentBottom <= window.innerHeight ||
+      scrollBottom >= documentBottom - 100
+    ) {
       fetchNextPage()
     }
   }, [isFetching, hasMore, fetchNextPage])
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        {renderLoader?.() ?? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Spinner />
-              </EmptyMedia>
-              <EmptyTitle>Loading...</EmptyTitle>
-              <EmptyDescription>
-                Retrieving your data... Almost done!
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
+      <div className="flex items-center justify-center w-full min-w-80">
+        {renderLoader?.() ?? <StatusLabel type="loading" />}
       </div>
     )
   }
 
   if (!isFetching && count === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        {renderEmpty?.() ?? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <FileXCorner />
-              </EmptyMedia>
-              <EmptyTitle>No results found</EmptyTitle>
-              <EmptyDescription>
-                Unable to find any items matching the conditions.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
+      <div className="flex items-center justify-center min-w-80">
+        {renderEmpty?.() ?? <StatusLabel type="empty" />}
       </div>
     )
   }

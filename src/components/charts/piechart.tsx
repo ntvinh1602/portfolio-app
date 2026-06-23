@@ -20,7 +20,7 @@ export function Piechart({
   centerText,
   centerValue,
   margin_tb = 10,
-  valueFormatter
+  valueFormatter,
 }: {
   data: Record<string, unknown>[]
   chartConfig: ChartConfig
@@ -35,11 +35,14 @@ export function Piechart({
   label_pos?: number
   valueFormatter?: (value: number) => string
 }) {
-
   return (
     <ChartContainer
       config={chartConfig}
-      className={cn("mx-auto", legend !== "right" && "aspect-square", className)}
+      className={cn(
+        "mx-auto",
+        legend !== "right" && "aspect-square",
+        className,
+      )}
     >
       <PieChart margin={{ top: margin_tb, bottom: margin_tb }}>
         {legend === "bottom" && (
@@ -61,7 +64,10 @@ export function Piechart({
         <ChartTooltip
           cursor={false}
           content={
-            <ChartTooltipContent indicator="line" valueFormatter={valueFormatter} />
+            <ChartTooltipContent
+              indicator="line"
+              valueFormatter={valueFormatter}
+            />
           }
         />
         <Pie
@@ -77,9 +83,7 @@ export function Piechart({
             const key = entry[nameKey] as string
             const color = chartConfig[key]?.color
 
-            return (
-              <Cell key={`cell-${index}`} fill={color} />
-            )
+            return <Cell key={`cell-${index}`} fill={color} />
           })}
 
           {centerText && (

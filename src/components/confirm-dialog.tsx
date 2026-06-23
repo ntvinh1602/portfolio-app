@@ -21,15 +21,11 @@ export function ConfirmDialog({
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        {children}
-      </AlertDialogTrigger>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {message}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

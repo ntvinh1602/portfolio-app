@@ -3,7 +3,7 @@ import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent, 
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
@@ -32,7 +32,14 @@ export function Areachart({
       <AreaChart data={data} margin={{ left: -15 }}>
         <defs>
           {dataKeys.map((key) => (
-            <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              key={key}
+              id={`fill-${key}`}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
               <stop
                 offset="0%"
                 stopColor={`var(--color-${key})`}
@@ -73,7 +80,10 @@ export function Areachart({
         <ChartTooltip
           cursor={true}
           content={
-            <ChartTooltipContent indicator="line" valueFormatter={tooltipFormatter}/>
+            <ChartTooltipContent
+              indicator="line"
+              valueFormatter={tooltipFormatter}
+            />
           }
         />
         {dataKeys.map((key) => (
@@ -88,7 +98,7 @@ export function Areachart({
             dot={false}
           />
         ))}
-        <ChartLegend 
+        <ChartLegend
           content={<ChartLegendContent />}
           className="gap-4 justify-center pt-3 text-muted-foreground"
         />

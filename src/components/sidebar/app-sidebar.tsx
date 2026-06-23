@@ -1,11 +1,6 @@
 "use client"
 
-import {
-  TrendingUp,
-  LogOut,
-  Plane,
-  PiggyBank,
-} from "lucide-react"
+import { TrendingUp, LogOut, Plane, PiggyBank } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,
@@ -14,11 +9,11 @@ import {
   SidebarHeader,
   SidebarMenuButton,
   SidebarMenu,
-  SidebarMenuItem
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { ConfirmDialog } from "../confirmation"
+import { ConfirmDialog } from "../confirm-dialog"
 
 const data = {
   navMenu: [
@@ -30,21 +25,21 @@ const data = {
       items: [
         {
           title: "Dashboard",
-          url: "/fund/dashboard"
+          url: "/fund/dashboard",
         },
         {
           title: "Annual Recaps",
-          url: "/fund/annual-recaps"
+          url: "/fund/annual-recaps",
         },
         {
           title: "Balance Sheet",
-          url: "/fund/balance-sheet"
+          url: "/fund/balance-sheet",
         },
         {
           title: "Transactions",
-          url: "/fund/transactions"
-        }
-      ]
+          url: "/fund/transactions",
+        },
+      ],
     },
     {
       title: "Flights",
@@ -59,15 +54,15 @@ const data = {
         {
           title: "History",
           url: "/flights/history",
-        }
-      ]
-    }
-  ]
+        },
+      ],
+    },
+  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
-  
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -79,21 +74,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <TrendingUp className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Master Portfolio</span>
-                  <span className="">v1.0</span>
-                </div>
-              </a>
+            <SidebarMenuButton size="lg">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <TrendingUp className="size-4" />
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-medium">Master Portfolio</span>
+                <span className="">v1.0</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      
+
       <SidebarContent className="pt-2">
         <NavMenu items={data.navMenu} />
       </SidebarContent>
@@ -104,7 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           message="Do you really want to log out?"
         >
           <SidebarMenuButton>
-            <LogOut/>
+            <LogOut />
             <span className="font-light">Logout</span>
           </SidebarMenuButton>
         </ConfirmDialog>

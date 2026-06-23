@@ -1,25 +1,38 @@
-import { getLifetimeStats } from "@/features/flights/actions/get-lifetime-stats"
-import { getRoutesGeoJSON } from "@/features/flights/actions/get-geojson-routes"
-import { getAirports } from "@/features/flights/actions/get-airports"
+import "leaflet/dist/leaflet.css"
 import { Suspense } from "react"
-import FlightsMapClient from "../../../features/flights/components/flight-map"
+import { Spinner } from "@/components/ui/spinner"
+import getLifetimeStats from "@flight/actions/get-lifetime-stats"
+import getRoutesGeoJSON from "@flight/actions/get-geojson-routes"
+import getAirports from "@flight/actions/get-airports"
+import StatsCarousel from "@flight/components/stats-carousel"
+import LeafletMapDynamic from "@flight/components/leaflet-map-dynamic"
 
 export default function FlightsMapPage() {
   return (
-    <Suspense fallback={<p>Loading flight data...</p>}>
-      <FlightsMapPageContent />
-    </Suspense>
+    <div className="flex flex-col h-full gap-4 px-4 pb-4">
+      <Suspense fallback={<Spinner />}>
+        <StatsCarouselData />
+      </Suspense>
+      <Suspense fallback={<Spinner />}>
+        <MapData />
+      </Suspense>
+    </div>
   )
 }
 
-async function FlightsMapPageContent() {
-  const [stats, routes, airports] = await Promise.all([
-    getLifetimeStats(),
+async function StatsCarouselData() {
+  const stats = await getLifetimeStats()
+  return <StatsCarousel stats={stats} />
+}
+
+async function MapData() {
+  const [routes, airports] = await Promise.all([
     getRoutesGeoJSON(),
     getAirports(),
   ])
-
   return (
-    <FlightsMapClient stats={stats} routes={routes} airports={airports} />
+    <div className="relative h-full rounded-2xl overflow-hidden isolate">
+      <LeafletMapDynamic routes={routes} airports={airports} />
+    </div>
   )
 }
