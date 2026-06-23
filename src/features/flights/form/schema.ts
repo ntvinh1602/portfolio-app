@@ -21,3 +21,5 @@ export const flightSchema = z
       path: ["arrivalAirportId"],
     }
   )
+
+export type FlightFormValues = z.infer<typeof flightSchema>

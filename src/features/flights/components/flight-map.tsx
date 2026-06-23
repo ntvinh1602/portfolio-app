@@ -11,9 +11,9 @@ import {
   Route,
   TicketsPlane,
 } from "lucide-react"
-import type { LifetimeStats } from "@/lib/server/flights-stats"
-import type { RoutesGeoJSONProperties } from "@/lib/server/flights-routes"
-import type { Airport } from "@/lib/server/flights-airports"
+import type { LifetimeStats } from "@/features/flights/actions/get-lifetime-stats"
+import type { RoutesGeoJSONProperties } from "@/features/flights/actions/get-geojson-routes"
+import type { Airport } from "@/features/flights/actions/get-airports"
 import type { FeatureCollection, LineString } from "geojson"
 import {
   Item,

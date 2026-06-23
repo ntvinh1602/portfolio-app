@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
-import type { FilterState } from "../flight-filter"
-
-export type { FilterState }
+import type { FilterState } from "../components/flight-filter"
 
 const EMPTY_FILTERS: FilterState = {
   year: null,

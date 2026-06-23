@@ -3,13 +3,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
-import FlightForm from "./form/flightsForm"
+import FlightForm from "../form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
 import { FlightFilter } from "./flight-filter"
-import { useFlightsFilters } from "./hooks/use-flights-filters"
-import { useFlightReferenceData } from "./hooks/use-flight-reference-data"
+import { useFlightsFilters } from "../hooks/use-flights-filters"
+import { useFlightReferenceData } from "../hooks/use-flight-reference-data"
 import {
   Card,
   CardAction,

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
 
 export type LifetimeStats = {
@@ -11,13 +11,12 @@ export type LifetimeStats = {
 }
 
 export async function getLifetimeStats() {
-  "use cache"
+  "use cache: private"
   cacheTag("flights")
   cacheLife("days")
-
-  // flight schema tables not in generated Database type — use untyped client
-  const db = supabaseAdmin as any
-  const { data, error } = await db
+  
+  const supabase = await createClient()
+  const { data, error } = await supabase
     .schema("flight")
     .from("lifetime_stats")
     .select()

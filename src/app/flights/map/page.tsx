@@ -1,8 +1,8 @@
-import { getLifetimeStats } from "@/lib/server/flights-stats"
-import { getRoutesGeoJSON } from "@/lib/server/flights-routes"
-import { getAirports } from "@/lib/server/flights-airports"
+import { getLifetimeStats } from "@/features/flights/actions/get-lifetime-stats"
+import { getRoutesGeoJSON } from "@/features/flights/actions/get-geojson-routes"
+import { getAirports } from "@/features/flights/actions/get-airports"
 import { Suspense } from "react"
-import FlightsMapClient from "./client"
+import FlightsMapClient from "../../../features/flights/components/flight-map"
 
 export default function FlightsMapPage() {
   return (

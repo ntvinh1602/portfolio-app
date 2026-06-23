@@ -1,11 +1,10 @@
 "use client"
 
 import * as React from "react"
-import * as z from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { createFlight } from "@/lib/server/flights"
+import { AddFlight } from "@/features/flights/actions/add-flight"
 import { useFlightReferenceData } from "../hooks/use-flight-reference-data"
 
 import { TextField } from "@/components/form/fields/text-field"
@@ -14,9 +13,7 @@ import { ComboboxField } from "@/components/form/fields/combobox-field"
 import { DateTimeField } from "@/components/form/fields/datetime-field"
 import { Button } from "@/components/ui/button"
 import { FieldGroup, Field } from "@/components/ui/field"
-import { flightSchema } from "./schema"
-
-export type FlightFormValues = z.infer<typeof flightSchema>
+import { flightSchema, type FlightFormValues } from "./schema"
 
 interface FlightFormProps {
   onSuccess?: () => void
@@ -67,7 +64,7 @@ export default function FlightForm({ onSuccess }: FlightFormProps) {
     setLoading(true)
 
     try {
-      await createFlight(values)
+      await AddFlight(values)
 
       toast.success("Flight added successfully", {
         description: `${values.flightNumber} created`,
