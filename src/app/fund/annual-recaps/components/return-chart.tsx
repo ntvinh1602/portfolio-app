@@ -1,3 +1,5 @@
+"use client"
+
 import { formatNum, compactNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"

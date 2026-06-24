@@ -9,15 +9,20 @@ import { Cashflow } from "./components/cashflow"
 import { ReturnChart } from "./components/return-chart"
 import type { Recaps } from "@/types/recaps"
 
-export default function AnnualRecapsClient({ recaps }: { recaps: Recaps }) {
+export default function AnnualRecapsClient({
+  recaps,
+  startYear,
+}: {
+  recaps: Recaps
+  startYear: number
+}) {
   const [year, setYear] = useState<number | null>(null)
 
   useEffect(() => {
     setYear(new Date().getFullYear())
   }, [])
-  const yearMap = useMemo( () => Object.fromEntries(recaps.map(d => [d.year, d])), [recaps] )
+  const yearMap = useMemo(() => Object.fromEntries(recaps.map((d) => [d.year, d])), [recaps])
   const yearData = year !== null ? yearMap[year] : undefined
-  const startYear = recaps[0].year
   if (!yearData || year === null) return null
 
   return (

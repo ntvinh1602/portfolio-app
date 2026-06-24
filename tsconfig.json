@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@flight/*": ["./src/features/flights/*"]
+      "@flight/*": ["./src/features/flights/*"],
+      "@auth/*": ["./src/features/auth/*"]
     }
   },
   "include": [

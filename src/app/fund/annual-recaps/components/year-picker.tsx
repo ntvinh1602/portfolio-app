@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 
@@ -5,12 +7,12 @@ const ALL_TIME_VALUE = 9999
 const ALL_TIME_LABEL = "All Time"
 
 export function YearPicker({
-  startYear = 2000,
+  startYear,
   endYear,
   value,
   onChange,
 }: {
-  startYear?: number
+  startYear: number
   endYear?: number
   value?: number
   onChange?: (value: number) => void

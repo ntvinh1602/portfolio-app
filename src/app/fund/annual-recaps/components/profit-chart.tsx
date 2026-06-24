@@ -1,10 +1,12 @@
+"use client"
+
 import {
   Card,
   CardHeader,
   CardTitle,
   CardAction,
   CardDescription,
-  CardContent,  
+  CardContent,
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
