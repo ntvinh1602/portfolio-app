@@ -1,10 +1,13 @@
-'use client'
+"use client"
 
-import { PostgrestQueryBuilder, type PostgrestClientOptions } from '@supabase/postgrest-js'
-import { type SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import {
+  PostgrestQueryBuilder,
+  type PostgrestClientOptions,
+} from "@supabase/postgrest-js"
+import { type SupabaseClient } from "@supabase/supabase-js"
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react"
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from "@/lib/supabase/client"
 
 const supabase = createClient()
 
@@ -37,13 +40,14 @@ type Database =
       }
 
 // Change this to the database schema you want to use
-type DatabaseSchema = Database['public']
+type DatabaseSchema = Database["public"]
 
 // Extracts the table names from the database type
-type SupabaseTableName = keyof DatabaseSchema['Tables']
+type SupabaseTableName = keyof DatabaseSchema["Tables"]
 
 // Extracts the table definition from the database type
-type SupabaseTableData<T extends SupabaseTableName> = DatabaseSchema['Tables'][T]['Row']
+type SupabaseTableData<T extends SupabaseTableName> =
+  DatabaseSchema["Tables"][T]["Row"]
 
 // Default client options for PostgrestQueryBuilder
 type DefaultClientOptions = PostgrestClientOptions
@@ -52,17 +56,20 @@ type SupabaseSelectBuilder<T extends SupabaseTableName> = ReturnType<
   PostgrestQueryBuilder<
     DefaultClientOptions,
     DatabaseSchema,
-    DatabaseSchema['Tables'][T],
+    DatabaseSchema["Tables"][T],
     T
-  >['select']
+  >["select"]
 >
 
 // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
 type SupabaseQueryHandler<T extends SupabaseTableName> = (
-  query: SupabaseSelectBuilder<T>
+  query: SupabaseSelectBuilder<T>,
 ) => SupabaseSelectBuilder<T>
 
-interface UseInfiniteQueryProps<T extends SupabaseTableName, Query extends string = '*'> {
+interface UseInfiniteQueryProps<
+  T extends SupabaseTableName,
+  Query extends string = "*",
+> {
   // The table name to query
   tableName: T
   // The columns to select, defaults to `*`
@@ -98,10 +105,17 @@ interface StoreProps<T extends SupabaseTableName> {
   getTrailingQuery: () => SupabaseQueryHandler<T> | undefined
 }
 
-function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTableName>(
-  props: StoreProps<T>
-) {
-  const { tableName, columns = '*', pageSize = 20, schema: schemaName, getTrailingQuery } = props
+function createStore<
+  TData extends SupabaseTableData<T>,
+  T extends SupabaseTableName,
+>(props: StoreProps<T>) {
+  const {
+    tableName,
+    columns = "*",
+    pageSize = 20,
+    schema: schemaName,
+    getTrailingQuery,
+  } = props
 
   let state: StoreState<TData> = {
     data: [],
@@ -125,24 +139,31 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
   }
 
   const fetchPage = async (skip: number) => {
-    if (state.hasInitialFetch && (state.isFetching || state.count <= state.data.length)) return
+    if (
+      state.hasInitialFetch &&
+      (state.isFetching || state.count <= state.data.length)
+    )
+      return
 
     setState({ isFetching: true })
 
-    let query = (
-      schemaName
-        ? supabase.schema(schemaName).from(tableName)
-        : supabase.from(tableName)
-    ).select(columns, { count: 'exact' }) as unknown as SupabaseSelectBuilder<T>
+    let query = (schemaName
+      ? supabase.schema(schemaName).from(tableName)
+      : supabase.from(tableName)
+    ).select(columns, { count: "exact" }) as unknown as SupabaseSelectBuilder<T>
 
     const trailingQuery = getTrailingQuery()
     if (trailingQuery) {
       query = trailingQuery(query)
     }
-    const { data: newData, count, error } = await query.range(skip, skip + pageSize - 1)
+    const {
+      data: newData,
+      count,
+      error,
+    } = await query.range(skip, skip + pageSize - 1)
 
     if (error) {
-      console.error('An unexpected error occurred:', error)
+      console.error("An unexpected error occurred:", error)
       setState({ error })
     } else {
       setState({
@@ -193,7 +214,7 @@ function useInfiniteQuery<
   T extends SupabaseTableName = SupabaseTableName,
 >(props: UseInfiniteQueryProps<T>) {
   const tableName = props.tableName
-  const columns = props.columns ?? '*'
+  const columns = props.columns ?? "*"
   const pageSize = props.pageSize ?? 20
   const schema = props.schema
   const trailingQuery = props.trailingQuery
@@ -211,17 +232,17 @@ function useInfiniteQuery<
         schema,
         getTrailingQuery: () => trailingQueryRef.current,
       }),
-    [tableName, columns, pageSize, schema, trailingQueryKey]
+    [tableName, columns, pageSize, schema, trailingQueryKey],
   )
 
   const state = useSyncExternalStore(
     store.subscribe,
     () => store.getState(),
-    () => initialState as StoreState<TData>
+    () => initialState as StoreState<TData>,
   )
 
   useEffect(() => {
-    if (!state.hasInitialFetch && typeof window !== 'undefined') {
+    if (!state.hasInitialFetch && typeof window !== "undefined") {
       store.initialize()
     }
   }, [state.hasInitialFetch, store])

@@ -8,20 +8,35 @@ import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
-import { Button } from "@/components/ui/button"
-import { Field, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { useCashAssets } from "@/hooks/useCashAssets"
+import { getCashAssets } from "@/features/fund/actions/get-cash-assets"
+import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
 import { mutate } from "swr"
-import { CASHFLOW_MEMO } from "@/features/fund/domain/cashflow_memo"
+import { CASHFLOW_MEMO } from "@/features/fund/domain/cashflow-memo"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
-export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
+interface CashflowFormProps {
+  onSuccess?: () => void
+  formId: string
+  onLoadingChange: (loading: boolean) => void
+  resetFormRef: { current: () => void }
+}
+
+export function CashflowForm({
+  onSuccess,
+  formId,
+  onLoadingChange,
+  resetFormRef,
+}: CashflowFormProps) {
   const supabase = createClient()
-  const { data: assetData } = useCashAssets()
-  const [loading, setLoading] = React.useState(false)
+  const [assetData, setAssetData] = React.useState<Tables<"assets">[]>([])
+
+  React.useEffect(() => {
+    getCashAssets().then(setAssetData)
+  }, [])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(cashflowSchema),
@@ -39,16 +54,18 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
     control: form.control,
     name: "asset",
   })
-  
+
   const filteredMemos = React.useMemo(() => {
     if (!operation) return []
 
-    return CASHFLOW_MEMO[operation]?.map((memo) => ({
-      value: memo,
-      label: memo,
-    })) ?? []
+    return (
+      CASHFLOW_MEMO[operation]?.map((memo) => ({
+        value: memo,
+        label: memo,
+      })) ?? []
+    )
   }, [operation])
-  
+
   const assetIDs = React.useMemo(() => {
     const seen = new Set<string>()
     return assetData
@@ -56,7 +73,7 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
       .map((a) => ({
         value: a.id,
         label: a.name ? `${a.ticker} — ${a.name}` : a.ticker,
-        currency: a.currency_code
+        currency: a.currency_code,
       }))
       .filter((item) => {
         if (seen.has(item.value)) return false
@@ -72,7 +89,7 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
   const isVND = selectedAsset?.currency === "VND"
 
   async function onSubmit(data: FormValues) {
-    setLoading(true)
+    onLoadingChange(true)
     try {
       const { error } = await supabase.rpc("add_cashflow_event", {
         p_operation: data.operation,
@@ -89,35 +106,54 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
         form.reset()
         onSuccess?.()
       }
-      
+
       await mutate(
         (key) => Array.isArray(key) && key[0] === "priceRefresh",
         undefined,
-        { revalidate: true }
+        { revalidate: true },
       )
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unexpected error occurred. Please try again later."
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again later."
       toast.error("Unexpected error", { description: message })
     } finally {
-      setLoading(false)
+      onLoadingChange(false)
     }
   }
 
+  // Expose form.reset() to the dialog footer via the ref
+  React.useEffect(() => {
+    resetFormRef.current = () => form.reset()
+  }, [form, resetFormRef])
+
   return (
     <div className="flex flex-col gap-6">
-      <form id="cashflow-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <RadioGroupField
             control={form.control}
             name="operation"
             options={[
-              { value: "deposit", label: "Deposit", description: "Paid-in capital" },
-              { value: "withdraw", label: "Withdraw", description: "Time to treat yourself!" },
-              { value: "income", label: "Income", description: "Free money!" },
-              { value: "expense", label: "Expense", description: "So expensive!" },
+              {
+                value: "deposit",
+                label: "Deposit",
+                description: "For a bright future",
+              },
+              {
+                value: "withdraw",
+                label: "Withdraw",
+                description: "Time for shopping",
+              },
+              { value: "income", label: "Income", description: "Payday!" },
+              {
+                value: "expense",
+                label: "Expense",
+                description: "So expensive!",
+              },
             ]}
-            column="grid-cols-2"
+            column={2}
           />
 
           <ComboboxField
@@ -156,14 +192,6 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
           />
         </FieldGroup>
       </form>
-      <Field className="flex justify-end" orientation="horizontal">
-        <Button type="button" variant="outline" onClick={() => form.reset()}>
-          Reset
-        </Button>
-        <Button type="submit" form="cashflow-form" disabled={loading}>
-          {loading ? "Submitting..." : "Submit"}
-        </Button>
-      </Field>
     </div>
   )
 }

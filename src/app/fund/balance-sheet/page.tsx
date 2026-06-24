@@ -1,4 +1,4 @@
-import { getBalanceSheet } from "@fund/actions/get-balancesheet"
+import getBalanceSheet from "@fund/actions/get-balancesheet"
 import { FlatItemList } from "@fund/components/balance-sheet/flat-item-list"
 import { GroupedItemList } from "@fund/components/balance-sheet/grouped-item-list"
 import { BalanceSheetSectionCard } from "@fund/components/balance-sheet/section-card"

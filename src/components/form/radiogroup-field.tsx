@@ -1,7 +1,11 @@
 "use client"
 
-import * as React from "react"
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form"
 import {
   Field,
   FieldLabel,
@@ -22,7 +26,7 @@ interface RadioGroupFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
   options: RadioOption[]
-  column: string
+  column: number
 }
 
 export function RadioGroupField<T extends FieldValues>({
@@ -40,10 +44,14 @@ export function RadioGroupField<T extends FieldValues>({
           <RadioGroup
             onValueChange={field.onChange}
             value={field.value}
-            className={`${column} w-full`}
+            className={`grid-cols-${column}`}
           >
             {options.map((opt) => (
-              <FieldLabel htmlFor={`${name}-${opt.value}`} key={opt.value}>
+              <FieldLabel
+                htmlFor={`${name}-${opt.value}`}
+                key={opt.value}
+                className="border-border"
+              >
                 <Field orientation="horizontal">
                   <FieldContent>
                     <FieldTitle>{opt.label}</FieldTitle>
@@ -59,7 +67,7 @@ export function RadioGroupField<T extends FieldValues>({
               </FieldLabel>
             ))}
           </RadioGroup>
-            
+
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}

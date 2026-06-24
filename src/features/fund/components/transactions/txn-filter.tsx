@@ -1,6 +1,7 @@
 "use client"
 
-import { X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DatePicker } from "@/components/date-picker"
-import { category, operation } from "./labels"
+import { category, operation } from "../../domain/txn-labels"
 
 export interface TransactionFilterState {
   categories: string[]
@@ -50,7 +51,7 @@ export function TxnFilter({
 
   const setFilter = <K extends keyof TransactionFilterState>(
     key: K,
-    value: TransactionFilterState[K]
+    value: TransactionFilterState[K],
   ) => {
     onFiltersChange({ ...filters, [key]: value })
   }
@@ -61,6 +62,25 @@ export function TxnFilter({
       operation: null,
       search: "",
     })
+  }
+
+  // Deferred search — typing in the memo field updates local state only.
+  // The actual filter (and therefore the query) is only updated when the
+  // user clicks the search button or presses Enter.  This prevents
+  // per-keystroke store recreation and scroll-position resets.
+  const [searchInput, setSearchInput] = useState(filters.search)
+
+  // Sync local state when filters are reset externally
+  useEffect(() => {
+    setSearchInput(filters.search)
+  }, [filters.search])
+
+  const commitSearch = () => {
+    setFilter("search", searchInput)
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") commitSearch()
   }
 
   return (
@@ -117,9 +137,7 @@ export function TxnFilter({
       {/* Operation select */}
       <Select
         value={filters.operation ?? "all"}
-        onValueChange={(v) =>
-          setFilter("operation", v === "all" ? null : v)
-        }
+        onValueChange={(v) => setFilter("operation", v === "all" ? null : v)}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Operation" />
@@ -140,24 +158,25 @@ export function TxnFilter({
         </SelectContent>
       </Select>
 
-      {/* Memo search */}
-      <Input
-        placeholder="Search memo…"
-        value={filters.search}
-        onChange={(e) => setFilter("search", e.target.value)}
-        className="w-full"
-      />
+      {/* Memo search — deferred until user confirms */}
+      <div className="flex w-full gap-1">
+        <Input
+          placeholder="Search by memo…"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          className="w-full"
+        />
+        <Button size="icon" onClick={commitSearch} aria-label="Search">
+          <Search className="size-4" />
+        </Button>
+      </div>
 
       {/* Reset */}
       {hasFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetFilters}
-          className="h-9 rounded-xl text-muted-foreground hover:text-foreground"
-        >
+        <Button variant="secondary" onClick={resetFilters}>
+          <RotateCcw />
           Reset
-          <X className="ml-1 size-3.5" />
         </Button>
       )}
     </div>

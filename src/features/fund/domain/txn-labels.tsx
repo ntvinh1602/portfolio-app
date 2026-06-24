@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react"
 import {
   TrendingUp,
   TrendingDown,
@@ -11,13 +12,19 @@ import {
   Box,
 } from "lucide-react"
 
-export const category = [
+export interface LabelConfig {
+  value: string
+  label: string
+  icon: LucideIcon
+}
+
+export const category: LabelConfig[] = [
   { value: "stock", label: "Stock", icon: Box },
-  { value: "cashflow", label: "Cashflow",icon: Banknote },
+  { value: "cashflow", label: "Cashflow", icon: Banknote },
   { value: "debt", label: "Debt", icon: HandCoins },
 ]
 
-export const operation = [
+export const operation: LabelConfig[] = [
   { value: "buy", label: "Buy", icon: ArrowBigDownDash },
   { value: "sell", label: "Sell", icon: ArrowBigUpDash },
   { value: "deposit", label: "Deposit", icon: Download },

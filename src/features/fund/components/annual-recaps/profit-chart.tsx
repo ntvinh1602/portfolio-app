@@ -14,15 +14,7 @@ import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-
-export interface ProfitChartItem {
-  revenue: number
-  fee: number
-  interest: number
-  tax: number
-  snapshot_date: string
-  [key: string]: string | number
-}
+import type { ProfitChartItem } from "@fund/fund.types"
 
 interface ProfitChartProps {
   year: number

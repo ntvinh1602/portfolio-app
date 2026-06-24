@@ -7,13 +7,13 @@ import { ExpenseChart } from "./expense-chart"
 import { TopStocks } from "./top-stocks"
 import { Cashflow } from "./cashflow"
 import { ReturnChart } from "./return-chart"
-import type { Recaps } from "@/types/recaps"
+import type { Recaps } from "@fund/fund.types"
 
 export default function AnnualRecaps({
   recaps,
   startYear,
 }: {
-  recaps: Recaps
+  recaps: Recaps[]
   startYear: number
 }) {
   const [year, setYear] = useState<number | null>(null)

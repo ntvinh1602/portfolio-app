@@ -1,4 +1,5 @@
-import { X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, RotateCcw } from "lucide-react"
 import { YearPicker } from "@/components/year-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,10 +21,10 @@ const SEAT_TYPES = [
 const ALL_TIME_YEAR = 9999
 
 export interface FilterState {
-  year: string | null       // "all" or a year string like "2024"
-  airline: string | null    // "all" or an airline name
-  seatTypes: string[]       // selected seat type values
-  search: string            // flight number search
+  year: string | null // "all" or a year string like "2024"
+  airline: string | null // "all" or an airline name
+  seatTypes: string[] // selected seat type values
+  search: string // flight number search
 }
 
 interface FilterBarProps {
@@ -47,7 +48,7 @@ export function FlightFilter({
 
   const setFilter = <K extends keyof FilterState>(
     key: K,
-    value: FilterState[K]
+    value: FilterState[K],
   ) => {
     onFiltersChange({ ...filters, [key]: value })
   }
@@ -59,6 +60,23 @@ export function FlightFilter({
       seatTypes: [],
       search: "",
     })
+  }
+
+  // Deferred search — typing updates local state only.
+  // The filter (and therefore the query) is only updated on button click
+  // or Enter, preventing per-keystroke store recreation.
+  const [searchInput, setSearchInput] = useState(filters.search)
+
+  useEffect(() => {
+    setSearchInput(filters.search)
+  }, [filters.search])
+
+  const commitSearch = () => {
+    setFilter("search", searchInput)
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") commitSearch()
   }
 
   return (
@@ -109,24 +127,25 @@ export function FlightFilter({
         ))}
       </ToggleGroup>
 
-      {/* Search */}
-      <Input
-        placeholder="Flight number…"
-        value={filters.search}
-        onChange={(e) => setFilter("search", e.target.value)}
-        className="w-full"
-      />
+      {/* Search — deferred until user confirms */}
+      <div className="flex w-full gap-1">
+        <Input
+          placeholder="Flight number…"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          className="w-full"
+        />
+        <Button size="icon" onClick={commitSearch} aria-label="Search">
+          <Search className="size-4" />
+        </Button>
+      </div>
 
       {/* Reset */}
       {hasFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetFilters}
-          className="h-9 rounded-xl text-muted-foreground hover:text-foreground"
-        >
+        <Button variant="secondary" onClick={resetFilters}>
+          <RotateCcw />
           Reset
-          <X className="ml-1 size-3.5" />
         </Button>
       )}
     </div>

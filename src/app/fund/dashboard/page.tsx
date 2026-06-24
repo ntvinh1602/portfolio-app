@@ -1,7 +1,7 @@
 import Dashboard from "@fund/components/dashboard/wrapper"
 import { Spinner } from "@/components/ui/spinner"
-import { getNews } from "@fund/actions/news"
-import { getDashboard } from "@fund/actions/get-dashboard"
+import getNews from "@/features/fund/actions/get-news"
+import getDashboard from "@fund/actions/get-dashboard"
 import { Suspense } from "react"
 
 export default function Page() {

@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
+import { Database } from "@/types/database.types"
+
+type AirlineRow = Database["flight"]["Tables"]["airlines"]["Row"]
 
 export type Airline = {
-  id: string
-  name: string
+  [K in keyof AirlineRow]: NonNullable<AirlineRow[K]>
 }
 
 export default async function getAirlines() {
@@ -15,7 +17,7 @@ export default async function getAirlines() {
   const { data, error } = await supabase
     .schema("flight")
     .from("airlines")
-    .select("id, name")
+    .select("*")
     .order("name")
 
   if (error) throw new Error(error.message)

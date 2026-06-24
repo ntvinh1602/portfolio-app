@@ -9,8 +9,8 @@ import { TradingViewWidget } from "./trading-view"
 import { NewsWidget } from "./news"
 import { useMemo, useState } from "react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import type { Dashboard } from "@/types/dashboard"
-import type { NewsArticle } from "@/types/news"
+import type { Dashboard } from "@fund/fund.types"
+import type { NewsArticle } from "@fund/fund.types"
 
 export default function Dashboard({
   data,

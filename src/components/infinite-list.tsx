@@ -10,6 +10,7 @@ interface InfiniteListProps {
   isFetching: boolean
   isLoading: boolean
   count: number
+  error?: Error | null
   fetchNextPage: () => void
   renderEndMessage?: (count: number) => React.ReactNode
   renderLoader?: () => React.ReactNode
@@ -22,6 +23,7 @@ export function InfiniteList({
   isFetching,
   isLoading,
   count,
+  error,
   fetchNextPage,
   renderEndMessage,
   renderLoader,
@@ -82,7 +84,9 @@ export function InfiniteList({
     )
   }
 
-  if (!isFetching && count === 0) {
+  // Gate on !error: a failed first fetch sets both error and count=0,
+  // so we'd otherwise render the error banner AND the empty state together.
+  if (!isFetching && count === 0 && !error) {
     return (
       <div className="flex items-center justify-center min-w-80">
         {renderEmpty?.() ?? <StatusLabel type="empty" />}

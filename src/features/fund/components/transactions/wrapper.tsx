@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-
 import {
   Card,
   CardAction,
@@ -17,27 +16,35 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
-import { FormDialogWrapper } from "@/components/form/dialog-form-wrapper"
+import { FormDialogWrapper } from "@/components/form/form-wrapper"
 import { InfiniteList } from "@/components/infinite-list"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
-import { TxnItem, type Transaction } from "./txn-item"
+import { TxnItem } from "./txn-item"
+import type { Tables } from "@/types/database.types"
 import { TxnFilter } from "./txn-filter"
-import { StockForm } from "./form/stockForm"
-import { CashflowForm } from "./form/cashflowForm"
-import { BorrowForm } from "./form/borrowForm"
-import { RepayForm } from "./form/repayForm"
+import { StockForm } from "@fund/form/stockForm"
+import { CashflowForm } from "@fund/form/cashflowForm"
+import { BorrowForm } from "@fund/form/borrowForm"
+import { RepayForm } from "@fund/form/repayForm"
 import { PlusIcon, ListFilter } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
-import { useTransactionFilters } from "../../../features/fund/hooks/use-transaction-filters"
+import { useTransactionFilters } from "@fund/hooks/use-transaction-filters"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
-
+type Transaction = {
+  [K in keyof Tables<"tx_summary">]: NonNullable<Tables<"tx_summary">[K]>
+}
 const formConfig: Record<
   TransactionFormType,
   {
     title: string
     subtitle?: string
-    Component: React.ComponentType<{ onSuccess?: () => void }>
+    Component: React.ComponentType<{
+      onSuccess?: () => void
+      formId: string
+      onLoadingChange: (loading: boolean) => void
+      resetFormRef: { current: () => void }
+    }>
   }
 > = {
   stock: {
@@ -87,7 +94,7 @@ export default function TransactionsClient() {
     hasMore,
     fetchNextPage,
   } = useInfiniteQuery<Transaction>({
-    tableName: "tx_summary" as any,
+    tableName: "tx_summary",
     columns: "*",
     pageSize: 12,
     trailingQuery,
@@ -194,6 +201,7 @@ export default function TransactionsClient() {
                 isFetching={isFetching}
                 isLoading={isLoading}
                 count={count}
+                error={error}
                 fetchNextPage={fetchNextPage}
               >
                 {transactions.length > 0 && (

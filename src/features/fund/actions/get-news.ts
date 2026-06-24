@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { NewsArticle } from "@/types/news"
+import type { NewsArticle } from "@fund/fund.types"
 
-export async function getNews() {
-  "use cache"
+export default async function getNews() {
+  "use cache: private"
   cacheTag("news")
   cacheLife("days")
 
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-  
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("news_articles")

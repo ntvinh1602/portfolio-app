@@ -19,17 +19,11 @@ import {
   ItemGroup,
   ItemTitle
 } from "@/components/ui/item"
-
-interface ReturnChartPoint {
-  snapshot_date: string
-  portfolio_value: number
-  vni_value: number
-  [key: string]: string | number
-}
+import { type ReturnChartItem } from "@fund/fund.types"
 
 interface ReturnChartProps {
   dateRange: string
-  chartData: ReturnChartPoint[]
+  chartData: ReturnChartItem[]
   twrYtd: number
   twrAll: number
   inceptionDate: string

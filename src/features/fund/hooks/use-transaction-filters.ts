@@ -5,7 +5,7 @@ import { subMonths, startOfDay, endOfDay } from "date-fns"
 import type {
   TransactionFilterState,
   Preset,
-} from "../../../app/fund/transactions/txn-filter"
+} from "../components/transactions/txn-filter"
 
 function getDateRangeFromPreset(preset: Preset, now: Date) {
   switch (preset) {

@@ -18,19 +18,13 @@ import {
 } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
 import { Separator } from "@/components/ui/separator"
-
-interface ReturnChartPoint {
-  snapshot_date: string
-  portfolio_value: number
-  vni_value: number
-  [key: string]: string | number
-}
+import type { ReturnChartItem } from "@fund/fund.types"
 
 interface ReturnChartProps {
   year: number
   equityReturn: number
   vnIndexReturn: number
-  chartData: ReturnChartPoint[]
+  chartData: ReturnChartItem[]
 }
 
 const returnChartConfig: ChartConfig = {

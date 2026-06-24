@@ -11,14 +11,24 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistance } from "date-fns"
-import {
-  ToggleGroup,
-  ToggleGroupItem
-} from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { NewsArticle } from "@/types/news"
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import type { NewsArticle } from "@fund/fund.types"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { FileXCorner } from "lucide-react"
 
 type NewsWidgetProps = {
@@ -28,11 +38,7 @@ type NewsWidgetProps = {
   news: NewsArticle[]
 }
 
-export function NewsWidget({
-  stockList,
-  news
-}: NewsWidgetProps) {
-
+export function NewsWidget({ stockList, news }: NewsWidgetProps) {
   const [filter, setFilter] = useState<"all" | "related">("all")
   const [now, setNow] = useState<Date | null>(null)
 
@@ -53,9 +59,7 @@ export function NewsWidget({
     if (filter === "all") return news
 
     return news.filter((article) =>
-      article.tickers?.some((ticker) =>
-        holdingTickers.has(ticker)
-      )
+      article.tickers?.some((ticker) => holdingTickers.has(ticker)),
     )
   }, [news, filter, holdingTickers])
 
@@ -106,13 +110,12 @@ export function NewsWidget({
                 >
                   <ItemMedia className="flex flex-col gap-1 min-w-10">
                     {article.tickers.slice(0, 1).map((ticker) => (
-                      <Badge key={ticker}>
-                        {ticker}
-                        
-                      </Badge>
+                      <Badge key={ticker}>{ticker}</Badge>
                     ))}
                     {article.tickers.length > 1 && (
-                      <span className="text-xs">+{article.tickers.length - 1}</span>
+                      <span className="text-xs">
+                        +{article.tickers.length - 1}
+                      </span>
                     )}
                   </ItemMedia>
                   <ItemContent>
@@ -121,7 +124,12 @@ export function NewsWidget({
                       {article.excerpt}
                     </ItemDescription>
                     <ItemDescription className="text-xs">
-                      {article.source} - {now ? formatDistance(new Date(article.published_at), now, { addSuffix: true }) : ""}
+                      {article.source} -{" "}
+                      {now
+                        ? formatDistance(new Date(article.published_at), now, {
+                            addSuffix: true,
+                          })
+                        : ""}
                     </ItemDescription>
                   </ItemContent>
                 </Item>

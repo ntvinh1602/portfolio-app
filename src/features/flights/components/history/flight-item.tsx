@@ -5,12 +5,11 @@ import {
   Star,
   ArrowLeftRight,
   Users,
-  Tag,
   EllipsisVertical,
   SquarePen,
   Trash2,
+  TicketsPlane,
 } from "lucide-react"
-import { formatNum } from "@/lib/utils"
 import {
   Item,
   ItemMedia,
@@ -28,24 +27,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { Database } from "@/types/database.types"
 
+type FlightList = Database["flight"]["Views"]["flights_readable"]["Row"]
 export type Flight = {
-  flight_number: string
-  tail_number: string | null
-  departure_time: string
-  arrival_time: string
-  departure_airport_code: string
-  arrival_airport_code: string
-  departure_airport_name: string
-  arrival_airport_name: string
-  airline_name: string
-  airline_logo: string
-  aircraft_model: string
-  seat: string | null
-  seat_type: string
-  seat_position: string | null
-  distance_km: number
-  duration: string
+  [K in keyof FlightList]: NonNullable<FlightList[K]>
 }
 
 const seatTypeLabels: Record<string, string> = {
@@ -69,7 +55,7 @@ export function FlightItem({ flight }: FlightCardProps) {
   const details = [
     {
       key: "flight",
-      icon: Tag,
+      icon: TicketsPlane,
       value: flight.flight_number,
     },
     {
@@ -112,9 +98,7 @@ export function FlightItem({ flight }: FlightCardProps) {
       </ItemContent>
       <ItemMedia className="flex-col">
         <Plane className="size-4 rotate-45" />
-        <span className="text-xs font-medium">
-          {formatNum(flight.distance_km)} km
-        </span>
+        <span className="text-xs font-medium">{flight.tail_number}</span>
         <span className="text-xs font-medium">{flight.duration}</span>
       </ItemMedia>
       <ItemContent className="items-end">

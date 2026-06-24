@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -12,9 +12,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.supabase.co",
-      }
+      },
     ],
   },
-};
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+}
 
-export default nextConfig;
+export default nextConfig

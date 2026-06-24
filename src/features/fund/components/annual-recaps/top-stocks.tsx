@@ -1,6 +1,7 @@
 "use client"
 
 import { Asset } from "./stock-item"
+import type { StockPnLItem } from "@fund/fund.types"
 import {
   Card,
   CardDescription,
@@ -10,13 +11,6 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Trophy } from "lucide-react"
-
-export interface StockPnLItem {
-  logo_url: string
-  name: string
-  ticker: string
-  total_pnl: number
-}
 
 interface TopStocksProps {
   year: number

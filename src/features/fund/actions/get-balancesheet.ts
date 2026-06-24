@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
+import { Database } from "@/types/database.types"
 
-export async function getBalanceSheet() {
+type BSRow = Database["public"]["Views"]["balance_sheet"]["Row"]
+
+export type BalanceSheet = {
+  [K in keyof BSRow]: NonNullable<BSRow[K]>
+}
+
+export default async function getBalanceSheet() {
   "use cache: private"
   cacheTag("dashboard", "analytics")
   cacheLife("days")
@@ -13,13 +20,7 @@ export async function getBalanceSheet() {
 
   if (error) throw new Error(error.message)
 
-  const rawData = (data as {
-    ticker: string
-    name: string
-    asset_class: string
-    quantity: number
-    total_value: number
-  }[]) ?? []
+  const rawData = (data as BalanceSheet[]) ?? []
 
   const totalAssets = rawData
     .filter((r) => r.asset_class !== "equity" && r.asset_class !== "liability")

@@ -1,13 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
+import { Database } from "@/types/database.types"
+
+type StatsRow = Database["flight"]["Views"]["lifetime_stats"]["Row"]
 
 export type LifetimeStats = {
-  flights_count: number
-  airports_count: number
-  country_count: number
-  airframe_count: number
-  total_distance: number
-  total_duration: string
+  [K in keyof StatsRow]: NonNullable<StatsRow[K]>
 }
 
 export default async function getLifetimeStats() {

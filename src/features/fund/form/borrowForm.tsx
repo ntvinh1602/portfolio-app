@@ -7,17 +7,22 @@ import { toast } from "sonner"
 import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { TextField } from "@/components/form/text-field"
-import { Button } from "@/components/ui/button"
-import { Field, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { borrowSchema } from "./schema"
 import { mutate } from "swr"
 
 type FormValues = z.infer<typeof borrowSchema>
 
-export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
+interface BorrowFormProps {
+  onSuccess?: () => void
+  formId: string
+  onLoadingChange: (loading: boolean) => void
+  resetFormRef: { current: () => void }
+}
+
+export function BorrowForm({ onSuccess, formId, onLoadingChange, resetFormRef }: BorrowFormProps) {
   const supabase = createClient()
-  const [loading, setLoading] = React.useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(borrowSchema),
@@ -27,7 +32,7 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
   })
 
   async function onSubmit(data: FormValues) {
-    setLoading(true)
+    onLoadingChange(true)
     try {
       const { error } = await supabase.rpc("add_borrow_event", {
         p_principal: data.principal,
@@ -53,13 +58,18 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
         err instanceof Error ? err.message : "An unexpected error occurred. Please try again later."
       toast.error("Unexpected error", { description: message })
     } finally {
-      setLoading(false)
+      onLoadingChange(false)
     }
   }
 
+  // Expose form.reset() to the dialog footer via the ref
+  React.useEffect(() => {
+    resetFormRef.current = () => form.reset()
+  }, [form, resetFormRef])
+
   return (
     <div className="flex flex-col gap-6">
-      <form id="borrow-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <TextField
             control={form.control}
@@ -85,14 +95,6 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
           />
         </FieldGroup>
       </form>
-      <Field className="flex justify-end" orientation="horizontal">
-        <Button type="button" variant="outline" onClick={() => form.reset()}>
-          Reset
-        </Button>
-        <Button type="submit" form="borrow-form" disabled={loading}>
-          {loading ? "Submitting..." : "Submit"}
-        </Button>
-      </Field>
     </div>
   )
 }

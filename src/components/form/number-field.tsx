@@ -33,17 +33,17 @@ export function NumberField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
           {label && <FieldLabel>{label}</FieldLabel>}
-          <InputGroup className="flex gap-2 border-0">
+          <InputGroup className="flex gap-2">
             <Input
               type="number"
-              value={field.value}
+              value={field.value ?? ""}
               onChange={(e) => field.onChange(e.target.value)}
               inputMode="decimal"
               placeholder={placeholder}
               disabled={disabled}
             />
             {suffix && (
-              <InputGroupAddon align="inline-end" className="p-0">
+              <InputGroupAddon align="inline-end">
                 <InputGroupText className="text-nowrap">{suffix}</InputGroupText>
               </InputGroupAddon>
             )}

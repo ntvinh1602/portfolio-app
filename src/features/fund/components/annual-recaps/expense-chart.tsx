@@ -12,14 +12,7 @@ import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
-
-interface ProfitChartItem {
-  revenue: number
-  fee: number
-  interest: number
-  tax: number
-  snapshot_date: string
-}
+import type { ProfitChartItem } from "@fund/fund.types"
 
 interface ExpenseChartProps {
   profitChart: ProfitChartItem[]

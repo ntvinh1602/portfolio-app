@@ -7,46 +7,36 @@ import {
   ItemMedia,
   ItemContent,
   ItemTitle,
-  ItemDescription
+  ItemDescription,
 } from "@/components/ui/item"
-import { operation } from "./labels"
+import { operation } from "@fund/domain/txn-labels"
+import type { Tables } from "@/types/database.types"
 
-export interface Transaction {
-  id: string
-  created_at: string
-  category: string
-  operation: string
-  value: number
-  memo: string
-}
-
-interface TransactionCardProps {
-  transaction: Transaction
-}
-
-export function TxnItem({ transaction }: TransactionCardProps) {
-  const operationConfig = operation.find((o) => o.value === transaction.operation)
+export function TxnItem({
+  transaction,
+}: {
+  transaction: {
+    [K in keyof Tables<"tx_summary">]: NonNullable<Tables<"tx_summary">[K]>
+  }
+}) {
+  const operationConfig = operation.find(
+    (o) => o.value === transaction.operation,
+  )
   const OperationIcon = operationConfig?.icon
 
   return (
     <Item variant="outline" size="sm">
-      <ItemMedia variant="icon">
-        {OperationIcon && <OperationIcon/>}
-      </ItemMedia>
+      <ItemMedia variant="icon">{OperationIcon && <OperationIcon />}</ItemMedia>
 
       <ItemContent>
-        <ItemTitle>
-          {transaction.memo}
-        </ItemTitle>
+        <ItemTitle>{transaction.memo}</ItemTitle>
         <ItemDescription className="text-xs">
           {format(new Date(transaction.created_at), "yyyy-MM-dd HH:mm")}
         </ItemDescription>
       </ItemContent>
 
       <ItemContent className="items-end">
-        <ItemTitle>
-          {formatNum(transaction.value)}
-        </ItemTitle>
+        <ItemTitle>{formatNum(transaction.value)}</ItemTitle>
         <ItemDescription className="text-xs">
           {operationConfig?.label ?? transaction.operation}
         </ItemDescription>

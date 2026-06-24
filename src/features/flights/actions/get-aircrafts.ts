@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
+import { Database } from "@/types/database.types"
+
+type AircraftRow = Database["flight"]["Tables"]["aircrafts"]["Row"]
 
 export type Aircraft = {
-  id: string
-  icao_code: string
-  model: string | null
+  [K in keyof AircraftRow]: NonNullable<AircraftRow[K]>
 }
 
 export default async function getAircrafts() {
