@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import { NumberField } from "@/components/form/fields/number-field"
-import { TextField } from "@/components/form/fields/text-field"
+import { NumberField } from "@/components/form/number-field"
+import { TextField } from "@/components/form/text-field"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
@@ -59,7 +59,7 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <form id="cashflow-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id="borrow-form" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <TextField
             control={form.control}
@@ -89,7 +89,7 @@ export function BorrowForm({ onSuccess }: { onSuccess?: () => void }) {
         <Button type="button" variant="outline" onClick={() => form.reset()}>
           Reset
         </Button>
-        <Button type="submit" form="cashflow-form" disabled={loading}>
+        <Button type="submit" form="borrow-form" disabled={loading}>
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </Field>

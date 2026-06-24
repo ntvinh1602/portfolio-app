@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
   env: {},
   images: {
     remotePatterns: [

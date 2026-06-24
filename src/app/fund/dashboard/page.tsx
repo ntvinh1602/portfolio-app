@@ -1,17 +1,19 @@
-import DashboardClient from "./client"
-import { getNews } from "@/lib/server/news"
-import { getDashboard } from "@/lib/server/dashboard"
+import Dashboard from "@fund/components/dashboard/wrapper"
+import { Spinner } from "@/components/ui/spinner"
+import { getNews } from "@fund/actions/news"
+import { getDashboard } from "@fund/actions/get-dashboard"
+import { Suspense } from "react"
 
-export default async function Page() {
-  const [dashboard, news] = await Promise.all([
-    getDashboard(),
-    getNews(),
-  ])
-
+export default function Page() {
   return (
-    <DashboardClient
-      data={dashboard}
-      news={news}
-    />
+    <Suspense fallback={<Spinner />}>
+      <DashboardData />
+    </Suspense>
   )
+}
+
+async function DashboardData() {
+  const [dashboard, news] = await Promise.all([getDashboard(), getNews()])
+
+  return <Dashboard data={dashboard} news={news} />
 }

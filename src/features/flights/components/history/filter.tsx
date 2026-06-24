@@ -1,4 +1,5 @@
 import { X } from "lucide-react"
+import { YearPicker } from "@/components/year-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -16,6 +17,8 @@ const SEAT_TYPES = [
   { value: "business", label: "Business" },
 ]
 
+const ALL_TIME_YEAR = 9999
+
 export interface FilterState {
   year: string | null       // "all" or a year string like "2024"
   airline: string | null    // "all" or an airline name
@@ -27,14 +30,14 @@ interface FilterBarProps {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
   airlineOptions: { label: string; value: string }[]
-  availableYears: string[]
+  startYear: number
 }
 
 export function FlightFilter({
   filters,
   onFiltersChange,
   airlineOptions,
-  availableYears,
+  startYear,
 }: FilterBarProps) {
   const hasFilters =
     filters.year !== null ||
@@ -61,22 +64,13 @@ export function FlightFilter({
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Year filter */}
-      <Select
-        value={filters.year ?? "all"}
-        onValueChange={(v) => setFilter("year", v === "all" ? null : v)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Year" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Years</SelectItem>
-          {availableYears.map((y) => (
-            <SelectItem key={y} value={y}>
-              {y}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <YearPicker
+        startYear={startYear}
+        value={filters.year ? Number(filters.year) : ALL_TIME_YEAR}
+        onChange={(year) =>
+          setFilter("year", year === ALL_TIME_YEAR ? null : year.toString())
+        }
+      />
 
       {/* Airline filter */}
       <Select

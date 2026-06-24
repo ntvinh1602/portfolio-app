@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import { NumberField } from "@/components/form/fields/number-field"
-import { ComboboxField } from "@/components/form/fields/combobox-field"
+import { NumberField } from "@/components/form/number-field"
+import { ComboboxField } from "@/components/form/combobox-field"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
@@ -82,7 +82,7 @@ export function RepayForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <form id="cashflow-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id="repay-form" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <ComboboxField
             control={form.control}
@@ -106,7 +106,7 @@ export function RepayForm({ onSuccess }: { onSuccess?: () => void }) {
         <Button type="button" variant="outline" onClick={() => form.reset()}>
           Reset
         </Button>
-        <Button type="submit" form="cashflow-form" disabled={loading}>
+        <Button type="submit" form="repay-form" disabled={loading}>
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </Field>

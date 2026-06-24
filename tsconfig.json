@@ -21,7 +21,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@flight/*": ["./src/features/flights/*"],
-      "@auth/*": ["./src/features/auth/*"]
+      "@auth/*": ["./src/features/auth/*"],
+      "@fund/*": ["./src/features/fund/*"]
     }
   },
   "include": [

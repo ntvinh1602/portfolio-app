@@ -100,7 +100,7 @@ export function NewsWidget({
                 <Item
                   key={article.id}
                   variant="muted"
-                  size="xs"
+                  size="sm"
                   className="cursor-pointer hover:bg-accent transition-colors"
                   onClick={() => window.open(article.url, "_blank")}
                 >
@@ -118,7 +118,9 @@ export function NewsWidget({
                   <ItemContent>
                     <ItemTitle>{article.title}</ItemTitle>
                     <ItemDescription className="text-xs">
-                      
+                      {article.excerpt}
+                    </ItemDescription>
+                    <ItemDescription className="text-xs">
                       {article.source} - {now ? formatDistance(new Date(article.published_at), now, { addSuffix: true }) : ""}
                     </ItemDescription>
                   </ItemContent>

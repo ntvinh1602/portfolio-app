@@ -5,16 +5,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useWatch, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import { NumberField } from "@/components/form/fields/number-field"
-import { ComboboxField } from "@/components/form/fields/combobox-field"
-import { RadioGroupField } from "@/components/form/fields/radiogroup-field"
+import { NumberField } from "@/components/form/number-field"
+import { ComboboxField } from "@/components/form/combobox-field"
+import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { useCashAssets } from "@/hooks/useCashAssets"
 import { cashflowSchema } from "./schema"
 import { mutate } from "swr"
-import { CASHFLOW_MEMO } from "@/lib/domain/cashflow_memo"
+import { CASHFLOW_MEMO } from "@/features/fund/domain/cashflow_memo"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
@@ -126,7 +126,7 @@ export function CashflowForm({ onSuccess }: { onSuccess?: () => void }) {
             label="Description"
             items={filteredMemos}
             placeholder="Select description preset"
-            searchPlaceholder="Search for desription..."
+            searchPlaceholder="Search for description..."
           />
 
           <ComboboxField

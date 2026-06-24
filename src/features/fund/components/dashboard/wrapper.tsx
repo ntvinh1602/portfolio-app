@@ -1,18 +1,18 @@
 "use client"
 
-import { AssetCard } from "./components/aum-leverage"
-import { Portfolio } from "./components/portfolio"
-import { EquityChart } from "./components/equity"
-import { ReturnChart } from "./components/return"
-import { NetProfit } from "./components/net-profit"
-import { TradingViewWidget } from "./components/trading-view"
-import { NewsWidget } from "./components/news"
+import { AssetCard } from "./aum-leverage"
+import { Portfolio } from "./portfolio"
+import { EquityChart } from "./equity"
+import { ReturnChart } from "./return"
+import { NetProfit } from "./net-profit"
+import { TradingViewWidget } from "./trading-view"
+import { NewsWidget } from "./news"
 import { useMemo, useState } from "react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { Dashboard } from "@/types/dashboard"
 import type { NewsArticle } from "@/types/news"
 
-export default function DashboardClient({
+export default function Dashboard({
   data,
   news
 }: {

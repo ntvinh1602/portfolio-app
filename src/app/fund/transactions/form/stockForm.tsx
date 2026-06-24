@@ -5,9 +5,9 @@ import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
-import { NumberField } from "@/components/form/fields/number-field"
-import { ComboboxField } from "@/components/form/fields/combobox-field"
-import { RadioGroupField } from "@/components/form/fields/radiogroup-field"
+import { NumberField } from "@/components/form/number-field"
+import { ComboboxField } from "@/components/form/combobox-field"
+import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -29,7 +29,7 @@ export function StockForm({ onSuccess }: { onSuccess?: () => void }) {
   const stockOptions = React.useMemo(
     () =>
       assets.map((a) => ({
-        value: a.ticker, // IMPORTANT — use id, not ticker
+        value: a.ticker,
         label: `${a.ticker} — ${a.name}`,
       })),
     [assets]

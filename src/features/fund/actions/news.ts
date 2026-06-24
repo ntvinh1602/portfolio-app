@@ -1,18 +1,20 @@
-import { supabaseAdmin } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
 import type { NewsArticle } from "@/types/news"
 
 export async function getNews() {
-  'use cache'
-  cacheTag('news')
-  cacheLife('days')
+  "use cache"
+  cacheTag("news")
+  cacheLife("days")
 
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-
-  const { data, error } = await supabaseAdmin
+  
+  const supabase = await createClient()
+  const { data, error } = await supabase
     .from("news_articles")
-    .select(`
+    .select(
+      `
       id,
       title,
       url,
@@ -25,7 +27,8 @@ export async function getNews() {
           ticker
         )
       )
-    `)
+    `,
+    )
     .gte("published_at", oneWeekAgo.toISOString())
     .order("published_at", { ascending: false })
 
@@ -34,13 +37,11 @@ export async function getNews() {
     throw new Error(error.message)
   }
 
-  return (
-    data?.map((article) => ({
-      ...article,
-      tickers:
-        article.news_article_assets
-          ?.map((rel: any) => rel.assets?.ticker)
-          .filter((t: any): t is string => Boolean(t)) ?? [],
-    })) ?? []
-  ) as NewsArticle[]
+  return (data?.map((article) => ({
+    ...article,
+    tickers:
+      article.news_article_assets
+        ?.map((rel: any) => rel.assets?.ticker)
+        .filter((t: any): t is string => Boolean(t)) ?? [],
+  })) ?? []) as NewsArticle[]
 }

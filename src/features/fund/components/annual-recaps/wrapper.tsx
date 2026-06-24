@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { YearPicker } from "./components/year-picker"
-import { ProfitChart } from "./components/profit-chart"
-import { ExpenseChart } from "./components/expense-chart"
-import { TopStocks } from "./components/top-stocks"
-import { Cashflow } from "./components/cashflow"
-import { ReturnChart } from "./components/return-chart"
+import { YearPicker } from "@/components/year-picker"
+import { ProfitChart } from "./profit-chart"
+import { ExpenseChart } from "./expense-chart"
+import { TopStocks } from "./top-stocks"
+import { Cashflow } from "./cashflow"
+import { ReturnChart } from "./return-chart"
 import type { Recaps } from "@/types/recaps"
 
-export default function AnnualRecapsClient({
+export default function AnnualRecaps({
   recaps,
   startYear,
 }: {

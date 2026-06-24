@@ -2,7 +2,10 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { subMonths, startOfDay, endOfDay } from "date-fns"
-import type { TransactionFilterState, Preset } from "../txn-filter"
+import type {
+  TransactionFilterState,
+  Preset,
+} from "../../../app/fund/transactions/txn-filter"
 
 function getDateRangeFromPreset(preset: Preset, now: Date) {
   switch (preset) {
@@ -73,9 +76,7 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
   // Build a trailing query that applies date range and all active filters
   const trailingQuery = useCallback(
     (query: any) => {
-      query = query
-        .gte("created_at", startISO)
-        .lte("created_at", endISO)
+      query = query.gte("created_at", startISO).lte("created_at", endISO)
 
       if (filters.categories.length > 0) {
         query = query.in("category", filters.categories)
@@ -106,31 +107,25 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
     [startISO, endISO, filters, refreshCounter],
   )
 
-  const onCustomStartDateChange = useCallback(
-    (date: Date | undefined) => {
-      setCustomRange((prev) => {
-        const base = prev ?? {
-          startDate: new Date(0),
-          endDate: new Date(0),
-        }
-        return { ...base, startDate: date ?? base.startDate }
-      })
-    },
-    [],
-  )
+  const onCustomStartDateChange = useCallback((date: Date | undefined) => {
+    setCustomRange((prev) => {
+      const base = prev ?? {
+        startDate: new Date(0),
+        endDate: new Date(0),
+      }
+      return { ...base, startDate: date ?? base.startDate }
+    })
+  }, [])
 
-  const onCustomEndDateChange = useCallback(
-    (date: Date | undefined) => {
-      setCustomRange((prev) => {
-        const base = prev ?? {
-          startDate: new Date(0),
-          endDate: new Date(0),
-        }
-        return { ...base, endDate: date ?? base.endDate }
-      })
-    },
-    [],
-  )
+  const onCustomEndDateChange = useCallback((date: Date | undefined) => {
+    setCustomRange((prev) => {
+      const base = prev ?? {
+        startDate: new Date(0),
+        endDate: new Date(0),
+      }
+      return { ...base, endDate: date ?? base.endDate }
+    })
+  }, [])
 
   const triggerRefresh = useCallback(() => {
     setRefreshCounter((c) => c + 1)

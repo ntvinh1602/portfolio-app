@@ -28,7 +28,7 @@ import { BorrowForm } from "./form/borrowForm"
 import { RepayForm } from "./form/repayForm"
 import { PlusIcon, ListFilter } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
-import { useTransactionFilters } from "./hooks/use-transaction-filters"
+import { useTransactionFilters } from "../../../features/fund/hooks/use-transaction-filters"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { NEWS_SOURCES } from "./sources"
 import { NormalizedArticle } from "./sources"
 
@@ -49,7 +49,8 @@ export async function ingestAllSources() {
     if (allTickers.size === 0) continue
 
     // 2️⃣ Validate tickers against assets
-    const { data: assets } = await supabaseAdmin
+    const supabase = await createClient()
+    const { data: assets } = await supabase
       .from("assets")
       .select("id, ticker")
       .in("ticker", [...allTickers])
@@ -86,7 +87,7 @@ export async function ingestAllSources() {
     if (!validArticles.length) continue
 
     // 4️⃣ Upsert only matched articles
-    const { data: insertedArticles, error } = await supabaseAdmin
+    const { data: insertedArticles, error } = await supabase
       .from("news_articles")
       .upsert(validArticles, { onConflict: "url" })
       .select("id, url")
@@ -114,7 +115,7 @@ export async function ingestAllSources() {
     }
 
     if (relationRows.length > 0) {
-      const { error: relationError } = await supabaseAdmin
+      const { error: relationError } = await supabase
         .from("news_article_assets")
         .upsert(relationRows, {
           onConflict: "article_id,asset_id",

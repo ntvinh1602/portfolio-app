@@ -28,7 +28,7 @@ export const cashflowSchema = z.object({
 export const borrowSchema = z.object({
   principal: z.coerce.number()
     .int("Principal must be a whole number")
-    .positive("Quantity must be positive"),
+    .positive("Principal must be positive"),
   lender: z.string(),
   rate: z.coerce.number().min(0, "Interest rate cannot be negative")
 })

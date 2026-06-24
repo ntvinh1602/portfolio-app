@@ -23,7 +23,7 @@ import StatusLabel from "@/components/status-label"
 
 interface FlightsListProps {
   airlineFilterOptions: { label: string; value: string }[]
-  availableYears: string[]
+  startYear: number
   airlineFormOptions: { label: string; value: string }[]
   aircraftFormOptions: { label: string; value: string }[]
   airportFormOptions: { label: string; value: string }[]
@@ -31,7 +31,7 @@ interface FlightsListProps {
 
 export default function FlightsList({
   airlineFilterOptions,
-  availableYears,
+  startYear,
   airlineFormOptions,
   aircraftFormOptions,
   airportFormOptions,
@@ -89,7 +89,7 @@ export default function FlightsList({
               filters={filters}
               onFiltersChange={setFilters}
               airlineOptions={airlineFilterOptions}
-              availableYears={availableYears}
+              startYear={startYear}
             />
           </CardContent>
         </Card>
