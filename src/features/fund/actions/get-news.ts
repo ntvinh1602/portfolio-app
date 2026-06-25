@@ -7,9 +7,6 @@ export default async function getNews() {
   cacheTag("news")
   cacheLife("days")
 
-  const oneWeekAgo = new Date()
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("news_articles")
@@ -29,7 +26,6 @@ export default async function getNews() {
       )
     `,
     )
-    .gte("published_at", oneWeekAgo.toISOString())
     .order("published_at", { ascending: false })
 
   if (error) {

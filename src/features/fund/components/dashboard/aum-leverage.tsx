@@ -31,7 +31,7 @@ interface AssetCardProps {
 
 const innerRadius = 65
 
-export function AssetCard({
+export function AumLeverage({
   assets: a,
   liabilities: lb
 }: AssetCardProps) {

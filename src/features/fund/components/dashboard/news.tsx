@@ -30,15 +30,14 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { FileXCorner } from "lucide-react"
+import type { BalanceSheet } from "@fund/fund.types"
 
 type NewsWidgetProps = {
-  stockList: {
-    ticker: string
-  }[]
+  holdings: BalanceSheet[]
   news: NewsArticle[]
 }
 
-export function NewsWidget({ stockList, news }: NewsWidgetProps) {
+export function NewsWidget({ holdings, news }: NewsWidgetProps) {
   const [filter, setFilter] = useState<"all" | "related">("all")
   const [now, setNow] = useState<Date | null>(null)
 
@@ -48,10 +47,14 @@ export function NewsWidget({ stockList, news }: NewsWidgetProps) {
     return () => clearInterval(interval)
   }, [])
 
-  // Create a fast lookup set of holding tickers
+  // Create a fast lookup set of stock holding tickers from the balance sheet
   const holdingTickers = useMemo(() => {
-    return new Set(stockList.map((s) => s.ticker))
-  }, [stockList])
+    return new Set(
+      holdings
+        .filter((asset) => asset.asset_class === "stock")
+        .map((asset) => asset.ticker),
+    )
+  }, [holdings])
 
   // Filter logic
   const filteredArticles = useMemo(() => {
@@ -109,12 +112,12 @@ export function NewsWidget({ stockList, news }: NewsWidgetProps) {
                   onClick={() => window.open(article.url, "_blank")}
                 >
                   <ItemMedia className="flex flex-col gap-1 min-w-10">
-                    {article.tickers.slice(0, 1).map((ticker) => (
+                    {(article.tickers ?? []).slice(0, 1).map((ticker) => (
                       <Badge key={ticker}>{ticker}</Badge>
                     ))}
-                    {article.tickers.length > 1 && (
+                    {(article.tickers?.length ?? 0) > 1 && (
                       <span className="text-xs">
-                        +{article.tickers.length - 1}
+                        +{(article.tickers?.length ?? 0) - 1}
                       </span>
                     )}
                   </ItemMedia>

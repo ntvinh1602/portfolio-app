@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardAction,
   CardDescription,
-  CardContent,  
+  CardContent,
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
@@ -16,19 +16,20 @@ import {
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemTitle
+  ItemTitle,
 } from "@/components/ui/item"
+import { type EquityChartItem } from "@fund/fund.types"
 
-interface EquityChartPoint {
-  snapshot_date: string
-  net_equity: number
-  cumulative_cashflow: number
-  [key: string]: string | number
+interface EquityChartData {
+  all: EquityChartItem[]
+  last_1y: EquityChartItem[]
+  last_6m: EquityChartItem[]
+  last_3m: EquityChartItem[]
 }
 
 interface EquityChartProps {
   dateRange: string
-  chartData: EquityChartPoint[]
+  chartData: EquityChartData
   totalEquity: number
   pnlMtd: number
   pnlYtd: number
@@ -37,12 +38,12 @@ interface EquityChartProps {
 const equityChartConfig: ChartConfig = {
   net_equity: {
     label: "Equity",
-    color: "var(--chart-1)"
+    color: "var(--chart-1)",
   },
   cumulative_cashflow: {
     label: "Paid-in Capital",
-    color: "var(--chart-2)"
-  }
+    color: "var(--chart-2)",
+  },
 }
 
 export function EquityChart({
@@ -50,9 +51,8 @@ export function EquityChart({
   chartData,
   totalEquity,
   pnlMtd,
-  pnlYtd
+  pnlYtd,
 }: EquityChartProps) {
-
   const xAxisTickFormatter = (value: string) => {
     const date = parseISO(value)
     if (isNaN(date.getTime())) return value // handles cases like "2023" or "2023-Q1"
@@ -63,6 +63,26 @@ export function EquityChart({
       default:
         return format(date, "dd MMM")
     }
+  }
+
+  let chartTimeframe: EquityChartItem[]
+
+  switch (dateRange) {
+    case "3m":
+      chartTimeframe = chartData.last_3m
+      break
+    case "6m":
+      chartTimeframe = chartData.last_6m
+      break
+    case "1y":
+      chartTimeframe = chartData.last_1y
+      break
+    case "all":
+      chartTimeframe = chartData.all
+      break
+    default:
+      chartTimeframe = chartData.last_1y
+      break
   }
 
   return (
@@ -77,21 +97,28 @@ export function EquityChart({
             <Item size="xs">
               <ItemContent className="items-end">
                 <ItemTitle>
-                  {pnlMtd < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{compactNum(Math.abs(pnlMtd))}
+                  {pnlMtd < 0 ? (
+                    <TrendingDown className="text-destructive size-4" />
+                  ) : (
+                    <TrendingUp className="text-primary size-4" />
+                  )}
+                  {compactNum(Math.abs(pnlMtd))}
                 </ItemTitle>
-                <ItemDescription className="text-xs">this month</ItemDescription>
+                <ItemDescription className="text-xs">
+                  this month
+                </ItemDescription>
               </ItemContent>
             </Item>
             <Item size="xs">
               <ItemContent className="items-end">
                 <ItemTitle>
-                  {pnlMtd < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{compactNum(Math.abs(pnlYtd))}</ItemTitle>
+                  {pnlYtd < 0 ? (
+                    <TrendingDown className="text-destructive size-4" />
+                  ) : (
+                    <TrendingUp className="text-primary size-4" />
+                  )}
+                  {compactNum(Math.abs(pnlYtd))}
+                </ItemTitle>
                 <ItemDescription className="text-xs">this year</ItemDescription>
               </ItemContent>
             </Item>
@@ -101,7 +128,7 @@ export function EquityChart({
 
       <CardContent>
         <Areachart
-          data={chartData}
+          data={chartTimeframe}
           config={equityChartConfig}
           xAxisDataKey={"snapshot_date"}
           className="w-full"

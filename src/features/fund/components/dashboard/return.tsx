@@ -10,34 +10,40 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { useState, useEffect } from "react"
 import { ChartConfig } from "@/components/ui/chart"
 import {
   Item,
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemTitle
+  ItemTitle,
 } from "@/components/ui/item"
 import { type ReturnChartItem } from "@fund/fund.types"
 
+interface ReturnChartData {
+  all: ReturnChartItem[]
+  last_1y: ReturnChartItem[]
+  last_6m: ReturnChartItem[]
+  last_3m: ReturnChartItem[]
+}
+
 interface ReturnChartProps {
   dateRange: string
-  chartData: ReturnChartItem[]
+  chartData: ReturnChartData
   twrYtd: number
   twrAll: number
-  inceptionDate: string
+  cagr: number
 }
 
 const returnChartConfig: ChartConfig = {
   portfolio_value: {
     label: "Equity",
-    color: "var(--chart-1)"
+    color: "var(--chart-1)",
   },
   vni_value: {
     label: "VN-Index",
-    color: "var(--chart-2)"
-  }
+    color: "var(--chart-2)",
+  },
 }
 
 export function ReturnChart({
@@ -45,28 +51,27 @@ export function ReturnChart({
   chartData,
   twrYtd,
   twrAll,
-  inceptionDate
+  cagr
 }: ReturnChartProps) {
+  let chartTimeframe: ReturnChartItem[]
 
-  // Compute CAGR from a ticking "now" that refreshes every minute.
-  // Use state + effect (not Date.now() during render) to keep the server
-  // and client renders deterministic — cacheComponents requires this.
-  const start = new Date(inceptionDate).getTime()
-  const [now, setNow] = useState<number | null>(null)
-
-  useEffect(() => {
-    setNow(Date.now())
-    const interval = setInterval(() => setNow(Date.now()), 60_000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const years = now !== null
-    ? (now - start) / (1000 * 60 * 60 * 24 * 365.25)
-    : 0
-
-  const cagr = years > 0
-    ? (Math.pow(1 + twrAll, 1 / years) - 1) * 100
-    : 0
+  switch (dateRange) {
+    case "3m":
+      chartTimeframe = chartData.last_3m
+      break
+    case "6m":
+      chartTimeframe = chartData.last_6m
+      break
+    case "1y":
+      chartTimeframe = chartData.last_1y
+      break
+    case "all":
+      chartTimeframe = chartData.all
+      break
+    default:
+      chartTimeframe = chartData.last_1y
+      break
+  }
 
   const xAxisTickFormatter = (value: string) => {
     const date = parseISO(value)
@@ -93,10 +98,12 @@ export function ReturnChart({
             <Item size="xs">
               <ItemContent className="items-end">
                 <ItemTitle>
-                  {twrAll < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{`${formatNum(Math.abs(twrAll * 100), 1)}%`}
+                  {twrAll < 0 ? (
+                    <TrendingDown className="text-destructive size-4" />
+                  ) : (
+                    <TrendingUp className="text-primary size-4" />
+                  )}
+                  {`${formatNum(Math.abs(twrAll * 100), 1)}%`}
                 </ItemTitle>
                 <ItemDescription className="text-xs">all time</ItemDescription>
               </ItemContent>
@@ -104,12 +111,16 @@ export function ReturnChart({
             <Item size="xs">
               <ItemContent className="items-end">
                 <ItemTitle>
-                  {cagr < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{`${formatNum(Math.abs(cagr), 1)}%`}
+                  {cagr < 0 ? (
+                    <TrendingDown className="text-destructive size-4" />
+                  ) : (
+                    <TrendingUp className="text-primary size-4" />
+                  )}
+                  {`${formatNum(Math.abs(cagr * 100), 1)}%`}
                 </ItemTitle>
-                <ItemDescription className="text-xs">annualized</ItemDescription>
+                <ItemDescription className="text-xs">
+                  annualized
+                </ItemDescription>
               </ItemContent>
             </Item>
           </ItemGroup>
@@ -118,7 +129,7 @@ export function ReturnChart({
 
       <CardContent>
         <Areachart
-          data={chartData}
+          data={chartTimeframe}
           config={returnChartConfig}
           xAxisDataKey={"snapshot_date"}
           className=" w-full"

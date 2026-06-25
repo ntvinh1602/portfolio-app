@@ -1,12 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import { Database } from "@/types/database.types"
-
-type BSRow = Database["public"]["Views"]["balance_sheet"]["Row"]
-
-export type BalanceSheet = {
-  [K in keyof BSRow]: NonNullable<BSRow[K]>
-}
+import type { BalanceSheet } from "@fund/fund.types"
 
 export default async function getBalanceSheet() {
   "use cache: private"

@@ -16,40 +16,31 @@ import Image from "next/image"
 import { formatNum, compactNum, cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { RefreshButton } from "./refresh-button"
-
-interface StockItem {
-  ticker: string
-  name: string
-  logo_url: string
-  quantity: number
-  price: number
-  cost_basis: number
-}
+import type { BalanceSheet } from "@fund/fund.types"
 
 function Asset({
   name,
-  logoUrl,
+  logo_url,
   quantity,
-  price,
-  costBasis,
+  total_value,
+  mkt_price,
+  net_profit,
 }: {
   name: string
-  logoUrl: string
+  logo_url: string
   quantity: number
-  price: number
-  costBasis: number
+  total_value: number
+  mkt_price: number
+  net_profit: number
 }) {
   const isMobile = useIsMobile()
-  const totalAmount = quantity * price
-  const pnlNet = totalAmount - costBasis
-  const pnlPct = ((totalAmount / costBasis) - 1) * 100
-  const isPositive = pnlNet >= 0
-
+  const pnlPct = ((net_profit / total_value) - 1) * 100
+  const isPositive = net_profit >= 0
   return (
     <Item variant="muted">
       <ItemMedia variant="image">
         <Image
-          src={logoUrl}
+          src={logo_url}
           alt={name}
           width={44}
           height={44}
@@ -62,12 +53,12 @@ function Asset({
         <ItemDescription className="text-xs">
           {formatNum(quantity)}
           {" units @ "}
-          {formatNum(price / 1000, 2)}
+          {formatNum(mkt_price / 1000, 2)}
         </ItemDescription>
       </ItemContent>
       <ItemContent className="items-end">
         <ItemTitle>
-          {!isMobile ? formatNum(totalAmount) : compactNum(totalAmount)}
+          {!isMobile ? formatNum(total_value) : compactNum(total_value)}
         </ItemTitle>
         <ItemDescription
           className={cn(
@@ -77,7 +68,7 @@ function Asset({
         >
           {!isMobile ? (
             <span>
-              {compactNum(pnlNet)}
+              {compactNum(net_profit)}
               {" ("}{formatNum(pnlPct, 1)}{"%)"}
             </span>
           ) : (
@@ -87,18 +78,16 @@ function Asset({
       </ItemContent>
     </Item>
   )
-}
-
-interface PortfolioProps {
-  stocks: StockItem[]
-}
+} 
 
 export function Portfolio({
   stocks
-}: PortfolioProps) {
-  // Sort by market value (quantity * price) descending
+}: {
+  stocks: BalanceSheet[]
+}) {
+  // Sort by total value descending
   const sortedStocks = [...stocks].sort(
-    (a, b) => b.quantity * b.price - a.quantity * a.price
+    (a, b) => b.total_value - a.total_value
   )
 
   return (
@@ -116,10 +105,11 @@ export function Portfolio({
             <Asset
               key={stock.ticker}
               name={stock.name}
-              logoUrl={stock.logo_url}
+              logo_url={stock.logo_url || ""}
               quantity={stock.quantity}
-              price={stock.price}
-              costBasis={stock.cost_basis}
+              total_value={stock.total_value}
+              mkt_price={stock.mkt_price || 0}
+              net_profit={stock.net_profit || 0}
             />
           ))
         ) : (

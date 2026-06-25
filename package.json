@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "type": "module",
-    "sb-gen": "npx supabase gen types typescript --project-id pamvtxbkdjnvkzeutmjk > src/types/database.types.ts"
+    "sb-gen": "npx supabase gen types typescript --local > src/types/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
