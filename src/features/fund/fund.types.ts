@@ -25,6 +25,14 @@ export type ProfitChartItem = {
   snapshot_date: string
 }
 
+export interface BSItem {
+  ticker: string
+  name: string
+  asset_class: string
+  logo_url: string | null
+  total_value: number | null
+}
+
 export type BalanceSheet = {
   ticker: string
   name: string

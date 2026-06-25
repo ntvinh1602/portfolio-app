@@ -1,6 +1,6 @@
 "use server"
 
-import type { FlightFormValues } from "@/features/flights/form/schema"
+import type { FlightFormValues } from "@flight/form/schema"
 import { createClient } from "@/lib/supabase/server"
 
 export async function AddFlight(values: FlightFormValues) {

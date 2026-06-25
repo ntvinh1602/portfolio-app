@@ -11,8 +11,7 @@ import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { stockSchema } from "./schema"
-import { mutate } from "swr"
-import { searchAssets, type AssetSearchResult } from "@/features/fund/actions/search-assets"
+import { searchAssets, type AssetSearchResult } from "@fund/actions/search-assets"
 
 type FormValues = z.infer<typeof stockSchema>
 
@@ -100,12 +99,7 @@ export function StockForm({
         form.reset()
         onSuccess?.()
       }
-
-      await mutate(
-        (key) => Array.isArray(key) && key[0] === "priceRefresh",
-        undefined,
-        { revalidate: true },
-      )
+      
     } catch (err) {
       const message =
         err instanceof Error

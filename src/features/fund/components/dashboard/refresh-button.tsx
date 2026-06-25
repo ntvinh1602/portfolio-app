@@ -4,7 +4,6 @@ import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { mutate } from 'swr'
 import { Spinner } from "@/components/ui/spinner"
 
 export function RefreshButton() {
@@ -16,10 +15,13 @@ export function RefreshButton() {
 
     try {
       const supabase = createClient()
-      
-      const { data, error } = await supabase.functions.invoke('fetch-yahoofinance', {
-        body: { name: 'Functions' },
-      })
+
+      const { data, error } = await supabase.functions.invoke(
+        "fetch-yahoofinance",
+        {
+          body: { name: "Functions" },
+        },
+      )
 
       if (error) throw new Error(error.message ?? "Failed to refresh prices")
 
@@ -27,14 +29,9 @@ export function RefreshButton() {
         id: toastId,
         description: `Updated items: ${data.updated}`,
       })
-      
-      await mutate(
-        (key) => Array.isArray(key) && key[0] === "priceRefresh",
-        undefined,
-        { revalidate: true }
-      )
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to refresh prices"
+      const message =
+        err instanceof Error ? err.message : "Failed to refresh prices"
       toast.error(message, { id: toastId })
     } finally {
       setIsRefreshing(false)
@@ -42,17 +39,21 @@ export function RefreshButton() {
   }
 
   return (
-    <Button 
+    <Button
       size="sm"
       variant="outline"
       onClick={handleRefresh}
       disabled={isRefreshing}
       className="rounded-2xl"
     >
-      {isRefreshing
-        ? <div className="flex items-center gap-1"><Spinner/>Updating</div>
-        : <span>Update Price</span>
-      }
+      {isRefreshing ? (
+        <div className="flex items-center gap-1">
+          <Spinner />
+          Updating
+        </div>
+      ) : (
+        <span>Update Price</span>
+      )}
     </Button>
   )
 }

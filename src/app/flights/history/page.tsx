@@ -1,7 +1,7 @@
 import getAirlines from "@flight/actions/get-airlines"
 import getAircrafts from "@flight/actions/get-aircrafts"
 import getAirports from "@flight/actions/get-airports"
-import FlightsList from "@/features/flights/components/history/wrapper"
+import FlightsList from "@flight/components/history/wrapper"
 import { Spinner } from "@/components/ui/spinner"
 import { Suspense } from "react"
 

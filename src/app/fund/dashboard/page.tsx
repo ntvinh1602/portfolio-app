@@ -1,16 +1,16 @@
 import { Spinner } from "@/components/ui/spinner"
-import getNews from "@/features/fund/actions/get-news"
+import getNews from "@fund/actions/get-news"
 import getDashboard from "@fund/actions/get-dashboard"
 import { Suspense } from "react"
 import { NewsWidget } from "@fund/components/dashboard/news"
 import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
-import TimeAdjustedCharts from "@/features/fund/components/dashboard/equity-return"
+import EquityReturn from "@fund/components/dashboard/equity-return"
 import { Portfolio } from "@fund/components/dashboard/portfolio"
 import { NetProfit } from "@fund/components/dashboard/net-profit"
-import { AumLeverage } from "@/features/fund/components/dashboard/aum-leverage"
-import getNetProfit from "@/features/fund/actions/get-netprofit"
-import getAumLeverage from "@/features/fund/actions/get-aum-leverage"
-import getHoldings from "@/features/fund/actions/get-holdings"
+import { AumLeverage } from "@fund/components/dashboard/aum-leverage"
+import getNetProfit from "@fund/actions/get-netprofit"
+import getAumLeverage from "@fund/actions/get-aum-leverage"
+import getHoldings from "@fund/actions/get-holdings"
 
 export default function Page() {
   return (
@@ -18,7 +18,7 @@ export default function Page() {
       <div className="grid grid-cols-1 gap-4 px-4 xl:grid-cols-3">
         <div className="flex flex-col flex-1 gap-4">
           <Suspense fallback={<Spinner />}>
-            <TimeAdjustedChartsData />
+            <EquityReturnData />
           </Suspense>
         </div>
 
@@ -45,9 +45,9 @@ export default function Page() {
   )
 }
 
-async function TimeAdjustedChartsData() {
+async function EquityReturnData() {
   const data = await getDashboard()
-  return <TimeAdjustedCharts data={data} />
+  return <EquityReturn data={data} />
 }
 
 async function NewsData() {

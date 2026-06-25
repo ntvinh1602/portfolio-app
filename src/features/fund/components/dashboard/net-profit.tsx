@@ -1,34 +1,18 @@
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,  
-} from "@/components/ui/card"
-import { TrendingUp, TrendingDown } from "lucide-react"
+"use client"
+
+import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
 import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle
-} from "@/components/ui/item"
+import ChartCardHeader from "@/components/charts/chartcard-header"
+import { ProfitChartItem } from "@fund/fund.types"
 
-interface ProfitChartPoint {
-  snapshot_date: string
-  tax: number
-  fee: number
-  interest: number
-  revenue: number
+interface ProfitChartPoint extends ProfitChartItem {
   [key: string]: string | number
 }
 
-interface NetProfitProps {
+interface Props {
   totalPnL: number
   avgProfit: number
   avgExpense: number
@@ -39,52 +23,30 @@ const NetProfitConfig: ChartConfig = {
   tax: { label: "Tax", color: "var(--chart-4)" },
   fee: { label: "Fee", color: "var(--chart-3)" },
   interest: { label: "Interest", color: "var(--chart-2)" },
-  revenue: { label: "Revenue", color: "var(--chart-1)" }  
+  revenue: { label: "Revenue", color: "var(--chart-1)" },
 }
 
 export function NetProfit({
   totalPnL,
   avgProfit,
   avgExpense,
-  chartData
-}: NetProfitProps) {
+  chartData,
+}: Props) {
   return (
     <Card>
-      <CardHeader>
-        <CardDescription>Net Profit</CardDescription>
-        <CardTitle className="text-xl sm:text-2xl flex gap-1 items-baseline">
-          {formatNum(totalPnL)}
-          <span className="text-sm text-muted-foreground">last 1y</span>
-        </CardTitle>
-        <CardAction>
-          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {avgProfit < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{compactNum(Math.abs(avgProfit))}
-                </ItemTitle>
-                <ItemDescription className="text-xs">avg. profit</ItemDescription>
-              </ItemContent>
-            </Item>
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {avgExpense < 0
-                    ? <TrendingDown className="text-destructive size-4" />
-                    : <TrendingUp className="text-primary size-4" />
-                  }{compactNum(Math.abs(avgExpense))}
-                </ItemTitle>
-                <ItemDescription className="text-xs">avg. cost</ItemDescription>
-              </ItemContent>
-            </Item>
-          </ItemGroup>
-        </CardAction>
-      </CardHeader>
+      <ChartCardHeader
+        title="Net Profit"
+        heroStat={formatNum(totalPnL)}
+        descriptionTitle="last 1y"
+        stat1={avgProfit}
+        formattedStat1={compactNum(Math.abs(avgProfit))}
+        descriptionStat1="avg. profit"
+        stat2={avgExpense}
+        formattedStat2={compactNum(Math.abs(avgExpense))}
+        descriptionStat2="avg. cost"
+      />
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent>
         <ChartBarStacked
           data={chartData}
           config={NetProfitConfig}
@@ -94,6 +56,6 @@ export function NetProfit({
           tooltipFormatter={(v) => formatNum(v)}
         />
       </CardContent>
-    </Card>    
+    </Card>
   )
 }

@@ -12,8 +12,7 @@ export default async function getHoldings() {
       .from("balance_sheet")
       .select("*")
       .eq("asset_class", "stock")
-      .single()
 
   if (error) throw new Error(error.message)
-  return data as BalanceSheet[]
+  return (data ?? []) as BalanceSheet[]
 }

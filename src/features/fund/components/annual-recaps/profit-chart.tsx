@@ -1,22 +1,14 @@
 "use client"
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
 import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
-import { Separator } from "@/components/ui/separator"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import type { ProfitChartItem } from "@fund/fund.types"
+import ChartCardHeader from "@/components/charts/chartcard-header"
 
-interface ProfitChartProps {
+interface Props {
   year: number
   totalPnL: number
   avgProfit: number
@@ -28,7 +20,7 @@ const NetProfitConfig: ChartConfig = {
   tax: { label: "Tax", color: "var(--chart-4)" },
   fee: { label: "Fee", color: "var(--chart-3)" },
   interest: { label: "Interest", color: "var(--chart-2)" },
-  revenue: { label: "Revenue", color: "var(--chart-1)" }  
+  revenue: { label: "Revenue", color: "var(--chart-1)" },
 }
 
 export function ProfitChart({
@@ -37,8 +29,7 @@ export function ProfitChart({
   avgProfit,
   avgExpense,
   chartData,
-}: ProfitChartProps) {
-
+}: Props) {
   const xAxisFormatter = (value: string) => {
     const date = new Date(value)
     if (isNaN(date.getTime())) return String(value)
@@ -47,42 +38,17 @@ export function ProfitChart({
 
   return (
     <Card>
-      <CardHeader className="flex-col gap-1 items-center">
-        <CardDescription>Net Profit</CardDescription>
-        <div className="flex gap-2 items-baseline">
-          <CardTitle className="text-2xl font-light">
-            {formatNum(totalPnL)}
-          </CardTitle>
-        </div>
-        <CardAction className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {avgProfit < 0
-                ? <TrendingDown className="text-destructive" />
-                : <TrendingUp className="text-primary" />
-              }
-              {compactNum(Math.abs(avgProfit))}
-            </div>
-            <CardDescription className="text-xs">avg. profit</CardDescription>
-          </div>
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-8 -mr-1"
-          />
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 font-thin text-sm [&_svg]:size-5">
-              {avgExpense < 0
-                ? <TrendingDown className="text-destructive" />
-                : <TrendingUp className="text-primary" />
-              }
-              {compactNum(Math.abs(avgExpense))}
-            </div>
-            <CardDescription className="text-xs">avg. cost</CardDescription>
-          </div>
-        </CardAction>
-      </CardHeader>
-
-      <CardContent className="flex flex-col gap-4 h-full">
+      <ChartCardHeader
+        title="Net Profit"
+        heroStat={formatNum(totalPnL)}
+        stat1={avgProfit}
+        formattedStat1={compactNum(Math.abs(avgProfit))}
+        descriptionStat1="avg. profit"
+        stat2={avgExpense}
+        formattedStat2={compactNum(Math.abs(avgExpense))}
+        descriptionStat2="avg. cost"
+      />
+      <CardContent>
         <ChartBarStacked
           data={chartData}
           config={NetProfitConfig}
@@ -92,6 +58,6 @@ export function ProfitChart({
           tooltipFormatter={(v) => formatNum(v)}
         />
       </CardContent>
-    </Card>    
+    </Card>
   )
 }

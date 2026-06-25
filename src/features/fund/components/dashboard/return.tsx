@@ -1,35 +1,19 @@
 import { formatNum, compactNum } from "@/lib/utils"
 import { parseISO, format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@/components/ui/item"
 import { type ReturnChartItem } from "@fund/fund.types"
+import ChartCardHeader from "@/components/charts/chartcard-header"
 
-interface ReturnChartData {
-  all: ReturnChartItem[]
-  last_1y: ReturnChartItem[]
-  last_6m: ReturnChartItem[]
-  last_3m: ReturnChartItem[]
-}
-
-interface ReturnChartProps {
+interface Props {
   dateRange: string
-  chartData: ReturnChartData
+  chartData: {
+    all: ReturnChartItem[]
+    last_1y: ReturnChartItem[]
+    last_6m: ReturnChartItem[]
+    last_3m: ReturnChartItem[]
+  }
   twrYtd: number
   twrAll: number
   cagr: number
@@ -51,8 +35,8 @@ export function ReturnChart({
   chartData,
   twrYtd,
   twrAll,
-  cagr
-}: ReturnChartProps) {
+  cagr,
+}: Props) {
   let chartTimeframe: ReturnChartItem[]
 
   switch (dateRange) {
@@ -87,46 +71,17 @@ export function ReturnChart({
 
   return (
     <Card>
-      <CardHeader>
-        <CardDescription>Return</CardDescription>
-        <CardTitle className="text-xl sm:text-2xl flex gap-1 items-baseline">
-          {`${formatNum(twrYtd * 100, 1)}%`}
-          <span className="text-sm text-muted-foreground">this year</span>
-        </CardTitle>
-        <CardAction>
-          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {twrAll < 0 ? (
-                    <TrendingDown className="text-destructive size-4" />
-                  ) : (
-                    <TrendingUp className="text-primary size-4" />
-                  )}
-                  {`${formatNum(Math.abs(twrAll * 100), 1)}%`}
-                </ItemTitle>
-                <ItemDescription className="text-xs">all time</ItemDescription>
-              </ItemContent>
-            </Item>
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {cagr < 0 ? (
-                    <TrendingDown className="text-destructive size-4" />
-                  ) : (
-                    <TrendingUp className="text-primary size-4" />
-                  )}
-                  {`${formatNum(Math.abs(cagr * 100), 1)}%`}
-                </ItemTitle>
-                <ItemDescription className="text-xs">
-                  annualized
-                </ItemDescription>
-              </ItemContent>
-            </Item>
-          </ItemGroup>
-        </CardAction>
-      </CardHeader>
-
+      <ChartCardHeader
+        title="Return"
+        descriptionTitle="this year"
+        heroStat={`${formatNum(twrYtd * 100, 1)}%`}
+        stat1={twrAll}
+        formattedStat1={`${formatNum(twrAll * 100, 1)}%`}
+        descriptionStat1="all time"
+        stat2={cagr}
+        formattedStat2={`${formatNum(cagr * 100, 1)}%`}
+        descriptionStat2="annualized"
+      />
       <CardContent>
         <Areachart
           data={chartTimeframe}

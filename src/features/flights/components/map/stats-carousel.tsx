@@ -7,7 +7,7 @@ import {
   Route,
   TicketsPlane,
 } from "lucide-react"
-import type { LifetimeStats } from "@/features/flights/actions/get-lifetime-stats"
+import type { LifetimeStats } from "@flight/actions/get-lifetime-stats"
 import {
   Item,
   ItemContent,

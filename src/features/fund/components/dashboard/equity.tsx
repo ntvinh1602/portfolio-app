@@ -1,35 +1,19 @@
 import { formatNum, compactNum } from "@/lib/utils"
 import { parseISO, format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@/components/ui/item"
 import { type EquityChartItem } from "@fund/fund.types"
-
-interface EquityChartData {
-  all: EquityChartItem[]
-  last_1y: EquityChartItem[]
-  last_6m: EquityChartItem[]
-  last_3m: EquityChartItem[]
-}
+import ChartCardHeader from "@/components/charts/chartcard-header"
 
 interface EquityChartProps {
   dateRange: string
-  chartData: EquityChartData
+  chartData: {
+    all: EquityChartItem[]
+    last_1y: EquityChartItem[]
+    last_6m: EquityChartItem[]
+    last_3m: EquityChartItem[]
+  }
   totalEquity: number
   pnlMtd: number
   pnlYtd: number
@@ -87,44 +71,16 @@ export function EquityChart({
 
   return (
     <Card>
-      <CardHeader>
-        <CardDescription>Equity</CardDescription>
-        <CardTitle className="text-xl sm:text-2xl">
-          {formatNum(totalEquity)}
-        </CardTitle>
-        <CardAction>
-          <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {pnlMtd < 0 ? (
-                    <TrendingDown className="text-destructive size-4" />
-                  ) : (
-                    <TrendingUp className="text-primary size-4" />
-                  )}
-                  {compactNum(Math.abs(pnlMtd))}
-                </ItemTitle>
-                <ItemDescription className="text-xs">
-                  this month
-                </ItemDescription>
-              </ItemContent>
-            </Item>
-            <Item size="xs">
-              <ItemContent className="items-end">
-                <ItemTitle>
-                  {pnlYtd < 0 ? (
-                    <TrendingDown className="text-destructive size-4" />
-                  ) : (
-                    <TrendingUp className="text-primary size-4" />
-                  )}
-                  {compactNum(Math.abs(pnlYtd))}
-                </ItemTitle>
-                <ItemDescription className="text-xs">this year</ItemDescription>
-              </ItemContent>
-            </Item>
-          </ItemGroup>
-        </CardAction>
-      </CardHeader>
+      <ChartCardHeader
+        title="Equity"
+        heroStat={formatNum(totalEquity)}
+        stat1={pnlMtd}
+        formattedStat1={compactNum(Math.abs(pnlMtd))}
+        descriptionStat1="this month"
+        stat2={pnlYtd}
+        formattedStat2={compactNum(Math.abs(pnlYtd))}
+        descriptionStat2="this year"
+      />
 
       <CardContent>
         <Areachart

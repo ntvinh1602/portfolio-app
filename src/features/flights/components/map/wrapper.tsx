@@ -1,9 +1,9 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import type { Airport } from "@/features/flights/actions/get-airports"
+import type { Airport } from "@flight/actions/get-airports"
 import type { FeatureCollection, LineString } from "geojson"
-import type { RoutesGeoJSONProperties } from "@/features/flights/actions/get-geojson-routes"
+import type { RoutesGeoJSONProperties } from "@flight/actions/get-geojson-routes"
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false })
 

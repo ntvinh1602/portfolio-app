@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet"
 import type { FeatureCollection, LineString } from "geojson"
-import type { RoutesGeoJSONProperties } from "@/features/flights/actions/get-geojson-routes"
-import type { Airport } from "@/features/flights/actions/get-airports"
+import type { RoutesGeoJSONProperties } from "@flight/actions/get-geojson-routes"
+import type { Airport } from "@flight/actions/get-airports"
 import L from "leaflet"
 
 type RoutesGeoJSON = FeatureCollection<LineString, RoutesGeoJSONProperties>

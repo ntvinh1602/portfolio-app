@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   flight: {
     Tables: {
       aircrafts: {
@@ -52,8 +47,8 @@ export type Database = {
       }
       airports: {
         Row: {
-          city: string | null
-          country: string | null
+          city: string
+          country: string
           geom: unknown
           iata_code: string
           icao_code: string | null
@@ -64,8 +59,8 @@ export type Database = {
           timezone: string
         }
         Insert: {
-          city?: string | null
-          country?: string | null
+          city: string
+          country: string
           geom?: unknown
           iata_code: string
           icao_code?: string | null
@@ -76,8 +71,8 @@ export type Database = {
           timezone: string
         }
         Update: {
-          city?: string | null
-          country?: string | null
+          city?: string
+          country?: string
           geom?: unknown
           iata_code?: string
           icao_code?: string | null
@@ -106,6 +101,7 @@ export type Database = {
             | null
           seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
           tail_number: string | null
+          user_id: string | null
         }
         Insert: {
           aircraft_id?: string | null
@@ -123,6 +119,7 @@ export type Database = {
             | null
           seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
           tail_number?: string | null
+          user_id?: string | null
         }
         Update: {
           aircraft_id?: string | null
@@ -140,6 +137,7 @@ export type Database = {
             | null
           seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
           tail_number?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -222,6 +220,7 @@ export type Database = {
             | null
           seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
           tail_number: string | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -233,6 +232,7 @@ export type Database = {
           flights_count: number | null
           total_distance: number | null
           total_duration: string | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -804,12 +804,24 @@ export type Database = {
       balance_sheet: {
         Row: {
           asset_class: Database["public"]["Enums"]["asset_class"] | null
+          currency_code: string | null
+          logo_url: string | null
+          mkt_price: number | null
           name: string | null
+          net_profit: number | null
           quantity: number | null
           ticker: string | null
           total_value: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_currency_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       daily_snapshots: {
         Row: {
@@ -827,21 +839,16 @@ export type Database = {
         Row: {
           avg_expense: number | null
           avg_profit: number | null
+          cagr: number | null
           cash: number | null
           debts: number | null
-          equitychart_1y: Json | null
-          equitychart_3m: Json | null
-          equitychart_6m: Json | null
-          equitychart_all: Json | null
+          equitychart: Json | null
           fund: number | null
           margin: number | null
           pnl_mtd: number | null
           pnl_ytd: number | null
           profit_chart: Json | null
-          returnchart_1y: Json | null
-          returnchart_3m: Json | null
-          returnchart_6m: Json | null
-          returnchart_all: Json | null
+          returnchart: Json | null
           stock: number | null
           stock_list: Json | null
           total_equity: number | null
@@ -889,7 +896,7 @@ export type Database = {
           },
         ]
       }
-      reports_data: {
+      recaps_data: {
         Row: {
           avg_expense: number | null
           avg_profit: number | null
@@ -1168,3 +1175,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -10,11 +10,10 @@ import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
-import { getCashAssets } from "@/features/fund/actions/get-cash-assets"
+import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
-import { mutate } from "swr"
-import { CASHFLOW_MEMO } from "@/features/fund/domain/cashflow-memo"
+import { CASHFLOW_MEMO } from "@fund/domain/cashflow-memo"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
@@ -106,12 +105,7 @@ export function CashflowForm({
         form.reset()
         onSuccess?.()
       }
-
-      await mutate(
-        (key) => Array.isArray(key) && key[0] === "priceRefresh",
-        undefined,
-        { revalidate: true },
-      )
+      
     } catch (err) {
       const message =
         err instanceof Error

@@ -8,7 +8,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { formatNum } from "@/lib/utils"
-import type { BSItem } from "@fund/components/balance-sheet/types"
+import type { BSItem } from "@fund/fund.types"
 
 export function FlatItemList({ items }: { items: BSItem[] }) {
   return (

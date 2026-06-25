@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DatePicker } from "@/components/date-picker"
-import { category, operation } from "../../domain/txn-labels"
+import { category, operation } from "@fund/domain/txn-labels"
 
 export interface TransactionFilterState {
   categories: string[]

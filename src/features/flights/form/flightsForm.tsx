@@ -4,7 +4,7 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { AddFlight } from "@/features/flights/actions/add-flight"
+import { AddFlight } from "@flight/actions/add-flight"
 
 import { TextField } from "@/components/form/text-field"
 import { SelectField } from "@/components/form/select-field"

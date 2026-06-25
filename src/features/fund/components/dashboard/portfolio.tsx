@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Item,
   ItemMedia,
@@ -34,7 +36,7 @@ function Asset({
   net_profit: number
 }) {
   const isMobile = useIsMobile()
-  const pnlPct = ((net_profit / total_value) - 1) * 100
+  const pnlPct = (net_profit / total_value) * 100
   const isPositive = net_profit >= 0
   return (
     <Item variant="muted">

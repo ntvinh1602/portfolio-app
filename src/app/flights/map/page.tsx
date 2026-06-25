@@ -4,8 +4,8 @@ import { Spinner } from "@/components/ui/spinner"
 import getLifetimeStats from "@flight/actions/get-lifetime-stats"
 import getRoutesGeoJSON from "@flight/actions/get-geojson-routes"
 import getAirports from "@flight/actions/get-airports"
-import StatsCarousel from "@/features/flights/components/map/stats-carousel"
-import LeafletMapDynamic from "@/features/flights/components/map/wrapper"
+import StatsCarousel from "@flight/components/map/stats-carousel"
+import LeafletMapDynamic from "@flight/components/map/wrapper"
 
 export default function FlightsMapPage() {
   return (

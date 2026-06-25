@@ -7,7 +7,6 @@ import {
   CardTitle,
   CardContent,
   CardAction,
-  CardDescription,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistance } from "date-fns"
@@ -69,8 +68,7 @@ export function NewsWidget({ holdings, news }: NewsWidgetProps) {
   return (
     <Card className="flex flex-col max-h-120">
       <CardHeader>
-        <CardTitle>What's going on?</CardTitle>
-        <CardDescription>Market news in the last 7 days</CardDescription>
+        <CardTitle>Market News</CardTitle>
         <CardAction>
           <ToggleGroup
             type="single"

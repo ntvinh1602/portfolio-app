@@ -34,13 +34,6 @@ export default function AnnualRecaps({
             onChange={setYear}
             startYear={startYear}
           />
-          <TopStocks
-            year={year}
-            stockData={yearData.stock_pnl}
-          />
-        </div>
-
-        <div className="flex flex-col flex-1 gap-4">
           <div className="grid grid-cols-2 gap-4 h-fit">
             <Cashflow
               deposits={yearData.deposits}
@@ -48,6 +41,13 @@ export default function AnnualRecaps({
             />
             <ExpenseChart profitChart={yearData.profit_chart} />
           </div>
+          <TopStocks
+            year={year}
+            stockData={yearData.stock_pnl}
+          />
+        </div>
+
+        <div className="flex flex-col flex-1 gap-4">
           <ProfitChart
             year={year}
             totalPnL={yearData.total_pnl}
