@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache"
+import { updateTag } from "next/cache"
 import { NextResponse } from "next/server"
 
 const ALLOWED_TAGS = new Set([
@@ -8,9 +8,9 @@ const ALLOWED_TAGS = new Set([
 ])
 
 export async function POST(req: Request) {
-  const secret = req.headers.get("x-revalidate-secret")
+  const secret = req.headers.get("x-update-secret")
 
-  if (secret !== process.env.VERCEL_SECRET) {
+  if (secret !== process.env.APP_SECRET) {
     return NextResponse.json(
       { message: "Unauthorized" },
       { status: 401 }
@@ -47,11 +47,11 @@ export async function POST(req: Request) {
   }
 
   for (const tag of validTags) {
-    revalidateTag(tag, "max")
+    updateTag(tag)
   }
 
   return NextResponse.json({
-    revalidated: true,
+    updated: true,
     tags: validTags,
     now: Date.now(),
   })

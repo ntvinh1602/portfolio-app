@@ -8,7 +8,7 @@ export default async function getRecaps() {
   cacheLife("days")
 
   const supabase = await createClient()
-  const { data, error } = await supabase.from("reports_data").select()
+  const { data, error } = await supabase.from("recaps_data").select()
 
   if (error) throw new Error(error.message)
   return data as Recaps[]
