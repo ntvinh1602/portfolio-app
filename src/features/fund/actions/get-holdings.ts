@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { BalanceSheet } from "@fund/fund.types"
+import type { Asset } from "@fund/fund.types"
 
 export default async function getHoldings() {
   "use cache: private"
@@ -14,5 +14,5 @@ export default async function getHoldings() {
       .eq("asset_class", "stock")
 
   if (error) throw new Error(error.message)
-  return (data ?? []) as BalanceSheet[]
+  return (data ?? []) as Asset[]
 }

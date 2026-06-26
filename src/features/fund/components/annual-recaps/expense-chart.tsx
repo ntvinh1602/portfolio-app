@@ -12,10 +12,10 @@ import { Piechart } from "@/components/charts/piechart"
 import { ChartConfig } from "@/components/ui/chart"
 import { formatNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
-import type { ProfitChartItem } from "@fund/fund.types"
+import type { ProfitChartPt } from "@fund/fund.types"
 
 interface ExpenseChartProps {
-  profitChart: ProfitChartItem[]
+  profitChart: ProfitChartPt[]
   className?: string
 }
 

@@ -4,14 +4,14 @@ import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Spinner } from "@/components/ui/spinner"
+import { RefreshCw } from "lucide-react"
 
-export function RefreshButton() {
+export default function RefreshButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    const toastId = toast.loading("Refreshing prices...")
+    const toastId = toast.loading("Fetching latest prices...")
 
     try {
       const supabase = createClient()
@@ -23,7 +23,7 @@ export function RefreshButton() {
         },
       )
 
-      if (error) throw new Error(error.message ?? "Failed to refresh prices")
+      if (error) throw new Error(error.message ?? "Failed to update prices")
 
       toast.success(data.message, {
         id: toastId,
@@ -31,7 +31,7 @@ export function RefreshButton() {
       })
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to refresh prices"
+        err instanceof Error ? err.message : "Failed to update prices"
       toast.error(message, { id: toastId })
     } finally {
       setIsRefreshing(false)
@@ -40,20 +40,12 @@ export function RefreshButton() {
 
   return (
     <Button
-      size="sm"
+      size="icon-sm"
       variant="outline"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="rounded-2xl"
     >
-      {isRefreshing ? (
-        <div className="flex items-center gap-1">
-          <Spinner />
-          Updating
-        </div>
-      ) : (
-        <span>Update Price</span>
-      )}
+      <RefreshCw className={`${isRefreshing && "animate-spin"}`} />
     </Button>
   )
 }

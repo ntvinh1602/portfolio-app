@@ -2,7 +2,7 @@ import getBalanceSheet from "@fund/actions/get-balancesheet"
 import { FlatItemList } from "@fund/components/balance-sheet/flat-item-list"
 import { GroupedItemList } from "@fund/components/balance-sheet/grouped-item-list"
 import { BalanceSheetSectionCard } from "@fund/components/balance-sheet/section-card"
-import type { BSItem } from "@fund/fund.types"
+import type { Asset } from "@fund/fund.types"
 import { Spinner } from "@/components/ui/spinner"
 import { Box, DollarSign, HandCoins } from "lucide-react"
 import { Suspense } from "react"
@@ -34,9 +34,9 @@ async function BalanceSheetContent() {
       return acc
     },
     {
-      liabilities: [] as BSItem[],
-      equities: [] as BSItem[],
-      groupedAssets: {} as Record<string, BSItem[]>,
+      liabilities: [] as Asset[],
+      equities: [] as Asset[],
+      groupedAssets: {} as Record<string, Asset[]>,
     }
   )
 

@@ -10,8 +10,35 @@ import {
   ItemContent,
   ItemDescription,
   ItemGroup,
+  ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
+
+interface StatProps {
+  stat: number
+  formatted: string
+  description: string
+}
+
+function Stat({ stat, formatted, description }: StatProps) {
+  return (
+    <Item size="xs">
+      <ItemContent className="items-end">
+        <ItemTitle>
+          {stat < 0 ? (
+            <TrendingDown className="text-destructive size-4" />
+          ) : (
+            <TrendingUp className="text-primary size-4" />
+          )}
+          {formatted}
+        </ItemTitle>
+        <ItemDescription className="text-xs whitespace-nowrap">
+          {description}
+        </ItemDescription>
+      </ItemContent>
+    </Item>
+  )
+}
 
 interface Props {
   title: string
@@ -46,37 +73,18 @@ export default function ChartCardHeader({
         </span>
       </CardTitle>
       <CardAction>
-        <ItemGroup className="grid grid-cols-2 rounded-2xl bg-muted/50">
-          <Item size="xs">
-            <ItemContent className="items-end">
-              <ItemTitle>
-                {stat1 < 0 ? (
-                  <TrendingDown className="text-destructive size-4" />
-                ) : (
-                  <TrendingUp className="text-primary size-4" />
-                )}
-                {formattedStat1}
-              </ItemTitle>
-              <ItemDescription className="text-xs">
-                {descriptionStat1}
-              </ItemDescription>
-            </ItemContent>
-          </Item>
-          <Item size="xs">
-            <ItemContent className="items-end">
-              <ItemTitle>
-                {stat2 < 0 ? (
-                  <TrendingDown className="text-destructive size-4" />
-                ) : (
-                  <TrendingUp className="text-primary size-4" />
-                )}
-                {formattedStat2}
-              </ItemTitle>
-              <ItemDescription className="text-xs">
-                {descriptionStat2}
-              </ItemDescription>
-            </ItemContent>
-          </Item>
+        <ItemGroup className="flex-row rounded-2xl bg-muted/50">
+          <Stat
+            stat={stat1}
+            formatted={formattedStat1}
+            description={descriptionStat1}
+          />
+          <ItemSeparator orientation="vertical" />
+          <Stat
+            stat={stat2}
+            formatted={formattedStat2}
+            description={descriptionStat2}
+          />
         </ItemGroup>
       </CardAction>
     </CardHeader>

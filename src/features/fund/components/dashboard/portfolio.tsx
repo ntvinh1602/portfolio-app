@@ -12,13 +12,14 @@ import {
   CardAction,
   CardContent,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card"
 import Image from "next/image"
 import { formatNum, compactNum, cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { RefreshButton } from "./refresh-button"
-import type { BalanceSheet } from "@fund/fund.types"
+import RefreshButton from "./refresh-button"
+import type { Asset } from "@fund/fund.types"
+import StatusLabel from "@/components/status-label"
 
 function Asset({
   name,
@@ -65,13 +66,15 @@ function Asset({
         <ItemDescription
           className={cn(
             "flex items-center gap-1 text-xs",
-            isPositive ? "text-primary" : "text-destructive"
+            isPositive ? "text-primary" : "text-destructive",
           )}
         >
           {!isMobile ? (
             <span>
               {compactNum(net_profit)}
-              {" ("}{formatNum(pnlPct, 1)}{"%)"}
+              {" ("}
+              {formatNum(pnlPct, 1)}
+              {"%)"}
             </span>
           ) : (
             <span>{formatNum(pnlPct, 1)}%</span>
@@ -80,17 +83,11 @@ function Asset({
       </ItemContent>
     </Item>
   )
-} 
+}
 
-export function Portfolio({
-  stocks
-}: {
-  stocks: BalanceSheet[]
-}) {
+export function Portfolio({ stocks }: { stocks: Asset[] }) {
   // Sort by total value descending
-  const sortedStocks = [...stocks].sort(
-    (a, b) => b.total_value - a.total_value
-  )
+  const sortedStocks = [...stocks].sort((a, b) => b.total_value - a.total_value)
 
   return (
     <Card>
@@ -115,9 +112,7 @@ export function Portfolio({
             />
           ))
         ) : (
-          <span className="self-center py-20 text-muted-foreground">
-            No stock holdings.
-          </span>
+          <StatusLabel type="empty" />
         )}
       </CardContent>
     </Card>

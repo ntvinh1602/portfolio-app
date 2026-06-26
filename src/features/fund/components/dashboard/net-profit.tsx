@@ -6,9 +6,9 @@ import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import ChartCardHeader from "@/components/charts/chartcard-header"
-import { ProfitChartItem } from "@fund/fund.types"
+import { ProfitChartPt } from "@fund/fund.types"
 
-interface ProfitChartPoint extends ProfitChartItem {
+interface ProfitChartPoint extends ProfitChartPt {
   [key: string]: string | number
 }
 

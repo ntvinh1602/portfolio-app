@@ -12,7 +12,7 @@ export default function EquityReturn({ data }: { data: Dashboard }) {
   const [dateRange, setDateRange] = useState("1y")
   return (
     <div className="@container/main flex flex-col gap-4">
-      <div className="flex bg-card gap-2 p-3 rounded-4xl items-center">
+      <div className="flex bg-card gap-2 p-1 rounded-4xl items-center">
         <Button variant="ghost" size="icon-lg" className="pointer-events-none">
           <Calendar />
         </Button>

@@ -5,14 +5,14 @@ import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
-import type { ReturnChartItem } from "@fund/fund.types"
+import type { ReturnChartPt } from "@fund/fund.types"
 import ChartCardHeader from "@/components/charts/chartcard-header"
 
 interface ReturnChartProps {
   year: number
   equityReturn: number
   vnIndexReturn: number
-  chartData: ReturnChartItem[]
+  chartData: ReturnChartPt[]
 }
 
 const returnChartConfig: ChartConfig = {

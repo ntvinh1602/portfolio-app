@@ -6,19 +6,20 @@ import {
   ItemDescription,
   ItemGroup,
   ItemMedia,
+  ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
 import { formatNum } from "@/lib/utils"
-import type { BSItem } from "@fund/fund.types"
+import type { Asset } from "@fund/fund.types"
 import Image from "next/image"
 
 export function GroupedItemList({
   groups,
 }: {
-  groups: Record<string, BSItem[]>
+  groups: Record<string, Asset[]>
 }) {
   return (
-    <ItemGroup>
+    <ItemGroup className="bg-muted/50 rounded-4xl p-2">
       {Object.entries(groups).map(([assetClass, items]) => {
         const totalValue = items.reduce(
           (sum, i) => sum + (i.total_value ?? 0),
@@ -26,16 +27,17 @@ export function GroupedItemList({
         )
 
         return (
-          <div key={assetClass}>
-            <Item variant="muted" size="xs">
-              <ItemContent>
-                <ItemTitle className="capitalize">{assetClass}</ItemTitle>
-              </ItemContent>
+          <Item key={assetClass} size="xs">
+            <ItemContent>
+              <ItemTitle className="capitalize">{assetClass}</ItemTitle>
+            </ItemContent>
+            <ItemContent>
               <ItemDescription>{formatNum(totalValue)}</ItemDescription>
-            </Item>
+            </ItemContent>
+            <ItemSeparator className="-mb-1" />
             <ItemGroup>
               {items.map((item) => (
-                <Item key={item.ticker} size="xs">
+                <Item key={item.ticker} size="xs" className="px-0">
                   <ItemMedia variant="image">
                     {item.logo_url && (
                       <Image
@@ -50,16 +52,24 @@ export function GroupedItemList({
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{item.name}</ItemTitle>
+                    {item.ticker !== "FX.VND" && (
+                      <ItemDescription>
+                        {formatNum(item.quantity)}
+                        {item.asset_class == "stock"
+                          ? " shares"
+                          : ` ${item.currency_code}`}
+                      </ItemDescription>
+                    )}
                   </ItemContent>
                   <ItemContent>
                     <ItemDescription>
-                      {item.total_value ? formatNum(item.total_value) : "0"}
+                      {formatNum(item.total_value)}
                     </ItemDescription>
                   </ItemContent>
                 </Item>
               ))}
             </ItemGroup>
-          </div>
+          </Item>
         )
       })}
     </ItemGroup>

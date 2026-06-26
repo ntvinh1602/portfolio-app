@@ -3,16 +3,16 @@ import { parseISO, format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
-import { type ReturnChartItem } from "@fund/fund.types"
+import { type ReturnChartPt } from "@fund/fund.types"
 import ChartCardHeader from "@/components/charts/chartcard-header"
 
 interface Props {
   dateRange: string
   chartData: {
-    all: ReturnChartItem[]
-    last_1y: ReturnChartItem[]
-    last_6m: ReturnChartItem[]
-    last_3m: ReturnChartItem[]
+    all: ReturnChartPt[]
+    last_1y: ReturnChartPt[]
+    last_6m: ReturnChartPt[]
+    last_3m: ReturnChartPt[]
   }
   twrYtd: number
   twrAll: number
@@ -37,7 +37,7 @@ export function ReturnChart({
   twrAll,
   cagr,
 }: Props) {
-  let chartTimeframe: ReturnChartItem[]
+  let chartTimeframe: ReturnChartPt[]
 
   switch (dateRange) {
     case "3m":

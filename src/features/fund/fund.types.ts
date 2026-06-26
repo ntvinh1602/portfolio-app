@@ -5,19 +5,19 @@ export interface StockPnLItem {
   total_pnl: number
 }
 
-export type EquityChartItem = {
+export type EquityChartPt = {
   snapshot_date: string
   net_equity: number
   cumulative_cashflow: number
 }
 
-export type ReturnChartItem = {
+export type ReturnChartPt = {
   snapshot_date: string
   vni_value: number
   portfolio_value: number
 }
 
-export type ProfitChartItem = {
+export type ProfitChartPt = {
   revenue: number
   fee: number
   interest: number
@@ -25,15 +25,7 @@ export type ProfitChartItem = {
   snapshot_date: string
 }
 
-export interface BSItem {
-  ticker: string
-  name: string
-  asset_class: string
-  logo_url: string | null
-  total_value: number | null
-}
-
-export type BalanceSheet = {
+export type Asset = {
   ticker: string
   name: string
   asset_class: string
@@ -54,8 +46,8 @@ export interface Recaps {
   vn_ret: number
   withdrawals: number
   year: number
-  profit_chart: ProfitChartItem[]
-  return_chart: ReturnChartItem[]
+  profit_chart: ProfitChartPt[]
+  return_chart: ReturnChartPt[]
   stock_pnl: StockPnLItem[]
 }
 
@@ -75,18 +67,18 @@ export type Dashboard = {
   total_pnl: number
   avg_profit: number
   avg_expense: number
-  profit_chart: ProfitChartItem[]
+  profit_chart: ProfitChartPt[]
   equitychart: {
-    last_1y: EquityChartItem[]
-    last_3m: EquityChartItem[]
-    last_6m: EquityChartItem[]
-    all: EquityChartItem[]
+    last_1y: EquityChartPt[]
+    last_3m: EquityChartPt[]
+    last_6m: EquityChartPt[]
+    all: EquityChartPt[]
   }
   returnchart: {
-    last_1y: ReturnChartItem[]
-    last_3m: ReturnChartItem[]
-    last_6m: ReturnChartItem[]
-    all: ReturnChartItem[]
+    last_1y: ReturnChartPt[]
+    last_3m: ReturnChartPt[]
+    last_6m: ReturnChartPt[]
+    all: ReturnChartPt[]
   }
 }
 
@@ -105,7 +97,7 @@ export type NetProfitCard = {
   total_pnl: number
   avg_profit: number
   avg_expense: number
-  profit_chart: ProfitChartItem[]
+  profit_chart: ProfitChartPt[]
 }
 
 export type AumLeverageCard = {

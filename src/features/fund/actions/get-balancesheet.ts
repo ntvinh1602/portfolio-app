@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { BalanceSheet } from "@fund/fund.types"
+import type { Asset } from "@fund/fund.types"
 
 export default async function getBalanceSheet() {
   "use cache: private"
@@ -14,7 +14,7 @@ export default async function getBalanceSheet() {
 
   if (error) throw new Error(error.message)
 
-  const rawData = (data as BalanceSheet[]) ?? []
+  const rawData = (data as Asset[]) ?? []
 
   const totalAssets = rawData
     .filter((r) => r.asset_class !== "equity" && r.asset_class !== "liability")

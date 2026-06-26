@@ -3,16 +3,16 @@ import { parseISO, format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChartConfig } from "@/components/ui/chart"
-import { type EquityChartItem } from "@fund/fund.types"
+import { type EquityChartPt } from "@fund/fund.types"
 import ChartCardHeader from "@/components/charts/chartcard-header"
 
 interface EquityChartProps {
   dateRange: string
   chartData: {
-    all: EquityChartItem[]
-    last_1y: EquityChartItem[]
-    last_6m: EquityChartItem[]
-    last_3m: EquityChartItem[]
+    all: EquityChartPt[]
+    last_1y: EquityChartPt[]
+    last_6m: EquityChartPt[]
+    last_3m: EquityChartPt[]
   }
   totalEquity: number
   pnlMtd: number
@@ -49,7 +49,7 @@ export function EquityChart({
     }
   }
 
-  let chartTimeframe: EquityChartItem[]
+  let chartTimeframe: EquityChartPt[]
 
   switch (dateRange) {
     case "3m":

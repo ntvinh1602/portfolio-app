@@ -5,7 +5,7 @@ import { ChartConfig } from "@/components/ui/chart"
 import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import type { ProfitChartItem } from "@fund/fund.types"
+import type { ProfitChartPt } from "@fund/fund.types"
 import ChartCardHeader from "@/components/charts/chartcard-header"
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
   totalPnL: number
   avgProfit: number
   avgExpense: number
-  chartData: ProfitChartItem[]
+  chartData: ProfitChartPt[]
 }
 
 const NetProfitConfig: ChartConfig = {

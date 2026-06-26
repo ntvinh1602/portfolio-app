@@ -51,6 +51,13 @@ CREATE EXTENSION IF NOT EXISTS "index_advisor" WITH SCHEMA "extensions";
 
 
 
+CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
@@ -790,14 +797,15 @@ ALTER FUNCTION "public"."process_dnse_order"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."process_refresh_queue"() RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
+    AS $$declare
   pending_count integer;
-  vercel_secret text;
+  app_secret text;
+  app_url text;
   response jsonb;
 begin
   -- Check if anything is queued
-  select count(*) into pending_count
+  select count(*)
+  into pending_count
   from public.refresh_queue;
 
   if pending_count = 0 then
@@ -810,22 +818,32 @@ begin
   -- Refresh materialized views
   refresh materialized view concurrently public.daily_snapshots;
   refresh materialized view public.dashboard_data;
+  refresh materialized view public.recaps_data;
 
-  -- Get secret from Vault
+  -- Get secrets from Vault
   select decrypted_secret
-  into vercel_secret
+  into app_secret
   from vault.decrypted_secrets
-  where name = 'VERCEL_SECRET';
+  where name = 'APP_SECRET';
 
-  if vercel_secret is null then
-    raise exception 'VERCEL_SECRET not found in vault';
+  select decrypted_secret
+  into app_url
+  from vault.decrypted_secrets
+  where name = 'APP_URL';
+
+  if app_secret is null then
+    raise exception 'APP_SECRET not found in vault';
   end if;
 
-  -- Call Next.js revalidate endpoint with tag payload
+  if app_url is null then
+    raise exception 'APP_URL not found in vault';
+  end if;
+
+  -- Call app update cache endpoint
   select net.http_post(
-    url := 'https://msyq.vercel.app/api/revalidate',
+    url := app_url || '/api/update',
     headers := jsonb_build_object(
-      'x-revalidate-secret', vercel_secret,
+      'x-update-secret', app_secret,
       'Content-Type', 'application/json'
     ),
     body := jsonb_build_object(
@@ -833,9 +851,7 @@ begin
     )
   )
   into response;
-
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."process_refresh_queue"() OWNER TO "postgres";
@@ -1117,26 +1133,36 @@ ALTER FUNCTION "public"."rebuild_ledger"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."revalidate_news"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
-  vercel_secret text;
+    AS $$declare
+  app_secret text;
+  app_url text;
   response jsonb;
 begin
-  -- Get secret from Vault
+  -- Get app secret from Vault
   select decrypted_secret
-  into vercel_secret
+  into app_secret
   from vault.decrypted_secrets
-  where name = 'VERCEL_SECRET';
+  where name = 'APP_SECRET';
 
-  if vercel_secret is null then
-    raise exception 'VERCEL_SECRET not found in vault';
+  -- Get app url from Vault
+  select decrypted_secret
+  into app_url
+  from vault.decrypted_secrets
+  where name = 'APP_URL';
+
+  if app_secret is null then
+    raise exception 'APP_SECRET not found in vault';
   end if;
 
-  -- Call Next.js revalidate endpoint
+  if app_url is null then
+    raise exception 'APP_URL not found in vault';
+  end if;
+
+  -- Call app update cache endpoint
   select net.http_post(
-    url := 'https://msyq.vercel.app/api/revalidate',
+    url := app_url || '/api/update',
     headers := jsonb_build_object(
-      'x-revalidate-secret', vercel_secret,
+      'x-update-secret', app_secret,
       'Content-Type', 'application/json'
     ),
     body := jsonb_build_object(
@@ -1146,8 +1172,7 @@ begin
   into response;
 
   return null; -- AFTER trigger does not modify row
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."revalidate_news"() OWNER TO "postgres";
@@ -1411,8 +1436,12 @@ SELECT
     NULL::"text" AS "ticker",
     NULL::"text" AS "name",
     NULL::"public"."asset_class" AS "asset_class",
+    NULL::"text" AS "logo_url",
+    NULL::"text" AS "currency_code",
     NULL::numeric AS "quantity",
-    NULL::numeric AS "total_value";
+    NULL::numeric AS "total_value",
+    NULL::numeric AS "mkt_price",
+    NULL::numeric AS "net_profit";
 
 
 ALTER VIEW "public"."balance_sheet" OWNER TO "postgres";
@@ -1498,7 +1527,7 @@ CREATE TABLE IF NOT EXISTS "public"."tx_legs" (
 ALTER TABLE "public"."tx_legs" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."daily_snapshots" WITH ("security_invoker"='on') AS
+CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
  WITH "dates" AS (
          SELECT ("generate_series"((GREATEST('2021-11-09'::"date", COALESCE(( SELECT ("min"("tx_entries"."created_at"))::"date" AS "min"
                    FROM "public"."tx_entries"), '2021-11-09'::"date")))::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 day'::interval))::"date" AS "snapshot_date"
@@ -1633,10 +1662,10 @@ CREATE OR REPLACE VIEW "public"."daily_snapshots" WITH ("security_invoker"='on')
     "cumulative_cashflow",
     "equity_index"
    FROM "with_index"
-  ORDER BY "snapshot_date" DESC;
+  WITH NO DATA;
 
 
-ALTER VIEW "public"."daily_snapshots" OWNER TO "postgres";
+ALTER MATERIALIZED VIEW "public"."daily_snapshots" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
@@ -1703,8 +1732,7 @@ CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on
     COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
    FROM (("month_ranges" "m"
      LEFT JOIN "monthly_pnl" "mp" ON (("mp"."month_start" = "m"."month_start")))
-     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")))
-  ORDER BY "m"."month_start" DESC;
+     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")));
 
 
 ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
@@ -1761,7 +1789,7 @@ CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') 
 ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') AS
+CREATE MATERIALIZED VIEW "public"."dashboard_data" AS
  WITH "periods" AS (
          SELECT CURRENT_DATE AS "today",
             ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "ytd_date",
@@ -1776,19 +1804,18 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
            FROM "periods"
         ), "twr" AS (
          SELECT "public"."calculate_twr"("periods"."ytd_date", "periods"."today") AS "twr_ytd",
-            "public"."calculate_twr"("periods"."inception_date", "periods"."today") AS "twr_all"
+            "public"."calculate_twr"("periods"."inception_date", "periods"."today") AS "twr_all",
+                CASE
+                    WHEN ("periods"."today" > "periods"."inception_date") THEN ("power"(((1)::numeric + "public"."calculate_twr"("periods"."inception_date", "periods"."today")), (1.0 / ((("periods"."today" - ( SELECT "min"("monthly_snapshots"."snapshot_date") AS "min"
+                       FROM "public"."monthly_snapshots")))::numeric / 365.25))) - (1)::numeric)
+                    ELSE NULL::numeric
+                END AS "cagr"
            FROM "periods"
         ), "equity_chart" AS (
-         SELECT "public"."get_equity_chart"("periods"."last3m_date", "periods"."today", 150) AS "equitychart_3m",
-            "public"."get_equity_chart"("periods"."last6m_date", "periods"."today", 150) AS "equitychart_6m",
-            "public"."get_equity_chart"("periods"."last1y_date", "periods"."today", 150) AS "equitychart_1y",
-            "public"."get_equity_chart"("periods"."inception_date", "periods"."today", 150) AS "equitychart_all"
+         SELECT "jsonb_build_object"('last_3m', "public"."get_equity_chart"("periods"."last3m_date", "periods"."today", 150), 'last_6m', "public"."get_equity_chart"("periods"."last6m_date", "periods"."today", 150), 'last_1y', "public"."get_equity_chart"("periods"."last1y_date", "periods"."today", 150), 'all', "public"."get_equity_chart"("periods"."inception_date", "periods"."today", 150)) AS "equitychart"
            FROM "periods"
         ), "return_chart" AS (
-         SELECT "public"."get_return_chart"("periods"."last3m_date", "periods"."today", 150) AS "returnchart_3m",
-            "public"."get_return_chart"("periods"."last6m_date", "periods"."today", 150) AS "returnchart_6m",
-            "public"."get_return_chart"("periods"."last1y_date", "periods"."today", 150) AS "returnchart_1y",
-            "public"."get_return_chart"("periods"."inception_date", "periods"."today", 150) AS "returnchart_all"
+         SELECT "jsonb_build_object"('last_3m', "public"."get_return_chart"("periods"."last3m_date", "periods"."today", 150), 'last_6m', "public"."get_return_chart"("periods"."last6m_date", "periods"."today", 150), 'last_1y', "public"."get_return_chart"("periods"."last1y_date", "periods"."today", 150), 'all', "public"."get_return_chart"("periods"."inception_date", "periods"."today", 150)) AS "returnchart"
            FROM "periods"
         ), "balance" AS (
          SELECT "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
@@ -1822,6 +1849,7 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
     "pnl"."pnl_mtd",
     "twr"."twr_ytd",
     "twr"."twr_all",
+    "twr"."cagr",
     "balance"."total_equity",
     "balance"."total_liabilities",
     "balance"."fund",
@@ -1834,14 +1862,8 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
     "monthly"."avg_expense",
     "monthly"."profit_chart",
     "stock_positions"."stock_list",
-    "equity_chart"."equitychart_3m",
-    "equity_chart"."equitychart_6m",
-    "equity_chart"."equitychart_1y",
-    "equity_chart"."equitychart_all",
-    "return_chart"."returnchart_3m",
-    "return_chart"."returnchart_6m",
-    "return_chart"."returnchart_1y",
-    "return_chart"."returnchart_all"
+    "equity_chart"."equitychart",
+    "return_chart"."returnchart"
    FROM ((((((("pnl"
      CROSS JOIN "twr")
      CROSS JOIN "balance")
@@ -1849,10 +1871,11 @@ CREATE OR REPLACE VIEW "public"."dashboard_data" WITH ("security_invoker"='on') 
      CROSS JOIN "monthly")
      CROSS JOIN "stock_positions")
      CROSS JOIN "equity_chart")
-     CROSS JOIN "return_chart");
+     CROSS JOIN "return_chart")
+  WITH NO DATA;
 
 
-ALTER VIEW "public"."dashboard_data" OWNER TO "postgres";
+ALTER MATERIALIZED VIEW "public"."dashboard_data" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
@@ -1893,30 +1916,6 @@ CREATE TABLE IF NOT EXISTS "public"."news_articles" (
 
 
 ALTER TABLE "public"."news_articles" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."refresh_queue" (
-    "id" bigint NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"()
-);
-
-
-ALTER TABLE "public"."refresh_queue" OWNER TO "postgres";
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."refresh_queue_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNED BY "public"."refresh_queue"."id";
-
 
 
 CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
@@ -2059,14 +2058,13 @@ UNION ALL
     "all_time"."withdrawals",
     "all_time"."equity_ret",
     "all_time"."vn_ret"
-   FROM "all_time"
-  ORDER BY 1;
+   FROM "all_time";
 
 
 ALTER VIEW "public"."yearly_snapshots" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."reports_data" WITH ("security_invoker"='on') AS
+CREATE MATERIALIZED VIEW "public"."recaps_data" AS
  WITH "stock_base" AS (
          SELECT "stock_annual_pnl"."year",
             "jsonb_agg"("jsonb_build_object"('ticker', "stock_annual_pnl"."ticker", 'name', "stock_annual_pnl"."name", 'logo_url', "stock_annual_pnl"."logo_url", 'total_pnl', "stock_annual_pnl"."total_pnl") ORDER BY "stock_annual_pnl"."ticker") AS "stock_pnl"
@@ -2161,10 +2159,34 @@ CREATE OR REPLACE VIEW "public"."reports_data" WITH ("security_invoker"='on') AS
     "public"."get_return_chart"("db"."start_date", "db"."end_date", 150) AS "return_chart"
    FROM ("combined" "c"
      JOIN "date_bounds" "db" USING ("year"))
-  ORDER BY "c"."year";
+  WITH NO DATA;
 
 
-ALTER VIEW "public"."reports_data" OWNER TO "postgres";
+ALTER MATERIALIZED VIEW "public"."recaps_data" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."refresh_queue" (
+    "id" bigint NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."refresh_queue" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."refresh_queue_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNED BY "public"."refresh_queue"."id";
+
 
 
 CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
@@ -2334,6 +2356,10 @@ CREATE INDEX "assets_currency_code_idx" ON "public"."assets" USING "btree" ("cur
 
 
 
+CREATE UNIQUE INDEX "daily_snapshots_date_uidx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
+
+
+
 CREATE INDEX "dnse_orders_symbol_idx" ON "public"."dnse_orders" USING "btree" ("symbol");
 
 
@@ -2361,8 +2387,13 @@ CREATE INDEX "tx_stock_stock_id_idx" ON "public"."tx_stock" USING "btree" ("stoc
 CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
  WITH "stock" AS (
          SELECT "a"."ticker",
+                CASE
+                    WHEN ("a"."asset_class" = 'stock'::"public"."asset_class") THEN "sp"."price"
+                    ELSE "er"."rate"
+                END AS "mkt_price",
             ("sum"("tl"."debit") - "sum"("tl"."credit")) AS "cost_basis",
-            "sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value"
+            "sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value",
+            ("sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) - ("sum"("tl"."debit") - "sum"("tl"."credit"))) AS "net_profit"
            FROM ((("public"."assets" "a"
              JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
              LEFT JOIN LATERAL ( SELECT "hp"."close" AS "price"
@@ -2376,7 +2407,7 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
                   ORDER BY "hfx"."date" DESC
                  LIMIT 1) "er" ON (true))
           WHERE ("a"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"]))
-          GROUP BY "a"."ticker"
+          GROUP BY "a"."ticker", "a"."logo_url", "a"."currency_code", "a"."asset_class", "sp"."price", "er"."rate"
         ), "debt_interest" AS (
          SELECT "sum"("outstanding_debts"."interest") AS "sum"
            FROM "public"."outstanding_debts"
@@ -2393,6 +2424,8 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
          SELECT "a"."ticker",
             "a"."name",
             "a"."asset_class",
+            "a"."logo_url",
+            "a"."currency_code",
                 CASE
                     WHEN ("a"."ticker" = 'INTERESTS'::"text") THEN ( SELECT "debt_interest"."sum"
                        FROM "debt_interest")
@@ -2410,15 +2443,18 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
  SELECT "aq"."ticker",
     "aq"."name",
     "aq"."asset_class",
+    "aq"."logo_url",
+    "aq"."currency_code",
     "aq"."quantity",
         CASE
             WHEN ("aq"."asset_class" = ANY (ARRAY['stock'::"public"."asset_class", 'fund'::"public"."asset_class"])) THEN "s"."market_value"
             ELSE "aq"."quantity"
-        END AS "total_value"
+        END AS "total_value",
+    "s"."mkt_price",
+    "s"."net_profit"
    FROM ("asset_quantity" "aq"
      LEFT JOIN "stock" "s" ON (("aq"."ticker" = "s"."ticker")))
-  WHERE (("aq"."quantity" > (0)::numeric) OR ("aq"."asset_class" <> 'stock'::"public"."asset_class"))
-  ORDER BY "aq"."asset_class";
+  WHERE (("aq"."quantity" > (0)::numeric) OR ("aq"."asset_class" <> 'stock'::"public"."asset_class"));
 
 
 
@@ -5096,6 +5132,9 @@ GRANT ALL ON FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "
 
 
 
+
+
+
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "anon";
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) TO "service_role";
@@ -5462,18 +5501,6 @@ GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."refresh_queue" TO "anon";
-GRANT ALL ON TABLE "public"."refresh_queue" TO "authenticated";
-GRANT ALL ON TABLE "public"."refresh_queue" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "anon";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
@@ -5486,9 +5513,21 @@ GRANT ALL ON TABLE "public"."yearly_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."reports_data" TO "anon";
-GRANT ALL ON TABLE "public"."reports_data" TO "authenticated";
-GRANT ALL ON TABLE "public"."reports_data" TO "service_role";
+GRANT ALL ON TABLE "public"."recaps_data" TO "anon";
+GRANT ALL ON TABLE "public"."recaps_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."recaps_data" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."refresh_queue" TO "anon";
+GRANT ALL ON TABLE "public"."refresh_queue" TO "authenticated";
+GRANT ALL ON TABLE "public"."refresh_queue" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."refresh_queue_id_seq" TO "service_role";
 
 
 
@@ -5581,8 +5620,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 --
 -- Dumped schema changes for auth and storage
 --
-
-CREATE POLICY "Allow authenticated read access to airlines bucket" ON "storage"."objects" FOR SELECT TO "authenticated" USING (("bucket_id" = 'airlines'::"text"));
-
-
 
