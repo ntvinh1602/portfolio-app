@@ -63,6 +63,22 @@ function ArticleList({ articles }: { articles: NewsArticle[] }) {
   )
 }
 
+function NewsTabContent({ articles }: { articles: NewsArticle[] }) {
+  if (articles.length === 0) {
+    return (
+      <div className="flex h-full w-full flex-1 items-center justify-center">
+        <StatusLabel type="empty" />
+      </div>
+    )
+  }
+
+  return (
+    <ScrollArea className="h-full w-full">
+      <ArticleList articles={articles} />
+    </ScrollArea>
+  )
+}
+
 type NewsWidgetProps = {
   holdings: Asset[]
   news: NewsArticle[]
@@ -95,8 +111,8 @@ export function NewsWidget({ holdings, news }: NewsWidgetProps) {
   ]
 
   return (
-    <Tabs defaultValue="all">
-      <Card className="max-h-120">
+    <Tabs defaultValue="all" className="h-full">
+      <Card className="h-120">
         <CardHeader>
           <CardTitle>Market Pulse</CardTitle>
           <CardAction>
@@ -113,18 +129,16 @@ export function NewsWidget({ holdings, news }: NewsWidgetProps) {
             </TabsList>
           </CardAction>
         </CardHeader>
-        <CardContent className="flex-1 min-h-0">
-          {filteredArticles.length === 0 ? (
-            <StatusLabel type="empty"/>
-          ) : (
-            <ScrollArea className="h-full">
-              {tabs.map((tab) => (
-                <TabsContent key={tab.value} value={tab.value}>
-                  <ArticleList articles={tab.articles} />
-                </TabsContent>
-              ))}
-            </ScrollArea>
-          )}
+        <CardContent className="flex flex-1 min-h-0 flex-col">
+          {tabs.map((tab) => (
+            <TabsContent
+              key={tab.value}
+              value={tab.value}
+              className="mt-0 flex flex-1 min-h-0 w-full flex-col"
+            >
+              <NewsTabContent articles={tab.articles} />
+            </TabsContent>
+          ))}
         </CardContent>
       </Card>
     </Tabs>
