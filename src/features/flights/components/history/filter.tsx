@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react"
-import { Search, RotateCcw } from "lucide-react"
+import {
+  Search,
+  RotateCcw,
+  Funnel,
+  TicketsPlane,
+  Star,
+  Users,
+} from "lucide-react"
 import { YearPicker } from "@/components/year-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,25 +16,24 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { seatType } from "@flight/config"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FilterState } from "@flight/flight.types"
 
-const SEAT_TYPES = [
-  { value: "economy", label: "Economy" },
-  { value: "premium_economy", label: "Prem. Econ" },
-  { value: "business", label: "Business" },
-]
 
-const ALL_TIME_YEAR = 9999
-
-export interface FilterState {
-  year: string | null // "all" or a year string like "2024"
-  airline: string | null // "all" or an airline name
-  seatTypes: string[] // selected seat type values
-  search: string // flight number search
-}
-
-interface FilterBarProps {
+interface Props {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
   airlineOptions: { label: string; value: string }[]
@@ -39,7 +45,7 @@ export function FlightFilter({
   onFiltersChange,
   airlineOptions,
   startYear,
-}: FilterBarProps) {
+}: Props) {
   const hasFilters =
     filters.year !== null ||
     filters.airline !== null ||
@@ -80,74 +86,109 @@ export function FlightFilter({
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      {/* Year filter */}
-      <YearPicker
-        startYear={startYear}
-        value={filters.year ? Number(filters.year) : ALL_TIME_YEAR}
-        onChange={(year) =>
-          setFilter("year", year === ALL_TIME_YEAR ? null : year.toString())
-        }
-      />
+    <Card className="h-fit w-full xl:max-w-90 mx-auto">
+      <CardHeader>
+        <CardTitle>Filter</CardTitle>
+        <CardAction>
+          <Funnel className="stroke-1" />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup className="gap-5">
+          <YearPicker
+            startYear={startYear}
+            value={filters.year ? Number(filters.year) : 9999}
+            onChange={(year) =>
+              setFilter("year", year == 9999 ? null : year.toString())
+            }
+          />
 
-      {/* Airline filter */}
-      <Select
-        value={filters.airline ?? "all"}
-        onValueChange={(v) => setFilter("airline", v === "all" ? null : v)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Airline" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Airlines</SelectItem>
-          {airlineOptions.map((a) => (
-            <SelectItem key={a.value} value={a.value}>
-              {a.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <Field orientation="horizontal">
+            <FieldLabel>
+              <Users className="stroke-1 size-5" />
+            </FieldLabel>
+            <Select
+              value={filters.airline ?? "all"}
+              onValueChange={(v) =>
+                setFilter("airline", v === "all" ? null : v)
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Airline" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectGroup>
+                  <SelectItem value="all">All Airlines</SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Only flights with...</SelectLabel>
+                  {airlineOptions.map((a) => (
+                    <SelectItem key={a.value} value={a.value}>
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
 
-      {/* Seat type toggle */}
-      <ToggleGroup
-        type="multiple"
-        value={filters.seatTypes}
-        onValueChange={(v) => setFilter("seatTypes", v)}
-        variant="outline"
-        spacing={0}
-      >
-        {SEAT_TYPES.map((s) => (
-          <ToggleGroupItem
-            key={s.value}
-            value={s.value}
-            className="rounded-xl px-3 text-xs"
-          >
-            {s.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+          <Field orientation="horizontal">
+            <FieldLabel>
+              <Star className="stroke-1 size-5" />
+            </FieldLabel>
+            <ToggleGroup
+              type="multiple"
+              value={filters.seatTypes}
+              onValueChange={(v) => setFilter("seatTypes", v)}
+              variant="outline"
+              spacing={0}
+              className="w-full"
+            >
+              {seatType.map((s) => {
+                const Icon = s.icon
+                return (
+                  <ToggleGroupItem
+                    key={s.value}
+                    value={s.value}
+                    className="rounded-xl px-3 text-xs flex-1"
+                  >
+                    <Icon className="size-3.5" />
+                    {s.label}
+                  </ToggleGroupItem>
+                )
+              })}
+            </ToggleGroup>
+          </Field>
 
-      {/* Search — deferred until user confirms */}
-      <div className="flex w-full gap-1">
-        <Input
-          placeholder="Flight number…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          className="w-full"
-        />
-        <Button size="icon" onClick={commitSearch} aria-label="Search">
-          <Search className="size-4" />
-        </Button>
-      </div>
+          <Field orientation="horizontal">
+            <FieldLabel>
+              <TicketsPlane className="stroke-1 size-5" />
+            </FieldLabel>
+            <Input
+              placeholder="Flight number"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-full"
+            />
+            <Button size="icon" onClick={commitSearch} aria-label="Search">
+              <Search className="size-4" />
+            </Button>
+          </Field>
 
-      {/* Reset */}
-      {hasFilters && (
-        <Button variant="secondary" onClick={resetFilters}>
-          <RotateCcw />
-          Reset
-        </Button>
-      )}
-    </div>
+          {hasFilters && (
+            <Button
+              variant="secondary"
+              onClick={resetFilters}
+              className="w-fit mx-auto"
+            >
+              <RotateCcw />
+              Reset
+            </Button>
+          )}
+        </FieldGroup>
+      </CardContent>
+    </Card>
   )
 }

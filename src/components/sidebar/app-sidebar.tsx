@@ -28,12 +28,8 @@ const data = {
           url: "/fund/dashboard",
         },
         {
-          title: "Annual Recaps",
-          url: "/fund/annual-recaps",
-        },
-        {
-          title: "Balance Sheet",
-          url: "/fund/balance-sheet",
+          title: "Performance",
+          url: "/fund/performance",
         },
         {
           title: "Transactions",

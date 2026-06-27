@@ -12,6 +12,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { stockSchema } from "./schema"
 import { searchAssets, type AssetSearchResult } from "@fund/actions/search-assets"
+import { stockOps } from "@fund/config"
 
 type FormValues = z.infer<typeof stockSchema>
 
@@ -118,14 +119,7 @@ export function StockForm({
           <RadioGroupField
             control={form.control}
             name="side"
-            options={[
-              { value: "buy", label: "Buy", description: "Is it bottom yet?" },
-              {
-                value: "sell",
-                label: "Sell",
-                description: "Time to cash out!",
-              },
-            ]}
+            options={stockOps}
             column={2}
           />
 

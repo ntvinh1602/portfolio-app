@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
-import type { FilterState } from "../components/history/filter"
+import type { FilterState } from "@flight/flight.types"
 
 const EMPTY_FILTERS: FilterState = {
   year: null,

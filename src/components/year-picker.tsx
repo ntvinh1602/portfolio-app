@@ -1,10 +1,16 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-
-const ALL_TIME_VALUE = 9999
-const ALL_TIME_LABEL = "All Time"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
+} from "@/components/ui/select"
+import { Calendar } from "lucide-react"
+import { Field, FieldLabel } from "./ui/field"
 
 export function YearPicker({
   startYear,
@@ -17,37 +23,40 @@ export function YearPicker({
   value?: number
   onChange?: (value: number) => void
 }) {
-  // Defer Date.now() to useEffect — cacheComponents requires deterministic
-  // values during server render.
-  const [endYearState, setEndYearState] = useState(0)
-  useEffect(() => {
-    setEndYearState(new Date().getFullYear())
-  }, [])
+  const endYearState = new Date().getFullYear()
   const finalEndYear = endYear ?? endYearState
   const years = Array.from(
     { length: finalEndYear - startYear + 1 },
     (_, i) => startYear + i,
-  )
-
-  const options = [ALL_TIME_VALUE, ...years.slice().reverse()]
-
-  const formatLabel = (year: number) =>
-    year === ALL_TIME_VALUE ? ALL_TIME_LABEL : year.toString()
+  ).reverse()
 
   return (
-    <NativeSelect
-      value={value?.toString() ?? ""}
-      onChange={(e) => {
-        const v = e.target.value
-        onChange?.(Number(v))
-      }}
-      className="w-full"
-    >
-      {options.map((year) => (
-        <NativeSelectOption key={year} value={year.toString()}>
-          {formatLabel(year)}
-        </NativeSelectOption>
-      ))}
-    </NativeSelect>
+    <Field orientation="horizontal">
+      <FieldLabel>
+        <Calendar className="stroke-1 size-5" />
+      </FieldLabel>
+      <Select
+        value={value?.toString()}
+        onValueChange={(v) => onChange?.(Number(v))}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select year" />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          <SelectGroup>
+            <SelectItem value="9999">All Years</SelectItem>
+          </SelectGroup>
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>Only in...</SelectLabel>
+            {years.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year.toString()}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Field>
   )
 }

@@ -111,7 +111,7 @@ export function NewsWidget({ holdings, news }: NewsWidgetProps) {
   ]
 
   return (
-    <Tabs defaultValue="all" className="h-full">
+    <Tabs defaultValue="all">
       <Card className="h-120">
         <CardHeader>
           <CardTitle>Market Pulse</CardTitle>

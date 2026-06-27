@@ -1,6 +1,6 @@
 import { Suspense } from "react"
-import getRecaps from "@fund/actions/get-recaps"
-import AnnualRecaps from "@fund/components/annual-recaps/wrapper"
+import getPerformance from "@fund/actions/get-recaps"
+import Performance from "@/features/fund/components/performance/wrapper"
 import SimpleListSkeleton from "@/components/skeletons/simple-list"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -40,15 +40,15 @@ export default function Page() {
         </div>
       }
     >
-      <AnnualRecapsData />
+      <PerformanceCard />
     </Suspense>
   )
 }
 
-async function AnnualRecapsData() {
+async function PerformanceCard() {
   if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
     await new Promise((resolve) => setTimeout(resolve, 5000))
   }
-  const recaps = await getRecaps()
-  return <AnnualRecaps recaps={recaps} startYear={2021} />
+  const data = await getPerformance()
+  return <Performance results={data} startYear={2021} />
 }

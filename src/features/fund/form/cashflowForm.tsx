@@ -13,11 +13,12 @@ import { createClient } from "@/lib/supabase/client"
 import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
-import { CASHFLOW_MEMO } from "@fund/domain/cashflow-memo"
+import { CASHFLOW } from "@/features/fund/memo"
+import { cashflowOps } from "../config"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
-interface CashflowFormProps {
+interface Props {
   onSuccess?: () => void
   formId: string
   onLoadingChange: (loading: boolean) => void
@@ -29,7 +30,7 @@ export function CashflowForm({
   formId,
   onLoadingChange,
   resetFormRef,
-}: CashflowFormProps) {
+}: Props) {
   const supabase = createClient()
   const [assetData, setAssetData] = React.useState<Tables<"assets">[]>([])
 
@@ -58,7 +59,7 @@ export function CashflowForm({
     if (!operation) return []
 
     return (
-      CASHFLOW_MEMO[operation]?.map((memo) => ({
+      CASHFLOW[operation]?.map((memo) => ({
         value: memo,
         label: memo,
       })) ?? []
@@ -105,7 +106,6 @@ export function CashflowForm({
         form.reset()
         onSuccess?.()
       }
-      
     } catch (err) {
       const message =
         err instanceof Error
@@ -129,24 +129,7 @@ export function CashflowForm({
           <RadioGroupField
             control={form.control}
             name="operation"
-            options={[
-              {
-                value: "deposit",
-                label: "Deposit",
-                description: "For a bright future",
-              },
-              {
-                value: "withdraw",
-                label: "Withdraw",
-                description: "Time for shopping",
-              },
-              { value: "income", label: "Income", description: "Payday!" },
-              {
-                value: "expense",
-                label: "Expense",
-                description: "So expensive!",
-              },
-            ]}
+            options={cashflowOps}
             column={2}
           />
 

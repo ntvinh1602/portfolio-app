@@ -37,7 +37,7 @@ export type Asset = {
   net_profit: number | null
 }
 
-export interface Recaps {
+export interface Performance {
   avg_expense: number
   avg_profit: number
   deposits: number

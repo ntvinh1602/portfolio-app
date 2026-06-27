@@ -9,45 +9,37 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
-import { ChartConfig } from "@/components/ui/chart"
+import { expenseChart } from "../../config"
 import { formatNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
 import type { ProfitChartPt } from "@fund/fund.types"
 
-interface ExpenseChartProps {
-  profitChart: ProfitChartPt[]
-  className?: string
-}
-
 export function ExpenseChart({
-  profitChart
-}: ExpenseChartProps) {
-
-  // Aggregate total expenses
+  profitChart,
+}: {
+  profitChart: ProfitChartPt[]
+}) {
   const totalTax = profitChart.reduce((acc, d) => acc - (d.tax || 0), 0)
   const totalFee = profitChart.reduce((acc, d) => acc - (d.fee || 0), 0)
-  const totalInterest = profitChart.reduce((acc, d) => acc - (d.interest || 0), 0)
-
+  const totalInterest = profitChart.reduce(
+    (acc, d) => acc - (d.interest || 0),
+    0,
+  )
   const totalExpenses = totalTax + totalFee + totalInterest
-
-  const expenseChartCfg: ChartConfig = {
-    tax: { label: "Tax", color: "var(--chart-4)" },
-    fee: { label: "Fee", color: "var(--chart-3)" },
-    interest: { label: "Interest", color: "var(--chart-1)" },
-  }
-
   const expenseChartData = [
     { liability: "tax", allocation: totalTax, fill: "var(--chart-4)" },
     { liability: "fee", allocation: totalFee, fill: "var(--chart-3)" },
-    { liability: "interest", allocation: totalInterest, fill: "var(--chart-1)" },
+    {
+      liability: "interest",
+      allocation: totalInterest,
+      fill: "var(--chart-1)",
+    },
   ].filter((d) => d.allocation > 0)
 
   return (
     <Card>
       <CardHeader>
-        <CardDescription>
-          Total Expenses
-        </CardDescription>
+        <CardDescription>Total Expenses</CardDescription>
         <CardTitle className="text-2xl">{formatNum(totalExpenses)}</CardTitle>
         <CardAction>
           <HandCoins className="stroke-1" />
@@ -57,7 +49,7 @@ export function ExpenseChart({
       <CardContent className="h-full">
         <Piechart
           data={expenseChartData}
-          chartConfig={expenseChartCfg}
+          chartConfig={expenseChart}
           dataKey="allocation"
           nameKey="liability"
           className="w-full max-h-50"

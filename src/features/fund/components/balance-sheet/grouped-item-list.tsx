@@ -9,7 +9,7 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
-import { formatNum } from "@/lib/utils"
+import { compactNum, formatNum } from "@/lib/utils"
 import type { Asset } from "@fund/fund.types"
 import Image from "next/image"
 
@@ -19,7 +19,7 @@ export function GroupedItemList({
   groups: Record<string, Asset[]>
 }) {
   return (
-    <ItemGroup className="bg-muted/50 rounded-4xl p-2">
+    <ItemGroup>
       {Object.entries(groups).map(([assetClass, items]) => {
         const totalValue = items.reduce(
           (sum, i) => sum + (i.total_value ?? 0),
@@ -27,17 +27,17 @@ export function GroupedItemList({
         )
 
         return (
-          <Item key={assetClass} size="xs">
+          <Item key={assetClass} variant="muted" className="gap-1">
             <ItemContent>
               <ItemTitle className="capitalize">{assetClass}</ItemTitle>
             </ItemContent>
             <ItemContent>
               <ItemDescription>{formatNum(totalValue)}</ItemDescription>
             </ItemContent>
-            <ItemSeparator className="-mb-1" />
+            <ItemSeparator />
             <ItemGroup>
               {items.map((item) => (
-                <Item key={item.ticker} size="xs" className="px-0">
+                <Item key={item.ticker} className="px-0 py-2">
                   <ItemMedia variant="image">
                     {item.logo_url && (
                       <Image
@@ -53,7 +53,7 @@ export function GroupedItemList({
                   <ItemContent>
                     <ItemTitle>{item.name}</ItemTitle>
                     {item.ticker !== "FX.VND" && (
-                      <ItemDescription>
+                      <ItemDescription className="text-xs">
                         {formatNum(item.quantity)}
                         {item.asset_class == "stock"
                           ? " shares"
@@ -61,10 +61,21 @@ export function GroupedItemList({
                       </ItemDescription>
                     )}
                   </ItemContent>
-                  <ItemContent>
+                  <ItemContent className="items-end">
                     <ItemDescription>
                       {formatNum(item.total_value)}
                     </ItemDescription>
+                    {item.net_profit ? (
+                      item.net_profit > 0 ? (
+                        <ItemDescription className="text-primary text-xs">
+                          +{formatNum(item.net_profit)}
+                        </ItemDescription>
+                      ) : (
+                        <ItemDescription className="text-destructive text-xs">
+                          {formatNum(item.net_profit)}
+                        </ItemDescription>
+                      )
+                    ) : null}
                   </ItemContent>
                 </Item>
               ))}

@@ -1,5 +1,9 @@
-import Link from 'next/link'
-import { ArrowLeftRight, CalendarRange, LayoutDashboard, Scale } from 'lucide-react'
+import Link from "next/link"
+import {
+  ArrowLeftRight,
+  CalendarRange,
+  LayoutDashboard
+} from "lucide-react"
 import {
   Card,
   CardAction,
@@ -7,36 +11,29 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card"
 
 const pages = [
   {
-    href: '/fund/dashboard',
+    href: "/fund/dashboard",
     icon: LayoutDashboard,
-    title: 'Dashboard',
-    description: 'Fund performance overview',
-    body: 'View equity charts, returns, portfolio holdings, PnL metrics, news, and TradingView charts.',
+    title: "Dashboard",
+    description: "Fund performance overview",
+    body: "View equity charts, returns, portfolio holdings, PnL metrics, news, and TradingView charts.",
   },
   {
-    href: '/fund/transactions',
+    href: "/fund/transactions",
     icon: ArrowLeftRight,
-    title: 'Transactions',
-    description: 'Event ledger and entry forms',
-    body: 'Browse, filter, and search transaction history. Record stock trades, cashflow, borrow, and repay events.',
+    title: "Transactions",
+    description: "Event ledger and entry forms",
+    body: "Browse, filter, and search transaction history. Record stock trades, cashflow, borrow, and repay events.",
   },
   {
-    href: '/fund/balance-sheet',
-    icon: Scale,
-    title: 'Balance Sheet',
-    description: 'Assets, liabilities, and equity',
-    body: 'Snapshot of holdings by asset class. Compare total assets against liabilities and net equity.',
-  },
-  {
-    href: '/fund/annual-recaps',
+    href: "/fund/performance",
     icon: CalendarRange,
-    title: 'Annual Recaps',
-    description: 'Year-over-year retrospective',
-    body: 'Review yearly PnL, returns, top-performing stocks, and cashflow summaries per fiscal year.',
+    title: "Performance",
+    description: "Year-over-year retrospective",
+    body: "Review yearly PnL, returns, top-performing stocks, and cashflow summaries per fiscal year.",
   },
 ]
 

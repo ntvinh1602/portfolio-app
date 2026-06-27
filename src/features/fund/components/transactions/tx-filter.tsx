@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DatePicker } from "@/components/date-picker"
-import { category, operation } from "@fund/domain/txn-labels"
+import { txCategory, txOps } from "@/features/fund/config"
 
 export interface TransactionFilterState {
   categories: string[]
@@ -119,7 +119,7 @@ export function TxnFilter({
         variant="outline"
         spacing={0}
       >
-        {category.map((c) => {
+        {txCategory.map((c) => {
           const Icon = c.icon
           return (
             <ToggleGroupItem
@@ -144,7 +144,7 @@ export function TxnFilter({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Operations</SelectItem>
-          {operation.map((o) => {
+          {txOps.map((o) => {
             const Icon = o.icon
             return (
               <SelectItem key={o.value} value={o.value}>

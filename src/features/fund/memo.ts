@@ -1,4 +1,4 @@
-export const CASHFLOW_MEMO = {
+export const CASHFLOW = {
   deposit: ["Cash deposit", "EPF monthly contribution", "Reconciliation"],
   withdraw: ["Reconciliation", "Cash withdrawal"],
   income: [

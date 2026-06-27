@@ -45,7 +45,7 @@ interface FlightCardProps {
 }
 
 export function FlightItem({ flight }: FlightCardProps) {
-  const seatClass =
+  const seatType =
     (flight.seat_type && seatTypeLabels[flight.seat_type]) ?? flight.seat_type
   const seatPosition = flight.seat_position
     ? flight.seat_position.charAt(0).toUpperCase() +
@@ -76,7 +76,7 @@ export function FlightItem({ flight }: FlightCardProps) {
     {
       key: "class",
       icon: Star,
-      value: seatClass,
+      value: seatType,
     },
     {
       key: "position",

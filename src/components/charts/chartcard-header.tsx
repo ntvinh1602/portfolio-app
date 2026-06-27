@@ -40,7 +40,7 @@ function Stat({ stat, formatted, description }: StatProps) {
   )
 }
 
-interface Props {
+export interface ChartHeaderProps {
   title: string
   descriptionTitle?: string
   heroStat: string
@@ -52,7 +52,7 @@ interface Props {
   descriptionStat2: string
 }
 
-export default function ChartCardHeader({
+export function ChartCardHeader({
   title,
   descriptionTitle,
   heroStat,
@@ -62,7 +62,7 @@ export default function ChartCardHeader({
   stat2,
   formattedStat2,
   descriptionStat2,
-}: Props) {
+}: ChartHeaderProps) {
   return (
     <CardHeader>
       <CardDescription>{title}</CardDescription>

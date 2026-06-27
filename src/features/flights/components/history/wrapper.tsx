@@ -9,6 +9,9 @@ import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
 import { FlightFilter } from "./filter"
 import { useFlightsFilters } from "@flight/hooks/use-flights-filters"
+import { PlusIcon } from "lucide-react"
+import { ItemGroup } from "@/components/ui/item"
+import StatusLabel from "@/components/status-label"
 import {
   Card,
   CardAction,
@@ -17,9 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ListFilter, PlusIcon } from "lucide-react"
-import { ItemGroup } from "@/components/ui/item"
-import StatusLabel from "@/components/status-label"
 
 interface FlightsListProps {
   airlineFilterOptions: { label: string; value: string }[]
@@ -76,31 +76,19 @@ export default function FlightsList({
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
       <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
-        {/* Header + filters */}
-        <Card className="h-fit w-fit mx-auto">
-          <CardHeader>
-            <CardTitle>Filter</CardTitle>
-            <CardAction>
-              <ListFilter className="stroke-1" />
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <FlightFilter
-              filters={filters}
-              onFiltersChange={setFilters}
-              airlineOptions={airlineFilterOptions}
-              startYear={startYear}
-            />
-          </CardContent>
-        </Card>
+        <FlightFilter
+          filters={filters}
+          onFiltersChange={setFilters}
+          airlineOptions={airlineFilterOptions}
+          startYear={startYear}
+        />
 
-        {/* Infinite card list */}
-        <Card className="max-w-140">
+        <Card>
           <CardHeader>
             <CardTitle>Flights List</CardTitle>
             <CardDescription>
               {isSuccess
-                ? `${count} flight${count !== 1 ? "s" : ""} found`
+                ? `${count} flight${count !== 1 ? "s" : ""}`
                 : "Loading..."}
             </CardDescription>
             <CardAction>

@@ -6,15 +6,13 @@ import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
 import EquityReturn from "@fund/components/dashboard/equity-return"
 import { Portfolio } from "@fund/components/dashboard/portfolio"
 import { NetProfit } from "@fund/components/dashboard/net-profit"
-import { AumLeverage } from "@fund/components/dashboard/aum-leverage"
 import getNetProfit from "@fund/actions/get-netprofit"
-import getAumLeverage from "@fund/actions/get-aum-leverage"
 import getHoldings from "@fund/actions/get-holdings"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import YearSwitcherSkeleton from "@/components/skeletons/year-switcher"
 import DetailedListSkeleton from "@/components/skeletons/detailed-list"
 import SimpleListSkeleton from "@/components/skeletons/simple-list"
-import PieChartCardSkeleton from "@/components/skeletons/piechart"
+import getBalanceSheet from "@/features/fund/actions/get-balancesheet"
 
 export default function Page() {
   return (
@@ -45,16 +43,6 @@ export default function Page() {
         <div className="flex flex-col flex-1 gap-4">
           <Suspense fallback={<SimpleListSkeleton title="Portfolio" />}>
             <PortfolioData />
-          </Suspense>
-          <Suspense
-            fallback={
-              <div className="flex flex-1 gap-2 w-full">
-                <PieChartCardSkeleton title="Total AUM" />
-                <PieChartCardSkeleton title="Leverage" />
-              </div>
-            }
-          >
-            <AumLeverageData />
           </Suspense>
           <Suspense
             fallback={
@@ -111,32 +99,21 @@ async function NetProfitData() {
   )
 }
 
-async function AumLeverageData() {
-  if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-  }
-  const data = await getAumLeverage()
-  return (
-    <AumLeverage
-      assets={{
-        cash: data.cash,
-        stock: data.stock,
-        fund: data.fund,
-      }}
-      liabilities={{
-        total_equity: data.total_equity,
-        total_liabilities: data.total_liabilities,
-        debts: data.debts,
-        margin: data.margin,
-      }}
-    />
-  )
-}
-
 async function PortfolioData() {
   if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
     await new Promise((resolve) => setTimeout(resolve, 5000))
   }
-  const data = await getHoldings()
-  return <Portfolio stocks={data} />
+  const data = await getBalanceSheet()
+  return (
+    <Portfolio
+      bs={data.bsData}
+      liability={data.liability}
+      equity={data.equity}
+      cash={data.cash}
+      stock={data.stock}
+      fund={data.fund}
+      debt={data.debt}
+      margin={data.margin}
+    />
+  )
 }

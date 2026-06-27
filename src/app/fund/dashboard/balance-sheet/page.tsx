@@ -16,9 +16,7 @@ export default function Page() {
 }
 
 async function BalanceSheetContent() {
-  const { bsData, totalAssets, totalLiabilities, totalEquity } =
-    await getBalanceSheet()
-
+  const { bsData, liability, equity } = await getBalanceSheet()
   const { liabilities, equities, groupedAssets } = bsData.reduce(
     (acc, item) => {
       if (item.asset_class === "equity") {
@@ -37,26 +35,33 @@ async function BalanceSheetContent() {
       liabilities: [] as Asset[],
       equities: [] as Asset[],
       groupedAssets: {} as Record<string, Asset[]>,
-    }
+    },
   )
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
       <div className="mx-auto grid w-full grid-cols-1 gap-4 px-4 xl:w-7/10 xl:grid-cols-2 2xl:w-6/10">
-        <BalanceSheetSectionCard title="Assets" total={totalAssets} icon={Box}>
+        <BalanceSheetSectionCard
+          title="Assets"
+          total={liability + equity}
+          icon={Box}
+        >
           <GroupedItemList groups={groupedAssets} />
         </BalanceSheetSectionCard>
 
         <div className="flex flex-1 flex-col gap-4">
           <BalanceSheetSectionCard
             title="Liabilities"
-            total={totalLiabilities}
+            total={liability}
             icon={HandCoins}
           >
             <FlatItemList items={liabilities} />
           </BalanceSheetSectionCard>
-
-          <BalanceSheetSectionCard title="Equity" total={totalEquity} icon={DollarSign}>
+          <BalanceSheetSectionCard
+            title="Equity"
+            total={equity}
+            icon={DollarSign}
+          >
             <FlatItemList items={equities} />
           </BalanceSheetSectionCard>
         </div>

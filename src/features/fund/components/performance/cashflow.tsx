@@ -19,7 +19,6 @@ import {
 interface CashflowProps {
   deposits: number
   withdrawals: number
-  className?: string
 }
 
 export function Cashflow({
@@ -61,7 +60,7 @@ export function Cashflow({
               <ArrowUpCircle/>
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Withdrawals</ItemTitle>
+              <ItemTitle>Withdraw</ItemTitle>
             </ItemContent>
             <ItemContent>
               <ItemTitle>{formatNum(outflow)}</ItemTitle>

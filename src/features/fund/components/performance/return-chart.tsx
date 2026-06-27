@@ -4,26 +4,15 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChartConfig } from "@/components/ui/chart"
 import type { ReturnChartPt } from "@fund/fund.types"
-import ChartCardHeader from "@/components/charts/chartcard-header"
+import { ChartCardHeader } from "@/components/charts/chartcard-header"
+import { returnChart } from "../../config"
 
-interface ReturnChartProps {
+interface Props {
   year: number
   equityReturn: number
   vnIndexReturn: number
   chartData: ReturnChartPt[]
-}
-
-const returnChartConfig: ChartConfig = {
-  portfolio_value: {
-    label: "Equity",
-    color: "var(--chart-1)",
-  },
-  vni_value: {
-    label: "VN-Index",
-    color: "var(--chart-2)",
-  },
 }
 
 export function ReturnChart({
@@ -31,7 +20,7 @@ export function ReturnChart({
   equityReturn,
   vnIndexReturn,
   chartData,
-}: ReturnChartProps) {
+}: Props) {
   const xAxisTickFormatter = (value: string) => {
     const date = new Date(value)
     if (isNaN(date.getTime())) return String(value)
@@ -53,7 +42,7 @@ export function ReturnChart({
       <CardContent className="flex flex-col gap-4 h-full">
         <Areachart
           data={chartData}
-          config={returnChartConfig}
+          config={returnChart}
           xAxisDataKey={"snapshot_date"}
           className="h-full w-full"
           xAxisTickFormatter={xAxisTickFormatter}
