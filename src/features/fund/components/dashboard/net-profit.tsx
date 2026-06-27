@@ -6,7 +6,7 @@ import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
 import { ProfitChartPt } from "@fund/fund.types"
-import { netProfitChart } from "@/features/fund/config"
+import { netProfitChart } from "@fund/config"
 
 interface ProfitChartPoint extends ProfitChartPt {
   [key: string]: string | number

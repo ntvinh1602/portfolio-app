@@ -14,7 +14,7 @@ import {
 import type { Dashboard, EquityChartPt, ReturnChartPt } from "@fund/fund.types"
 import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { equityChart, returnChart } from "@/features/fund/config"
+import { equityChart, returnChart } from "@fund/config"
 
 type ChartDataPoint = { snapshot_date: string; [key: string]: string | number }
 

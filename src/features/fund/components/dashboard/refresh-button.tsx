@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { fetchPrices } from "@fund/actions/fetch-price"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { RefreshCw } from "lucide-react"
@@ -14,16 +14,7 @@ export default function RefreshButton() {
     const toastId = toast.loading("Fetching latest prices...")
 
     try {
-      const supabase = createClient()
-
-      const { data, error } = await supabase.functions.invoke(
-        "fetch-yahoofinance",
-        {
-          body: { name: "Functions" },
-        },
-      )
-
-      if (error) throw new Error(error.message ?? "Failed to update prices")
+      const data = await fetchPrices()
 
       toast.success(data.message, {
         id: toastId,
@@ -39,13 +30,9 @@ export default function RefreshButton() {
   }
 
   return (
-    <Button
-      size="icon-sm"
-      variant="outline"
-      onClick={handleRefresh}
-      disabled={isRefreshing}
-    >
+    <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
       <RefreshCw className={`${isRefreshing && "animate-spin"}`} />
+      Refresh
     </Button>
   )
 }

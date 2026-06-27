@@ -1,6 +1,5 @@
 "use client"
 
-import { Asset } from "./stock-item"
 import type { StockPnLItem } from "@fund/fund.types"
 import {
   Card,
@@ -11,6 +10,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Trophy } from "lucide-react"
+import AssetItem from "@fund/components/asset-item"
 
 interface TopStocksProps {
   year: number
@@ -22,12 +22,8 @@ export function TopStocks({ year, stockData }: TopStocksProps) {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-xl font-normal">
-            Best Performers
-          </CardTitle>
-          <CardDescription>
-            Based on total realized P/L
-          </CardDescription>
+          <CardTitle className="text-xl font-normal">Best Performers</CardTitle>
+          <CardDescription>Based on total realized P/L</CardDescription>
         </CardHeader>
         <CardContent className="p-4 text-center text-muted-foreground">
           No realized profit/loss data for {year}.
@@ -53,12 +49,13 @@ export function TopStocks({ year, stockData }: TopStocksProps) {
       <CardContent>
         <div className="flex flex-col gap-2">
           {topPerformers.map((stock) => (
-            <Asset
+            <AssetItem
               key={stock.ticker}
+              variant="performance"
               ticker={stock.ticker}
               name={stock.name}
-              logoUrl={stock.logo_url}
-              totalAmount={stock.total_pnl}
+              logo_url={stock.logo_url}
+              total_value={stock.total_pnl}
             />
           ))}
         </div>

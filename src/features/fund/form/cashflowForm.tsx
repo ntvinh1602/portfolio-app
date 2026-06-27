@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client"
 import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
-import { CASHFLOW } from "@/features/fund/memo"
+import { CASHFLOW } from "@fund/memo"
 import { cashflowOps } from "../config"
 
 type FormValues = z.infer<typeof cashflowSchema>

@@ -9,7 +9,7 @@
     "lint": "next lint",
     "type": "module",
     "gen-types": "npx supabase gen types typescript --local > src/types/database.types.ts",
-    "create-seed": "npx supabase db dump --data-only --linked -s public,flight -f supabase/.seeds/base-seed.sql"
+    "create-seed": "npx supabase db dump --data-only --linked -s public,flight -x public.tx_legs,public.asset_positions -f supabase/.seeds/data.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -70,5 +70,9 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.2"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }

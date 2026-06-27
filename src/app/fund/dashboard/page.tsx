@@ -12,11 +12,11 @@ import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import YearSwitcherSkeleton from "@/components/skeletons/year-switcher"
 import DetailedListSkeleton from "@/components/skeletons/detailed-list"
 import SimpleListSkeleton from "@/components/skeletons/simple-list"
-import getBalanceSheet from "@/features/fund/actions/get-balancesheet"
+import getBalanceSheet from "@fund/actions/get-balancesheet"
 
 export default function Page() {
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
+    <div className="@container/main flex flex-1 flex-col pb-4">
       <div className="grid grid-cols-1 gap-4 px-4 xl:grid-cols-3">
         <div className="flex flex-col flex-1 gap-4">
           <Suspense

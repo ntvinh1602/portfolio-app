@@ -3,7 +3,7 @@ import { ingestAllSources } from "@/lib/rss/ingest"
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
 
-  if (authHeader !== `Bearer ${process.env.VERCEL_SECRET}`) {
+  if (authHeader !== `Bearer ${process.env.APP_SECRET}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -15,9 +15,6 @@ export async function GET(request: Request) {
       ...result,
     })
   } catch (error) {
-    return Response.json(
-      { error: String(error) },
-      { status: 500 }
-    )
+    return Response.json({ error: String(error) }, { status: 500 })
   }
 }

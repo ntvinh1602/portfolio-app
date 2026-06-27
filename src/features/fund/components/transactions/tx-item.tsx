@@ -9,7 +9,7 @@ import {
   ItemTitle,
   ItemDescription,
 } from "@/components/ui/item"
-import { txOps } from "@/features/fund/config"
+import { txOps } from "@fund/config"
 import type { Tables } from "@/types/database.types"
 
 export function TxnItem({
@@ -19,9 +19,7 @@ export function TxnItem({
     [K in keyof Tables<"tx_summary">]: NonNullable<Tables<"tx_summary">[K]>
   }
 }) {
-  const operationConfig = txOps.find(
-    (o) => o.value === transaction.operation,
-  )
+  const operationConfig = txOps.find((o) => o.value === transaction.operation)
   const OperationIcon = operationConfig?.icon
 
   return (

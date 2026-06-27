@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { subMonths, startOfDay, endOfDay } from "date-fns"
 import type {
   TransactionFilterState,
   Preset,
-} from "@/features/fund/components/transactions/tx-filter"
+} from "@fund/components/transactions/tx-filter"
 
 function getDateRangeFromPreset(preset: Preset, now: Date) {
   switch (preset) {
@@ -54,6 +54,15 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
       setCustomRange(getDateRangeFromPreset(defaultPreset, now))
     }
   }, [now, customRange])
+
+  // When switching to CUSTOM, snapshot the previous preset's range
+  const prevPresetRef = useRef(preset)
+  useEffect(() => {
+    if (preset === "CUSTOM" && prevPresetRef.current !== "CUSTOM" && now) {
+      setCustomRange(getDateRangeFromPreset(prevPresetRef.current, now))
+    }
+    prevPresetRef.current = preset
+  }, [preset, now])
 
   // Fallback range used during SSR — the real range kicks in after hydration
   // and the useInfiniteQuery store is recreated via trailingQueryKey change.
@@ -135,8 +144,8 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
     // Date range — consumed by TxnFilter
     preset,
     setPreset,
-    customStartDate: customRange?.startDate ?? new Date(0),
-    customEndDate: customRange?.endDate ?? new Date(0),
+    resolvedStartDate: dateRange.startDate,
+    resolvedEndDate: dateRange.endDate,
     onCustomStartDateChange,
     onCustomEndDateChange,
     // Filters — consumed by TxnFilter

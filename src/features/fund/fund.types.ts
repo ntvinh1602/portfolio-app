@@ -25,7 +25,7 @@ export type ProfitChartPt = {
   snapshot_date: string
 }
 
-export type Asset = {
+export interface Asset {
   ticker: string
   name: string
   asset_class: string

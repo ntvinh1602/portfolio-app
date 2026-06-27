@@ -1,13 +1,6 @@
 "use client"
 
 import {
-  Item,
-  ItemMedia,
-  ItemContent,
-  ItemTitle,
-  ItemDescription,
-} from "@/components/ui/item"
-import {
   Card,
   CardAction,
   CardContent,
@@ -15,9 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import Image from "next/image"
-import { formatNum, compactNum, cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { formatNum } from "@/lib/utils"
 import RefreshButton from "./refresh-button"
 import type { Asset } from "@fund/fund.types"
 import StatusLabel from "@/components/status-label"
@@ -26,73 +17,9 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { assetChart, liabilityChart } from "../../config"
-
-function Asset({
-  name,
-  logo_url,
-  quantity,
-  total_value,
-  mkt_price,
-  net_profit,
-}: {
-  name: string
-  logo_url: string
-  quantity: number
-  total_value: number
-  mkt_price: number
-  net_profit: number
-}) {
-  const isMobile = useIsMobile()
-  const pnlPct = (net_profit / total_value) * 100
-  const isPositive = net_profit >= 0
-  return (
-    <Item variant="muted">
-      <ItemMedia variant="image">
-        {logo_url && (
-          <Image
-            src={logo_url}
-            alt={name}
-            width={44}
-            height={44}
-            unoptimized
-            loading="eager"
-          />
-        )}
-      </ItemMedia>
-      <ItemContent className="min-w-0">
-        <ItemTitle className="block max-w-[180px] truncate">{name}</ItemTitle>
-        <ItemDescription className="text-xs">
-          {formatNum(quantity)}
-          {" units @ "}
-          {formatNum(mkt_price / 1000, 2)}
-        </ItemDescription>
-      </ItemContent>
-      <ItemContent className="items-end">
-        <ItemTitle>
-          {!isMobile ? formatNum(total_value) : compactNum(total_value)}
-        </ItemTitle>
-        <ItemDescription
-          className={cn(
-            "flex items-center gap-1 text-xs",
-            isPositive ? "text-primary" : "text-destructive",
-          )}
-        >
-          {!isMobile ? (
-            <span>
-              {compactNum(net_profit)}
-              {" ("}
-              {formatNum(pnlPct, 1)}
-              {"%)"}
-            </span>
-          ) : (
-            <span>{formatNum(pnlPct, 1)}%</span>
-          )}
-        </ItemDescription>
-      </ItemContent>
-    </Item>
-  )
-}
+import { assetChart, liabilityChart } from "@fund/config"
+import { ButtonGroup } from "@/components/ui/button-group"
+import AssetItem from "@fund/components/asset-item"
 
 interface Props {
   bs: Asset[]
@@ -157,26 +84,32 @@ export function Portfolio({
       <CardHeader className="flex justify-between items-center">
         <CardTitle>Portfolio</CardTitle>
         <CardAction className="flex gap-3 ">
-          <RefreshButton />
-          <Button variant="outline" size="icon-sm" asChild>
-            <Link href="/fund/dashboard/balance-sheet">
-              <ArrowRight />
-            </Link>
-          </Button>
+          <ButtonGroup>
+            <RefreshButton />
+            <Button variant="outline" asChild>
+              <Link href="/fund/dashboard/balance-sheet">
+                B. Sheet<ArrowRight />
+              </Link>
+            </Button>
+          </ButtonGroup>
         </CardAction>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-2">
         {sortedStocks.length > 0 ? (
           sortedStocks.map((bs) => (
-            <Asset
+            <AssetItem
+              variant="dashboard"
               key={bs.ticker}
+              ticker={bs.ticker}
               name={bs.name}
-              logo_url={bs.logo_url || ""}
+              asset_class={bs.asset_class}
+              currency_code={bs.currency_code}
+              logo_url={bs.logo_url}
               quantity={bs.quantity}
               total_value={bs.total_value}
-              mkt_price={bs.mkt_price || 0}
-              net_profit={bs.net_profit || 0}
+              mkt_price={bs.mkt_price}
+              net_profit={bs.net_profit}
             />
           ))
         ) : (

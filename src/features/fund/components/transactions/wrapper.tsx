@@ -21,7 +21,7 @@ import { InfiniteList } from "@/components/infinite-list"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { TxnItem } from "./tx-item"
 import type { Tables } from "@/types/database.types"
-import { TxnFilter } from "./tx-filter"
+import { TxFilter } from "./tx-filter"
 import { StockForm } from "@fund/form/stockForm"
 import { CashflowForm } from "@fund/form/cashflowForm"
 import { BorrowForm } from "@fund/form/borrowForm"
@@ -29,6 +29,7 @@ import { RepayForm } from "@fund/form/repayForm"
 import { PlusIcon, ListFilter } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
 import { useTransactionFilters } from "@fund/hooks/use-transaction-filters"
+import StatusLabel from "@/components/status-label"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 type Transaction = {
@@ -73,8 +74,8 @@ export default function TransactionsClient() {
   const {
     preset,
     setPreset,
-    customStartDate,
-    customEndDate,
+    resolvedStartDate,
+    resolvedEndDate,
     onCustomStartDateChange,
     onCustomEndDateChange,
     filters,
@@ -112,32 +113,20 @@ export default function TransactionsClient() {
   const currentConfig = activeForm ? formConfig[activeForm] : null
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
-      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
-        {/* Filter card */}
-        <Card className="h-fit w-fit mx-auto">
-          <CardHeader>
-            <CardTitle>Filter</CardTitle>
-            <CardAction>
-              <ListFilter className="stroke-1" />
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <TxnFilter
-              filters={filters}
-              onFiltersChange={setFilters}
-              preset={preset}
-              onPresetChange={setPreset}
-              customStartDate={customStartDate}
-              customEndDate={customEndDate}
-              onCustomStartDateChange={onCustomStartDateChange}
-              onCustomEndDateChange={onCustomEndDateChange}
-            />
-          </CardContent>
-        </Card>
+    <div className="@container/main flex flex-1 flex-col ">
+      <div className="flex flex-col w-full xl:flex-row xl:max-w-250 gap-4 px-4 mx-auto">
+        <TxFilter
+          filters={filters}
+          onFiltersChange={setFilters}
+          preset={preset}
+          onPresetChange={setPreset}
+          resolvedStartDate={resolvedStartDate}
+          resolvedEndDate={resolvedEndDate}
+          onCustomStartDateChange={onCustomStartDateChange}
+          onCustomEndDateChange={onCustomEndDateChange}
+        />
 
-        {/* Transaction list card */}
-        <Card className="sm:min-w-120">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Transactions</CardTitle>
             <CardDescription>
@@ -187,15 +176,9 @@ export default function TransactionsClient() {
           </CardHeader>
 
           <CardContent>
-            <div className="flex flex-col gap-4">
-              {/* Error banner */}
-              {error && (
-                <div className="text-sm text-destructive">
-                  Error fetching transactions: {error.message}
-                </div>
-              )}
-
-              {/* Infinite card list */}
+            {error ? (
+              <StatusLabel type="error" />
+            ) : (
               <InfiniteList
                 hasMore={hasMore}
                 isFetching={isFetching}
@@ -214,7 +197,7 @@ export default function TransactionsClient() {
                   </div>
                 )}
               </InfiniteList>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

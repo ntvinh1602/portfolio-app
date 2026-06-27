@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import getPerformance from "@fund/actions/get-recaps"
-import Performance from "@/features/fund/components/performance/wrapper"
+import Performance from "@fund/components/performance/wrapper"
 import SimpleListSkeleton from "@/components/skeletons/simple-list"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"

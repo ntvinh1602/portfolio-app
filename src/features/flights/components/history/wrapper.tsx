@@ -7,7 +7,7 @@ import FlightForm from "@flight/form/flightsForm"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import { FlightItem, type Flight } from "./flight-item"
 import { InfiniteList } from "@/components/infinite-list"
-import { FlightFilter } from "./filter"
+import { FlightFilter } from "./flight-filter"
 import { useFlightsFilters } from "@flight/hooks/use-flights-filters"
 import { PlusIcon } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
@@ -74,8 +74,8 @@ export default function FlightsList({
   )
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2 pb-4">
-      <div className="flex flex-col xl:flex-row gap-4 px-4 mx-auto">
+    <div className="@container/main flex flex-1 flex-col">
+      <div className="flex flex-col w-full xl:flex-row xl:max-w-250 gap-4 px-4 mx-auto">
         <FlightFilter
           filters={filters}
           onFiltersChange={setFilters}
@@ -83,7 +83,7 @@ export default function FlightsList({
           startYear={startYear}
         />
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Flights List</CardTitle>
             <CardDescription>
