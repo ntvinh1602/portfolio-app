@@ -34,7 +34,7 @@ export function Cashflow({
     <Card>
       <CardHeader>
         <CardDescription>Net Cashflow</CardDescription>
-        <CardTitle className="text-2xl">
+        <CardTitle className="text-base sm:text-xl">
           {formatNum(Math.abs(net))}
         </CardTitle>
         <CardAction>
@@ -45,9 +45,6 @@ export function Cashflow({
       <CardContent>
         <ItemGroup className="bg-muted/50 rounded-2xl p-2">
           <Item size="xs">
-            <ItemMedia variant="icon">
-              <ArrowDownCircle/>
-            </ItemMedia>  
             <ItemContent>
               <ItemTitle>Deposit</ItemTitle>
             </ItemContent>
@@ -56,9 +53,6 @@ export function Cashflow({
             </ItemContent>
           </Item>
           <Item size="xs">
-            <ItemMedia variant="icon">
-              <ArrowUpCircle/>
-            </ItemMedia>
             <ItemContent>
               <ItemTitle>Withdraw</ItemTitle>
             </ItemContent>

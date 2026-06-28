@@ -15,17 +15,12 @@ import {
   FieldError,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
-interface RadioOption {
-  value: string
-  label: string
-  description?: string
-}
+import type { InfoLabel } from "@/types/global.types"
 
 interface RadioGroupFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
-  options: RadioOption[]
+  options: InfoLabel[]
   column: number
 }
 
@@ -48,20 +43,18 @@ export function RadioGroupField<T extends FieldValues>({
           >
             {options.map((opt) => (
               <FieldLabel
-                htmlFor={`${name}-${opt.value}`}
-                key={opt.value}
+                htmlFor={`${name}-${opt.key}`}
+                key={opt.key}
                 className="border-border"
               >
                 <Field orientation="horizontal">
                   <FieldContent>
                     <FieldTitle>{opt.label}</FieldTitle>
-                    {opt.description && (
-                      <FieldDescription>{opt.description}</FieldDescription>
-                    )}
+                    <FieldDescription>{opt.info}</FieldDescription>
                   </FieldContent>
                   <RadioGroupItem
-                    value={opt.value}
-                    id={`${name}-${opt.value}`}
+                    value={opt.key}
+                    id={`${name}-${opt.key}`}
                   />
                 </Field>
               </FieldLabel>

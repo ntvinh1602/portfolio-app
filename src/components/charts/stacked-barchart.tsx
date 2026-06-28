@@ -35,7 +35,7 @@ export function ChartBarStacked<
         accessibilityLayer
         data={data}
         layout="horizontal"
-        margin={{ top: 20, left: -10 }}
+        margin={{}}
       >
         <CartesianGrid vertical={false} />
         <XAxis
@@ -46,9 +46,10 @@ export function ChartBarStacked<
           axisLine={false}
           className="font-light"
           tickFormatter={xAxisTickFormatter}
-          interval="equidistantPreserveStart"
+          interval="preserveEnd"
         />
         <YAxis
+          orientation="right"
           type="number"
           axisLine={false}
           tickLine={false}

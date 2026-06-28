@@ -19,7 +19,7 @@ export function TxnItem({
     [K in keyof Tables<"tx_summary">]: NonNullable<Tables<"tx_summary">[K]>
   }
 }) {
-  const operationConfig = txOps.find((o) => o.value === transaction.operation)
+  const operationConfig = txOps.find((o) => o.key === transaction.operation)
   const OperationIcon = operationConfig?.icon
 
   return (

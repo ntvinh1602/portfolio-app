@@ -99,13 +99,3 @@ export type NetProfitCard = {
   avg_expense: number
   profit_chart: ProfitChartPt[]
 }
-
-export type AumLeverageCard = {
-  cash: number
-  stock: number
-  fund: number
-  total_equity: number
-  total_liabilities: number
-  debts: number
-  margin: number
-}

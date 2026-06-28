@@ -35,7 +35,7 @@ function DatePopover({
   disabled: boolean
 }) {
   return (
-    <>
+    <div className="flex items-center w-full gap-2">
       <span className={cn(disabled && "opacity-50 pointer-events-none")}>
         {label}
       </span>
@@ -46,11 +46,12 @@ function DatePopover({
             size="lg"
             id="dates"
             disabled={disabled}
+            className="flex-1"
           >
             {format(date, "dd MMM yyyy")}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0" align="center">
           <Calendar
             mode="single"
             captionLayout="dropdown"
@@ -65,7 +66,7 @@ function DatePopover({
           />
         </PopoverContent>
       </Popover>
-    </>
+    </div>
   )
 }
 
@@ -80,7 +81,7 @@ export function DatePicker({
   const [openTo, setOpenTo] = useState(false)
 
   return (
-    <div className="flex items-center w-full justify-between">
+    <div className="flex items-center w-full justify-between gap-2">
       <DatePopover
         label="From"
         date={dateFrom}

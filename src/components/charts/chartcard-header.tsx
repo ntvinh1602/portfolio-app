@@ -42,7 +42,7 @@ function Stat({ stat, formatted, description }: StatProps) {
 
 export interface ChartHeaderProps {
   title: string
-  descriptionTitle?: string
+  titleLegend?: string
   heroStat: string
   stat1: number
   formattedStat1: string
@@ -54,7 +54,7 @@ export interface ChartHeaderProps {
 
 export function ChartCardHeader({
   title,
-  descriptionTitle,
+  titleLegend,
   heroStat,
   stat1,
   formattedStat1,
@@ -69,7 +69,7 @@ export function ChartCardHeader({
       <CardTitle className="text-xl sm:text-2xl flex gap-1 items-baseline">
         {heroStat}
         <span className="text-sm text-muted-foreground">
-          {descriptionTitle}
+          {titleLegend}
         </span>
       </CardTitle>
       <CardAction>

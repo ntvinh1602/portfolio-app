@@ -29,7 +29,7 @@ export function Areachart({
   const dataKeys = Object.keys(config)
   return (
     <ChartContainer config={config} className={cn(className)}>
-      <AreaChart data={data} margin={{ left: -15 }}>
+      <AreaChart data={data} margin={{}}>
         <defs>
           {dataKeys.map((key) => (
             <linearGradient
@@ -61,10 +61,11 @@ export function Areachart({
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
           className="font-light"
-          interval="equidistantPreserveStart"
+          interval="preserveEnd"
           minTickGap={60}
         />
         <YAxis
+          orientation="right"
           tickLine={false}
           axisLine={false}
           tickMargin={8}

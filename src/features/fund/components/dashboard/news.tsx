@@ -23,6 +23,8 @@ import {
 import type { Asset } from "@fund/fund.types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import StatusLabel from "@/components/status-label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { NewsItemSkeleton } from "@/components/skeletons/item"
 
 function ArticleList({ articles }: { articles: NewsArticle[] }) {
   const now = new Date()
@@ -142,5 +144,26 @@ export function NewsWidget({ holdings, news }: NewsWidgetProps) {
         </CardContent>
       </Card>
     </Tabs>
+  )
+}
+
+export function NewsSkeleton() {
+  return (
+    <Card className="h-120">
+      <CardHeader>
+        <CardTitle>Market Pulse</CardTitle>
+        <CardAction>
+          <Skeleton className="h-9 w-56 rounded-3xl" />
+        </CardAction>
+      </CardHeader>
+
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+        <NewsItemSkeleton />
+        <NewsItemSkeleton />
+        <NewsItemSkeleton />
+        <NewsItemSkeleton />
+        <NewsItemSkeleton />
+      </CardContent>
+    </Card>
   )
 }

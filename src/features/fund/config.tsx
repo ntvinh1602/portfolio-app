@@ -9,39 +9,55 @@ import {
   ArrowBigUpDash,
   Banknote,
   Box,
+  File,
 } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
-import { ChoiceCardCfg, LabelConfig } from "@/types/global.types"
+import { IconLabel, InfoLabel } from "@/types/global.types"
 
-/* --- LABEL CONFIG --- */
-export const txCategory: LabelConfig[] = [
-  { value: "stock", label: "Stock", icon: Box },
-  { value: "cashflow", label: "Cashflow", icon: Banknote },
-  { value: "debt", label: "Debt", icon: HandCoins },
+/* --- TIME PRESETS --- */
+export const withAllTime = [
+  { key: "last_3m", label: "3 months", icon: File },
+  { key: "last_6m", label: "6 months", icon: File },
+  { key: "last_1y", label: "1 year", icon: File },
+  { key: "all", label: "All time", icon: File },
+] as const satisfies readonly IconLabel[]
+
+export const withCustom = [
+  { key: "1M", label: "Last 1 months", icon: File },
+  { key: "3M", label: "Last 3 months", icon: File },
+  { key: "6M", label: "Last 6 months", icon: File },
+  { key: "1Y", label: "Last 1 year", icon: File },
+  { key: "CUSTOM", label: "Custom", icon: File },
+] as const satisfies readonly IconLabel[]
+
+/* --- TRANSACTIONS --- */
+export const txCategory: IconLabel[] = [
+  { key: "stock", label: "Stock", icon: Box },
+  { key: "cashflow", label: "Cashflow", icon: Banknote },
+  { key: "debt", label: "Debt", icon: HandCoins },
 ]
 
-export const txOps: LabelConfig[] = [
-  { value: "buy", label: "Buy", icon: ArrowBigDownDash },
-  { value: "sell", label: "Sell", icon: ArrowBigUpDash },
-  { value: "deposit", label: "Deposit", icon: Download },
-  { value: "withdraw", label: "Withdraw", icon: Upload },
-  { value: "income", label: "Income", icon: TrendingUp },
-  { value: "expense", label: "Expense", icon: TrendingDown },
-  { value: "borrow", label: "Borrow", icon: HandCoins },
-  { value: "repay", label: "Repay", icon: Handshake },
+export const txOps: IconLabel[] = [
+  { key: "buy", label: "Buy", icon: ArrowBigDownDash },
+  { key: "sell", label: "Sell", icon: ArrowBigUpDash },
+  { key: "deposit", label: "Deposit", icon: Download },
+  { key: "withdraw", label: "Withdraw", icon: Upload },
+  { key: "income", label: "Income", icon: TrendingUp },
+  { key: "expense", label: "Expense", icon: TrendingDown },
+  { key: "borrow", label: "Borrow", icon: HandCoins },
+  { key: "repay", label: "Repay", icon: Handshake },
 ]
 
-/* --- CHOICE CARD CONFIG --- */
-export const cashflowOps: ChoiceCardCfg[] = [
-  { value: "deposit", label: "Deposit", description: "For a bright future" },
-  { value: "withdraw", label: "Withdraw", description: "Time for shopping" },
-  { value: "income", label: "Income", description: "Payday!" },
-  { value: "expense", label: "Expense", description: "So expensive!" },
+export const cashflowOps: InfoLabel[] = [
+  { key: "deposit", label: "Deposit", info: "For a bright future" },
+  { key: "withdraw", label: "Withdraw", info: "Time for shopping" },
+  { key: "income", label: "Income", info: "Payday!" },
+  { key: "expense", label: "Expense", info: "So expensive!" },
 ]
 
-export const stockOps: ChoiceCardCfg[] = [
-  { value: "buy", label: "Buy", description: "Is it bottom yet?" },
-  { value: "sell", label: "Sell", description: "Time to cash out!" },
+export const stockOps: InfoLabel[] = [
+  { key: "buy", label: "Buy", info: "Is it bottom yet?" },
+  { key: "sell", label: "Sell", info: "Time to cash out!" },
 ]
 
 /* --- CHART CONFIG --- */

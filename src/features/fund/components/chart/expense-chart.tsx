@@ -27,26 +27,23 @@ export function ExpenseChart({
   )
   const totalExpenses = totalTax + totalFee + totalInterest
   const expenseChartData = [
-    { liability: "tax", allocation: totalTax, fill: "var(--chart-4)" },
-    { liability: "fee", allocation: totalFee, fill: "var(--chart-3)" },
-    {
-      liability: "interest",
-      allocation: totalInterest,
-      fill: "var(--chart-1)",
-    },
+    { liability: "tax", allocation: totalTax },
+    { liability: "fee", allocation: totalFee },
+    { liability: "interest", allocation: totalInterest },
   ].filter((d) => d.allocation > 0)
 
   return (
     <Card>
       <CardHeader>
         <CardDescription>Total Expenses</CardDescription>
-        <CardTitle className="text-2xl">{formatNum(totalExpenses)}</CardTitle>
+        <CardTitle className="text-base sm:text-xl">
+          {formatNum(totalExpenses)}
+        </CardTitle>
         <CardAction>
           <HandCoins className="stroke-1" />
         </CardAction>
       </CardHeader>
-
-      <CardContent className="h-full">
+      <CardContent>
         <Piechart
           data={expenseChartData}
           chartConfig={expenseChart}

@@ -23,7 +23,6 @@ export function ReturnChart({
 }: Props) {
   const xAxisTickFormatter = (value: string) => {
     const date = new Date(value)
-    if (isNaN(date.getTime())) return String(value)
     return year === 9999 ? format(date, "MMM yyyy") : format(date, "dd MMM")
   }
 
@@ -39,17 +38,15 @@ export function ReturnChart({
         formattedStat2={`${formatNum(Math.abs(vnIndexReturn), 1)}%`}
         descriptionStat2="VNI return"
       />
-      <CardContent className="flex flex-col gap-4 h-full">
-        <Areachart
-          data={chartData}
-          config={returnChart}
-          xAxisDataKey={"snapshot_date"}
-          className="h-full w-full"
-          xAxisTickFormatter={xAxisTickFormatter}
-          yAxisTickFormatter={(v) => compactNum(v)}
-          tooltipFormatter={(v) => formatNum(v, 1)}
-        />
-      </CardContent>
+      <Areachart
+        data={chartData}
+        config={returnChart}
+        xAxisDataKey={"snapshot_date"}
+        className="h-full w-full"
+        xAxisTickFormatter={xAxisTickFormatter}
+        yAxisTickFormatter={(v) => compactNum(v)}
+        tooltipFormatter={(v) => formatNum(v, 1)}
+      />
     </Card>
   )
 }

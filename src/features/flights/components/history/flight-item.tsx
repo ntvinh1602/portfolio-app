@@ -1,15 +1,5 @@
 import { format } from "date-fns"
-import {
-  Plane,
-  Armchair,
-  Star,
-  ArrowLeftRight,
-  Users,
-  EllipsisVertical,
-  SquarePen,
-  Trash2,
-  TicketsPlane,
-} from "lucide-react"
+import { Plane, EllipsisVertical, SquarePen, Trash2 } from "lucide-react"
 import {
   Item,
   ItemMedia,
@@ -28,62 +18,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Database } from "@/types/database.types"
+import { FlightDetail } from "../../config"
 
 type FlightList = Database["flight"]["Views"]["flights_readable"]["Row"]
 export type Flight = {
   [K in keyof FlightList]: NonNullable<FlightList[K]>
 }
 
-const seatTypeLabels: Record<string, string> = {
-  economy: "Economy",
-  premium_economy: "Premium Economy",
-  business: "Business",
-}
-
-interface FlightCardProps {
-  flight: Flight
-}
-
-export function FlightItem({ flight }: FlightCardProps) {
-  const seatType =
-    (flight.seat_type && seatTypeLabels[flight.seat_type]) ?? flight.seat_type
-  const seatPosition = flight.seat_position
-    ? flight.seat_position.charAt(0).toUpperCase() +
-      flight.seat_position.slice(1)
-    : null
-
-  const details = [
-    {
-      key: "flight",
-      icon: TicketsPlane,
-      value: flight.flight_number,
-    },
-    {
-      key: "airline",
-      icon: Users,
-      value: flight.airline_name,
-    },
-    {
-      key: "aircraft",
-      icon: Plane,
-      value: flight.aircraft_model,
-    },
-    {
-      key: "seat",
-      icon: Armchair,
-      value: flight.seat,
-    },
-    {
-      key: "class",
-      icon: Star,
-      value: seatType,
-    },
-    {
-      key: "position",
-      icon: ArrowLeftRight,
-      value: seatPosition,
-    },
-  ] as const
+export function FlightItem({ flight }: { flight: Flight }) {
+  const details = FlightDetail.map((item) => ({
+    ...item,
+    value: item.getValue(flight),
+  }))
 
   return (
     <Item variant="outline">
@@ -114,7 +60,7 @@ export function FlightItem({ flight }: FlightCardProps) {
       <ItemFooter className="bg-muted/50 px-3 py-2 rounded-2xl">
         <ItemMedia variant="image" className="hidden sm:block">
           <Image
-            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logo-img/${flight.airline_logo}`}
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/logo-img/${flight.airline_logo}`}
             alt=""
             width={44}
             height={44}
@@ -124,7 +70,11 @@ export function FlightItem({ flight }: FlightCardProps) {
 
         <ItemContent className="grid grid-cols-2 md:grid-cols-3 items-center gap-2">
           {details.map(({ key, icon: Icon, value }) => (
-            <Badge key={key} variant="ghost" className="pointer-events-none">
+            <Badge
+              key={key}
+              variant="ghost"
+              className="pointer-events-none capitalize"
+            >
               <Icon />
               {value}
             </Badge>

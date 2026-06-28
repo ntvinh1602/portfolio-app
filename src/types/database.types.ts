@@ -96,10 +96,8 @@ export type Database = {
           id: string
           notes: string | null
           seat: string | null
-          seat_position:
-            | Database["flight"]["Enums"]["seat_position_enum"]
-            | null
-          seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
+          seat_position: Database["flight"]["Enums"]["seat_position"] | null
+          seat_type: Database["flight"]["Enums"]["seat_type"] | null
           tail_number: string | null
           user_id: string | null
         }
@@ -114,10 +112,8 @@ export type Database = {
           id?: string
           notes?: string | null
           seat?: string | null
-          seat_position?:
-            | Database["flight"]["Enums"]["seat_position_enum"]
-            | null
-          seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
+          seat_position?: Database["flight"]["Enums"]["seat_position"] | null
+          seat_type?: Database["flight"]["Enums"]["seat_type"] | null
           tail_number?: string | null
           user_id?: string | null
         }
@@ -132,10 +128,8 @@ export type Database = {
           id?: string
           notes?: string | null
           seat?: string | null
-          seat_position?:
-            | Database["flight"]["Enums"]["seat_position_enum"]
-            | null
-          seat_type?: Database["flight"]["Enums"]["seat_type_enum"] | null
+          seat_position?: Database["flight"]["Enums"]["seat_position"] | null
+          seat_type?: Database["flight"]["Enums"]["seat_type"] | null
           tail_number?: string | null
           user_id?: string | null
         }
@@ -215,10 +209,8 @@ export type Database = {
           duration: string | null
           flight_number: string | null
           seat: string | null
-          seat_position:
-            | Database["flight"]["Enums"]["seat_position_enum"]
-            | null
-          seat_type: Database["flight"]["Enums"]["seat_type_enum"] | null
+          seat_position: Database["flight"]["Enums"]["seat_position"] | null
+          seat_type: Database["flight"]["Enums"]["seat_type"] | null
           tail_number: string | null
           user_id: string | null
         }
@@ -272,33 +264,8 @@ export type Database = {
       }
     }
     Enums: {
-      seat_position_enum: "window" | "middle" | "aisle"
-      seat_type_enum: "economy" | "premium_economy" | "business"
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
+      seat_position: "window" | "middle" | "aisle"
+      seat_type: "eco" | "biz"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1153,12 +1120,9 @@ export type CompositeTypes<
 export const Constants = {
   flight: {
     Enums: {
-      seat_position_enum: ["window", "middle", "aisle"],
-      seat_type_enum: ["economy", "premium_economy", "business"],
+      seat_position: ["window", "middle", "aisle"],
+      seat_type: ["eco", "biz"],
     },
-  },
-  graphql_public: {
-    Enums: {},
   },
   public: {
     Enums: {
