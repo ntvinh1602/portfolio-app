@@ -18,22 +18,20 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function Page() {
   return (
     <div className="@container/main flex flex-1 flex-col pb-4">
-      <div className="grid grid-cols-1 gap-4 px-4 xl:grid-cols-3">
-        <div className="flex flex-col flex-1 gap-4">
-          <Suspense
-            fallback={
-              <div className="flex flex-col gap-4">
-                <Skeleton className="h-11 w-full rounded-4xl" />
-                <ChartCardSkeleton />
-                <ChartCardSkeleton />
-              </div>
-            }
-          >
-            <EquityReturnData />
-          </Suspense>
-        </div>
+      <div className="grid grid-cols-1 gap-6 px-2 md:px-6 xl:grid-cols-3">
+        <Suspense
+          fallback={
+            <div className="flex flex-col gap-4">
+              <Skeleton className="h-11 w-full rounded-4xl" />
+              <ChartCardSkeleton />
+              <ChartCardSkeleton />
+            </div>
+          }
+        >
+          <EquityReturnData />
+        </Suspense>
 
-        <div className="flex flex-col flex-1 gap-4">
+        <div className="flex flex-col flex-1 gap-6">
           <Suspense fallback={<PortfolioSkeleton />}>
             <PortfolioData />
           </Suspense>
@@ -42,7 +40,7 @@ export default function Page() {
           </Suspense>
         </div>
 
-        <div className="flex flex-col flex-1 gap-4">
+        <div className="flex flex-col flex-1 gap-6">
           <Suspense fallback={<NewsSkeleton />}>
             <NewsData />
           </Suspense>

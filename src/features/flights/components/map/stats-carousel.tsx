@@ -21,11 +21,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel"
 
-type Props = {
-  stats: LifetimeStats
-}
-
-export default function StatsCarousel({ stats }: Props) {
+export default function StatsCarousel({ stats }: { stats: LifetimeStats }) {
   const statItems = [
     {
       title: "Flights",
@@ -48,12 +44,12 @@ export default function StatsCarousel({ stats }: Props) {
       icon: Plane,
     },
     {
-      title: "Total Distance",
-      figure: `${formatNum(Math.round(stats.total_distance ?? 0))} km`,
+      title: "Distance",
+      figure: `${formatNum(stats.total_distance)} km`,
       icon: Route,
     },
     {
-      title: "Total Duration",
+      title: "Duration",
       figure: stats.total_duration,
       icon: Clock,
     },
@@ -72,7 +68,7 @@ export default function StatsCarousel({ stats }: Props) {
             key={stat.title}
             className="basis-1/2 xl:basis-1/4 2xl:basis-1/6"
           >
-            <Item variant="outline">
+            <Item variant="muted">
               <ItemMedia variant="icon">
                 <stat.icon />
               </ItemMedia>

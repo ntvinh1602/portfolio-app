@@ -14,7 +14,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { TrendingUp } from "lucide-react"
+import { ClipboardPen, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export function LoginForm({
@@ -54,10 +54,10 @@ export function LoginForm({
         <CardHeader>
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <TrendingUp className="size-4" />
+              <ClipboardPen className="size-4" />
             </div>
             <span className="sr-only">Master Ledger</span>
-            <h1 className="text-xl font-bold">Welcome to Master Ledger</h1>
+            <h1 className="text-xl font-bold">Welcome to Logbook</h1>
 
             <FieldDescription>
               Don&apos;t have an account?{" "}

@@ -33,25 +33,29 @@ export function Performance({
   if (!yearData || year === null) return null
 
   return (
-    <div className="@container/main flex flex-1 px-4 pb-4">
-      <div className="grid grid-cols-1 w-full xl:grid-cols-2 max-w-300 gap-4 mx-auto">
-        <div className="flex flex-col gap-4">
-          <YearPicker value={year} onChange={setYear} startYear={startYear} />
-          <div className="grid grid-cols-2 gap-4 h-fit">
-            <Cashflow
-              deposits={yearData.deposits}
-              withdrawals={yearData.withdrawals}
-            />
+    <div className="@container/main flex flex-1 pb-4">
+      <div className="grid grid-cols-1 w-full gap-6 px-2 md:px-6 xl:grid-cols-2 max-w-300 mx-auto">
+        <div className="flex flex-col gap-6">
+          <div className="grid sm:grid-cols-2 grid-cols-1 gap-4 h-fit">
+            <div className="flex flex-col gap-4">
+              <YearPicker
+                value={year}
+                onChange={setYear}
+                startYear={startYear}
+              />
+              <Cashflow
+                deposits={yearData.deposits}
+                withdrawals={yearData.withdrawals}
+              />
+            </div>
+
             <ExpenseChart profitChart={yearData.profit_chart} />
           </div>
           <TopStocks year={year} stockData={yearData.stock_pnl} />
         </div>
 
-        <div className="flex flex-col flex-1 gap-4">
-          <NetProfitChart
-            year={year}
-            data={yearData}
-          />
+        <div className="flex flex-col flex-1 gap-6">
+          <NetProfitChart year={year} data={yearData} />
           <ReturnChart
             year={year}
             equityReturn={yearData.equity_ret}

@@ -9,7 +9,7 @@ import LeafletMapDynamic from "@flight/components/map/wrapper"
 
 export default function FlightsMapPage() {
   return (
-    <div className="flex flex-col h-full gap-4 px-4 pb-4">
+    <div className="flex flex-col h-full gap-6 px-4 pb-4">
       <Suspense fallback={<Spinner />}>
         <StatsCarouselData />
       </Suspense>

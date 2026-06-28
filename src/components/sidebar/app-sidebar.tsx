@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp, LogOut, Plane, PiggyBank, ClipboardPen } from "lucide-react"
+import { LogOut, Plane, PiggyBank, ClipboardPen } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,

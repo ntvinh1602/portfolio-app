@@ -75,7 +75,7 @@ export default function FlightsList({
 
   return (
     <div className="@container/main flex flex-1 flex-col">
-      <div className="flex flex-col w-full xl:flex-row xl:max-w-250 gap-4 px-4 mx-auto">
+      <div className="flex flex-col w-full xl:flex-row xl:max-w-250 gap-6 px-4 mx-auto">
         <FlightFilter
           filters={filters}
           onFiltersChange={setFilters}
