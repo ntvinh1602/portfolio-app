@@ -89,11 +89,7 @@ type NewsWidgetProps = {
 export function NewsWidget({ holdings, news }: NewsWidgetProps) {
   // Create a fast lookup set of stock holding tickers from the balance sheet
   const holdingTickers = useMemo(() => {
-    return new Set(
-      holdings
-        .filter((asset) => asset.asset_class === "stock")
-        .map((asset) => asset.ticker),
-    )
+    return new Set(holdings.map((asset) => asset.ticker))
   }, [holdings])
 
   // Filter logic

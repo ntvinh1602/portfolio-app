@@ -8,6 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function Piechart({
   data,
@@ -35,6 +36,8 @@ export function Piechart({
   label_pos?: number
   valueFormatter?: (value: number) => string
 }) {
+  const isMobile = useIsMobile()
+
   return (
     <ChartContainer
       config={chartConfig}
@@ -61,15 +64,17 @@ export function Piechart({
             className="flex-col items-start w-15 gap-1 text-muted-foreground"
           />
         )}
-        <ChartTooltip
-          cursor={false}
-          content={
-            <ChartTooltipContent
-              indicator="line"
-              valueFormatter={valueFormatter}
-            />
-          }
-        />
+        {!isMobile && (
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                valueFormatter={valueFormatter}
+              />
+            }
+          />
+        )}
         <Pie
           data={data}
           dataKey={dataKey}

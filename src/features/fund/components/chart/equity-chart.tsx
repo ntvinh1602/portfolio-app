@@ -49,6 +49,7 @@ export function EquityChart({ dateRange, chartData, data }: Props) {
         className="w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
+        tooltipFormatter={(v) => formatNum(v)}
       />
     </Card>
   )

@@ -10,7 +10,7 @@ import {
 } from "@fund/components/dashboard/portfolio"
 import { NetProfitChart } from "@/features/fund/components/chart/netprofit-chart"
 import getNetProfit from "@fund/actions/get-netprofit"
-import getHoldings from "@fund/actions/get-holdings"
+import getStockHoldings from "@/features/fund/actions/get-stock-holdings"
 import getBalanceSheet from "@fund/actions/get-balancesheet"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -66,18 +66,7 @@ async function PortfolioData() {
     await new Promise((resolve) => setTimeout(resolve, 5000))
   }
   const data = await getBalanceSheet()
-  return (
-    <Portfolio
-      bs={data.bsData}
-      liability={data.liability}
-      equity={data.equity}
-      cash={data.cash}
-      stock={data.stock}
-      fund={data.fund}
-      debt={data.debt}
-      margin={data.margin}
-    />
-  )
+  return <Portfolio data={data} />
 }
 
 async function NetProfitData() {
@@ -99,6 +88,6 @@ async function NewsData() {
   if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
     await new Promise((resolve) => setTimeout(resolve, 5000))
   }
-  const [news, bs] = await Promise.all([getNews(), getHoldings()])
+  const [news, bs] = await Promise.all([getNews(), getStockHoldings()])
   return <NewsWidget holdings={bs} news={news} />
 }

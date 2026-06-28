@@ -18,8 +18,7 @@ interface Props {
 }
 
 export function LeverageChart({ equity, debt, margin, totalAsset }: Props) {
-  const leverage = equity !== 0 ? (totalAsset - equity) / equity : Infinity
-  const leverageDisplay = equity !== 0 ? leverage.toFixed(2) : "∞"
+  const leverage = formatNum((totalAsset - equity) / equity, 2)
 
   const data = [
     { liability: "equity", allocation: equity },
@@ -31,9 +30,7 @@ export function LeverageChart({ equity, debt, margin, totalAsset }: Props) {
     <div className="flex flex-col gap-4 w-full">
       <CardHeader>
         <CardDescription>Leverage</CardDescription>
-        <CardTitle className="text-base sm:text-xl">
-          {leverageDisplay}
-        </CardTitle>
+        <CardTitle className="text-base sm:text-xl">{leverage}</CardTitle>
       </CardHeader>
       <CardContent>
         <Piechart

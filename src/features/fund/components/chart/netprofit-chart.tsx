@@ -7,7 +7,6 @@ import { ChartBarStacked } from "@/components/charts/stacked-barchart"
 import type { ProfitChartPt } from "@fund/fund.types"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
 import { netProfitChart } from "@fund/config"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
 
 interface Props {
   year?: number
@@ -49,6 +48,7 @@ export function NetProfitChart({
         className="w-full"
         xAxisDataKey={"snapshot_date"}
         xAxisTickFormatter={xAxisFormatter}
+        yAxisTickFormatter={(v) => compactNum(v)}
         tooltipFormatter={(v) => formatNum(v)}
       />
     </Card>

@@ -12,6 +12,15 @@ export default function Page() {
 }
 
 async function BSData() {
-  const { bsData, liability, equity } = await getBalanceSheet()
-  return <BalanceSheet bsData={bsData} liability={liability} equity={equity} />
+  const data = await getBalanceSheet()
+
+  const liability = data
+    .filter((r) => r.asset_class === "liability")
+    .reduce((sum, r) => sum + r.total_value, 0)
+
+  const equity = data
+    .filter((r) => r.asset_class === "equity")
+    .reduce((sum, r) => sum + r.total_value, 0)
+
+  return <BalanceSheet bsData={data} liability={liability} equity={equity} />
 }

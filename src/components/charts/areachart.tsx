@@ -8,25 +8,28 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function Areachart({
   data,
   config,
-  xAxisDataKey,
   className,
+  xAxisDataKey,
   xAxisTickFormatter,
   yAxisTickFormatter,
   tooltipFormatter,
 }: {
   data: Record<string, string | number>[]
   config: ChartConfig
-  xAxisDataKey: string
   className?: string
+  xAxisDataKey: string
   xAxisTickFormatter?: (value: string) => string
   yAxisTickFormatter?: (value: number) => string
   tooltipFormatter?: (value: number) => string
 }) {
   const dataKeys = Object.keys(config)
+  const isMobile = useIsMobile()
+
   return (
     <ChartContainer config={config} className={cn(className)}>
       <AreaChart data={data} margin={{}}>
@@ -60,33 +63,35 @@ export function Areachart({
           axisLine={false}
           tickMargin={8}
           tickFormatter={xAxisTickFormatter}
-          className="font-light"
           interval="preserveEnd"
           minTickGap={60}
         />
         <YAxis
-          orientation="right"
+          orientation="left"
           tickLine={false}
           axisLine={false}
-          tickMargin={8}
+          tickMargin={0}
           tickFormatter={yAxisTickFormatter}
-          domain={[
-            (dataMin: number) => Number(dataMin) * 0.95,
-            (dataMax: number) => Number(dataMax) * 1.05,
-          ]}
+          domain={["auto", "auto"]}
           allowDataOverflow={false}
           scale="linear"
-          className="font-light"
+          mirror={true}
+          tick={{
+            fill: "var(--muted-foreground)",
+            className: "opacity-80",
+          }}
         />
-        <ChartTooltip
-          cursor={true}
-          content={
-            <ChartTooltipContent
-              indicator="line"
-              valueFormatter={tooltipFormatter}
-            />
-          }
-        />
+        {!isMobile && (
+          <ChartTooltip
+            cursor={true}
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                valueFormatter={tooltipFormatter}
+              />
+            }
+          />
+        )}
         {dataKeys.map((key) => (
           <Area
             key={key}

@@ -8,6 +8,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { compactNum } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function ChartBarStacked<
   TData extends Record<string, string | number | undefined>,
@@ -16,27 +17,26 @@ export function ChartBarStacked<
   config,
   className,
   labelKey,
-  xAxisTickFormatter,
   xAxisDataKey,
+  xAxisTickFormatter,
+  yAxisTickFormatter,
   tooltipFormatter,
 }: {
   data: TData[]
   config: ChartConfig
   className?: string
   labelKey?: string
-  xAxisTickFormatter?: (value: string) => string
   xAxisDataKey: string
+  xAxisTickFormatter?: (value: string) => string
+  yAxisTickFormatter?: (value: number) => string
   tooltipFormatter?: (value: number) => string
 }) {
   const dataKeys = Object.keys(config)
+  const isMobile = useIsMobile()
+
   return (
     <ChartContainer config={config} className={className}>
-      <BarChart
-        accessibilityLayer
-        data={data}
-        layout="horizontal"
-        margin={{}}
-      >
+      <BarChart accessibilityLayer data={data} layout="horizontal" margin={{}}>
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
@@ -44,23 +44,28 @@ export function ChartBarStacked<
           tickLine={true}
           tickMargin={10}
           axisLine={false}
-          className="font-light"
           tickFormatter={xAxisTickFormatter}
           interval="preserveEnd"
         />
         <YAxis
-          orientation="right"
+          orientation="left"
           type="number"
           axisLine={false}
           tickLine={false}
-          tickMargin={10}
-          tickFormatter={(value: number) => compactNum(value)}
-          className="font-light"
+          tickMargin={0}
+          mirror={true}
+          tickFormatter={yAxisTickFormatter}
+          tick={{
+            fill: "var(--muted-foreground)",
+            className: "opacity-80",
+          }}
         />
-        <ChartTooltip
-          cursor={true}
-          content={<ChartTooltipContent valueFormatter={tooltipFormatter} />}
-        />
+        {!isMobile && (
+          <ChartTooltip
+            cursor={true}
+            content={<ChartTooltipContent valueFormatter={tooltipFormatter} />}
+          />
+        )}
         <ChartLegend
           content={<ChartLegendContent />}
           className="justify-center pt-3 gap-4 text-muted-foreground"

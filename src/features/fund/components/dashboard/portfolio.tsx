@@ -16,32 +16,30 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 
-interface Props {
-  bs: Asset[]
-  liability: number
-  equity: number
-  cash: number
-  stock: number
-  fund: number
-  debt: number
-  margin: number
-}
+export function Portfolio({ data }: { data: Asset[] }) {
+  const equity = data
+    .filter((r) => r.asset_class === "equity")
+    .reduce((sum, r) => sum + r.total_value, 0)
 
-export function Portfolio({
-  bs,
-  liability,
-  equity,
-  cash,
-  stock,
-  fund,
-  debt,
-  margin,
-}: Props) {
-  const totalAsset = liability + equity
+  const cash = data
+    .filter((r) => r.asset_class == "cash")
+    .reduce((sum, r) => sum + r.total_value, 0)
+
+  const stock = data
+    .filter((r) => r.asset_class == "stock")
+    .reduce((sum, r) => sum + r.total_value, 0)
+
+  const fund = data
+    .filter((r) => r.asset_class == "fund")
+    .reduce((sum, r) => sum + r.total_value, 0)
+
+  const margin = data.find((r) => r.ticker == "MARGIN")?.total_value || 0
+  const totalAsset = cash + stock + fund
+  const debt = totalAsset - equity - margin
 
   return (
     <Card>
-      <StockHoldings bs={bs} />
+      <StockHoldings bs={data} />
       <div className="flex flex-1">
         <AumChart
           cash={cash}
