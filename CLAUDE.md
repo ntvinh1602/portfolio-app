@@ -24,7 +24,7 @@ src/
   features/{domain}/  Domain logic — actions, components, forms, hooks, types, config
   components/         Shared UI — ui/, charts/, filter/, form/, sidebar/, skeletons/
   hooks/              Shared hooks — useInfiniteQuery, useMobile
-  lib/                Infrastructure — supabase/, rss/, utils.ts
+  lib/                Infrastructure — supabase/, utils.ts
   types/              Global types — database.types.ts, global.types.ts
 ```
 
@@ -472,14 +472,7 @@ Deno functions in `supabase/functions/`, invoked by `pg_cron`:
 - **`fetch-yahoofinance`** — fetches stock/index prices from Yahoo Finance, upserts into `historical_prices`
 - **`fetch-exchange-rates`** — fetches FX rates from OpenExchangeRates, upserts into `historical_fxrate`
 - **`upsert-dnse-orders`** — syncs filled orders from DNSE brokerage API into `dnse_orders` (a DB trigger then calls `process_dnse_order`)
-
-### RSS Ingestion
-
-`src/lib/rss/sources.ts` — defines Vietnamese finance RSS feed sources (VnEconomy, Vietnambiz).
-
-`src/lib/rss/ingest.ts` — parses feeds, extracts stock tickers, validates against `assets` table, upserts into `news_articles` and `news_article_assets`.
-
-Triggered via `GET /api/rss` (Bearer token auth).
+- **`ingest-news`** — parses Vietnamese finance RSS feeds (VnEconomy, Vietnambiz), extracts stock tickers, validates against `assets` table, upserts into `news_articles` and `news_article_assets`. Uses `withSupabase({ auth: 'secret' })` for service-to-service auth via `pg_cron`
 
 ### Migrations and Seeds
 

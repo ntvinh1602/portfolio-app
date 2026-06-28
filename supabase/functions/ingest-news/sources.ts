@@ -1,5 +1,6 @@
-import Parser from "rss-parser"
-import he from "he"
+// deno-lint-ignore-file no-explicit-any
+import Parser from "https://esm.sh/rss-parser@3.13.0"
+import he from "https://esm.sh/he@1.2.0"
 
 export type NormalizedArticle = {
   title: string
@@ -17,37 +18,28 @@ export type NewsSourceConfig = {
 }
 
 function createParser(customFields?: any) {
-  return new Parser({
-    timeout: 10000,
-    customFields,
-  })
+  return new Parser({ timeout: 10000, customFields })
 }
 
 export const NEWS_SOURCES: NewsSourceConfig[] = [
   {
     name: "VnEconomy",
     url: "https://vneconomy.vn/doanh-nghiep-niem-yet.rss",
-    parser: createParser({
-      item: ["content:encodedSnippet"],
-    }),
+    parser: createParser({ item: ["content:encodedSnippet"] }),
     mapItem: (item) => {
       const url = item.link ?? item.guid ?? null
       if (!url) return null
-
       return {
         title: he.decode(item.title ?? "").trim(),
         url,
         published_at: item.isoDate ?? null,
         excerpt: he.decode(
-          item["content:encodedSnippet"] ??
-          item.contentSnippet ??
-          ""
+          item["content:encodedSnippet"] ?? item.contentSnippet ?? ""
         ).trim(),
         source: "VnEconomy",
       }
     },
   },
-
   {
     name: "Vietnambiz",
     url: "https://vietnambiz.vn/chung-khoan.rss",
@@ -57,15 +49,12 @@ export const NEWS_SOURCES: NewsSourceConfig[] = [
     mapItem: (item) => {
       const url = item.link ?? item.guid ?? null
       if (!url) return null
-
       return {
         title: he.decode(item.title ?? "").trim(),
         url,
         published_at: item.isoDate ?? null,
         excerpt: he.decode(
-          item["content:encodedSnippet"] ??
-          item.contentSnippet ??
-          ""
+          item["content:encodedSnippet"] ?? item.contentSnippet ?? ""
         ).trim(),
         source: "Vietnambiz",
       }

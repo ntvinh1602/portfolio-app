@@ -393,3 +393,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.upsert-dnse-orders]
 
+[functions.ingest-news]
+verify_jwt = false
+

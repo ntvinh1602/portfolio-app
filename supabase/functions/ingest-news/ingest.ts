@@ -1,16 +1,9 @@
-import { createClient } from "@/lib/supabase/server"
-import { NEWS_SOURCES } from "./sources"
-import { NormalizedArticle } from "./sources"
+// deno-lint-ignore-file no-explicit-any
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { NEWS_SOURCES, type NormalizedArticle } from "./sources.ts"
+import { extractTickers } from "./utils.ts"
 
-const TICKER_RE = /(?<!\.)\b[A-Z]{3}\b/g
-
-function extractTickers(text: string): string[] {
-  const matches = text.match(TICKER_RE)
-  if (!matches) return []
-  return [...new Set(matches)]
-}
-
-export async function ingestAllSources() {
+export async function ingestAllSources(supabase: SupabaseClient) {
   let totalInserted = 0
   let totalLinked = 0
 
@@ -19,18 +12,14 @@ export async function ingestAllSources() {
 
     const normalized: NormalizedArticle[] = feed.items
       .map(source.mapItem)
-      .filter(
-        (item): item is NormalizedArticle => item !== null
-      )
+      .filter((item): item is NormalizedArticle => item !== null)
 
     if (!normalized.length) continue
 
-    // 1️⃣ Extract tickers first
     const articleTickerMap = new Map<
       string,
       { article: any; tickers: string[] }
     >()
-
     const allTickers = new Set<string>()
 
     for (const article of normalized) {
@@ -38,18 +27,13 @@ export async function ingestAllSources() {
       const tickers = extractTickers(combined)
 
       if (tickers.length > 0) {
-        articleTickerMap.set(article.url, {
-          article,
-          tickers,
-        })
+        articleTickerMap.set(article.url, { article, tickers })
         tickers.forEach((t) => allTickers.add(t))
       }
     }
 
     if (allTickers.size === 0) continue
 
-    // 2️⃣ Validate tickers against assets
-    const supabase = await createClient()
     const { data: assets } = await supabase
       .from("assets")
       .select("id, ticker")
@@ -63,7 +47,6 @@ export async function ingestAllSources() {
       tickerToAssetId.set(asset.ticker, asset.id)
     }
 
-    // 3️⃣ Filter articles that have at least one VALID ticker
     const validArticles: any[] = []
     const relations: { article_url: string; asset_id: string }[] = []
 
@@ -77,16 +60,12 @@ export async function ingestAllSources() {
       validArticles.push(article)
 
       for (const assetId of matchedAssetIds) {
-        relations.push({
-          article_url: url,
-          asset_id: assetId,
-        })
+        relations.push({ article_url: url, asset_id: assetId })
       }
     }
 
     if (!validArticles.length) continue
 
-    // 4️⃣ Upsert only matched articles
     const { data: insertedArticles, error } = await supabase
       .from("news_articles")
       .upsert(validArticles, { onConflict: "url" })
@@ -101,25 +80,17 @@ export async function ingestAllSources() {
       urlToId.set(article.url, article.id)
     }
 
-    // 5️⃣ Build relation rows using article IDs
     const relationRows: { article_id: string; asset_id: string }[] = []
-
     for (const relation of relations) {
       const articleId = urlToId.get(relation.article_url)
       if (!articleId) continue
-
-      relationRows.push({
-        article_id: articleId,
-        asset_id: relation.asset_id,
-      })
+      relationRows.push({ article_id: articleId, asset_id: relation.asset_id })
     }
 
     if (relationRows.length > 0) {
       const { error: relationError } = await supabase
         .from("news_article_assets")
-        .upsert(relationRows, {
-          onConflict: "article_id,asset_id",
-        })
+        .upsert(relationRows, { onConflict: "article_id,asset_id" })
 
       if (!relationError) {
         totalLinked += relationRows.length
@@ -127,8 +98,5 @@ export async function ingestAllSources() {
     }
   }
 
-  return {
-    inserted: totalInserted,
-    linked: totalLinked,
-  }
+  return { inserted: totalInserted, linked: totalLinked }
 }
