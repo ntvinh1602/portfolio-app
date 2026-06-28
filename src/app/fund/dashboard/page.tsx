@@ -54,40 +54,21 @@ export default function Page() {
 }
 
 async function EquityReturnData() {
-  if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-  }
   const data = await getDashboard()
   return <EquityReturn data={data} />
 }
 
 async function PortfolioData() {
-  if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-  }
   const data = await getBalanceSheet()
   return <Portfolio data={data} />
 }
 
 async function NetProfitData() {
-  if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-  }
   const data = await getNetProfit()
-  return (
-    <NetProfitChart
-      totalPnL={data.total_pnl}
-      avgProfit={data.avg_profit}
-      avgExpense={data.avg_expense}
-      chartData={data.profit_chart}
-    />
-  )
+  return <NetProfitChart data={data} />
 }
 
 async function NewsData() {
-  if (process.env.NEXT_PUBLIC_DEBUG_SKELETON === "1") {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-  }
-  const [news, bs] = await Promise.all([getNews(), getStockHoldings()])
-  return <NewsWidget holdings={bs} news={news} />
+  const [news, stocks] = await Promise.all([getNews(), getStockHoldings()])
+  return <NewsWidget stocks={stocks} news={news} />
 }

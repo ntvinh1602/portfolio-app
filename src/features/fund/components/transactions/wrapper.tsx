@@ -128,10 +128,10 @@ export default function TransactionsClient() {
 
         <Card className="w-full">
           <CardHeader>
-            <CardTitle>Transactions</CardTitle>
+            <CardTitle>Events List</CardTitle>
             <CardDescription>
               {isSuccess
-                ? `${count} transaction${count !== 1 ? "s" : ""} found`
+                ? `${count} event${count !== 1 ? "s" : ""} found`
                 : "Loading..."}
             </CardDescription>
             <CardAction>

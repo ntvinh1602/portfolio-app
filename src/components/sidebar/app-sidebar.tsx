@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp, LogOut, Plane, PiggyBank } from "lucide-react"
+import { TrendingUp, LogOut, Plane, PiggyBank, ClipboardPen } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,
@@ -32,7 +32,7 @@ const data = {
           url: "/fund/performance",
         },
         {
-          title: "Transactions",
+          title: "Events",
           url: "/fund/transactions",
         },
       ],
@@ -72,11 +72,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg">
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <TrendingUp className="size-4" />
+                <ClipboardPen className="size-4" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Master Ledger</span>
-                <span className="">v1.0</span>
+                <span className="font-medium">Logbook</span>
+                <span className="text-xs">everything worth tracking</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -50,10 +50,7 @@ export function Performance({
         <div className="flex flex-col flex-1 gap-4">
           <NetProfitChart
             year={year}
-            totalPnL={yearData.total_pnl}
-            avgProfit={yearData.avg_profit}
-            avgExpense={yearData.avg_expense}
-            chartData={yearData.profit_chart}
+            data={yearData}
           />
           <ReturnChart
             year={year}

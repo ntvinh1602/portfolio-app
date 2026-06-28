@@ -20,7 +20,6 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import type { Asset } from "@fund/fund.types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import StatusLabel from "@/components/status-label"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -82,22 +81,24 @@ function NewsTabContent({ articles }: { articles: NewsArticle[] }) {
 }
 
 type NewsWidgetProps = {
-  holdings: Asset[]
+  stocks: {
+    ticker: string
+  }[]
   news: NewsArticle[]
 }
 
-export function NewsWidget({ holdings, news }: NewsWidgetProps) {
+export function NewsWidget({ stocks, news }: NewsWidgetProps) {
   // Create a fast lookup set of stock holding tickers from the balance sheet
-  const holdingTickers = useMemo(() => {
-    return new Set(holdings.map((asset) => asset.ticker))
-  }, [holdings])
+  const stockTickers = useMemo(() => {
+    return new Set(stocks.map((asset) => asset.ticker))
+  }, [stocks])
 
   // Filter logic
   const filteredArticles = useMemo(() => {
     return news.filter((article) =>
-      article.tickers?.some((ticker) => holdingTickers.has(ticker)),
+      article.tickers?.some((ticker) => stockTickers.has(ticker)),
     )
-  }, [news, holdingTickers])
+  }, [news, stockTickers])
 
   const tabs = [
     { value: "all", label: "All news", articles: news },

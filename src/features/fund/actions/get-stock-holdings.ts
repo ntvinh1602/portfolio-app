@@ -10,9 +10,11 @@ export default async function getStockHoldings() {
   const supabase = await createClient()
     const { data, error } = await supabase
       .from("balance_sheet")
-      .select("*")
+      .select("ticker")
       .eq("asset_class", "stock")
 
   if (error) throw new Error(error.message)
-  return (data ?? []) as Asset[]
+  return (data ?? []) as {
+    ticker: string
+  }[]
 }

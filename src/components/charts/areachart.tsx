@@ -72,7 +72,10 @@ export function Areachart({
           axisLine={false}
           tickMargin={0}
           tickFormatter={yAxisTickFormatter}
-          domain={["auto", "auto"]}
+          domain={[
+            (dataMin: number) => Number(dataMin) * 1,
+            (dataMax: number) => Number(dataMax) * 1.05,
+          ]}
           allowDataOverflow={false}
           scale="linear"
           mirror={true}

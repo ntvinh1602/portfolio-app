@@ -14,9 +14,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  logging: {
-    fetches: {},
-  },
+  logging: {},
 }
 
 export default nextConfig
