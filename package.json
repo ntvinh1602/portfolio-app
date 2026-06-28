@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "type": "module",
     "gen-types": "npx supabase gen types typescript --local > src/types/database.types.ts",
     "create-seed": "npx supabase db dump --data-only --linked -s public,flight -x public.tx_legs,public.asset_positions -f supabase/.seeds/data.sql"
