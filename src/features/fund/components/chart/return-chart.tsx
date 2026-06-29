@@ -40,7 +40,7 @@ export function ReturnChart({ dateRange, chartData, data }: Props) {
       : format(new Date(ms), "dd MMM")
 
   // VALUE formatter — one arg, formats the equity/return number
-  const tooltipFormatter = (v: number) => formatNum(v) // ReturnChart: formatNum(v, 1)
+  const tooltipFormatter = (v: number) => formatNum(v, 2)
 
   // LABEL formatter — typed to match the prop, reads epoch from the row
   const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {

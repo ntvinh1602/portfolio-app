@@ -30,7 +30,7 @@ const pages = [
 export default function FlightsPage() {
   return (
     <div className="@container/main flex flex-1 flex-col pb-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mx-auto">
+      <div className="grid grid-cols-1 gap-4 px-4 mx-auto">
         {pages.map((page) => (
           <Link key={page.href} href={page.href}>
             <Card className="h-full transition-colors hover:bg-accent max-w-120">

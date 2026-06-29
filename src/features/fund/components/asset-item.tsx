@@ -48,7 +48,7 @@ export default function AssetItem({
       <ItemMedia variant="image">
         {logo_url && (
           <Image
-            src={logo_url}
+            src={`${process.env.NEXT_PUBLIC_STORAGE_URL}/logo/stock/${logo_url}`}
             alt={name}
             width={44}
             height={44}

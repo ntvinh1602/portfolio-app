@@ -60,7 +60,7 @@ export function FlightItem({ flight }: { flight: Flight }) {
       <ItemFooter className="bg-muted/50 px-3 py-2 rounded-2xl">
         <ItemMedia variant="image" className="hidden sm:block">
           <Image
-            src={`${process.env.NEXT_PUBLIC_STORAGE_URL}/logo-img/${flight.airline_logo}`}
+            src={`${process.env.NEXT_PUBLIC_STORAGE_URL}/logo/airline/${flight.airline_logo}`}
             alt=""
             width={44}
             height={44}

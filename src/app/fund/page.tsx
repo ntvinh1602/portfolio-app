@@ -1,9 +1,5 @@
 import Link from "next/link"
-import {
-  ArrowLeftRight,
-  CalendarRange,
-  LayoutDashboard
-} from "lucide-react"
+import { ArrowLeftRight, CalendarRange, LayoutDashboard } from "lucide-react"
 import {
   Card,
   CardAction,
@@ -24,7 +20,7 @@ const pages = [
   {
     href: "/fund/transactions",
     icon: ArrowLeftRight,
-    title: "Transactions",
+    title: "Events",
     description: "Event ledger and entry forms",
     body: "Browse, filter, and search transaction history. Record stock trades, cashflow, borrow, and repay events.",
   },
@@ -40,7 +36,7 @@ const pages = [
 export default function FundPage() {
   return (
     <div className="@container/main flex flex-1 flex-col pb-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mx-auto">
+      <div className="grid grid-cols-1 gap-4 px-4 mx-auto">
         {pages.map((page) => (
           <Link key={page.href} href={page.href}>
             <Card className="h-full transition-colors hover:bg-accent max-w-120">
