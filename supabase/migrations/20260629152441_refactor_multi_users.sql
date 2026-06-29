@@ -32,7 +32,7 @@ alter table "public"."asset_positions" drop constraint "stock_positions_pkey";
 
 drop index if exists "public"."stock_positions_pkey";
 
-alter table "public"."asset_positions" add column "user_id" uuid not null;
+alter table "public"."asset_positions" add column "user_id" uuid null;
 
 alter table "public"."tx_entries" add column "user_id" uuid;
 
@@ -44,7 +44,7 @@ ALTER TABLE tx_stock DROP COLUMN net_proceed;
 
 ALTER TABLE tx_stock DROP COLUMN side;
 
-ALTER TABLE tx_stock ADD COLUMN operation text NOT NULL;
+ALTER TABLE tx_stock ADD COLUMN operation text NULL;
 
 ALTER TABLE tx_stock ADD COLUMN net_proceed numeric
 GENERATED ALWAYS AS (
@@ -54,10 +54,6 @@ GENERATED ALWAYS AS (
     ELSE 0
   END
 ) STORED;
-
-CREATE UNIQUE INDEX asset_positions_pkey ON public.asset_positions USING btree (user_id, asset_id);
-
-alter table "public"."asset_positions" add constraint "asset_positions_pkey" PRIMARY KEY using index "asset_positions_pkey";
 
 alter table "public"."asset_positions" add constraint "asset_positions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
 
