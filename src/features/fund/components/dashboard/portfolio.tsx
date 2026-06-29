@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { Asset } from "@fund/fund.types"
+import type { BSheetView } from "@fund/fund.types"
 import { Separator } from "@/components/ui/separator"
 import { AumChart } from "@fund/components/chart/aum-chart"
 import { LeverageChart } from "@fund/components/chart/leverage-chart"
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 
-export function Portfolio({ data }: { data: Asset[] }) {
+export function Portfolio({ data }: { data: BSheetView[] }) {
   const equity = data
     .filter((r) => r.asset_class === "equity")
     .reduce((sum, r) => sum + r.total_value, 0)

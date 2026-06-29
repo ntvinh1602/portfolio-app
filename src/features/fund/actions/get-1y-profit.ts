@@ -1,18 +1,18 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { Dashboard } from "@fund/fund.types"
+import type { Last1YProfitView } from "@fund/fund.types"
 
-export default async function getDashboard() {
+export default async function get1yProfit() {
   "use cache: private"
   cacheTag("dashboard", "analytics")
   cacheLife("days")
 
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from("dashboard_data")
+    .from("last_1y_profit")
     .select()
     .single()
 
   if (error) throw new Error(error.message)
-  return data as Dashboard
+  return data as Last1YProfitView
 }

@@ -6,7 +6,7 @@ import { ExpenseChart } from "../chart/expense-chart"
 import { TopStocks } from "./top-stocks"
 import { Cashflow } from "./cashflow"
 import { ReturnChart } from "./return-chart"
-import type { Performance } from "@fund/fund.types"
+import type { PerformanceView } from "@fund/fund.types"
 import { NetProfitChart } from "../chart/netprofit-chart"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,7 +17,7 @@ export function Performance({
   results,
   startYear,
 }: {
-  results: Performance[]
+  results: PerformanceView[]
   startYear: number
 }) {
   const [year, setYear] = useState<number | null>(null)

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 const manrope = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Master Ledger",
+  title: "Logbook",
   description: "A personal finance dashboard for tracking investments — plus a flight log for travel history",
   
   // Disable indexing for search engines

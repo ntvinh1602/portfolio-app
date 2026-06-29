@@ -1,5 +1,7 @@
 import getNews from "@fund/actions/get-news"
-import getDashboard from "@fund/actions/get-dashboard"
+import get1yProfit from "@/features/fund/actions/get-1y-profit"
+import getStockHoldings from "@fund/actions/get-stock-holdings"
+import getBalanceSheet from "@fund/actions/get-balancesheet"
 import { Suspense } from "react"
 import { NewsSkeleton, NewsWidget } from "@fund/components/dashboard/news"
 import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
@@ -8,12 +10,10 @@ import {
   Portfolio,
   PortfolioSkeleton,
 } from "@fund/components/dashboard/portfolio"
-import { NetProfitChart } from "@/features/fund/components/chart/netprofit-chart"
-import getNetProfit from "@fund/actions/get-netprofit"
-import getStockHoldings from "@/features/fund/actions/get-stock-holdings"
-import getBalanceSheet from "@fund/actions/get-balancesheet"
+import { NetProfitChart } from "@fund/components/chart/netprofit-chart"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import getEquityReturn from "@fund/actions/get-equity-return"
 
 export default function Page() {
   return (
@@ -52,7 +52,7 @@ export default function Page() {
 }
 
 async function EquityReturnData() {
-  const data = await getDashboard()
+  const data = await getEquityReturn()
   return <EquityReturn data={data} />
 }
 
@@ -62,7 +62,7 @@ async function PortfolioData() {
 }
 
 async function NetProfitData() {
-  const data = await getNetProfit()
+  const data = await get1yProfit()
   return <NetProfitChart data={data} />
 }
 

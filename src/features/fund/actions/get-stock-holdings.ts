@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { Asset } from "@fund/fund.types"
 
 export default async function getStockHoldings() {
   "use cache: private"

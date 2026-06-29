@@ -1,5 +1,5 @@
 "use client"
-import type { Asset } from "@fund/fund.types"
+import type { BSheetView } from "@fund/fund.types"
 import { Box, DollarSign, HandCoins } from "lucide-react"
 import {
   Card,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/item"
 
 interface Props {
-  bsData: Asset[]
+  bsData: BSheetView[]
   liability: number
   equity: number
 }
@@ -42,9 +42,9 @@ export default function BalanceSheet({ bsData, liability, equity }: Props) {
       return acc
     },
     {
-      liabilities: [] as Asset[],
-      equities: [] as Asset[],
-      groupedAssets: {} as Record<string, Asset[]>,
+      liabilities: [] as BSheetView[],
+      equities: [] as BSheetView[],
+      groupedAssets: {} as Record<string, BSheetView[]>,
     },
   )
 

@@ -5,27 +5,42 @@ export interface StockPnLItem {
   total_pnl: number
 }
 
-export type EquityChartPt = {
-  snapshot_date: string
-  net_equity: number
-  cumulative_cashflow: number
+// Columnar equity series: keys stored once, not per-point.
+export type ProfitChartCols = {
+  snapshot_date: string[]
+  revenue: number[]
+  fee: number[]
+  interest: number[]
+  tax: number[]
 }
 
-export type ReturnChartPt = {
-  snapshot_date: string
-  vni_value: number
-  portfolio_value: number
+export type EquityChartCols = {
+  d: number[] // d = epoch-days (int)
+  e: number[] // e = net_equity (rounded)
+  c: number[] // c = cumulative_cashflow (rounded)
 }
 
-export type ProfitChartPt = {
-  revenue: number
-  fee: number
-  interest: number
-  tax: number
-  snapshot_date: string
+export type ReturnChartCols = {
+  d: number[] // epoch-days
+  p: number[] // portfolio_value (normalized, 2dp)
+  v: number[] // vni_value (normalized, 2dp)
 }
 
-export interface Asset {
+export type EquityChartWindows = {
+  last_1y: EquityChartCols
+  last_3m: EquityChartCols
+  last_6m: EquityChartCols
+  all: EquityChartCols
+}
+
+export type ReturnChartWindows = {
+  last_1y: ReturnChartCols
+  last_3m: ReturnChartCols
+  last_6m: ReturnChartCols
+  all: ReturnChartCols
+}
+
+export interface BSheetView {
   ticker: string
   name: string
   asset_class: string
@@ -37,7 +52,8 @@ export interface Asset {
   net_profit: number | null
 }
 
-export interface Performance {
+export interface PerformanceView {
+  year: number
   avg_expense: number
   avg_profit: number
   deposits: number
@@ -45,41 +61,27 @@ export interface Performance {
   total_pnl: number
   vn_ret: number
   withdrawals: number
-  year: number
-  profit_chart: ProfitChartPt[]
-  return_chart: ReturnChartPt[]
+  profit_chart: ProfitChartCols
+  return_chart: ReturnChartCols
   stock_pnl: StockPnLItem[]
 }
 
-export type Dashboard = {
+export type Last1YProfitView = {
+  total_pnl: number
+  avg_profit: number
+  avg_expense: number
+  profit_chart: ProfitChartCols
+}
+
+export type EquityReturnView = {
   pnl_ytd: number
   pnl_mtd: number
   twr_ytd: number
   twr_all: number
-  cagr: number
   total_equity: number
-  total_liabilities: number
-  fund: number
-  stock: number
-  cash: number
-  margin: number
-  debts: number
-  total_pnl: number
-  avg_profit: number
-  avg_expense: number
-  profit_chart: ProfitChartPt[]
-  equitychart: {
-    last_1y: EquityChartPt[]
-    last_3m: EquityChartPt[]
-    last_6m: EquityChartPt[]
-    all: EquityChartPt[]
-  }
-  returnchart: {
-    last_1y: ReturnChartPt[]
-    last_3m: ReturnChartPt[]
-    last_6m: ReturnChartPt[]
-    all: ReturnChartPt[]
-  }
+  cagr: number
+  equitychart: EquityChartWindows
+  returnchart: ReturnChartWindows
 }
 
 export type NewsArticle = {
@@ -91,11 +93,4 @@ export type NewsArticle = {
   published_at: string
   created_at: string
   tickers?: string[]
-}
-
-export type NetProfitCard = {
-  total_pnl: number
-  avg_profit: number
-  avg_expense: number
-  profit_chart: ProfitChartPt[]
 }

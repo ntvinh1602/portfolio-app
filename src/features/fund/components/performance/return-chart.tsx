@@ -1,18 +1,30 @@
 "use client"
 
+import { useMemo } from "react"
 import { formatNum, compactNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
-import { Card, CardContent } from "@/components/ui/card"
-import type { ReturnChartPt } from "@fund/fund.types"
+import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
 import { returnChart } from "../../config"
+import type { ReturnChartCols } from "@fund/fund.types"
+import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   year: number
   equityReturn: number
   vnIndexReturn: number
-  chartData: ReturnChartPt[]
+  chartData: ReturnChartCols
+}
+
+type ReturnRow = { t: number; portfolio_value: number; vni_value: number }
+
+function colsToRows({ d, p, v }: ReturnChartCols): ReturnRow[] {
+  const out: ReturnRow[] = new Array(d.length)
+  for (let i = 0; i < d.length; i++) {
+    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
+  }
+  return out
 }
 
 export function ReturnChart({
@@ -21,9 +33,19 @@ export function ReturnChart({
   vnIndexReturn,
   chartData,
 }: Props) {
-  const xAxisTickFormatter = (value: string) => {
-    const date = new Date(value)
-    return year === 9999 ? format(date, "MMM yyyy") : format(date, "dd MMM")
+  const rows = useMemo(() => colsToRows(chartData), [chartData])
+
+  const xAxisTickFormatter = (ms: number) =>
+    year === 9999
+      ? format(new Date(ms), "MMM yyyy")
+      : format(new Date(ms), "dd MMM")
+      
+  const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {
+    const ms = payload?.[0]?.payload?.t as number | undefined
+    if (ms == null) return ""
+    return year === 9999
+      ? format(new Date(ms), "MMM yyyy")
+      : format(new Date(ms), "dd MMM")
   }
 
   return (
@@ -39,13 +61,15 @@ export function ReturnChart({
         descriptionStat2="VNI return"
       />
       <Areachart
-        data={chartData}
+        data={rows}
         config={returnChart}
-        xAxisDataKey={"snapshot_date"}
+        xAxisDataKey={"t"}
+        xAxisType="number"
         className="h-full w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
         tooltipFormatter={(v) => formatNum(v, 1)}
+        tooltipLabelFormatter={tooltipLabelFormatter}
       />
     </Card>
   )

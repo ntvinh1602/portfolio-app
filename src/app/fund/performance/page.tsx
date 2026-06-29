@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import getPerformance from "@fund/actions/get-recaps"
+import getPerformance from "@/features/fund/actions/get-performance"
 import {
   Performance,
   PerformanceSkeleton,

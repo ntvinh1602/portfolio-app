@@ -4,22 +4,36 @@ import { Card } from "@/components/ui/card"
 import { format } from "date-fns"
 import { formatNum, compactNum } from "@/lib/utils"
 import { ChartBarStacked } from "@/components/charts/stacked-barchart"
-import type { NetProfitCard, ProfitChartPt } from "@fund/fund.types"
+import type { Last1YProfitView } from "@fund/fund.types"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
 import { netProfitChart } from "@fund/config"
+import type { ProfitChartCols } from "@fund/fund.types"
 
 interface Props {
   year?: number
-  data: NetProfitCard
+  data: Last1YProfitView
+}
+
+// Columnar → row-oriented for Recharts. Index i lines up across every column.
+function columnsToRows(cols: ProfitChartCols) {
+  return cols.snapshot_date.map((snapshot_date, i) => ({
+    snapshot_date,
+    revenue: cols.revenue[i],
+    fee: cols.fee[i],
+    interest: cols.interest[i],
+    tax: cols.tax[i],
+  }))
 }
 
 export function NetProfitChart({ year, data }: Props) {
-  const xAxisFormatter = (value: string) => {
-    const date = new Date(value)
-    return year === 9999 ? format(date, "yyyy") : format(date, "MMM yyyy")
-  }
-  const description = !year ? "last 1y" : ""
+  const xAxisFormatter = (value: string) =>
+    year === 9999
+      ? format(new Date(value), "yyyy")
+      : format(new Date(value), "MMM yyyy")
 
+  const description = !year ? "last 1y" : ""
+  const chartData = columnsToRows(data.profit_chart)
+  
   return (
     <Card>
       <ChartCardHeader
@@ -34,7 +48,7 @@ export function NetProfitChart({ year, data }: Props) {
         descriptionStat2="avg. cost"
       />
       <ChartBarStacked
-        data={data.profit_chart}
+        data={chartData}
         config={netProfitChart}
         className="w-full"
         xAxisDataKey={"snapshot_date"}

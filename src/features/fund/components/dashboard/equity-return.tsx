@@ -6,10 +6,10 @@ import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EquityChart } from "@fund/components/chart/equity-chart"
 import { ReturnChart } from "@fund/components/chart/return-chart"
-import type { Dashboard } from "@fund/fund.types"
+import type { EquityReturnView } from "@fund/fund.types"
 import { withAllTime } from "@fund/config"
 
-export function EquityReturn({ data }: { data: Dashboard }) {
+export function EquityReturn({ data }: { data: EquityReturnView }) {
   const [dateRange, setDateRange] = useState("last_1y")
   return (
     <div className="@container/main flex flex-col gap-6">

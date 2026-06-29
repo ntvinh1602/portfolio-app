@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { cacheLife, cacheTag } from "next/cache"
-import type { Asset } from "@fund/fund.types"
+import type { BSheetView } from "@fund/fund.types"
 
 export default async function getBalanceSheet() {
   "use cache: private"
@@ -12,5 +12,5 @@ export default async function getBalanceSheet() {
 
   if (error) throw new Error(error.message)
 
-  return data as Asset[]
+  return data as BSheetView[]
 }

@@ -9,24 +9,36 @@ import {
 } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import type { ReactNode } from "react"
+
+export type TooltipLabelFormatter = (
+  label: unknown,
+  payload: readonly any[], // readonly — matches Recharts
+) => ReactNode
+
+type Props = {
+  data: Record<string, string | number>[]
+  config: ChartConfig
+  className?: string
+  xAxisDataKey: string
+  xAxisType?: "category" | "number"
+  xAxisTickFormatter?: (ms: number) => string
+  yAxisTickFormatter?: (value: number) => string
+  tooltipFormatter?: (value: number) => string // value formatter, unchanged
+  tooltipLabelFormatter?: TooltipLabelFormatter // NEW, separate prop
+}
 
 export function Areachart({
   data,
   config,
   className,
   xAxisDataKey,
+  xAxisType,
   xAxisTickFormatter,
   yAxisTickFormatter,
   tooltipFormatter,
-}: {
-  data: Record<string, string | number>[]
-  config: ChartConfig
-  className?: string
-  xAxisDataKey: string
-  xAxisTickFormatter?: (value: string) => string
-  yAxisTickFormatter?: (value: number) => string
-  tooltipFormatter?: (value: number) => string
-}) {
+  tooltipLabelFormatter,
+}: Props) {
   const dataKeys = Object.keys(config)
   const isMobile = useIsMobile()
 
@@ -59,6 +71,9 @@ export function Areachart({
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey={xAxisDataKey}
+          {...(xAxisType === "number"
+            ? { type: "number", scale: "time", domain: ["dataMin", "dataMax"] }
+            : {})}
           tickLine={true}
           axisLine={false}
           tickMargin={8}
@@ -91,6 +106,7 @@ export function Areachart({
               <ChartTooltipContent
                 indicator="line"
                 valueFormatter={tooltipFormatter}
+                labelFormatter={tooltipLabelFormatter}
               />
             }
           />

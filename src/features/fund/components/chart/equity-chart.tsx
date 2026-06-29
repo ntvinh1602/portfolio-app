@@ -1,35 +1,58 @@
 "use client"
 
 import { formatNum, compactNum } from "@/lib/utils"
-import { parseISO, format } from "date-fns"
+import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import type { Dashboard, EquityChartPt } from "@fund/fund.types"
 import { equityChart } from "@fund/config"
+import { useMemo } from "react"
+import type {
+  EquityChartCols,
+  EquityChartWindows,
+  EquityReturnView,
+} from "@fund/fund.types"
+import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   dateRange: string
-  chartData: {
-    all: EquityChartPt[]
-    last_1y: EquityChartPt[]
-    last_6m: EquityChartPt[]
-    last_3m: EquityChartPt[]
+  chartData: EquityChartWindows // columnar now
+  data: EquityReturnView
+}
+
+// epoch-days -> the old row shape; UTC slice reproduces exact YYYY-MM-DD
+function colsToRows({ d, e, c }: EquityChartCols) {
+  const out = new Array(d.length)
+  for (let i = 0; i < d.length; i++) {
+    out[i] = {
+      t: d[i] * 86_400_000,
+      net_equity: e[i],
+      cumulative_cashflow: c[i],
+    }
   }
-  data: Dashboard
+  return out
 }
 
 export function EquityChart({ dateRange, chartData, data }: Props) {
-  const chartTimeframe =
+  const cols =
     chartData[dateRange as keyof typeof chartData] ?? chartData.last_1y
 
-  const xAxisTickFormatter = (value: string) => {
-    const date = parseISO(value)
-    return ["last_1y", "all"].includes(dateRange)
-      ? format(date, "MMM yyyy")
-      : format(date, "dd MMM")
-  }
+  const chartTimeframe = useMemo(() => colsToRows(cols), [cols])
 
+  const xAxisTickFormatter = (ms: number) =>
+    ["last_1y", "all"].includes(dateRange)
+      ? format(new Date(ms), "MMM yyyy")
+      : format(new Date(ms), "dd MMM")
+
+  // VALUE formatter — one arg, formats the equity/return number
+  const tooltipFormatter = (v: number) => formatNum(v) // ReturnChart: formatNum(v, 1)
+
+  // LABEL formatter — typed to match the prop, reads epoch from the row
+  const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {
+    const ms = payload?.[0]?.payload?.t as number | undefined
+    if (ms == null) return ""
+    return format(new Date(ms), "yyyy-MM-dd")
+  }
   return (
     <Card>
       <ChartCardHeader
@@ -45,11 +68,13 @@ export function EquityChart({ dateRange, chartData, data }: Props) {
       <Areachart
         data={chartTimeframe}
         config={equityChart}
-        xAxisDataKey={"snapshot_date"}
+        xAxisDataKey={"t"}
+        xAxisType="number"
         className="w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
-        tooltipFormatter={(v) => formatNum(v)}
+        tooltipFormatter={tooltipFormatter} // value → (value: number) => string
+        tooltipLabelFormatter={tooltipLabelFormatter} // label → TooltipLabelFormatter
       />
     </Card>
   )

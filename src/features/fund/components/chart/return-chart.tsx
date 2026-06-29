@@ -1,56 +1,76 @@
 "use client"
 
 import { formatNum, compactNum } from "@/lib/utils"
-import { parseISO, format } from "date-fns"
+import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import type { Dashboard, ReturnChartPt } from "@fund/fund.types"
 import { returnChart } from "@fund/config"
+import { useMemo } from "react"
+import type {
+  ReturnChartCols,
+  ReturnChartWindows,
+  EquityReturnView,
+} from "@fund/fund.types"
+import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   dateRange: string
-  chartData: {
-    all: ReturnChartPt[]
-    last_1y: ReturnChartPt[]
-    last_6m: ReturnChartPt[]
-    last_3m: ReturnChartPt[]
+  chartData: ReturnChartWindows // columnar now
+  data: EquityReturnView
+}
+
+function colsToRows({ d, p, v }: ReturnChartCols) {
+  const out = new Array(d.length)
+  for (let i = 0; i < d.length; i++) {
+    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
   }
-  data: Dashboard
+  return out
 }
 
 export function ReturnChart({ dateRange, chartData, data }: Props) {
-  const chartTimeframe =
+  const cols =
     chartData[dateRange as keyof typeof chartData] ?? chartData.last_1y
 
-  const xAxisTickFormatter = (value: string) => {
-    const date = parseISO(value)
-    return ["last_1y", "all"].includes(dateRange)
-      ? format(date, "MMM yyyy")
-      : format(date, "dd MMM")
-  }
+  const chartTimeframe = useMemo(() => colsToRows(cols), [cols])
 
+  const xAxisTickFormatter = (ms: number) =>
+    ["last_1y", "all"].includes(dateRange)
+      ? format(new Date(ms), "MMM yyyy")
+      : format(new Date(ms), "dd MMM")
+
+  // VALUE formatter — one arg, formats the equity/return number
+  const tooltipFormatter = (v: number) => formatNum(v) // ReturnChart: formatNum(v, 1)
+
+  // LABEL formatter — typed to match the prop, reads epoch from the row
+  const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {
+    const ms = payload?.[0]?.payload?.t as number | undefined
+    if (ms == null) return ""
+    return format(new Date(ms), "yyyy-MM-dd")
+  }
   return (
     <Card>
       <ChartCardHeader
         title="Return"
         titleLegend="this year"
-        heroStat={`${formatNum(data.twr_ytd * 100, 1)}%`}
+        heroStat={`${data.twr_ytd}%`}
         stat1={data.twr_all}
-        formattedStat1={`${formatNum(data.twr_all * 100, 1)}%`}
+        formattedStat1={`${data.twr_all}%`}
         descriptionStat1="all time"
         stat2={data.cagr}
-        formattedStat2={`${formatNum(data.cagr * 100, 1)}%`}
+        formattedStat2={`${data.cagr}%`}
         descriptionStat2="annualized"
       />
       <Areachart
         data={chartTimeframe}
         config={returnChart}
-        xAxisDataKey={"snapshot_date"}
+        xAxisDataKey={"t"}
+        xAxisType="number"
         className="w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
-        tooltipFormatter={(v) => formatNum(v, 1)}
+        tooltipFormatter={tooltipFormatter} // value → (value: number) => string
+        tooltipLabelFormatter={tooltipLabelFormatter} // label → TooltipLabelFormatter
       />
     </Card>
   )

@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { Asset } from "@fund/fund.types"
+import type { BSheetView } from "@fund/fund.types"
 import StatusLabel from "@/components/status-label"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
@@ -19,7 +19,7 @@ import { fetchPrices } from "@fund/actions/fetch-price"
 import { toast } from "sonner"
 import { RefreshCw } from "lucide-react"
 interface Props {
-  bs: Asset[]
+  bs: BSheetView[]
 }
 
 export function StockHoldings({ bs }: Props) {
