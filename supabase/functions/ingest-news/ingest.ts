@@ -10,9 +10,19 @@ export async function ingestAllSources(supabase: SupabaseClient) {
   for (const source of NEWS_SOURCES) {
     const feed = await source.parser.parseURL(source.url)
 
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 7)
+
     const normalized: NormalizedArticle[] = feed.items
       .map(source.mapItem)
-      .filter((item): item is NormalizedArticle => item !== null)
+      .filter((item): item is NormalizedArticle => {
+        if (!item) return false
+        if (item.published_at) {
+          const published = new Date(item.published_at)
+          if (published < cutoff) return false
+        }
+        return true
+      })
 
     if (!normalized.length) continue
 
