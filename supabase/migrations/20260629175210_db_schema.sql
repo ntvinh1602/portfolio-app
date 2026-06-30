@@ -93,24 +93,23 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
-CREATE TYPE "flight"."seat_position_enum" AS ENUM (
+CREATE TYPE "flight"."seat_position" AS ENUM (
     'window',
     'middle',
     'aisle'
 );
 
 
-ALTER TYPE "flight"."seat_position_enum" OWNER TO "postgres";
+ALTER TYPE "flight"."seat_position" OWNER TO "postgres";
 
 
-CREATE TYPE "flight"."seat_type_enum" AS ENUM (
-    'economy',
-    'premium_economy',
-    'business'
+CREATE TYPE "flight"."seat_type" AS ENUM (
+    'eco',
+    'biz'
 );
 
 
-ALTER TYPE "flight"."seat_type_enum" OWNER TO "postgres";
+ALTER TYPE "flight"."seat_type" OWNER TO "postgres";
 
 
 CREATE TYPE "public"."asset_class" AS ENUM (
@@ -156,6 +155,16 @@ CREATE TYPE "public"."equity_point" AS (
 
 
 ALTER TYPE "public"."equity_point" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."tx_category" AS ENUM (
+    'stock',
+    'cashflow',
+    'debt'
+);
+
+
+ALTER TYPE "public"."tx_category" OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", "p_airline_id" "uuid", "p_aircraft_id" "uuid", "p_departure_airport_id" "uuid", "p_arrival_airport_id" "uuid", "p_departure_local" "text", "p_arrival_local" "text") RETURNS "void"
@@ -210,19 +219,19 @@ ALTER FUNCTION "flight"."insert_flight_with_timezone"("p_flight_number" "text", 
 CREATE OR REPLACE FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
+    AS $$declare
   v_tx_id uuid;
 begin
   -- Insert into tx_entries
-  insert into public.tx_entries (category, memo)
+  insert into public.tx_entries (category, memo, user_id)
   values (
     'debt',
-    'Borrow ' || p_principal::text || ' from ' || p_lender || ' at ' || to_char(p_rate, 'FM90.##%')
+    'Borrow ' || p_principal::text || ' from ' || p_lender || ' at ' || to_char(p_rate, 'FM90.##%'),
+    auth.uid()
   )
   returning id into v_tx_id;
 
-  -- Insert into tx_cashflow
+  -- Insert into tx_debt
   insert into public.tx_debt (
     tx_id,
     operation,
@@ -237,8 +246,7 @@ begin
     p_lender,
     p_rate
   );
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "text", "p_rate" numeric) OWNER TO "postgres";
@@ -247,8 +255,7 @@ ALTER FUNCTION "public"."add_borrow_event"("p_principal" numeric, "p_lender" "te
 CREATE OR REPLACE FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
+    AS $$declare
   v_tx_id uuid;
   v_asset_currency text;
   v_fx_rate numeric;
@@ -264,8 +271,8 @@ begin
   end if;
 
   -- Insert into tx_entries
-  insert into public.tx_entries (category, memo)
-  values ('cashflow', p_memo)
+  insert into public.tx_entries (category, memo, user_id)
+  values ('cashflow', p_memo, auth.uid())
   returning id into v_tx_id;
 
   -- Insert into tx_cashflow
@@ -283,8 +290,7 @@ begin
     p_quantity,
     v_fx_rate
   );
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" "uuid", "p_quantity" numeric, "p_fx_rate" numeric, "p_memo" "text") OWNER TO "postgres";
@@ -293,8 +299,7 @@ ALTER FUNCTION "public"."add_cashflow_event"("p_operation" "text", "p_asset_id" 
 CREATE OR REPLACE FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
+    AS $$declare
   v_tx_id uuid;
   v_lender text;
   v_principal text;
@@ -308,10 +313,11 @@ begin
   from public.tx_debt d where d.tx_id = p_repay_tx;
 
   -- Insert into tx_entries
-  insert into public.tx_entries (category, memo)
+  insert into public.tx_entries (category, memo, user_id)
   values (
     'debt',
-    'Repay to ' || v_lender
+    'Repay to ' || v_lender,
+    auth.uid()
   ) returning id into v_tx_id;
 
   -- Insert into tx_cashflow
@@ -329,8 +335,7 @@ begin
     p_interest,
     p_repay_tx
   );
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."add_repay_event"("p_repay_tx" "uuid", "p_interest" numeric) OWNER TO "postgres";
@@ -343,22 +348,22 @@ CREATE OR REPLACE FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker
 declare
   v_tx_id uuid;
   v_stock_id uuid;
-  v_memo text;
 begin
   -- Find stock id
   select a.id into v_stock_id from public.assets a where a.ticker = p_ticker;
 
   -- Insert into tx_entries
-  insert into public.tx_entries (category, memo)
+  insert into public.tx_entries (category, memo, user_id)
   values (
     'stock',
-    initcap(p_side) || ' ' || p_quantity::text || ' ' || p_ticker || ' at ' || p_price::text
+    initcap(p_side) || ' ' || p_quantity::text || ' ' || p_ticker || ' at ' || p_price::text,
+    auth.uid()
   ) returning id into v_tx_id;
 
   -- Insert into tx_stock
   insert into public.tx_stock (
     tx_id,
-    side,
+    operation,
     stock_id,
     price,
     quantity,
@@ -384,48 +389,37 @@ ALTER FUNCTION "public"."add_stock_event"("p_side" "text", "p_ticker" "text", "p
 CREATE OR REPLACE FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-DECLARE
+    AS $$DECLARE
   v_start_equity NUMERIC;
   v_end_equity NUMERIC;
   v_cash_flow NUMERIC;
   v_pnl NUMERIC;
 BEGIN
-  -- Get starting equity (closing equity of the day before the start date)
   SELECT net_equity INTO v_start_equity
   FROM public.daily_snapshots
-  WHERE snapshot_date < p_start_date
-  ORDER BY snapshot_date DESC
-  LIMIT 1;
+  WHERE user_id = auth.uid() AND snapshot_date < p_start_date
+  ORDER BY snapshot_date DESC LIMIT 1;
 
-  -- If no prior snapshot, this is the first month.
-  -- Use the opening equity of the first day as the starting equity.
   IF v_start_equity IS NULL THEN
     SELECT (net_equity - net_cashflow) INTO v_start_equity
     FROM public.daily_snapshots
-    WHERE snapshot_date >= p_start_date
-    ORDER BY snapshot_date ASC
-    LIMIT 1;
+    WHERE user_id = auth.uid() AND snapshot_date >= p_start_date
+    ORDER BY snapshot_date ASC LIMIT 1;
   END IF;
 
-  -- Get ending equity (closing equity of the end date)
   SELECT net_equity INTO v_end_equity
   FROM public.daily_snapshots
-  WHERE snapshot_date <= p_end_date
-  ORDER BY snapshot_date DESC
-  LIMIT 1;
+  WHERE user_id = auth.uid() AND snapshot_date <= p_end_date
+  ORDER BY snapshot_date DESC LIMIT 1;
 
-  -- Get net cash flow for the period
   SELECT COALESCE(SUM(net_cashflow), 0) INTO v_cash_flow
   FROM public.daily_snapshots
-  WHERE snapshot_date >= p_start_date AND snapshot_date <= p_end_date;
+  WHERE user_id = auth.uid()
+    AND snapshot_date >= p_start_date AND snapshot_date <= p_end_date;
 
-  -- Calculate PnL
-  v_pnl := (COALESCE(v_end_equity, 0) - COALESCE(v_start_equity, 0)) - v_cash_flow;
-
+  v_pnl := round((COALESCE(v_end_equity, 0) - COALESCE(v_start_equity, 0)) - v_cash_flow);
   RETURN v_pnl;
-END;
-$$;
+END;$$;
 
 
 ALTER FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
@@ -434,36 +428,28 @@ ALTER FUNCTION "public"."calculate_pnl"("p_start_date" "date", "p_end_date" "dat
 CREATE OR REPLACE FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") RETURNS numeric
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-DECLARE
+    AS $$DECLARE
   v_start_index NUMERIC;
   v_end_index NUMERIC;
   v_twr NUMERIC;
 BEGIN
-  -- Get the equity index from the day before the start date
   SELECT equity_index INTO v_start_index
   FROM public.daily_snapshots
-  WHERE snapshot_date < p_start_date
-  ORDER BY snapshot_date DESC
-  LIMIT 1;
-  -- If no prior snapshot, this is the first month.
-  -- The starting index is conceptually 100 before the first day.
-  IF v_start_index IS NULL THEN v_start_index := 100;
-  END IF;
-  -- Get the equity index at the end of the period
+  WHERE user_id = auth.uid() AND snapshot_date < p_start_date
+  ORDER BY snapshot_date DESC LIMIT 1;
+
+  IF v_start_index IS NULL THEN v_start_index := 100; END IF;
+
   SELECT equity_index INTO v_end_index
   FROM public.daily_snapshots
-  WHERE snapshot_date <= p_end_date
-  ORDER BY snapshot_date DESC
-  LIMIT 1;
-  -- If there's no data for the period, return 0
-  IF v_end_index IS NULL THEN RETURN 0;
-  END IF;
-  -- Calculate TWR as the percentage change in the equity index
-  v_twr := (v_end_index / v_start_index) - 1;
+  WHERE user_id = auth.uid() AND snapshot_date <= p_end_date
+  ORDER BY snapshot_date DESC LIMIT 1;
+
+  IF v_end_index IS NULL THEN RETURN 0; END IF;
+
+  v_twr := round(((v_end_index / v_start_index) - 1) * 100, 1);
   RETURN v_twr;
-END;
-$$;
+END;$$;
 
 
 ALTER FUNCTION "public"."calculate_twr"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
@@ -525,32 +511,24 @@ $$;
 ALTER FUNCTION "public"."enqueue_refresh_data"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer DEFAULT 150) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-DECLARE
+    AS $$DECLARE
   raw_data public.equity_point[];
   result_data public.equity_point[];
-
   data_count int;
   every numeric;
-
   i int;
   a int := 0;
-
   range_start int;
   range_end int;
-
   avg_x numeric;
   avg_y numeric;
-
   max_area numeric;
   point_area numeric;
-
   selected public.equity_point;
   prev public.equity_point;
-
   final_result jsonb;
 BEGIN
   -- Load dataset into memory
@@ -560,7 +538,8 @@ BEGIN
          )
   INTO raw_data
   FROM public.daily_snapshots
-  WHERE snapshot_date BETWEEN p_start_date AND p_end_date;
+  WHERE user_id = auth.uid()
+    AND snapshot_date BETWEEN p_start_date AND p_end_date;
 
   data_count := array_length(raw_data, 1);
 
@@ -570,8 +549,13 @@ BEGIN
 
   IF data_count <= p_threshold THEN
     RETURN (
-      SELECT jsonb_agg(to_jsonb(x))
-      FROM unnest(raw_data) x
+      SELECT jsonb_build_object(
+        'd', jsonb_agg((extract(epoch from x.snapshot_date)/86400)::int ORDER BY x.ord),
+        'e', jsonb_agg(round(x.net_equity)               ORDER BY x.ord),
+        'c', jsonb_agg(round(x.cumulative_cashflow)      ORDER BY x.ord)
+      )
+      FROM unnest(raw_data) WITH ORDINALITY
+          AS x(snapshot_date, net_equity, cumulative_cashflow, ord)
     );
   END IF;
 
@@ -579,7 +563,6 @@ BEGIN
   every := (data_count - 2.0) / (p_threshold - 2.0);
 
   FOR i IN 0..p_threshold - 3 LOOP
-
     range_start := floor(a * every)::int + 2;
     range_end := floor((a + 1) * every)::int + 1;
 
@@ -620,67 +603,62 @@ BEGIN
 
   result_data := result_data || raw_data[data_count];
 
-  SELECT jsonb_agg(to_jsonb(x))
+  SELECT jsonb_build_object(
+    'd', jsonb_agg((extract(epoch from x.snapshot_date)/86400)::int ORDER BY x.ord),
+    'e', jsonb_agg(round(x.net_equity)               ORDER BY x.ord),
+    'c', jsonb_agg(round(x.cumulative_cashflow)      ORDER BY x.ord)
+  )
   INTO final_result
-  FROM unnest(result_data) x;
+  FROM unnest(result_data) WITH ORDINALITY
+      AS x(snapshot_date, net_equity, cumulative_cashflow, ord);
 
   RETURN final_result;
-END;
-$$;
+END;$$;
 
 
 ALTER FUNCTION "public"."get_equity_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer DEFAULT 150) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-DECLARE
+    AS $$DECLARE
   v_first_portfolio_value numeric;
   v_first_vni_value numeric;
-
   raw_data public.benchmark_point[];
   result_data public.benchmark_point[];
-
   data_count int;
   every numeric;
-
   i int;
   a int := 0;
-
   range_start int;
   range_end int;
-
   avg_x numeric;
   avg_y numeric;
-
   max_area numeric;
   point_area numeric;
-
   selected RECORD;
   prev RECORD;
-
   final_result jsonb;
 BEGIN
   -- Get normalization anchors
   SELECT equity_index
   INTO v_first_portfolio_value
   FROM public.daily_snapshots
-  WHERE snapshot_date >= p_start_date
+  WHERE user_id = auth.uid() AND snapshot_date >= p_start_date
   ORDER BY snapshot_date
   LIMIT 1;
 
   SELECT hp.close
   INTO v_first_vni_value
   FROM historical_prices hp
-    join assets a on a.id = hp.asset_id
+    JOIN assets a ON a.id = hp.asset_id
   WHERE a.ticker = '^VNINDEX'
     AND hp.date >= p_start_date
   ORDER BY hp.date
   LIMIT 1;
 
-  -- Load dataset into memory array
+  -- Load dataset into memory array with normalized values
   SELECT array_agg(t ORDER BY snapshot_date)
   INTO raw_data
   FROM (
@@ -689,9 +667,10 @@ BEGIN
       (pd.equity_index / NULLIF(v_first_portfolio_value, 0)) * 100 AS portfolio_value,
       (hp.close / NULLIF(v_first_vni_value, 0)) * 100 AS vni_value
     FROM daily_snapshots pd
-    JOIN historical_prices hp ON pd.snapshot_date = hp.date
-    join assets a on a.id = hp.asset_id
-    WHERE pd.snapshot_date BETWEEN p_start_date AND p_end_date
+      JOIN historical_prices hp ON pd.snapshot_date = hp.date
+      JOIN assets a ON a.id = hp.asset_id
+    WHERE pd.user_id = auth.uid()
+      AND pd.snapshot_date BETWEEN p_start_date AND p_end_date
       AND a.ticker = '^VNINDEX'
   ) t;
 
@@ -701,11 +680,15 @@ BEGIN
     RETURN '[]'::jsonb;
   END IF;
 
-  -- If below threshold → return full set
   IF data_count <= p_threshold THEN
     RETURN (
-      SELECT jsonb_agg(to_jsonb(x))
-      FROM unnest(raw_data) x
+      SELECT jsonb_build_object(
+        'd', jsonb_agg((extract(epoch from x.snapshot_date)/86400)::int ORDER BY x.ord),
+        'p', jsonb_agg(round(x.portfolio_value, 2)                      ORDER BY x.ord),
+        'v', jsonb_agg(round(x.vni_value, 2)                            ORDER BY x.ord)
+      )
+      FROM unnest(raw_data) WITH ORDINALITY
+          AS x(snapshot_date, portfolio_value, vni_value, ord)
     );
   END IF;
 
@@ -714,7 +697,6 @@ BEGIN
   every := (data_count - 2.0) / (p_threshold - 2.0);
 
   FOR i IN 0..p_threshold - 3 LOOP
-
     range_start := floor(a * every)::int + 2;
     range_end := floor((a + 1) * every)::int + 1;
 
@@ -722,7 +704,6 @@ BEGIN
       range_end := data_count;
     END IF;
 
-    -- Compute next bucket average
     SELECT
       AVG(EXTRACT(EPOCH FROM r.snapshot_date)),
       AVG(r.portfolio_value)
@@ -754,17 +735,19 @@ BEGIN
     a := a + 1;
   END LOOP;
 
-  -- Add last point
   result_data := result_data || raw_data[data_count];
 
-  -- Return JSON
-  SELECT jsonb_agg(to_jsonb(x))
+  SELECT jsonb_build_object(
+    'd', jsonb_agg((extract(epoch from x.snapshot_date)/86400)::int ORDER BY x.ord),
+    'p', jsonb_agg(round(x.portfolio_value, 2)                      ORDER BY x.ord),
+    'v', jsonb_agg(round(x.vni_value, 2)                            ORDER BY x.ord)
+  )
   INTO final_result
-  FROM unnest(result_data) x;
+  FROM unnest(result_data) WITH ORDINALITY
+      AS x(snapshot_date, portfolio_value, vni_value, ord);
 
   RETURN final_result;
-END;
-$$;
+END;$$;
 
 
 ALTER FUNCTION "public"."get_return_chart"("p_start_date" "date", "p_end_date" "date", "p_threshold" integer) OWNER TO "postgres";
@@ -817,8 +800,6 @@ begin
 
   -- Refresh materialized views
   refresh materialized view concurrently public.daily_snapshots;
-  refresh materialized view public.dashboard_data;
-  refresh materialized view public.recaps_data;
 
   -- Get secrets from Vault
   select decrypted_secret
@@ -869,7 +850,17 @@ DECLARE
   v_cash_currency text;
   v_new_qty numeric;
   v_new_avg_cost numeric;
+  v_user_id uuid;
 BEGIN
+  -- Derive user_id from tx_entries (works for both trigger and rebuild_ledger paths)
+  SELECT e.user_id INTO v_user_id
+  FROM public.tx_entries e
+  WHERE e.id = p_tx_id;
+
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'tx_entries.user_id is NULL for tx_id %', p_tx_id;
+  END IF;
+
   -- Load transaction
   SELECT * INTO r FROM public.tx_cashflow WHERE tx_id = p_tx_id;
 
@@ -893,20 +884,23 @@ BEGIN
 
     -- Only update cost basis for non-VND assets
     IF v_cash_currency <> 'VND' THEN
-      SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
+      SELECT * INTO v_pos
+      FROM public.asset_positions
+      WHERE user_id = v_user_id AND asset_id = v_cash_asset;
+
       IF NOT FOUND THEN
-        INSERT INTO public.asset_positions (asset_id, quantity, average_cost)
-        VALUES (v_cash_asset, 0, 0)
+        INSERT INTO public.asset_positions (user_id, asset_id, quantity, average_cost)
+        VALUES (v_user_id, v_cash_asset, 0, 0)
         RETURNING * INTO v_pos;
       END IF;
 
       v_new_qty := v_pos.quantity + r.quantity;
-      v_new_avg_cost := (v_pos.average_cost * v_pos.quantity + r.net_proceed) / v_new_qty;
+      v_new_avg_cost := (v_pos.average_cost * v_pos.quantity + r.net_proceed)
+                        / v_new_qty;
 
       UPDATE public.asset_positions
-      SET quantity = v_new_qty,
-        average_cost = v_new_avg_cost
-      WHERE asset_id = v_cash_asset;
+      SET quantity = v_new_qty, average_cost = v_new_avg_cost
+      WHERE user_id = v_user_id AND asset_id = v_cash_asset;
     END IF;
 
   ELSE -- Withdraw and expense operation
@@ -920,18 +914,22 @@ BEGIN
 
     -- Only update positions for non-VND
     IF v_cash_currency <> 'VND' THEN
-        SELECT * INTO v_pos FROM public.asset_positions WHERE asset_id = v_cash_asset;
-        IF NOT FOUND THEN
-          RAISE EXCEPTION 'No position found for asset %, cannot withdraw', v_cash_asset;
-        END IF;
+      SELECT * INTO v_pos
+      FROM public.asset_positions
+      WHERE user_id = v_user_id AND asset_id = v_cash_asset;
 
-        IF v_pos.quantity < r.quantity THEN
-          RAISE EXCEPTION 'Not enough balance to withdraw %', r.tx_id;
-        END IF;
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'No position found for user % asset %, cannot withdraw',
+          v_user_id, v_cash_asset;
+      END IF;
 
-        UPDATE public.asset_positions
-        SET quantity = v_pos.quantity - r.quantity
-        WHERE asset_id = v_cash_asset;
+      IF v_pos.quantity < r.quantity THEN
+        RAISE EXCEPTION 'Not enough balance to withdraw %', r.tx_id;
+      END IF;
+
+      UPDATE public.asset_positions
+      SET quantity = v_pos.quantity - r.quantity
+      WHERE user_id = v_user_id AND asset_id = v_cash_asset;
     END IF;
   END IF;
 END;
@@ -1006,7 +1004,17 @@ declare
   v_new_avg_cost numeric;
   v_realized_gain numeric := 0;
   v_cost_basis numeric := 0;
+  v_user_id uuid;
 begin
+  -- Derive user_id from tx_entries (works for both trigger and rebuild_ledger paths)
+  SELECT e.user_id INTO v_user_id
+  FROM public.tx_entries e
+  WHERE e.id = p_tx_id;
+
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'tx_entries.user_id is NULL for tx_id %', p_tx_id;
+  END IF;
+
   -- Load the transaction
   select * into r from public.tx_stock where tx_id = p_tx_id;
 
@@ -1015,16 +1023,19 @@ begin
   select id into v_equity_asset from public.assets where ticker = 'CAPITAL';
   v_stock_asset := r.stock_id;
 
-  -- Fetch or initialize position
-  select * into v_pos from public.asset_positions where asset_id = r.stock_id;
+  -- Fetch or initialize position (scoped by user_id)
+  select * into v_pos
+  from public.asset_positions
+  where user_id = v_user_id and asset_id = r.stock_id;
+
   if not found then
-    insert into public.asset_positions (asset_id, quantity, average_cost)
-    values (r.stock_id, 0, 0)
+    insert into public.asset_positions (user_id, asset_id, quantity, average_cost)
+    values (v_user_id, r.stock_id, 0, 0)
     returning * into v_pos;
   end if;
 
   -- Process transaction
-  if r.side = 'buy' then
+  if r.operation = 'buy' then
     v_new_qty := v_pos.quantity + r.quantity;
     v_new_avg_cost :=
       case
@@ -1035,7 +1046,7 @@ begin
     update public.asset_positions
     set quantity = v_new_qty,
       average_cost = v_new_avg_cost
-    where asset_id = r.stock_id;
+    where user_id = v_user_id and asset_id = r.stock_id;
 
     -- Generate ledger for BUY
     delete from public.tx_legs where tx_id = p_tx_id;
@@ -1058,7 +1069,7 @@ begin
 
     update public.asset_positions
     set quantity = v_pos.quantity - r.quantity
-    where asset_id = r.stock_id;
+    where user_id = v_user_id and asset_id = r.stock_id;
 
     -- Generate ledger for SELL
     delete from public.tx_legs where tx_id = p_tx_id;
@@ -1077,8 +1088,8 @@ begin
       r.tx_id,
       v_equity_asset,
       v_realized_gain,
-      GREATEST(-v_realized_gain, 0), -- Debit equity when negative realized gain
-      GREATEST(v_realized_gain, 0) -- Credit equity when positive realized gain
+      GREATEST(-v_realized_gain, 0),
+      GREATEST(v_realized_gain, 0)
     );
   end if;
 end;
@@ -1091,9 +1102,8 @@ ALTER FUNCTION "public"."process_tx_stock"("p_tx_id" "uuid") OWNER TO "postgres"
 CREATE OR REPLACE FUNCTION "public"."rebuild_ledger"() RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
-    AS $$
-declare
-    r record;
+    AS $$declare
+    tx record;
 begin
     raise notice 'Rebuilding ledger (positions + legs)...';
 
@@ -1102,29 +1112,27 @@ begin
     truncate table public.asset_positions cascade;
 
     -- Step 2: replay all transactions in chronological order
-    for r in
-        select id as tx_id, category, created_at
+    for tx in
+        select id, category, created_at
         from public.tx_entries
-        where category in ('stock', 'cashflow', 'debt')
         order by created_at asc
     loop
-        if r.category = 'stock' then
-            perform public.process_tx_stock(r.tx_id);
+        if tx.category = 'stock' then
+            perform public.process_tx_stock(tx.id);
 
-        elsif r.category = 'cashflow' then
-            perform public.process_tx_cashflow(r.tx_id);
+        elsif tx.category = 'cashflow' then
+            perform public.process_tx_cashflow(tx.id);
 
-        elsif r.category = 'debt' then
-            perform public.process_tx_debt(r.tx_id);
+        elsif tx.category = 'debt' then
+            perform public.process_tx_debt(tx.id);
 
         else
-            raise notice 'Skipping unknown category % for tx_id %', r.category, r.tx_id;
+            raise notice 'Skipping unknown category % for id %', tx.category, tx.id;
         end if;
     end loop;
 
     raise notice 'Ledger rebuild completed.';
-end;
-$$;
+end;$$;
 
 
 ALTER FUNCTION "public"."rebuild_ledger"() OWNER TO "postgres";
@@ -1263,8 +1271,8 @@ CREATE TABLE IF NOT EXISTS "flight"."flights" (
     "seat" "text",
     "aircraft_id" "uuid",
     "notes" "text",
-    "seat_type" "flight"."seat_type_enum",
-    "seat_position" "flight"."seat_position_enum",
+    "seat_type" "flight"."seat_type",
+    "seat_position" "flight"."seat_position",
     "tail_number" "text",
     "user_id" "uuid"
 );
@@ -1410,7 +1418,8 @@ ALTER VIEW "flight"."lifetime_stats" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."asset_positions" (
     "asset_id" "uuid" NOT NULL,
     "quantity" numeric(18,2) DEFAULT 0 NOT NULL,
-    "average_cost" numeric(18,2) DEFAULT 0 NOT NULL
+    "average_cost" numeric(18,2) DEFAULT 0 NOT NULL,
+    "user_id" "uuid" NOT NULL
 );
 
 
@@ -1507,8 +1516,9 @@ ALTER TABLE "public"."tx_debt" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."tx_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "category" "text" NOT NULL,
-    "memo" "text"
+    "category" "public"."tx_category" NOT NULL,
+    "memo" "text" NOT NULL,
+    "user_id" "uuid"
 );
 
 
@@ -1535,8 +1545,13 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
          SELECT "dates"."snapshot_date"
            FROM "dates"
           WHERE (EXTRACT(isodow FROM "dates"."snapshot_date") <> ALL (ARRAY[(6)::numeric, (7)::numeric]))
+        ), "users" AS (
+         SELECT DISTINCT "tx_entries"."user_id"
+           FROM "public"."tx_entries"
+          WHERE ("tx_entries"."user_id" IS NOT NULL)
         ), "daily_deltas" AS (
-         SELECT ("e"."created_at")::"date" AS "activity_date",
+         SELECT "e"."user_id",
+            ("e"."created_at")::"date" AS "activity_date",
             "tl"."asset_id",
             "a"."currency_code",
             "sum"("tl"."quantity") AS "dq"
@@ -1544,16 +1559,18 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
              JOIN "public"."tx_entries" "e" ON (("e"."id" = "tl"."tx_id")))
              JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
           WHERE ("a"."asset_class" <> ALL (ARRAY['equity'::"public"."asset_class", 'liability'::"public"."asset_class"]))
-          GROUP BY (("e"."created_at")::"date"), "tl"."asset_id", "a"."currency_code"
+          GROUP BY "e"."user_id", (("e"."created_at")::"date"), "tl"."asset_id", "a"."currency_code"
         ), "asset_intervals" AS (
-         SELECT "daily_deltas"."asset_id",
+         SELECT "daily_deltas"."user_id",
+            "daily_deltas"."asset_id",
             "daily_deltas"."currency_code",
-            "sum"("daily_deltas"."dq") OVER (PARTITION BY "daily_deltas"."asset_id", "daily_deltas"."currency_code" ORDER BY "daily_deltas"."activity_date" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cum_qty",
+            "sum"("daily_deltas"."dq") OVER (PARTITION BY "daily_deltas"."user_id", "daily_deltas"."asset_id", "daily_deltas"."currency_code" ORDER BY "daily_deltas"."activity_date" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cum_qty",
             "daily_deltas"."activity_date" AS "valid_from",
-            COALESCE("lead"("daily_deltas"."activity_date") OVER (PARTITION BY "daily_deltas"."asset_id", "daily_deltas"."currency_code" ORDER BY "daily_deltas"."activity_date"), 'infinity'::"date") AS "valid_to"
+            COALESCE("lead"("daily_deltas"."activity_date") OVER (PARTITION BY "daily_deltas"."user_id", "daily_deltas"."asset_id", "daily_deltas"."currency_code" ORDER BY "daily_deltas"."activity_date"), 'infinity'::"date") AS "valid_to"
            FROM "daily_deltas"
         ), "positions" AS (
          SELECT ("gs"."d")::"date" AS "snapshot_date",
+            "ai"."user_id",
             "ai"."asset_id",
             "ai"."currency_code",
             "ai"."cum_qty" AS "quantity"
@@ -1562,7 +1579,8 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
                    FROM "public"."tx_entries"), '2021-11-09'::"date"))))::timestamp without time zone, (LEAST(("ai"."valid_to" - 1), CURRENT_DATE))::timestamp without time zone, '1 day'::interval) "gs"("d"))
           WHERE (EXTRACT(isodow FROM "gs"."d") <> ALL (ARRAY[(6)::numeric, (7)::numeric]))
         ), "total_assets_per_day" AS (
-         SELECT "pos"."snapshot_date",
+         SELECT "pos"."user_id",
+            "pos"."snapshot_date",
             COALESCE("sum"((("pos"."quantity" * COALESCE("pr"."price", (1)::numeric)) * COALESCE("fx"."rate", (1)::numeric))), (0)::numeric) AS "total_assets"
            FROM (("positions" "pos"
              LEFT JOIN LATERAL ( SELECT "hp"."close" AS "price"
@@ -1575,9 +1593,10 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
                   WHERE (("hf"."currency_code" = "pos"."currency_code") AND ("hf"."date" <= "pos"."snapshot_date"))
                   ORDER BY "hf"."date" DESC
                  LIMIT 1) "fx" ON (true))
-          GROUP BY "pos"."snapshot_date"
+          GROUP BY "pos"."user_id", "pos"."snapshot_date"
         ), "debt_events" AS (
-         SELECT "b"."tx_id" AS "borrow_tx_id",
+         SELECT "e_b"."user_id",
+            "b"."tx_id" AS "borrow_tx_id",
             "b"."principal",
             "b"."rate",
             ("e_b"."created_at")::"date" AS "borrow_date",
@@ -1589,6 +1608,7 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
           WHERE ("b"."operation" = 'borrow'::"text")
         ), "debt_balances_by_day" AS (
          SELECT "d"."snapshot_date",
+            "de"."user_id",
             "de"."borrow_tx_id",
             "de"."principal",
             "de"."rate",
@@ -1602,61 +1622,59 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
              CROSS JOIN "business_days" "d")
           WHERE ("de"."borrow_date" <= "d"."snapshot_date")
         ), "total_liabilities_per_day" AS (
-         SELECT "debt_balances_by_day"."snapshot_date",
+         SELECT "debt_balances_by_day"."user_id",
+            "debt_balances_by_day"."snapshot_date",
             COALESCE("sum"("debt_balances_by_day"."balance_at_date"), (0)::numeric) AS "total_liabilities"
            FROM "debt_balances_by_day"
-          GROUP BY "debt_balances_by_day"."snapshot_date"
+          GROUP BY "debt_balances_by_day"."user_id", "debt_balances_by_day"."snapshot_date"
         ), "net_cashflow_per_day" AS (
-         SELECT ("e"."created_at")::"date" AS "snapshot_date",
+         SELECT "e"."user_id",
+            ("e"."created_at")::"date" AS "snapshot_date",
             COALESCE(("sum"("tl"."credit") - "sum"("tl"."debit")), (0)::numeric) AS "net_cashflow"
            FROM ((("public"."tx_entries" "e"
              JOIN "public"."tx_legs" "tl" ON (("tl"."tx_id" = "e"."id")))
              JOIN "public"."assets" "a" ON (("a"."id" = "tl"."asset_id")))
              JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "e"."id")))
           WHERE (("cf"."operation" = ANY (ARRAY['deposit'::"public"."cashflow_ops", 'withdraw'::"public"."cashflow_ops"])) AND ("a"."asset_class" = 'equity'::"public"."asset_class"))
-          GROUP BY (("e"."created_at")::"date")
+          GROUP BY "e"."user_id", (("e"."created_at")::"date")
         ), "base" AS (
          SELECT "d"."snapshot_date",
-            COALESCE("tad"."total_assets", (0)::numeric) AS "total_assets",
-            COALESCE("tld"."total_liabilities", (0)::numeric) AS "total_liabilities",
+            "u"."user_id",
             COALESCE("nc"."net_cashflow", (0)::numeric) AS "net_cashflow",
-            (COALESCE("tad"."total_assets", (0)::numeric) - COALESCE("tld"."total_liabilities", (0)::numeric)) AS "net_equity"
-           FROM ((("business_days" "d"
-             LEFT JOIN "total_assets_per_day" "tad" ON (("tad"."snapshot_date" = "d"."snapshot_date")))
-             LEFT JOIN "total_liabilities_per_day" "tld" ON (("tld"."snapshot_date" = "d"."snapshot_date")))
-             LEFT JOIN "net_cashflow_per_day" "nc" ON (("nc"."snapshot_date" = "d"."snapshot_date")))
+            "round"((COALESCE("tad"."total_assets", (0)::numeric) - COALESCE("tld"."total_liabilities", (0)::numeric))) AS "net_equity"
+           FROM (((("business_days" "d"
+             CROSS JOIN "users" "u")
+             LEFT JOIN "total_assets_per_day" "tad" ON ((("tad"."snapshot_date" = "d"."snapshot_date") AND ("tad"."user_id" = "u"."user_id"))))
+             LEFT JOIN "total_liabilities_per_day" "tld" ON ((("tld"."snapshot_date" = "d"."snapshot_date") AND ("tld"."user_id" = "u"."user_id"))))
+             LEFT JOIN "net_cashflow_per_day" "nc" ON ((("nc"."snapshot_date" = "d"."snapshot_date") AND ("nc"."user_id" = "u"."user_id"))))
         ), "with_returns" AS (
          SELECT "b"."snapshot_date",
-            "b"."total_assets",
-            "b"."total_liabilities",
+            "b"."user_id",
             "b"."net_equity",
             "b"."net_cashflow",
-            COALESCE("sum"("b"."net_cashflow") OVER (ORDER BY "b"."snapshot_date" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), (0)::numeric) AS "cumulative_cashflow",
+            "round"(COALESCE("sum"("b"."net_cashflow") OVER (PARTITION BY "b"."user_id" ORDER BY "b"."snapshot_date" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), (0)::numeric)) AS "cumulative_cashflow",
                 CASE
-                    WHEN ("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date") IS NULL) THEN (0)::numeric
-                    WHEN ("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date") = (0)::numeric) THEN (0)::numeric
-                    ELSE ((("b"."net_equity" - "b"."net_cashflow") - "lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date")) / NULLIF("lag"("b"."net_equity") OVER (ORDER BY "b"."snapshot_date"), (0)::numeric))
+                    WHEN ("lag"("b"."net_equity") OVER (PARTITION BY "b"."user_id" ORDER BY "b"."snapshot_date") IS NULL) THEN (0)::numeric
+                    WHEN ("lag"("b"."net_equity") OVER (PARTITION BY "b"."user_id" ORDER BY "b"."snapshot_date") = (0)::numeric) THEN (0)::numeric
+                    ELSE ((("b"."net_equity" - "b"."net_cashflow") - "lag"("b"."net_equity") OVER (PARTITION BY "b"."user_id" ORDER BY "b"."snapshot_date")) / NULLIF("lag"("b"."net_equity") OVER (PARTITION BY "b"."user_id" ORDER BY "b"."snapshot_date"), (0)::numeric))
                 END AS "daily_return"
            FROM "base" "b"
         ), "with_index" AS (
          SELECT "with_returns"."snapshot_date",
-            "with_returns"."total_assets",
-            "with_returns"."total_liabilities",
+            "with_returns"."user_id",
             "with_returns"."net_equity",
             "with_returns"."net_cashflow",
             "with_returns"."cumulative_cashflow",
             "with_returns"."daily_return",
-            COALESCE(((1)::numeric + "with_returns"."daily_return"), (1)::numeric) AS "factor",
-            (("exp"("sum"("ln"(GREATEST("abs"(COALESCE(((1)::numeric + "with_returns"."daily_return"), (1)::numeric)), 0.000000000001))) OVER (ORDER BY "with_returns"."snapshot_date")) * (100)::numeric) * (
+            "round"((("exp"("sum"("ln"(GREATEST("abs"(COALESCE(((1)::numeric + "with_returns"."daily_return"), (1)::numeric)), 0.000000000001))) OVER (PARTITION BY "with_returns"."user_id" ORDER BY "with_returns"."snapshot_date")) * (100)::numeric) * (
                 CASE
-                    WHEN (("count"(*) FILTER (WHERE (((1)::numeric + "with_returns"."daily_return") < (0)::numeric)) OVER (ORDER BY "with_returns"."snapshot_date") % (2)::bigint) = 1) THEN '-1'::integer
+                    WHEN (("count"(*) FILTER (WHERE (((1)::numeric + "with_returns"."daily_return") < (0)::numeric)) OVER (PARTITION BY "with_returns"."user_id" ORDER BY "with_returns"."snapshot_date") % (2)::bigint) = 1) THEN '-1'::integer
                     ELSE 1
-                END)::numeric) AS "equity_index"
+                END)::numeric), 2) AS "equity_index"
            FROM "with_returns"
         )
  SELECT "snapshot_date",
-    "total_assets",
-    "total_liabilities",
+    "user_id",
     "net_equity",
     "net_cashflow",
     "cumulative_cashflow",
@@ -1666,216 +1684,6 @@ CREATE MATERIALIZED VIEW "public"."daily_snapshots" AS
 
 
 ALTER MATERIALIZED VIEW "public"."daily_snapshots" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
-    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "side" "text" NOT NULL,
-    "stock_id" "uuid" NOT NULL,
-    "price" numeric(16,0) DEFAULT 0 NOT NULL,
-    "quantity" numeric(16,0) NOT NULL,
-    "fee" numeric(16,0) NOT NULL,
-    "tax" numeric(16,0) DEFAULT 0 NOT NULL,
-    "net_proceed" numeric(16,0) GENERATED ALWAYS AS (
-CASE
-    WHEN ("side" = 'buy'::"text") THEN ((("price" * "quantity") + "fee") + "tax")
-    WHEN ("side" = 'sell'::"text") THEN ((("price" * "quantity") - "fee") - "tax")
-    ELSE (0)::numeric
-END) STORED NOT NULL
-);
-
-
-ALTER TABLE "public"."tx_stock" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='on') AS
- WITH "month_ranges" AS (
-         SELECT ("date_trunc"('month'::"text", "d"."d"))::"date" AS "month_start",
-            LEAST((("date_trunc"('month'::"text", "d"."d") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
-           FROM "generate_series"('2021-11-01 00:00:00+00'::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "d"("d")
-        ), "monthly_transactions" AS (
-         SELECT ("date_trunc"('month'::"text", "t"."created_at"))::"date" AS "month",
-            (COALESCE("sum"("s"."fee"), (0)::numeric) + COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%fee%'::"text")), (0)::numeric)) AS "total_fees",
-            COALESCE("sum"("s"."tax"), (0)::numeric) AS "total_taxes",
-            COALESCE("sum"("d"."interest"), (0)::numeric) AS "loan_interest",
-            COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%interest%'::"text")), (0)::numeric) AS "margin_interest"
-           FROM ((("public"."tx_entries" "t"
-             LEFT JOIN "public"."tx_debt" "d" ON (("d"."tx_id" = "t"."id")))
-             LEFT JOIN "public"."tx_stock" "s" ON (("s"."tx_id" = "t"."id")))
-             LEFT JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "t"."id")))
-          GROUP BY (("date_trunc"('month'::"text", "t"."created_at"))::"date")
-        ), "monthly_pnl" AS (
-         SELECT "m_1"."month_start",
-            "m_1"."month_end",
-            "start_s"."net_equity" AS "start_equity",
-            "end_s"."net_equity" AS "end_equity",
-            COALESCE("sum"("ds"."net_cashflow"), (0)::numeric) AS "cash_flow",
-            ((COALESCE("end_s"."net_equity", (0)::numeric) - COALESCE("start_s"."net_equity", (0)::numeric)) - COALESCE("sum"("ds"."net_cashflow"), (0)::numeric)) AS "pnl"
-           FROM ((("month_ranges" "m_1"
-             LEFT JOIN "public"."daily_snapshots" "ds" ON ((("ds"."snapshot_date" >= "m_1"."month_start") AND ("ds"."snapshot_date" <= "m_1"."month_end"))))
-             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
-                   FROM "public"."daily_snapshots" "s"
-                  WHERE ("s"."snapshot_date" < "m_1"."month_start")
-                  ORDER BY "s"."snapshot_date" DESC
-                 LIMIT 1) "start_s" ON (true))
-             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
-                   FROM "public"."daily_snapshots" "s"
-                  WHERE ("s"."snapshot_date" <= "m_1"."month_end")
-                  ORDER BY "s"."snapshot_date" DESC
-                 LIMIT 1) "end_s" ON (true))
-          GROUP BY "m_1"."month_start", "m_1"."month_end", "start_s"."net_equity", "end_s"."net_equity"
-        )
- SELECT "m"."month_start" AS "snapshot_date",
-    "mp"."pnl",
-    (COALESCE("mt"."loan_interest", (0)::numeric) + COALESCE("mt"."margin_interest", (0)::numeric)) AS "interest",
-    COALESCE("mt"."total_taxes", (0)::numeric) AS "tax",
-    COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
-   FROM (("month_ranges" "m"
-     LEFT JOIN "monthly_pnl" "mp" ON (("mp"."month_start" = "m"."month_start")))
-     LEFT JOIN "monthly_transactions" "mt" ON (("mt"."month" = "m"."month_start")));
-
-
-ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='on') AS
- WITH "borrow_tx" AS (
-         SELECT "d"."tx_id",
-            "d"."lender",
-            "d"."principal",
-            "d"."rate",
-            "e"."created_at" AS "borrow_date"
-           FROM ("public"."tx_debt" "d"
-             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
-          WHERE (("d"."operation" = 'borrow'::"text") AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
-                   FROM "public"."tx_debt"
-                  WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
-        )
- SELECT "tx_id",
-    "lender",
-    "principal",
-    "rate",
-    "borrow_date",
-    EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")) AS "duration",
-    "round"((("principal" * "power"(((1)::numeric + (("rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")))) - "principal"), 2) AS "interest"
-   FROM "borrow_tx" "b"
-  ORDER BY "borrow_date";
-
-
-ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."stock_holdings" WITH ("security_invoker"='on') AS
- WITH "latest_data" AS (
-         SELECT DISTINCT ON ("dsp"."asset_id") "dsp"."asset_id",
-            "dsp"."close" AS "price"
-           FROM "public"."historical_prices" "dsp"
-          ORDER BY "dsp"."asset_id", "dsp"."date" DESC
-        )
- SELECT "a"."ticker",
-    "a"."name",
-    "a"."logo_url",
-    "sum"("tl"."quantity") AS "quantity",
-    "sum"(("tl"."debit" - "tl"."credit")) AS "cost_basis",
-    COALESCE("ld"."price", (1)::numeric) AS "price"
-   FROM (("public"."assets" "a"
-     JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
-     LEFT JOIN "latest_data" "ld" ON (("ld"."asset_id" = "a"."id")))
-  WHERE ("a"."asset_class" = 'stock'::"public"."asset_class")
-  GROUP BY "a"."id", "a"."ticker", "a"."name", "a"."logo_url", "ld"."price"
- HAVING ("sum"("tl"."quantity") > (0)::numeric);
-
-
-ALTER VIEW "public"."stock_holdings" OWNER TO "postgres";
-
-
-CREATE MATERIALIZED VIEW "public"."dashboard_data" AS
- WITH "periods" AS (
-         SELECT CURRENT_DATE AS "today",
-            ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "ytd_date",
-            ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "mtd_date",
-            '2000-01-01'::"date" AS "inception_date",
-            ((CURRENT_DATE - '3 mons'::interval))::"date" AS "last3m_date",
-            ((CURRENT_DATE - '6 mons'::interval))::"date" AS "last6m_date",
-            ((CURRENT_DATE - '1 year'::interval))::"date" AS "last1y_date"
-        ), "pnl" AS (
-         SELECT "public"."calculate_pnl"("periods"."ytd_date", "periods"."today") AS "pnl_ytd",
-            "public"."calculate_pnl"("periods"."mtd_date", "periods"."today") AS "pnl_mtd"
-           FROM "periods"
-        ), "twr" AS (
-         SELECT "public"."calculate_twr"("periods"."ytd_date", "periods"."today") AS "twr_ytd",
-            "public"."calculate_twr"("periods"."inception_date", "periods"."today") AS "twr_all",
-                CASE
-                    WHEN ("periods"."today" > "periods"."inception_date") THEN ("power"(((1)::numeric + "public"."calculate_twr"("periods"."inception_date", "periods"."today")), (1.0 / ((("periods"."today" - ( SELECT "min"("monthly_snapshots"."snapshot_date") AS "min"
-                       FROM "public"."monthly_snapshots")))::numeric / 365.25))) - (1)::numeric)
-                    ELSE NULL::numeric
-                END AS "cagr"
-           FROM "periods"
-        ), "equity_chart" AS (
-         SELECT "jsonb_build_object"('last_3m', "public"."get_equity_chart"("periods"."last3m_date", "periods"."today", 150), 'last_6m', "public"."get_equity_chart"("periods"."last6m_date", "periods"."today", 150), 'last_1y', "public"."get_equity_chart"("periods"."last1y_date", "periods"."today", 150), 'all', "public"."get_equity_chart"("periods"."inception_date", "periods"."today", 150)) AS "equitychart"
-           FROM "periods"
-        ), "return_chart" AS (
-         SELECT "jsonb_build_object"('last_3m', "public"."get_return_chart"("periods"."last3m_date", "periods"."today", 150), 'last_6m', "public"."get_return_chart"("periods"."last6m_date", "periods"."today", 150), 'last_1y', "public"."get_return_chart"("periods"."last1y_date", "periods"."today", 150), 'all', "public"."get_return_chart"("periods"."inception_date", "periods"."today", 150)) AS "returnchart"
-           FROM "periods"
-        ), "balance" AS (
-         SELECT "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'equity'::"public"."asset_class")) AS "total_equity",
-            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'liability'::"public"."asset_class")) AS "total_liabilities",
-            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'fund'::"public"."asset_class")) AS "fund",
-            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'stock'::"public"."asset_class")) AS "stock",
-            "sum"("bs"."total_value") FILTER (WHERE ("bs"."asset_class" = 'cash'::"public"."asset_class")) AS "cash",
-            "max"("bs"."total_value") FILTER (WHERE ("bs"."ticker" = 'MARGIN'::"text")) AS "margin"
-           FROM "public"."balance_sheet" "bs"
-        ), "debt" AS (
-         SELECT "sum"(("od"."principal" + "od"."interest")) AS "debts"
-           FROM "public"."outstanding_debts" "od"
-        ), "monthly" AS (
-         SELECT "sum"("last_12"."pnl") AS "total_pnl",
-            "avg"("last_12"."pnl") AS "avg_profit",
-            (- "avg"((("last_12"."interest" + "last_12"."tax") + "last_12"."fee"))) AS "avg_expense",
-            ( SELECT "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("last_12"."pnl", (0)::numeric) + COALESCE("last_12"."fee", (0)::numeric)) + COALESCE("last_12"."interest", (0)::numeric)) + COALESCE("last_12"."tax", (0)::numeric)), 'fee', COALESCE((- "last_12"."fee"), (0)::numeric), 'interest', COALESCE((- "last_12"."interest"), (0)::numeric), 'tax', COALESCE((- "last_12"."tax"), (0)::numeric), 'snapshot_date', ("last_12"."snapshot_date")::"text") ORDER BY "last_12"."snapshot_date") AS "jsonb_agg") AS "profit_chart"
-           FROM ( SELECT "ms"."snapshot_date",
-                    "ms"."pnl",
-                    "ms"."interest",
-                    "ms"."tax",
-                    "ms"."fee"
-                   FROM "public"."monthly_snapshots" "ms"
-                  ORDER BY "ms"."snapshot_date" DESC
-                 LIMIT 12) "last_12"
-        ), "stock_positions" AS (
-         SELECT "jsonb_agg"("jsonb_build_object"('ticker', "sh"."ticker", 'name', "sh"."name", 'logo_url', "sh"."logo_url", 'quantity', "sh"."quantity", 'cost_basis', "sh"."cost_basis", 'price', "sh"."price") ORDER BY "sh"."ticker") AS "stock_list"
-           FROM "public"."stock_holdings" "sh"
-        )
- SELECT "pnl"."pnl_ytd",
-    "pnl"."pnl_mtd",
-    "twr"."twr_ytd",
-    "twr"."twr_all",
-    "twr"."cagr",
-    "balance"."total_equity",
-    "balance"."total_liabilities",
-    "balance"."fund",
-    "balance"."stock",
-    "balance"."cash",
-    "balance"."margin",
-    "debt"."debts",
-    "monthly"."total_pnl",
-    "monthly"."avg_profit",
-    "monthly"."avg_expense",
-    "monthly"."profit_chart",
-    "stock_positions"."stock_list",
-    "equity_chart"."equitychart",
-    "return_chart"."returnchart"
-   FROM ((((((("pnl"
-     CROSS JOIN "twr")
-     CROSS JOIN "balance")
-     CROSS JOIN "debt")
-     CROSS JOIN "monthly")
-     CROSS JOIN "stock_positions")
-     CROSS JOIN "equity_chart")
-     CROSS JOIN "return_chart")
-  WITH NO DATA;
-
-
-ALTER MATERIALIZED VIEW "public"."dashboard_data" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
@@ -1892,6 +1700,150 @@ CREATE TABLE IF NOT EXISTS "public"."dnse_orders" (
 
 
 ALTER TABLE "public"."dnse_orders" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."tx_stock" (
+    "tx_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "stock_id" "uuid" NOT NULL,
+    "price" numeric(16,0) DEFAULT 0 NOT NULL,
+    "quantity" numeric(16,0) NOT NULL,
+    "fee" numeric(16,0) NOT NULL,
+    "tax" numeric(16,0) DEFAULT 0 NOT NULL,
+    "operation" "text",
+    "net_proceed" numeric GENERATED ALWAYS AS (
+CASE
+    WHEN ("operation" = 'buy'::"text") THEN ((("price" * "quantity") + "fee") + "tax")
+    WHEN ("operation" = 'sell'::"text") THEN ((("price" * "quantity") - "fee") - "tax")
+    ELSE (0)::numeric
+END) STORED
+);
+
+
+ALTER TABLE "public"."tx_stock" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."monthly_snapshots" WITH ("security_invoker"='true') AS
+ WITH "month_ranges" AS (
+         SELECT ("date_trunc"('month'::"text", "d"."d"))::"date" AS "month_start",
+            LEAST((("date_trunc"('month'::"text", "d"."d") + '1 mon -1 days'::interval))::"date", CURRENT_DATE) AS "month_end"
+           FROM "generate_series"('2021-11-01 00:00:00+00'::timestamp with time zone, (CURRENT_DATE)::timestamp with time zone, '1 mon'::interval) "d"("d")
+        ), "users" AS (
+         SELECT DISTINCT "tx_entries"."user_id"
+           FROM "public"."tx_entries"
+          WHERE ("tx_entries"."user_id" IS NOT NULL)
+        ), "monthly_transactions" AS (
+         SELECT "t"."user_id",
+            ("date_trunc"('month'::"text", "t"."created_at"))::"date" AS "month",
+            (COALESCE("sum"("s"."fee"), (0)::numeric) + COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%fee%'::"text")), (0)::numeric)) AS "total_fees",
+            COALESCE("sum"("s"."tax"), (0)::numeric) AS "total_taxes",
+            COALESCE("sum"("d"."interest"), (0)::numeric) AS "loan_interest",
+            COALESCE("sum"("cf"."net_proceed") FILTER (WHERE ("t"."memo" ~~* '%interest%'::"text")), (0)::numeric) AS "margin_interest"
+           FROM ((("public"."tx_entries" "t"
+             LEFT JOIN "public"."tx_debt" "d" ON (("d"."tx_id" = "t"."id")))
+             LEFT JOIN "public"."tx_stock" "s" ON (("s"."tx_id" = "t"."id")))
+             LEFT JOIN "public"."tx_cashflow" "cf" ON (("cf"."tx_id" = "t"."id")))
+          GROUP BY "t"."user_id", (("date_trunc"('month'::"text", "t"."created_at"))::"date")
+        ), "monthly_pnl" AS (
+         SELECT "m_1"."month_start",
+            "m_1"."month_end",
+            "u_1"."user_id",
+            "start_s"."net_equity" AS "start_equity",
+            "end_s"."net_equity" AS "end_equity",
+            COALESCE("sum"("ds"."net_cashflow"), (0)::numeric) AS "cash_flow",
+            ((COALESCE("end_s"."net_equity", (0)::numeric) - COALESCE("start_s"."net_equity", (0)::numeric)) - COALESCE("sum"("ds"."net_cashflow"), (0)::numeric)) AS "pnl"
+           FROM (((("month_ranges" "m_1"
+             CROSS JOIN "users" "u_1")
+             LEFT JOIN "public"."daily_snapshots" "ds" ON ((("ds"."snapshot_date" >= "m_1"."month_start") AND ("ds"."snapshot_date" <= "m_1"."month_end") AND ("ds"."user_id" = "u_1"."user_id"))))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
+                   FROM "public"."daily_snapshots" "s"
+                  WHERE (("s"."user_id" = "u_1"."user_id") AND ("s"."snapshot_date" < "m_1"."month_start"))
+                  ORDER BY "s"."snapshot_date" DESC
+                 LIMIT 1) "start_s" ON (true))
+             LEFT JOIN LATERAL ( SELECT "s"."net_equity"
+                   FROM "public"."daily_snapshots" "s"
+                  WHERE (("s"."user_id" = "u_1"."user_id") AND ("s"."snapshot_date" <= "m_1"."month_end"))
+                  ORDER BY "s"."snapshot_date" DESC
+                 LIMIT 1) "end_s" ON (true))
+          GROUP BY "m_1"."month_start", "m_1"."month_end", "u_1"."user_id", "start_s"."net_equity", "end_s"."net_equity"
+        )
+ SELECT "m"."month_start" AS "snapshot_date",
+    "u"."user_id",
+    "mp"."pnl",
+    (COALESCE("mt"."loan_interest", (0)::numeric) + COALESCE("mt"."margin_interest", (0)::numeric)) AS "interest",
+    COALESCE("mt"."total_taxes", (0)::numeric) AS "tax",
+    COALESCE("mt"."total_fees", (0)::numeric) AS "fee"
+   FROM ((("month_ranges" "m"
+     CROSS JOIN "users" "u")
+     LEFT JOIN "monthly_pnl" "mp" ON ((("mp"."month_start" = "m"."month_start") AND ("mp"."user_id" = "u"."user_id"))))
+     LEFT JOIN "monthly_transactions" "mt" ON ((("mt"."month" = "m"."month_start") AND ("mt"."user_id" = "u"."user_id"))));
+
+
+ALTER VIEW "public"."monthly_snapshots" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."equity_return_data" WITH ("security_invoker"='true') AS
+ WITH "periods" AS (
+         SELECT CURRENT_DATE AS "today",
+            ("date_trunc"('year'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "ytd_date",
+            ("date_trunc"('month'::"text", (CURRENT_DATE)::timestamp with time zone))::"date" AS "mtd_date",
+            '2000-01-01'::"date" AS "inception_date",
+            ((CURRENT_DATE - '3 mons'::interval))::"date" AS "last3m_date",
+            ((CURRENT_DATE - '6 mons'::interval))::"date" AS "last6m_date",
+            ((CURRENT_DATE - '1 year'::interval))::"date" AS "last1y_date",
+            ( SELECT "min"("ms"."snapshot_date") AS "min"
+                   FROM "public"."monthly_snapshots" "ms"
+                  WHERE ("ms"."user_id" = "auth"."uid"())) AS "first_snapshot"
+        ), "metrics" AS (
+         SELECT "public"."calculate_pnl"("periods"."ytd_date", "periods"."today") AS "pnl_ytd",
+            "public"."calculate_pnl"("periods"."mtd_date", "periods"."today") AS "pnl_mtd",
+            "public"."calculate_twr"("periods"."ytd_date", "periods"."today") AS "twr_ytd",
+            "public"."calculate_twr"("periods"."inception_date", "periods"."today") AS "twr_all",
+            "periods"."today",
+            "periods"."inception_date",
+            "periods"."first_snapshot"
+           FROM "periods"
+        )
+ SELECT "m"."pnl_ytd",
+    "m"."pnl_mtd",
+    "m"."twr_ytd",
+    "m"."twr_all",
+    "b"."total_equity",
+        CASE
+            WHEN (("m"."today" > "m"."inception_date") AND ("m"."first_snapshot" IS NOT NULL)) THEN "round"((("power"(((1)::numeric + ("m"."twr_all" / 100.0)), (1.0 / ((("m"."today" - "m"."first_snapshot"))::numeric / 365.25))) - (1)::numeric) * 100.0), 1)
+            ELSE NULL::numeric
+        END AS "cagr",
+    "ec"."equitychart",
+    "rc"."returnchart"
+   FROM ((("metrics" "m"
+     CROSS JOIN LATERAL ( SELECT "round"("sum"("bs"."total_value")) AS "total_equity"
+           FROM "public"."balance_sheet" "bs"
+          WHERE ("bs"."asset_class" = 'equity'::"public"."asset_class")) "b")
+     CROSS JOIN LATERAL ( SELECT "jsonb_build_object"('last_3m', "public"."get_equity_chart"("p"."last3m_date", "p"."today"), 'last_6m', "public"."get_equity_chart"("p"."last6m_date", "p"."today"), 'last_1y', "public"."get_equity_chart"("p"."last1y_date", "p"."today"), 'all', "public"."get_equity_chart"("p"."inception_date", "p"."today")) AS "equitychart"
+           FROM "periods" "p") "ec")
+     CROSS JOIN LATERAL ( SELECT "jsonb_build_object"('last_3m', "public"."get_return_chart"("p"."last3m_date", "p"."today"), 'last_6m', "public"."get_return_chart"("p"."last6m_date", "p"."today"), 'last_1y', "public"."get_return_chart"("p"."last1y_date", "p"."today"), 'all', "public"."get_return_chart"("p"."inception_date", "p"."today")) AS "returnchart"
+           FROM "periods" "p") "rc");
+
+
+ALTER VIEW "public"."equity_return_data" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."last_1y_profit" WITH ("security_invoker"='true') AS
+ SELECT "round"("sum"("pnl")) AS "total_pnl",
+    "round"("avg"("pnl")) AS "avg_profit",
+    (- "round"("avg"(((COALESCE("interest", (0)::numeric) + COALESCE("tax", (0)::numeric)) + COALESCE("fee", (0)::numeric))))) AS "avg_expense",
+    "jsonb_build_object"('snapshot_date', "jsonb_agg"(("snapshot_date")::"text" ORDER BY "snapshot_date"), 'revenue', "jsonb_agg"((((COALESCE("pnl", (0)::numeric) + COALESCE("fee", (0)::numeric)) + COALESCE("interest", (0)::numeric)) + COALESCE("tax", (0)::numeric)) ORDER BY "snapshot_date"), 'fee', "jsonb_agg"(COALESCE((- "fee"), (0)::numeric) ORDER BY "snapshot_date"), 'interest', "jsonb_agg"(COALESCE((- "interest"), (0)::numeric) ORDER BY "snapshot_date"), 'tax', "jsonb_agg"(COALESCE((- "tax"), (0)::numeric) ORDER BY "snapshot_date")) AS "profit_chart"
+   FROM ( SELECT "ms2"."snapshot_date",
+            "ms2"."pnl",
+            "ms2"."interest",
+            "ms2"."tax",
+            "ms2"."fee"
+           FROM "public"."monthly_snapshots" "ms2"
+          WHERE ("ms2"."user_id" = "auth"."uid"())
+          ORDER BY "ms2"."snapshot_date" DESC
+         LIMIT 12) "ms";
+
+
+ALTER VIEW "public"."last_1y_profit" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."news_article_assets" (
@@ -1918,23 +1870,54 @@ CREATE TABLE IF NOT EXISTS "public"."news_articles" (
 ALTER TABLE "public"."news_articles" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on') AS
+CREATE OR REPLACE VIEW "public"."outstanding_debts" WITH ("security_invoker"='true') AS
+ WITH "borrow_tx" AS (
+         SELECT "d"."tx_id",
+            "d"."lender",
+            "d"."principal",
+            "d"."rate",
+            "e"."created_at" AS "borrow_date",
+            "e"."user_id"
+           FROM ("public"."tx_debt" "d"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "d"."tx_id")))
+          WHERE (("d"."operation" = 'borrow'::"text") AND ("e"."user_id" = "auth"."uid"()) AND (NOT ("d"."tx_id" IN ( SELECT DISTINCT "tx_debt"."repay_tx"
+                   FROM "public"."tx_debt"
+                  WHERE ("tx_debt"."repay_tx" IS NOT NULL)))))
+        )
+ SELECT "tx_id",
+    "lender",
+    "principal",
+    "rate",
+    "borrow_date",
+    EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")) AS "duration",
+    "round"((("principal" * "power"(((1)::numeric + (("rate" / (100)::numeric) / (365)::numeric)), EXTRACT(day FROM ((CURRENT_DATE)::timestamp with time zone - "borrow_date")))) - "principal"), 2) AS "interest"
+   FROM "borrow_tx" "b"
+  ORDER BY "borrow_date";
+
+
+ALTER VIEW "public"."outstanding_debts" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='true') AS
  WITH "capital_legs" AS (
          SELECT "tl"."tx_id",
             ("tl"."credit" - "tl"."debit") AS "capital_amount",
-            "t"."created_at"
+            "t"."created_at",
+            "t"."user_id"
            FROM (("public"."tx_legs" "tl"
              JOIN "public"."tx_entries" "t" ON (("t"."id" = "tl"."tx_id")))
              JOIN "public"."assets" "a_1" ON (("tl"."asset_id" = "a_1"."id")))
-          WHERE ("a_1"."ticker" = 'CAPITAL'::"text")
+          WHERE (("a_1"."ticker" = 'CAPITAL'::"text") AND ("t"."user_id" = "auth"."uid"()))
         ), "stock_legs" AS (
          SELECT "tl"."tx_id",
             "tl"."asset_id" AS "stock_id"
-           FROM ("public"."tx_legs" "tl"
+           FROM (("public"."tx_legs" "tl"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "tl"."tx_id")))
              JOIN "public"."assets" "a_1" ON (("a_1"."id" = "tl"."asset_id")))
-          WHERE ("a_1"."asset_class" = 'stock'::"public"."asset_class")
+          WHERE (("a_1"."asset_class" = 'stock'::"public"."asset_class") AND ("e"."user_id" = "auth"."uid"()))
         )
- SELECT (EXTRACT(year FROM "c"."created_at"))::integer AS "year",
+ SELECT "c"."user_id",
+    (EXTRACT(year FROM "c"."created_at"))::integer AS "year",
     "a"."ticker",
     "a"."name",
     "a"."logo_url",
@@ -1942,42 +1925,50 @@ CREATE OR REPLACE VIEW "public"."stock_annual_pnl" WITH ("security_invoker"='on'
    FROM (("capital_legs" "c"
      JOIN "stock_legs" "s" ON (("s"."tx_id" = "c"."tx_id")))
      JOIN "public"."assets" "a" ON (("a"."id" = "s"."stock_id")))
-  GROUP BY "a"."logo_url", "a"."name", "a"."ticker", (EXTRACT(year FROM "c"."created_at"));
+  GROUP BY "c"."user_id", "a"."logo_url", "a"."name", "a"."ticker", (EXTRACT(year FROM "c"."created_at"));
 
 
 ALTER VIEW "public"."stock_annual_pnl" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on') AS
- WITH "vn_asset" AS (
+CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='true') AS
+ WITH "users" AS (
+         SELECT DISTINCT "tx_entries"."user_id"
+           FROM "public"."tx_entries"
+          WHERE ("tx_entries"."user_id" IS NOT NULL)
+        ), "vn_asset" AS (
          SELECT "assets"."id"
            FROM "public"."assets"
           WHERE ("assets"."ticker" = '^VNINDEX'::"text")
         ), "annual_cashflow" AS (
-         SELECT (EXTRACT(year FROM "daily_snapshots"."snapshot_date"))::integer AS "year",
-            "sum"(GREATEST("daily_snapshots"."net_cashflow", (0)::numeric)) AS "deposits",
-            "sum"(LEAST("daily_snapshots"."net_cashflow", (0)::numeric)) AS "withdrawals"
-           FROM "public"."daily_snapshots"
-          GROUP BY ((EXTRACT(year FROM "daily_snapshots"."snapshot_date"))::integer)
+         SELECT "ds"."user_id",
+            (EXTRACT(year FROM "ds"."snapshot_date"))::integer AS "year",
+            "sum"(GREATEST("ds"."net_cashflow", (0)::numeric)) AS "deposits",
+            "sum"(LEAST("ds"."net_cashflow", (0)::numeric)) AS "withdrawals"
+           FROM "public"."daily_snapshots" "ds"
+          GROUP BY "ds"."user_id", ((EXTRACT(year FROM "ds"."snapshot_date"))::integer)
         ), "equity_ranked" AS (
-         SELECT (EXTRACT(year FROM "daily_snapshots"."snapshot_date"))::integer AS "year",
-            "daily_snapshots"."equity_index",
-            "row_number"() OVER (PARTITION BY (EXTRACT(year FROM "daily_snapshots"."snapshot_date")) ORDER BY "daily_snapshots"."snapshot_date") AS "rn_start",
-            "row_number"() OVER (PARTITION BY (EXTRACT(year FROM "daily_snapshots"."snapshot_date")) ORDER BY "daily_snapshots"."snapshot_date" DESC) AS "rn_end"
-           FROM "public"."daily_snapshots"
-          WHERE ("daily_snapshots"."equity_index" IS NOT NULL)
+         SELECT "ds"."user_id",
+            (EXTRACT(year FROM "ds"."snapshot_date"))::integer AS "year",
+            "ds"."equity_index",
+            "row_number"() OVER (PARTITION BY "ds"."user_id", (EXTRACT(year FROM "ds"."snapshot_date")) ORDER BY "ds"."snapshot_date") AS "rn_start",
+            "row_number"() OVER (PARTITION BY "ds"."user_id", (EXTRACT(year FROM "ds"."snapshot_date")) ORDER BY "ds"."snapshot_date" DESC) AS "rn_end"
+           FROM "public"."daily_snapshots" "ds"
+          WHERE ("ds"."equity_index" IS NOT NULL)
         ), "equity_returns" AS (
-         SELECT "t"."year",
+         SELECT "t"."user_id",
+            "t"."year",
             "round"(
                 CASE
                     WHEN ("t"."first_value" = (0)::numeric) THEN NULL::numeric
                     ELSE ((("t"."last_value" - "t"."first_value") / "t"."first_value") * (100)::numeric)
                 END, 2) AS "equity_ret"
-           FROM ( SELECT "equity_ranked"."year",
+           FROM ( SELECT "equity_ranked"."user_id",
+                    "equity_ranked"."year",
                     "max"("equity_ranked"."equity_index") FILTER (WHERE ("equity_ranked"."rn_start" = 1)) AS "first_value",
                     "max"("equity_ranked"."equity_index") FILTER (WHERE ("equity_ranked"."rn_end" = 1)) AS "last_value"
                    FROM "equity_ranked"
-                  GROUP BY "equity_ranked"."year") "t"
+                  GROUP BY "equity_ranked"."user_id", "equity_ranked"."year") "t"
         ), "vn_ranked" AS (
          SELECT (EXTRACT(year FROM "hp"."date"))::integer AS "year",
             "hp"."close",
@@ -1999,28 +1990,38 @@ CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on'
                    FROM "vn_ranked"
                   GROUP BY "vn_ranked"."year") "t"
         ), "yearly_combined" AS (
-         SELECT COALESCE("e"."year", "v"."year") AS "year",
+         SELECT COALESCE("e"."user_id", "ac"."user_id") AS "user_id",
+            COALESCE("e"."year", "ac"."year") AS "year",
             "e"."equity_ret",
-            "v"."vn_ret"
-           FROM ("equity_returns" "e"
-             FULL JOIN "vn_returns" "v" USING ("year"))
+            "v"."vn_ret",
+            "ac"."deposits",
+            "ac"."withdrawals"
+           FROM (("equity_returns" "e"
+             FULL JOIN "annual_cashflow" "ac" ON ((("ac"."user_id" = "e"."user_id") AND ("ac"."year" = "e"."year"))))
+             FULL JOIN "vn_returns" "v" ON (("v"."year" = COALESCE("e"."year", "ac"."year"))))
         ), "all_time_cashflow" AS (
-         SELECT "sum"(GREATEST("daily_snapshots"."net_cashflow", (0)::numeric)) AS "deposits",
-            "sum"(LEAST("daily_snapshots"."net_cashflow", (0)::numeric)) AS "withdrawals"
-           FROM "public"."daily_snapshots"
+         SELECT "ds"."user_id",
+            "sum"(GREATEST("ds"."net_cashflow", (0)::numeric)) AS "deposits",
+            "sum"(LEAST("ds"."net_cashflow", (0)::numeric)) AS "withdrawals"
+           FROM "public"."daily_snapshots" "ds"
+          GROUP BY "ds"."user_id"
         ), "all_time_equity" AS (
-         SELECT "round"(
+         SELECT "t"."user_id",
+            "round"(
                 CASE
-                    WHEN ("t2"."first_value" = (0)::numeric) THEN NULL::numeric
-                    ELSE ((("t2"."last_value" - "t2"."first_value") / "t2"."first_value") * (100)::numeric)
+                    WHEN ("t"."first_value" = (0)::numeric) THEN NULL::numeric
+                    ELSE ((("t"."last_value" - "t"."first_value") / "t"."first_value") * (100)::numeric)
                 END, 2) AS "equity_ret"
-           FROM ( SELECT "max"("t"."equity_index") FILTER (WHERE ("t"."rn_start" = 1)) AS "first_value",
-                    "max"("t"."equity_index") FILTER (WHERE ("t"."rn_end" = 1)) AS "last_value"
-                   FROM ( SELECT "daily_snapshots"."equity_index",
-                            "row_number"() OVER (ORDER BY "daily_snapshots"."snapshot_date") AS "rn_start",
-                            "row_number"() OVER (ORDER BY "daily_snapshots"."snapshot_date" DESC) AS "rn_end"
-                           FROM "public"."daily_snapshots"
-                          WHERE ("daily_snapshots"."equity_index" IS NOT NULL)) "t") "t2"
+           FROM ( SELECT "ds"."user_id",
+                    "max"("ds"."equity_index") FILTER (WHERE ("ds"."rn_start" = 1)) AS "first_value",
+                    "max"("ds"."equity_index") FILTER (WHERE ("ds"."rn_end" = 1)) AS "last_value"
+                   FROM ( SELECT "ds2"."user_id",
+                            "ds2"."equity_index",
+                            "row_number"() OVER (PARTITION BY "ds2"."user_id" ORDER BY "ds2"."snapshot_date") AS "rn_start",
+                            "row_number"() OVER (PARTITION BY "ds2"."user_id" ORDER BY "ds2"."snapshot_date" DESC) AS "rn_end"
+                           FROM "public"."daily_snapshots" "ds2"
+                          WHERE ("ds2"."equity_index" IS NOT NULL)) "ds"
+                  GROUP BY "ds"."user_id") "t"
         ), "all_time_vn" AS (
          SELECT "round"(
                 CASE
@@ -2036,24 +2037,26 @@ CREATE OR REPLACE VIEW "public"."yearly_snapshots" WITH ("security_invoker"='on'
                              CROSS JOIN "vn_asset" "va")
                           WHERE ("hp"."asset_id" = "va"."id")) "t") "t2"
         ), "all_time" AS (
-         SELECT 9999 AS "year",
+         SELECT "ate"."user_id",
+            9999 AS "year",
             "atc"."deposits",
             "atc"."withdrawals",
             "ate"."equity_ret",
             "atv"."vn_ret"
            FROM (("all_time_cashflow" "atc"
-             CROSS JOIN "all_time_equity" "ate")
+             JOIN "all_time_equity" "ate" ON (("ate"."user_id" = "atc"."user_id")))
              CROSS JOIN "all_time_vn" "atv")
         )
- SELECT "yc"."year",
-    "ac"."deposits",
-    "ac"."withdrawals",
+ SELECT "yc"."user_id",
+    "yc"."year",
+    "yc"."deposits",
+    "yc"."withdrawals",
     "yc"."equity_ret",
     "yc"."vn_ret"
-   FROM ("yearly_combined" "yc"
-     LEFT JOIN "annual_cashflow" "ac" USING ("year"))
+   FROM "yearly_combined" "yc"
 UNION ALL
- SELECT "all_time"."year",
+ SELECT "all_time"."user_id",
+    "all_time"."year",
     "all_time"."deposits",
     "all_time"."withdrawals",
     "all_time"."equity_ret",
@@ -2064,61 +2067,79 @@ UNION ALL
 ALTER VIEW "public"."yearly_snapshots" OWNER TO "postgres";
 
 
-CREATE MATERIALIZED VIEW "public"."recaps_data" AS
+CREATE OR REPLACE VIEW "public"."performance_data" WITH ("security_invoker"='true') AS
  WITH "stock_base" AS (
-         SELECT "stock_annual_pnl"."year",
-            "jsonb_agg"("jsonb_build_object"('ticker', "stock_annual_pnl"."ticker", 'name', "stock_annual_pnl"."name", 'logo_url', "stock_annual_pnl"."logo_url", 'total_pnl', "stock_annual_pnl"."total_pnl") ORDER BY "stock_annual_pnl"."ticker") AS "stock_pnl"
-           FROM "public"."stock_annual_pnl"
-          GROUP BY "stock_annual_pnl"."year"
+         SELECT "sap"."user_id",
+            "sap"."year",
+            "jsonb_agg"("jsonb_build_object"('ticker', "sap"."ticker", 'name', "sap"."name", 'logo_url', "sap"."logo_url", 'total_pnl', "sap"."total_pnl") ORDER BY "sap"."ticker") AS "stock_pnl"
+           FROM "public"."stock_annual_pnl" "sap"
+          WHERE ("sap"."user_id" = "auth"."uid"())
+          GROUP BY "sap"."user_id", "sap"."year"
         ), "stock_all_time" AS (
-         SELECT 9999 AS "year",
-            "jsonb_agg"("jsonb_build_object"('ticker', "agg"."ticker", 'name', "agg"."name", 'logo_url', "agg"."logo_url", 'total_pnl', "agg"."total_pnl") ORDER BY "agg"."ticker") AS "stock_pnl"
-           FROM ( SELECT "stock_annual_pnl"."ticker",
-                    "stock_annual_pnl"."name",
-                    "stock_annual_pnl"."logo_url",
-                    "sum"("stock_annual_pnl"."total_pnl") AS "total_pnl"
-                   FROM "public"."stock_annual_pnl"
-                  GROUP BY "stock_annual_pnl"."ticker", "stock_annual_pnl"."name", "stock_annual_pnl"."logo_url") "agg"
+         SELECT "sap"."user_id",
+            9999 AS "year",
+            "jsonb_agg"("jsonb_build_object"('ticker', "sap"."ticker", 'name', "sap"."name", 'logo_url', "sap"."logo_url", 'total_pnl', "sap"."total_pnl") ORDER BY "sap"."ticker") AS "stock_pnl"
+           FROM ( SELECT "sap_1"."user_id",
+                    "sap_1"."ticker",
+                    "sap_1"."name",
+                    "sap_1"."logo_url",
+                    "sum"("sap_1"."total_pnl") AS "total_pnl"
+                   FROM "public"."stock_annual_pnl" "sap_1"
+                  WHERE ("sap_1"."user_id" = "auth"."uid"())
+                  GROUP BY "sap_1"."user_id", "sap_1"."ticker", "sap_1"."name", "sap_1"."logo_url") "sap"
+          GROUP BY "sap"."user_id"
         ), "profit_base" AS (
-         SELECT (EXTRACT(year FROM "monthly_snapshots"."snapshot_date"))::integer AS "year",
-            "sum"("monthly_snapshots"."pnl") AS "total_pnl",
-            "avg"("monthly_snapshots"."pnl") AS "avg_profit",
-            (- "avg"((("monthly_snapshots"."interest" + "monthly_snapshots"."tax") + "monthly_snapshots"."fee"))) AS "avg_expense",
-            "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("monthly_snapshots"."pnl", (0)::numeric) + COALESCE("monthly_snapshots"."fee", (0)::numeric)) + COALESCE("monthly_snapshots"."interest", (0)::numeric)) + COALESCE("monthly_snapshots"."tax", (0)::numeric)), 'fee', COALESCE((- "monthly_snapshots"."fee"), (0)::numeric), 'interest', COALESCE((- "monthly_snapshots"."interest"), (0)::numeric), 'tax', COALESCE((- "monthly_snapshots"."tax"), (0)::numeric), 'snapshot_date', ("monthly_snapshots"."snapshot_date")::"text") ORDER BY "monthly_snapshots"."snapshot_date") AS "profit_chart"
-           FROM "public"."monthly_snapshots"
-          GROUP BY (EXTRACT(year FROM "monthly_snapshots"."snapshot_date"))
+         SELECT "ms"."user_id",
+            (EXTRACT(year FROM "ms"."snapshot_date"))::integer AS "year",
+            "round"("sum"("ms"."pnl")) AS "total_pnl",
+            "round"("avg"("ms"."pnl")) AS "avg_profit",
+            "round"((- "avg"(((COALESCE("ms"."interest", (0)::numeric) + COALESCE("ms"."tax", (0)::numeric)) + COALESCE("ms"."fee", (0)::numeric))))) AS "avg_expense",
+            "jsonb_build_object"('snapshot_date', "jsonb_agg"(("ms"."snapshot_date")::"text" ORDER BY "ms"."snapshot_date"), 'revenue', "jsonb_agg"("round"((((COALESCE("ms"."pnl", (0)::numeric) + COALESCE("ms"."fee", (0)::numeric)) + COALESCE("ms"."interest", (0)::numeric)) + COALESCE("ms"."tax", (0)::numeric))) ORDER BY "ms"."snapshot_date"), 'fee', "jsonb_agg"("round"(COALESCE((- "ms"."fee"), (0)::numeric)) ORDER BY "ms"."snapshot_date"), 'interest', "jsonb_agg"("round"(COALESCE((- "ms"."interest"), (0)::numeric)) ORDER BY "ms"."snapshot_date"), 'tax', "jsonb_agg"("round"(COALESCE((- "ms"."tax"), (0)::numeric)) ORDER BY "ms"."snapshot_date")) AS "profit_chart"
+           FROM "public"."monthly_snapshots" "ms"
+          WHERE ("ms"."user_id" = "auth"."uid"())
+          GROUP BY "ms"."user_id", (EXTRACT(year FROM "ms"."snapshot_date"))
         ), "profit_all_time" AS (
-         SELECT 9999 AS "year",
-            "sum"("yearly"."sum_pnl") AS "total_pnl",
-            "avg"("yearly"."sum_pnl") AS "avg_profit",
-            (- "avg"((("yearly"."sum_interest" + "yearly"."sum_tax") + "yearly"."sum_fee"))) AS "avg_expense",
-            "jsonb_agg"("jsonb_build_object"('revenue', (((COALESCE("yearly"."sum_pnl", (0)::numeric) + COALESCE("yearly"."sum_fee", (0)::numeric)) + COALESCE("yearly"."sum_interest", (0)::numeric)) + COALESCE("yearly"."sum_tax", (0)::numeric)), 'fee', COALESCE((- "yearly"."sum_fee"), (0)::numeric), 'interest', COALESCE((- "yearly"."sum_interest"), (0)::numeric), 'tax', COALESCE((- "yearly"."sum_tax"), (0)::numeric), 'snapshot_date', ("yearly"."year")::"text") ORDER BY "yearly"."year") AS "profit_chart"
-           FROM ( SELECT (EXTRACT(year FROM "monthly_snapshots"."snapshot_date"))::integer AS "year",
-                    "sum"("monthly_snapshots"."pnl") AS "sum_pnl",
-                    "sum"("monthly_snapshots"."fee") AS "sum_fee",
-                    "sum"("monthly_snapshots"."interest") AS "sum_interest",
-                    "sum"("monthly_snapshots"."tax") AS "sum_tax"
-                   FROM "public"."monthly_snapshots"
-                  GROUP BY (EXTRACT(year FROM "monthly_snapshots"."snapshot_date"))) "yearly"
+         SELECT "yearly"."user_id",
+            9999 AS "year",
+            "round"("sum"("yearly"."sum_pnl")) AS "total_pnl",
+            "round"("avg"("yearly"."sum_pnl")) AS "avg_profit",
+            "round"((- "avg"(((COALESCE("yearly"."sum_interest", (0)::numeric) + COALESCE("yearly"."sum_tax", (0)::numeric)) + COALESCE("yearly"."sum_fee", (0)::numeric))))) AS "avg_expense",
+            "jsonb_build_object"('snapshot_date', "jsonb_agg"(("yearly"."year")::"text" ORDER BY "yearly"."year"), 'revenue', "jsonb_agg"((((COALESCE("yearly"."sum_pnl", (0)::numeric) + COALESCE("yearly"."sum_fee", (0)::numeric)) + COALESCE("yearly"."sum_interest", (0)::numeric)) + COALESCE("yearly"."sum_tax", (0)::numeric)) ORDER BY "yearly"."year"), 'fee', "jsonb_agg"(COALESCE((- "yearly"."sum_fee"), (0)::numeric) ORDER BY "yearly"."year"), 'interest', "jsonb_agg"(COALESCE((- "yearly"."sum_interest"), (0)::numeric) ORDER BY "yearly"."year"), 'tax', "jsonb_agg"(COALESCE((- "yearly"."sum_tax"), (0)::numeric) ORDER BY "yearly"."year")) AS "profit_chart"
+           FROM ( SELECT "ms"."user_id",
+                    (EXTRACT(year FROM "ms"."snapshot_date"))::integer AS "year",
+                    "sum"("ms"."pnl") AS "sum_pnl",
+                    "sum"("ms"."fee") AS "sum_fee",
+                    "sum"("ms"."interest") AS "sum_interest",
+                    "sum"("ms"."tax") AS "sum_tax"
+                   FROM "public"."monthly_snapshots" "ms"
+                  WHERE ("ms"."user_id" = "auth"."uid"())
+                  GROUP BY "ms"."user_id", (EXTRACT(year FROM "ms"."snapshot_date"))) "yearly"
+          GROUP BY "yearly"."user_id"
         ), "date_bounds" AS (
-         SELECT "y"."year",
+         SELECT "y"."user_id",
+            "y"."year",
                 CASE
-                    WHEN ("y"."year" = 9999) THEN ( SELECT "min"("daily_snapshots"."snapshot_date") AS "min"
-                       FROM "public"."daily_snapshots")
+                    WHEN ("y"."year" = 9999) THEN ( SELECT "min"("ds"."snapshot_date") AS "min"
+                       FROM "public"."daily_snapshots" "ds"
+                      WHERE ("ds"."user_id" = "y"."user_id"))
                     ELSE "make_date"("y"."year", 1, 1)
                 END AS "start_date",
                 CASE
-                    WHEN ("y"."year" = 9999) THEN ( SELECT "max"("daily_snapshots"."snapshot_date") AS "max"
-                       FROM "public"."daily_snapshots")
+                    WHEN ("y"."year" = 9999) THEN ( SELECT "max"("ds"."snapshot_date") AS "max"
+                       FROM "public"."daily_snapshots" "ds"
+                      WHERE ("ds"."user_id" = "y"."user_id"))
                     ELSE "make_date"("y"."year", 12, 31)
                 END AS "end_date"
-           FROM ( SELECT "stock_base"."year"
-                   FROM "stock_base"
+           FROM ( SELECT "sb"."user_id",
+                    "sb"."year"
+                   FROM "stock_base" "sb"
                 UNION
-                 SELECT "stock_all_time"."year"
-                   FROM "stock_all_time") "y"
+                 SELECT "sat"."user_id",
+                    "sat"."year"
+                   FROM "stock_all_time" "sat") "y"
         ), "combined" AS (
-         SELECT "b"."year",
+         SELECT "b"."user_id",
+            "b"."year",
             "b"."stock_pnl",
             "p"."total_pnl",
             "p"."avg_profit",
@@ -2129,10 +2150,11 @@ CREATE MATERIALIZED VIEW "public"."recaps_data" AS
             "ys"."equity_ret",
             "ys"."vn_ret"
            FROM (("stock_base" "b"
-             LEFT JOIN "profit_base" "p" USING ("year"))
-             LEFT JOIN "public"."yearly_snapshots" "ys" USING ("year"))
+             LEFT JOIN "profit_base" "p" ON ((("p"."user_id" = "b"."user_id") AND ("p"."year" = "b"."year"))))
+             LEFT JOIN "public"."yearly_snapshots" "ys" ON ((("ys"."user_id" = "b"."user_id") AND ("ys"."year" = "b"."year"))))
         UNION ALL
-         SELECT "s"."year",
+         SELECT "s"."user_id",
+            "s"."year",
             "s"."stock_pnl",
             "p"."total_pnl",
             "p"."avg_profit",
@@ -2143,10 +2165,11 @@ CREATE MATERIALIZED VIEW "public"."recaps_data" AS
             "ys"."equity_ret",
             "ys"."vn_ret"
            FROM (("stock_all_time" "s"
-             LEFT JOIN "profit_all_time" "p" USING ("year"))
-             LEFT JOIN "public"."yearly_snapshots" "ys" USING ("year"))
+             LEFT JOIN "profit_all_time" "p" ON ((("p"."user_id" = "s"."user_id") AND ("p"."year" = "s"."year"))))
+             LEFT JOIN "public"."yearly_snapshots" "ys" ON ((("ys"."user_id" = "s"."user_id") AND ("ys"."year" = "s"."year"))))
         )
- SELECT "c"."year",
+ SELECT "c"."user_id",
+    "c"."year",
     "c"."stock_pnl",
     "c"."total_pnl",
     "c"."avg_profit",
@@ -2156,13 +2179,12 @@ CREATE MATERIALIZED VIEW "public"."recaps_data" AS
     "c"."withdrawals",
     "c"."equity_ret",
     "c"."vn_ret",
-    "public"."get_return_chart"("db"."start_date", "db"."end_date", 150) AS "return_chart"
+    "public"."get_return_chart"("db"."start_date", "db"."end_date") AS "return_chart"
    FROM ("combined" "c"
-     JOIN "date_bounds" "db" USING ("year"))
-  WITH NO DATA;
+     JOIN "date_bounds" "db" ON ((("db"."user_id" = "c"."user_id") AND ("db"."year" = "c"."year"))));
 
 
-ALTER MATERIALIZED VIEW "public"."recaps_data" OWNER TO "postgres";
+ALTER VIEW "public"."performance_data" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."refresh_queue" (
@@ -2189,25 +2211,26 @@ ALTER SEQUENCE "public"."refresh_queue_id_seq" OWNED BY "public"."refresh_queue"
 
 
 
-CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='on') AS
+CREATE OR REPLACE VIEW "public"."tx_summary" WITH ("security_invoker"='true') AS
  SELECT "t"."id",
     "t"."created_at",
     "t"."category",
         CASE
-            WHEN ("t"."category" = 'stock'::"text") THEN "s"."side"
-            WHEN ("t"."category" = 'cashflow'::"text") THEN ("cf"."operation")::"text"
+            WHEN ("t"."category" = 'stock'::"public"."tx_category") THEN "s"."operation"
+            WHEN ("t"."category" = 'cashflow'::"public"."tx_category") THEN ("cf"."operation")::"text"
             ELSE "d"."operation"
         END AS "operation",
         CASE
-            WHEN ("t"."category" = 'stock'::"text") THEN "s"."net_proceed"
-            WHEN ("t"."category" = 'cashflow'::"text") THEN "cf"."net_proceed"
+            WHEN ("t"."category" = 'stock'::"public"."tx_category") THEN "s"."net_proceed"
+            WHEN ("t"."category" = 'cashflow'::"public"."tx_category") THEN "cf"."net_proceed"
             ELSE "d"."net_proceed"
         END AS "value",
     "t"."memo"
    FROM ((("public"."tx_entries" "t"
      LEFT JOIN "public"."tx_stock" "s" ON (("t"."id" = "s"."tx_id")))
      LEFT JOIN "public"."tx_cashflow" "cf" ON (("t"."id" = "cf"."tx_id")))
-     LEFT JOIN "public"."tx_debt" "d" ON (("t"."id" = "d"."tx_id")));
+     LEFT JOIN "public"."tx_debt" "d" ON (("t"."id" = "d"."tx_id")))
+  WHERE ("t"."user_id" = "auth"."uid"());
 
 
 ALTER VIEW "public"."tx_summary" OWNER TO "postgres";
@@ -2249,6 +2272,11 @@ ALTER TABLE ONLY "flight"."airports"
 
 ALTER TABLE ONLY "flight"."flights"
     ADD CONSTRAINT "flights_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."asset_positions"
+    ADD CONSTRAINT "asset_positions_pkey" PRIMARY KEY ("user_id", "asset_id");
 
 
 
@@ -2302,11 +2330,6 @@ ALTER TABLE ONLY "public"."refresh_queue"
 
 
 
-ALTER TABLE ONLY "public"."asset_positions"
-    ADD CONSTRAINT "stock_positions_pkey" PRIMARY KEY ("asset_id");
-
-
-
 ALTER TABLE ONLY "public"."tx_cashflow"
     ADD CONSTRAINT "tx_cashflow_pkey" PRIMARY KEY ("tx_id");
 
@@ -2356,7 +2379,7 @@ CREATE INDEX "assets_currency_code_idx" ON "public"."assets" USING "btree" ("cur
 
 
 
-CREATE UNIQUE INDEX "daily_snapshots_date_uidx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date");
+CREATE UNIQUE INDEX "daily_snapshots_date_user_uidx" ON "public"."daily_snapshots" USING "btree" ("snapshot_date", "user_id");
 
 
 
@@ -2384,18 +2407,27 @@ CREATE INDEX "tx_stock_stock_id_idx" ON "public"."tx_stock" USING "btree" ("stoc
 
 
 
-CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') AS
- WITH "stock" AS (
+CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='true') AS
+ WITH "user_legs" AS (
+         SELECT "tl"."tx_id",
+            "tl"."asset_id",
+            "tl"."quantity",
+            "tl"."debit",
+            "tl"."credit"
+           FROM ("public"."tx_legs" "tl"
+             JOIN "public"."tx_entries" "e" ON (("e"."id" = "tl"."tx_id")))
+          WHERE ("e"."user_id" = "auth"."uid"())
+        ), "stock" AS (
          SELECT "a"."ticker",
                 CASE
                     WHEN ("a"."asset_class" = 'stock'::"public"."asset_class") THEN "sp"."price"
                     ELSE "er"."rate"
                 END AS "mkt_price",
-            ("sum"("tl"."debit") - "sum"("tl"."credit")) AS "cost_basis",
-            "sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value",
-            ("sum"((("tl"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) - ("sum"("tl"."debit") - "sum"("tl"."credit"))) AS "net_profit"
+            ("sum"("ul"."debit") - "sum"("ul"."credit")) AS "cost_basis",
+            "sum"((("ul"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) AS "market_value",
+            ("sum"((("ul"."quantity" * COALESCE("sp"."price", (1)::numeric)) * COALESCE("er"."rate", (1)::numeric))) - ("sum"("ul"."debit") - "sum"("ul"."credit"))) AS "net_profit"
            FROM ((("public"."assets" "a"
-             JOIN "public"."tx_legs" "tl" ON (("a"."id" = "tl"."asset_id")))
+             JOIN "user_legs" "ul" ON (("a"."id" = "ul"."asset_id")))
              LEFT JOIN LATERAL ( SELECT "hp"."close" AS "price"
                    FROM "public"."historical_prices" "hp"
                   WHERE ("hp"."asset_id" = "a"."id")
@@ -2416,9 +2448,9 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
                    FROM "debt_interest")) AS "?column?"
            FROM "stock" "s_1"
         ), "margin" AS (
-         SELECT GREATEST((- "sum"("tl"."quantity")), (0)::numeric) AS "greatest"
-           FROM ("public"."tx_legs" "tl"
-             JOIN "public"."assets" "a" ON (("tl"."asset_id" = "a"."id")))
+         SELECT GREATEST((- "sum"("ul"."quantity")), (0)::numeric) AS "greatest"
+           FROM ("user_legs" "ul"
+             JOIN "public"."assets" "a" ON (("ul"."asset_id" = "a"."id")))
           WHERE ("a"."ticker" = 'FX.VND'::"text")
         ), "asset_quantity" AS (
          SELECT "a"."ticker",
@@ -2433,10 +2465,10 @@ CREATE OR REPLACE VIEW "public"."balance_sheet" WITH ("security_invoker"='on') A
                        FROM "pnl")
                     WHEN ("a"."ticker" = 'MARGIN'::"text") THEN ( SELECT "margin"."greatest"
                        FROM "margin")
-                    ELSE GREATEST("sum"("tl"."quantity"), (0)::numeric)
+                    ELSE GREATEST("sum"("ul"."quantity"), (0)::numeric)
                 END AS "quantity"
            FROM ("public"."assets" "a"
-             LEFT JOIN "public"."tx_legs" "tl" ON (("tl"."asset_id" = "a"."id")))
+             LEFT JOIN "user_legs" "ul" ON (("ul"."asset_id" = "a"."id")))
           WHERE ("a"."asset_class" <> 'index'::"public"."asset_class")
           GROUP BY "a"."id", "a"."ticker", "a"."asset_class"
         )
@@ -2515,6 +2547,11 @@ ALTER TABLE ONLY "flight"."flights"
 
 
 
+ALTER TABLE ONLY "public"."asset_positions"
+    ADD CONSTRAINT "asset_positions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."assets"
     ADD CONSTRAINT "assets_currency_fkey" FOREIGN KEY ("currency_code") REFERENCES "public"."currencies"("code") ON UPDATE CASCADE ON DELETE RESTRICT;
 
@@ -2562,6 +2599,11 @@ ALTER TABLE ONLY "public"."tx_cashflow"
 
 ALTER TABLE ONLY "public"."tx_debt"
     ADD CONSTRAINT "tx_debt_tx_id_fkey" FOREIGN KEY ("tx_id") REFERENCES "public"."tx_entries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tx_entries"
+    ADD CONSTRAINT "tx_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
@@ -2625,19 +2667,11 @@ CREATE POLICY "Auth users can insert into refresh_queue" ON "public"."refresh_qu
 
 
 
-CREATE POLICY "Auth users can read asset_positions" ON "public"."asset_positions" FOR SELECT TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Auth users can read assets" ON "public"."assets" FOR SELECT TO "authenticated" USING (true);
 
 
 
 CREATE POLICY "Auth users can read currencies" ON "public"."currencies" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Auth users can read dnse_orders" ON "public"."dnse_orders" FOR SELECT TO "authenticated" USING (true);
 
 
 
@@ -2669,15 +2703,39 @@ CREATE POLICY "Auth users can read tx_debt" ON "public"."tx_debt" FOR SELECT TO 
 
 
 
-CREATE POLICY "Auth users can read tx_entries" ON "public"."tx_entries" FOR SELECT TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Auth users can read tx_legs" ON "public"."tx_legs" FOR SELECT TO "authenticated" USING (true);
 
 
 
 CREATE POLICY "Auth users can read tx_stock" ON "public"."tx_stock" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."tx_cashflow" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."tx_debt" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."tx_entries" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."tx_legs" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."tx_stock" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable users to view their own data only" ON "public"."asset_positions" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
+
+
+
+CREATE POLICY "Enable users to view their own data only" ON "public"."tx_entries" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
 
 
@@ -5453,6 +5511,12 @@ GRANT ALL ON TABLE "public"."daily_snapshots" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
+GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."tx_stock" TO "anon";
 GRANT ALL ON TABLE "public"."tx_stock" TO "authenticated";
 GRANT ALL ON TABLE "public"."tx_stock" TO "service_role";
@@ -5465,27 +5529,15 @@ GRANT ALL ON TABLE "public"."monthly_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
-GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
+GRANT ALL ON TABLE "public"."equity_return_data" TO "anon";
+GRANT ALL ON TABLE "public"."equity_return_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."equity_return_data" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."stock_holdings" TO "anon";
-GRANT ALL ON TABLE "public"."stock_holdings" TO "authenticated";
-GRANT ALL ON TABLE "public"."stock_holdings" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."dashboard_data" TO "anon";
-GRANT ALL ON TABLE "public"."dashboard_data" TO "authenticated";
-GRANT ALL ON TABLE "public"."dashboard_data" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."dnse_orders" TO "anon";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "authenticated";
-GRANT ALL ON TABLE "public"."dnse_orders" TO "service_role";
+GRANT ALL ON TABLE "public"."last_1y_profit" TO "anon";
+GRANT ALL ON TABLE "public"."last_1y_profit" TO "authenticated";
+GRANT ALL ON TABLE "public"."last_1y_profit" TO "service_role";
 
 
 
@@ -5501,6 +5553,12 @@ GRANT ALL ON TABLE "public"."news_articles" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "anon";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "authenticated";
+GRANT ALL ON TABLE "public"."outstanding_debts" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "anon";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_annual_pnl" TO "service_role";
@@ -5513,9 +5571,9 @@ GRANT ALL ON TABLE "public"."yearly_snapshots" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."recaps_data" TO "anon";
-GRANT ALL ON TABLE "public"."recaps_data" TO "authenticated";
-GRANT ALL ON TABLE "public"."recaps_data" TO "service_role";
+GRANT ALL ON TABLE "public"."performance_data" TO "anon";
+GRANT ALL ON TABLE "public"."performance_data" TO "authenticated";
+GRANT ALL ON TABLE "public"."performance_data" TO "service_role";
 
 
 
