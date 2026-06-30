@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { formatNum, compactNum } from "@/lib/utils"
+import { formatNum, compactNum, pctNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
@@ -52,12 +52,12 @@ export function ReturnChart({
     <Card>
       <ChartCardHeader
         title="Alpha"
-        heroStat={`${formatNum(equityReturn - vnIndexReturn, 1)}%`}
+        heroStat={pctNum(equityReturn - vnIndexReturn)}
         stat1={equityReturn}
-        formattedStat1={`${formatNum(Math.abs(equityReturn), 1)}%`}
+        formattedStat1={pctNum(Math.abs(equityReturn))}
         descriptionStat1="equity return"
         stat2={vnIndexReturn}
-        formattedStat2={`${formatNum(Math.abs(vnIndexReturn), 1)}%`}
+        formattedStat2={pctNum(Math.abs(vnIndexReturn))}
         descriptionStat2="VNI return"
       />
       <Areachart

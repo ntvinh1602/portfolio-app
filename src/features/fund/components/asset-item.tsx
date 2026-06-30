@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/item"
 import { useIsMobile } from "@/hooks/use-mobile"
 import Image from "next/image"
-import { formatNum, compactNum } from "@/lib/utils"
+import { formatNum, compactNum, pctNum } from "@/lib/utils"
 
 interface Props {
   variant: "bs" | "dashboard" | "performance"
@@ -35,7 +35,7 @@ export default function AssetItem({
   net_profit,
 }: Props) {
   const isMobile = useIsMobile()
-  const pct_profit = formatNum(((net_profit || 0) / total_value) * 100, 1)
+  const pct_profit = pctNum(((net_profit || 0) / total_value))
   const compact_profit = compactNum(net_profit || 0)
   const color = (net_profit || 0) >= 0 ? "text-primary" : "text-destructive"
   const unit = asset_class == "stock" ? " shares" : `${currency_code}`
@@ -76,7 +76,7 @@ export default function AssetItem({
         )}
         {ticker !== "FX.VND" && variant !== "performance" && (
           <ItemDescription className={`${color} text-xs`}>
-            {!isMobile ? `${compact_profit} (${pct_profit}%)` : pct_profit}
+            {!isMobile ? `${compact_profit} (${pct_profit})` : pct_profit}
           </ItemDescription>
         )}
         {variant == "performance" && (

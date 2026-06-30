@@ -1,6 +1,6 @@
 "use client"
 
-import { formatNum, compactNum } from "@/lib/utils"
+import { formatNum, compactNum, pctNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
@@ -53,12 +53,12 @@ export function ReturnChart({ dateRange, chartData, data }: Props) {
       <ChartCardHeader
         title="Return"
         titleLegend="this year"
-        heroStat={`${data.twr_ytd}%`}
+        heroStat={pctNum(data.twr_ytd)}
         stat1={data.twr_all}
-        formattedStat1={`${data.twr_all}%`}
+        formattedStat1={pctNum(data.twr_all)}
         descriptionStat1="all time"
         stat2={data.cagr}
-        formattedStat2={`${data.cagr}%`}
+        formattedStat2={pctNum(data.cagr)}
         descriptionStat2="annualized"
       />
       <Areachart

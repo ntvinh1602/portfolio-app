@@ -273,35 +273,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      asset_positions: {
-        Row: {
-          asset_id: string
-          average_cost: number
-          quantity: number
-          user_id: string
-        }
-        Insert: {
-          asset_id: string
-          average_cost?: number
-          quantity?: number
-          user_id: string
-        }
-        Update: {
-          asset_id?: string
-          average_cost?: number
-          quantity?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stock_positions_stock_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       assets: {
         Row: {
           asset_class: Database["public"]["Enums"]["asset_class"]
@@ -465,63 +436,30 @@ export type Database = {
           },
         ]
       }
-      news_article_assets: {
-        Row: {
-          article_id: string
-          asset_id: string
-          created_at: string | null
-        }
-        Insert: {
-          article_id: string
-          asset_id: string
-          created_at?: string | null
-        }
-        Update: {
-          article_id?: string
-          asset_id?: string
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "news_article_assets_article_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "news_articles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "news_article_assets_asset_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       news_articles: {
         Row: {
-          created_at: string | null
           excerpt: string | null
           id: string
           published_at: string | null
+          related_stocks: string[] | null
           source: string
           title: string
           url: string
         }
         Insert: {
-          created_at?: string | null
           excerpt?: string | null
           id?: string
           published_at?: string | null
+          related_stocks?: string[] | null
           source: string
           title: string
           url: string
         }
         Update: {
-          created_at?: string | null
           excerpt?: string | null
           id?: string
           published_at?: string | null
+          related_stocks?: string[] | null
           source?: string
           title?: string
           url?: string
@@ -530,18 +468,54 @@ export type Database = {
       }
       refresh_queue: {
         Row: {
-          created_at: string | null
+          created_at: string
           id: number
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           id?: number
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           id?: number
         }
         Relationships: []
+      }
+      tx_borrow: {
+        Row: {
+          lender: string
+          principal: number
+          rate: number
+          tx_id: string
+        }
+        Insert: {
+          lender: string
+          principal: number
+          rate: number
+          tx_id: string
+        }
+        Update: {
+          lender?: string
+          principal?: number
+          rate?: number
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_borrow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_borrow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tx_cashflow: {
         Row: {
@@ -592,75 +566,27 @@ export type Database = {
           },
         ]
       }
-      tx_debt: {
-        Row: {
-          interest: number
-          lender: string | null
-          net_proceed: number
-          operation: string
-          principal: number
-          rate: number | null
-          repay_tx: string | null
-          tx_id: string
-        }
-        Insert: {
-          interest?: number
-          lender?: string | null
-          net_proceed?: number
-          operation: string
-          principal: number
-          rate?: number | null
-          repay_tx?: string | null
-          tx_id?: string
-        }
-        Update: {
-          interest?: number
-          lender?: string | null
-          net_proceed?: number
-          operation?: string
-          principal?: number
-          rate?: number | null
-          repay_tx?: string | null
-          tx_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tx_debt_tx_id_fkey"
-            columns: ["tx_id"]
-            isOneToOne: true
-            referencedRelation: "tx_entries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tx_debt_tx_id_fkey"
-            columns: ["tx_id"]
-            isOneToOne: true
-            referencedRelation: "tx_summary"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tx_entries: {
         Row: {
           category: Database["public"]["Enums"]["tx_category"]
           created_at: string
           id: string
           memo: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           category: Database["public"]["Enums"]["tx_category"]
           created_at?: string
           id?: string
           memo: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           category?: Database["public"]["Enums"]["tx_category"]
           created_at?: string
           id?: string
           memo?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -710,11 +636,57 @@ export type Database = {
           },
         ]
       }
+      tx_repay: {
+        Row: {
+          borrow_tx: string
+          interest: number
+          net_proceed: number
+          principal: number
+          tx_id: string
+        }
+        Insert: {
+          borrow_tx: string
+          interest: number
+          net_proceed?: number
+          principal: number
+          tx_id: string
+        }
+        Update: {
+          borrow_tx?: string
+          interest?: number
+          net_proceed?: number
+          principal?: number
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_repay_borrow_tx_fkey"
+            columns: ["borrow_tx"]
+            isOneToOne: false
+            referencedRelation: "tx_borrow"
+            referencedColumns: ["tx_id"]
+          },
+          {
+            foreignKeyName: "tx_repay_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_repay_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tx_stock: {
         Row: {
           fee: number
           net_proceed: number
-          operation: string
+          operation: Database["public"]["Enums"]["stock_ops"]
           price: number
           quantity: number
           stock_id: string
@@ -724,7 +696,7 @@ export type Database = {
         Insert: {
           fee: number
           net_proceed?: number
-          operation: string
+          operation: Database["public"]["Enums"]["stock_ops"]
           price?: number
           quantity: number
           stock_id: string
@@ -734,7 +706,7 @@ export type Database = {
         Update: {
           fee?: number
           net_proceed?: number
-          operation?: string
+          operation?: Database["public"]["Enums"]["stock_ops"]
           price?: number
           quantity?: number
           stock_id?: string
@@ -833,33 +805,6 @@ export type Database = {
         }
         Relationships: []
       }
-      outstanding_debts: {
-        Row: {
-          borrow_date: string | null
-          duration: number | null
-          interest: number | null
-          lender: string | null
-          principal: number | null
-          rate: number | null
-          tx_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tx_debt_tx_id_fkey"
-            columns: ["tx_id"]
-            isOneToOne: true
-            referencedRelation: "tx_entries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tx_debt_tx_id_fkey"
-            columns: ["tx_id"]
-            isOneToOne: true
-            referencedRelation: "tx_summary"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       performance_data: {
         Row: {
           avg_expense: number | null
@@ -942,34 +887,25 @@ export type Database = {
         Returns: undefined
       }
       calculate_pnl: {
-        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
+        Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
       calculate_twr: {
-        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
+        Args: { p_end_date: string; p_start_date: string }
         Returns: number
       }
       get_equity_chart: {
-        Args: {
-          p_end_date: string
-          p_start_date: string
-          p_threshold?: number
-          p_user_id: string
-        }
+        Args: { p_end_date: string; p_start_date: string; p_threshold?: number }
         Returns: Json
       }
       get_return_chart: {
-        Args: {
-          p_end_date: string
-          p_start_date: string
-          p_threshold?: number
-          p_user_id: string
-        }
+        Args: { p_end_date: string; p_start_date: string; p_threshold?: number }
         Returns: Json
       }
       process_refresh_queue: { Args: never; Returns: undefined }
+      process_tx_borrow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
-      process_tx_debt: { Args: { p_tx_id: string }; Returns: undefined }
+      process_tx_repay: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_stock: { Args: { p_tx_id: string }; Returns: undefined }
       rebuild_ledger: { Args: never; Returns: undefined }
     }
@@ -983,7 +919,8 @@ export type Database = {
         | "liability"
         | "index"
       cashflow_ops: "deposit" | "withdraw" | "income" | "expense"
-      tx_category: "stock" | "cashflow" | "debt"
+      stock_ops: "buy" | "sell"
+      tx_category: "stock" | "cashflow" | "borrow" | "repay"
     }
     CompositeTypes: {
       benchmark_point: {
@@ -1136,7 +1073,8 @@ export const Constants = {
         "index",
       ],
       cashflow_ops: ["deposit", "withdraw", "income", "expense"],
-      tx_category: ["stock", "cashflow", "debt"],
+      stock_ops: ["buy", "sell"],
+      tx_category: ["stock", "cashflow", "borrow", "repay"],
     },
   },
 } as const

@@ -11,21 +11,7 @@ export default async function getNews() {
 
   const { data, error } = await supabase
     .from("news_articles")
-    .select(
-      `
-      id,
-      title,
-      url,
-      source,
-      excerpt,
-      published_at,
-      news_article_assets (
-        assets (
-          ticker
-        )
-      )
-    `,
-    )
+    .select("id, title, url, source, excerpt, published_at, related_stocks")
     .order("published_at", { ascending: false })
 
   if (error) {
@@ -35,9 +21,6 @@ export default async function getNews() {
 
   return (data?.map((article) => ({
     ...article,
-    tickers:
-      article.news_article_assets
-        ?.map((rel: any) => rel.assets?.ticker)
-        .filter((t: any): t is string => Boolean(t)) ?? [],
+    tickers: article.related_stocks ?? [],
   })) ?? []) as NewsArticle[]
 }

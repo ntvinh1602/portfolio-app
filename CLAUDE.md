@@ -452,7 +452,7 @@ Three client variants in `src/lib/supabase/`, all using `NEXT_PUBLIC_SUPABASE_PU
 
 ### Database Schemas
 
-- **`public`** (fund): `assets`, `tx_entries`, `tx_cashflow`, `tx_stock`, `tx_debt`, `tx_legs`, `asset_positions`, `currencies`, `historical_prices`, `historical_fxrate`, `dnse_orders`, `news_articles`, `news_article_assets`
+- **`public`** (fund): `assets`, `tx_entries`, `tx_cashflow`, `tx_stock`, `tx_debt`, `tx_legs`, `asset_positions`, `currencies`, `historical_prices`, `historical_fxrate`, `dnse_orders`, `news_articles`
 - **`flight`** (flights): `airlines`, `airports`, `aircrafts`, `flights`
 
 Key views and materialized views: `balance_sheet`, `daily_snapshots` (materialized), `dashboard_data` (materialized), `recaps_data` (materialized), `monthly_snapshots`, `yearly_snapshots`, `stock_holdings`, `outstanding_debts`, `stock_annual_pnl`, `tx_summary`, `flights_readable`, `routes_geojson`, `lifetime_stats`.
@@ -472,7 +472,7 @@ Deno functions in `supabase/functions/`, invoked by `pg_cron`:
 - **`fetch-yahoofinance`** — fetches stock/index prices from Yahoo Finance, upserts into `historical_prices`
 - **`fetch-exchange-rates`** — fetches FX rates from OpenExchangeRates, upserts into `historical_fxrate`
 - **`upsert-dnse-orders`** — syncs filled orders from DNSE brokerage API into `dnse_orders` (a DB trigger then calls `process_dnse_order`)
-- **`ingest-news`** — parses Vietnamese finance RSS feeds (VnEconomy, Vietnambiz), extracts stock tickers, validates against `assets` table, upserts into `news_articles` and `news_article_assets`. Uses `withSupabase({ auth: 'secret' })` for service-to-service auth via `pg_cron`
+- **`ingest-news`** — parses Vietnamese finance RSS feeds (VnEconomy, Vietnambiz), extracts stock tickers, validates against `assets` table, upserts into `news_articles` (with `related_stocks` text array column). Uses `withSupabase({ auth: 'secret' })` for service-to-service auth via `pg_cron`
 
 ### Migrations and Seeds
 

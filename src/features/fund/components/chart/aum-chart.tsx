@@ -42,7 +42,6 @@ export function AumChart({ cash, stock, fund, totalAsset }: Props) {
           innerRadius={65}
           legend="right"
           margin_tb={0}
-          valueFormatter={(v) => `${formatNum((v / totalAsset) * 100, 1)}%`}
         />
       </CardContent>
     </div>

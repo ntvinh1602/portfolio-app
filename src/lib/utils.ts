@@ -9,53 +9,41 @@ export function cn(...inputs: ClassValue[]) {
 // Creating Intl.NumberFormat is expensive — cache by config key to avoid
 // re-instantiating on every call (these are called on every render tick).
 
-const formatCache = new Map<string, Intl.NumberFormat>()
 const compactFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
   compactDisplay: "short",
 })
+const percentageFormatter = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+const numberFormatters = [
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }),
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }),
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }),
+]
 
-function getFormatter(fractionDigits: number): Intl.NumberFormat {
-  const key = `fd:${fractionDigits}`
-  let fmt = formatCache.get(key)
-  if (!fmt) {
-    fmt = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: fractionDigits,
-      maximumFractionDigits: fractionDigits,
-    })
-    formatCache.set(key, fmt)
-  }
-  return fmt
-}
-
-// Format number based on currency and decimal places
-export function formatNum(amount: number, fractionDigits = 0, currency?: string) {
-  if (currency) {
-    const cacheKey = `cur:${currency}:${fractionDigits}`
-    let currencyFmt = formatCache.get(cacheKey)
-    if (!currencyFmt) {
-      // Resolve the minimum fraction digits for this currency
-      const resolvedFractionDigits = fractionDigits > 0
-        ? fractionDigits
-        : new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency,
-          }).resolvedOptions().minimumFractionDigits
-
-      currencyFmt = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: resolvedFractionDigits,
-        maximumFractionDigits: resolvedFractionDigits,
-      })
-      formatCache.set(cacheKey, currencyFmt)
-    }
-
-    return `${currencyFmt.format(amount)} ${currency}`
-  }
-
-  return getFormatter(fractionDigits).format(amount)
+// Format number based decimal places
+export function formatNum(amount: number, fractionDigits: 0 | 1 | 2 = 0) {
+  return numberFormatters[fractionDigits].format(amount)
 }
 
 // Compact number format (10K, 10M etc.)
 export function compactNum(amount: number) {
   return compactFormatter.format(amount)
+}
+
+// Percentage number format
+export function pctNum(amount: number) {
+  return percentageFormatter.format(amount)
 }

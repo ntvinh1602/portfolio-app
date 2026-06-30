@@ -5,7 +5,6 @@ import { extractTickers } from "./utils.ts"
 
 export async function ingestAllSources(supabase: SupabaseClient) {
   let totalInserted = 0
-  let totalLinked = 0
 
   for (const source of NEWS_SOURCES) {
     const feed = await source.parser.parseURL(source.url)
@@ -52,61 +51,32 @@ export async function ingestAllSources(supabase: SupabaseClient) {
 
     if (!assets?.length) continue
 
-    const tickerToAssetId = new Map<string, string>()
-    for (const asset of assets) {
-      tickerToAssetId.set(asset.ticker, asset.id)
-    }
+    const validTickers = new Set(assets.map((a) => a.ticker))
 
-    const validArticles: any[] = []
-    const relations: { article_url: string; asset_id: string }[] = []
+    const articlesWithTickers: { article: any; tickers: string[] }[] = []
 
     for (const [url, { article, tickers }] of articleTickerMap.entries()) {
-      const matchedAssetIds = tickers
-        .map((t) => tickerToAssetId.get(t))
-        .filter(Boolean) as string[]
-
-      if (matchedAssetIds.length === 0) continue
-
-      validArticles.push(article)
-
-      for (const assetId of matchedAssetIds) {
-        relations.push({ article_url: url, asset_id: assetId })
-      }
+      const matched = tickers.filter((t) => validTickers.has(t))
+      if (matched.length === 0) continue
+      articlesWithTickers.push({ article, tickers: matched })
     }
 
-    if (!validArticles.length) continue
+    if (!articlesWithTickers.length) continue
+
+    const upsertRows = articlesWithTickers.map(({ article, tickers }) => ({
+      ...article,
+      related_stocks: tickers,
+    }))
 
     const { data: insertedArticles, error } = await supabase
       .from("news_articles")
-      .upsert(validArticles, { onConflict: "url" })
-      .select("id, url")
+      .upsert(upsertRows, { onConflict: "url" })
+      .select("id")
 
     if (error || !insertedArticles?.length) continue
 
     totalInserted += insertedArticles.length
-
-    const urlToId = new Map<string, string>()
-    for (const article of insertedArticles) {
-      urlToId.set(article.url, article.id)
-    }
-
-    const relationRows: { article_id: string; asset_id: string }[] = []
-    for (const relation of relations) {
-      const articleId = urlToId.get(relation.article_url)
-      if (!articleId) continue
-      relationRows.push({ article_id: articleId, asset_id: relation.asset_id })
-    }
-
-    if (relationRows.length > 0) {
-      const { error: relationError } = await supabase
-        .from("news_article_assets")
-        .upsert(relationRows, { onConflict: "article_id,asset_id" })
-
-      if (!relationError) {
-        totalLinked += relationRows.length
-      }
-    }
   }
 
-  return { inserted: totalInserted, linked: totalLinked }
+  return { inserted: totalInserted }
 }
