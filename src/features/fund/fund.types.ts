@@ -91,6 +91,5 @@ export type NewsArticle = {
   source: string
   excerpt: string
   published_at: string
-  created_at: string
   tickers?: string[]
 }

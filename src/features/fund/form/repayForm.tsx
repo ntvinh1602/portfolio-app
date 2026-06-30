@@ -40,8 +40,9 @@ export function RepayForm({
   React.useEffect(() => {
     async function loadDebts() {
       const { data, error } = await supabase
-        .from("outstanding_debts")
+        .from("tx_borrow")
         .select("tx_id,lender,principal,rate")
+        .filter("is_paid", "eq", false)
 
       if (error) {
         toast.error("Failed to load debts", { description: error.message })

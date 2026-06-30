@@ -19,7 +19,6 @@ export default async function getNews() {
       source,
       excerpt,
       published_at,
-      created_at,
       news_article_assets (
         assets (
           ticker
