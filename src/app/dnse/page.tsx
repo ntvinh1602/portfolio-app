@@ -1,5 +1,7 @@
+"use client"
+
 import { DnseAccountOverview } from "@/lib/dnse/account-overview"
-import { getDnseDashboardData } from "@/lib/dnse/api"
+import { fetchDnseDashboard } from "@/lib/dnse/actions"
 import { DnseAccountSelector } from "@/lib/dnse/account-selector"
 import { DnseApiError, DnseConfigError } from "@/lib/dnse/client"
 import { DnseErrorState } from "@/lib/dnse/error-state"
@@ -11,85 +13,15 @@ import {
 import { DnseHoldingsList } from "@/lib/dnse/holdings-list"
 import type { DnseDashboardData } from "@/lib/dnse/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { connection } from "next/server"
-import { Suspense, type ReactNode } from "react"
-
-interface PageProps {
-  searchParams?: Promise<{
-    accountNo?: string | string[]
-  }>
-}
+import { Suspense, useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 type DnseLoadError = {
   title: string
   description: string
 }
 
-type LoadDnseDashboardResult =
-  | { dashboard: DnseDashboardData }
-  | { error: DnseLoadError }
-
-export default function Page({ searchParams }: PageProps) {
-  return (
-    <PageShell>
-      <Suspense fallback={<DnseDashboardFallback />}>
-        <DnseDashboardContent searchParams={searchParams} />
-      </Suspense>
-    </PageShell>
-  )
-}
-
-async function DnseDashboardContent({ searchParams }: PageProps) {
-  await connection()
-  const params = (await searchParams) ?? {}
-  const result = await loadDnseDashboardContent(params.accountNo)
-
-  if (!("dashboard" in result)) {
-    return (
-      <DnseErrorState
-        title={result.error.title}
-        description={result.error.description}
-      />
-    )
-  }
-
-  if (!result.dashboard.selectedAccount) {
-    return (
-      <DnseErrorState
-        title="No DNSE accounts found"
-        description="The API key did not return any brokerage sub-accounts to display."
-      />
-    )
-  }
-
-  const accountOptions = buildAccountOptions(result.dashboard.availableAccounts)
-  const overview = buildOverviewModel(
-    result.dashboard.accounts,
-    result.dashboard.selectedAccount,
-    result.dashboard.balances,
-    result.dashboard.positions
-  )
-  const holdings = buildHoldingItems(result.dashboard.positions)
-
-  return (
-    <>
-      <div className="flex justify-end">
-        <DnseAccountSelector
-          accounts={accountOptions}
-          selectedAccountNo={result.dashboard.selectedAccount.id}
-        />
-      </div>
-      <DnseAccountOverview overview={overview} />
-      <DnseHoldingsList holdings={holdings} />
-    </>
-  )
-}
-
-function PageShell({
-  children,
-}: {
-  children: ReactNode
-}) {
+export default function Page() {
   return (
     <div className="@container/main flex flex-1 flex-col pb-4">
       <div className="flex flex-col gap-6 px-2 md:px-6">
@@ -108,9 +40,92 @@ function PageShell({
           </div>
         </div>
 
-        {children}
+        <Suspense fallback={<DnseDashboardFallback />}>
+          <DnseDashboardContent />
+        </Suspense>
       </div>
     </div>
+  )
+}
+
+function DnseDashboardContent() {
+  const searchParams = useSearchParams()
+  const accountNo = searchParams.get("accountNo") ?? undefined
+
+  const [dashboard, setDashboard] = useState<DnseDashboardData | null>(null)
+  const [error, setError] = useState<DnseLoadError | null>(null)
+  const [fetched, setFetched] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchDnseDashboard(accountNo)
+      .then((data) => {
+        if (cancelled) return
+        setDashboard(data)
+        setError(null)
+        setFetched(true)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setDashboard(null)
+        setError(getErrorCopy(err))
+        setFetched(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accountNo])
+
+  if (!fetched) {
+    return <DnseDashboardFallback />
+  }
+
+  if (error) {
+    return (
+      <DnseErrorState title={error.title} description={error.description} />
+    )
+  }
+
+  if (!dashboard) {
+    return (
+      <DnseErrorState
+        title="Unexpected DNSE error"
+        description="No data was returned from the dashboard."
+      />
+    )
+  }
+
+  if (!dashboard.selectedAccount) {
+    return (
+      <DnseErrorState
+        title="No DNSE accounts found"
+        description="The API key did not return any brokerage sub-accounts to display."
+      />
+    )
+  }
+
+  const accountOptions = buildAccountOptions(dashboard.availableAccounts)
+  const overview = buildOverviewModel(
+    dashboard.accounts,
+    dashboard.selectedAccount,
+    dashboard.balances,
+    dashboard.positions
+  )
+  const holdings = buildHoldingItems(dashboard.positions)
+
+  return (
+    <>
+      <div className="flex justify-end">
+        <DnseAccountSelector
+          accounts={accountOptions}
+          selectedAccountNo={dashboard.selectedAccount.id}
+        />
+      </div>
+      <DnseAccountOverview overview={overview} />
+      <DnseHoldingsList holdings={holdings} />
+    </>
   )
 }
 
@@ -142,28 +157,20 @@ function getErrorCopy(error: unknown) {
   }
 
   if (error instanceof DnseApiError) {
+    const description =
+      error.code === "NETWORK_ERROR"
+        ? `${error.message}. The DNSE API may be unreachable from outside Vietnam.`
+        : error.code !== undefined
+          ? `${error.message} (${error.code})`
+          : error.message
     return {
       title: "Unable to load DNSE data",
-      description:
-        error.code !== undefined
-          ? `${error.message} (${error.code})`
-          : error.message,
+      description,
     }
   }
 
   return {
     title: "Unexpected DNSE error",
     description: "An unexpected error occurred while loading the dashboard.",
-  }
-}
-
-async function loadDnseDashboardContent(
-  requestedAccountNo?: string | string[]
-): Promise<LoadDnseDashboardResult> {
-  try {
-    const dashboard = await getDnseDashboardData(requestedAccountNo)
-    return { dashboard }
-  } catch (error) {
-    return { error: getErrorCopy(error) }
   }
 }

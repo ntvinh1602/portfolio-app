@@ -18,6 +18,7 @@ interface DnseConfig {
   baseUrl: string
   apiVersion: string
   dateHeaderName: string
+  proxyKey: string
 }
 
 interface DnseErrorPayload {
@@ -61,6 +62,7 @@ function getDnseConfig(): DnseConfig {
     baseUrl: process.env.DNSE_API_BASE_URL ?? DEFAULT_DNSE_BASE_URL,
     apiVersion: process.env.DNSE_API_VERSION ?? DEFAULT_DNSE_API_VERSION,
     dateHeaderName: DEFAULT_DATE_HEADER,
+    proxyKey: process.env.DNSE_PROXY_KEY ?? "",
   }
 }
 
@@ -155,12 +157,26 @@ export async function requestDnse<T>(
     }
   }
 
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    cache: "no-store",
-  })
+  if (config.proxyKey) {
+    headers.set("X-Proxy-Key", config.proxyKey)
+  }
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      cache: "no-store",
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Network request failed"
+    throw new DnseApiError(
+      `DNSE network error: ${message}`,
+      0,
+      "NETWORK_ERROR"
+    )
+  }
 
   const text = await response.text()
   const payload = text ? tryParseJson(text) : null
