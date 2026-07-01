@@ -1,6 +1,12 @@
 "use client"
 
-import { LogOut, Plane, PiggyBank, ClipboardPen } from "lucide-react"
+import {
+  LogOut,
+  Plane,
+  PiggyBank,
+  ClipboardPen,
+  Landmark,
+} from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,
@@ -50,6 +56,18 @@ const data = {
         {
           title: "History",
           url: "/flights/history",
+        },
+      ],
+    },
+    {
+      title: "DNSE",
+      url: "#",
+      icon: Landmark,
+      isActive: true,
+      items: [
+        {
+          title: "Dashboard",
+          url: "/dnse",
         },
       ],
     },
