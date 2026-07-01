@@ -1,12 +1,6 @@
 "use client"
 
-import {
-  LogOut,
-  Plane,
-  PiggyBank,
-  ClipboardPen,
-  Landmark,
-} from "lucide-react"
+import { LogOut, Plane, PiggyBank, ClipboardPen, Landmark } from "lucide-react"
 import { NavMenu } from "@/components/sidebar/nav-menu"
 import {
   Sidebar,
@@ -84,7 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" variant="inset" {...props}>
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

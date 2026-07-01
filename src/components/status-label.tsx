@@ -5,6 +5,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { cn } from "@/lib/utils"
 import { Loader2, FileExclamationPoint, TriangleAlert } from "lucide-react"
 
 type StatusType = "loading" | "empty" | "error"
@@ -40,7 +41,10 @@ export default function StatusLabel({ type }: { type: StatusType }) {
   return (
     <Empty>
       <EmptyHeader>
-        <EmptyMedia variant="icon">
+        <EmptyMedia
+          variant="icon"
+          className={cn(type == "error" && "bg-destructive/10")}
+        >
           <Icon />
         </EmptyMedia>
 

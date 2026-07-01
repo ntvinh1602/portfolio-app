@@ -17,8 +17,8 @@ import getEquityReturn from "@fund/actions/get-equity-return"
 
 export default function Page() {
   return (
-    <div className="@container/main flex flex-1 flex-col pb-4">
-      <div className="grid grid-cols-1 gap-6 px-2 md:px-6 xl:grid-cols-3">
+    <div className="@container/main flex flex-1 flex-col">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Suspense
           fallback={
             <div className="flex flex-col gap-4">

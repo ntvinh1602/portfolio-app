@@ -64,7 +64,7 @@ export default function BalanceSheet({ bsData, liability, equity }: Props) {
   ] as const
 
   return (
-    <div className="@container/main flex flex-1 flex-col pb-4">
+    <div className="@container/main flex flex-1 flex-col">
       <div className="mx-auto grid grid-cols-1 gap-4 px-4 w-full xl:grid-cols-2 xl:max-w-250">
         <Card>
           <CardHeader>

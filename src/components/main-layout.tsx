@@ -13,7 +13,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         <AppSidebar collapsible="icon" />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex flex-1 flex-col p-4 xl:p-6 mt-16 group-has-data-[collapsible=icon]/sidebar-wrapper:mt-12">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
