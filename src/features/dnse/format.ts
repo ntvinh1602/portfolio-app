@@ -7,7 +7,7 @@ import type {
   DnseMetricTone,
   DnseOverviewModel,
   DnsePosition,
-} from "@/lib/dnse/types"
+} from "@/features/dnse/types"
 
 export function buildAccountOptions(accounts: DnseAccount[]): DnseAccountOption[] {
   return accounts.map((account) => {

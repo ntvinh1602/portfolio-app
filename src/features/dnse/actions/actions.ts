@@ -1,7 +1,7 @@
 "use server"
 
-import { getDnseDashboardData } from "@/lib/dnse/api"
-import type { DnseDashboardData } from "@/lib/dnse/types"
+import { getDnseDashboardData } from "@/features/dnse/api"
+import type { DnseDashboardData } from "@/features/dnse/types"
 
 export async function fetchDnseDashboard(
   accountNo?: string

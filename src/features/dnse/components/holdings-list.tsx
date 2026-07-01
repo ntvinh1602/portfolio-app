@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { DnseHoldingItem } from "@/lib/dnse/types"
+import type { DnseHoldingItem } from "@/features/dnse/types"
 
 interface Props {
   holdings: DnseHoldingItem[]

@@ -1,17 +1,17 @@
 "use client"
 
-import { DnseAccountOverview } from "@/lib/dnse/account-overview"
-import { fetchDnseDashboard } from "@/lib/dnse/actions"
-import { DnseAccountSelector } from "@/lib/dnse/account-selector"
-import { DnseApiError, DnseConfigError } from "@/lib/dnse/client"
-import { DnseErrorState } from "@/lib/dnse/error-state"
+import { DnseAccountOverview } from "@/features/dnse/components/account-overview"
+import { fetchDnseDashboard } from "@/features/dnse/actions/actions"
+import { DnseAccountSelector } from "@/features/dnse/components/account-selector"
+import { DnseApiError, DnseConfigError } from "@/features/dnse/client"
+import { DnseErrorState } from "@/features/dnse/components/error-state"
 import {
   buildAccountOptions,
   buildHoldingItems,
   buildOverviewModel,
-} from "@/lib/dnse/format"
-import { DnseHoldingsList } from "@/lib/dnse/holdings-list"
-import type { DnseDashboardData } from "@/lib/dnse/types"
+} from "@/features/dnse/format"
+import { DnseHoldingsList } from "@/features/dnse/components/holdings-list"
+import type { DnseDashboardData } from "@/features/dnse/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
@@ -23,28 +23,9 @@ type DnseLoadError = {
 
 export default function Page() {
   return (
-    <div className="@container/main flex flex-1 flex-col pb-4">
-      <div className="flex flex-col gap-6 px-2 md:px-6">
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Brokerage
-          </p>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              DNSE Dashboard
-            </h1>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              Read-only brokerage identity, cash balances, and current stock
-              holdings powered by the DNSE OpenAPI.
-            </p>
-          </div>
-        </div>
-
-        <Suspense fallback={<DnseDashboardFallback />}>
-          <DnseDashboardContent />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<DnseDashboardFallback />}>
+      <DnseDashboardContent />
+    </Suspense>
   )
 }
 
@@ -111,21 +92,21 @@ function DnseDashboardContent() {
     dashboard.accounts,
     dashboard.selectedAccount,
     dashboard.balances,
-    dashboard.positions
+    dashboard.positions,
   )
   const holdings = buildHoldingItems(dashboard.positions)
 
   return (
-    <>
-      <div className="flex justify-end">
+    <div className="@container/main flex flex-1 flex-col pb-4">
+      <div className="flex flex-col gap-6 w-full xl:max-w-320 mx-auto">
         <DnseAccountSelector
           accounts={accountOptions}
           selectedAccountNo={dashboard.selectedAccount.id}
         />
+        <DnseAccountOverview overview={overview} />
+        <DnseHoldingsList holdings={holdings} />
       </div>
-      <DnseAccountOverview overview={overview} />
-      <DnseHoldingsList holdings={holdings} />
-    </>
+    </div>
   )
 }
 

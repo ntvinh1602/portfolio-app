@@ -1,9 +1,5 @@
 import { createHmac, randomUUID } from "crypto"
 
-const DEFAULT_DNSE_BASE_URL = "https://openapi.dnse.com.vn"
-const DEFAULT_DNSE_API_VERSION = "2026-05-07"
-const DEFAULT_DATE_HEADER = "Date"
-
 type DnseMethod = "GET" | "POST" | "PUT" | "DELETE"
 
 interface RequestDnseOptions {
@@ -17,7 +13,6 @@ interface DnseConfig {
   apiSecret: string
   baseUrl: string
   apiVersion: string
-  dateHeaderName: string
   proxyKey: string
 }
 
@@ -49,46 +44,32 @@ export class DnseApiError extends Error {
 function getRequiredEnv(name: string): string {
   const value = process.env[name]
   if (!value) {
-    throw new DnseConfigError(`Missing required DNSE environment variable: ${name}`)
+    throw new DnseConfigError(
+      `Missing required DNSE environment variable: ${name}`,
+    )
   }
 
   return value
-}
-
-function getDnseConfig(): DnseConfig {
-  return {
-    apiKey: getRequiredEnv("DNSE_API_KEY"),
-    apiSecret: getRequiredEnv("DNSE_API_SECRET"),
-    baseUrl: process.env.DNSE_API_BASE_URL ?? DEFAULT_DNSE_BASE_URL,
-    apiVersion: process.env.DNSE_API_VERSION ?? DEFAULT_DNSE_API_VERSION,
-    dateHeaderName: DEFAULT_DATE_HEADER,
-    proxyKey: process.env.DNSE_PROXY_KEY ?? "",
-  }
-}
-
-function formatDateHeader(date = new Date()): string {
-  return date.toUTCString().replace("GMT", "+0000")
 }
 
 function buildSignatureHeader(
   config: DnseConfig,
   method: DnseMethod,
   path: string,
-  dateValue: string
+  dateValue: string,
 ) {
   const nonce = randomUUID().replace(/-/g, "")
-  const headerKey = config.dateHeaderName.toLowerCase()
-  const headersList = `(request-target) ${headerKey}`
+  const headersList = `(request-target) date`
   const signatureString = [
     `(request-target): ${method.toLowerCase()} ${path}`,
-    `${headerKey}: ${dateValue}`,
+    `date: ${dateValue}`,
     `nonce: ${nonce}`,
   ].join("\n")
 
   const signature = encodeURIComponent(
     createHmac("sha256", Buffer.from(config.apiSecret, "utf8"))
       .update(signatureString, "utf8")
-      .digest("base64")
+      .digest("base64"),
   )
 
   const value = [
@@ -105,7 +86,7 @@ function buildSignatureHeader(
 function buildUrl(
   baseUrl: string,
   path: string,
-  query?: Record<string, string | number | boolean | undefined>
+  query?: Record<string, string | number | boolean | undefined>,
 ) {
   const url = new URL(path, baseUrl)
 
@@ -132,16 +113,22 @@ function parseErrorPayload(payload: unknown): DnseErrorPayload | null {
 export async function requestDnse<T>(
   method: DnseMethod,
   path: string,
-  options: RequestDnseOptions = {}
+  options: RequestDnseOptions = {},
 ): Promise<T> {
-  const config = getDnseConfig()
+  const config = {
+    apiKey: getRequiredEnv("DNSE_API_KEY"),
+    apiSecret: getRequiredEnv("DNSE_API_SECRET"),
+    baseUrl: getRequiredEnv("DNSE_API_BASE_URL"),
+    apiVersion: getRequiredEnv("DNSE_API_VERSION"),
+    proxyKey: getRequiredEnv("DNSE_PROXY_KEY"),
+  } satisfies DnseConfig
   const url = buildUrl(config.baseUrl, path, options.query)
-  const dateValue = formatDateHeader()
+  const dateValue = new Date().toUTCString().replace("GMT", "+0000")
   const signatureHeader = buildSignatureHeader(config, method, path, dateValue)
 
   const headers = new Headers({
     Accept: "application/json",
-    [config.dateHeaderName]: dateValue,
+    date: dateValue,
     "X-API-Key": config.apiKey,
     "X-Signature": signatureHeader,
     version: config.apiVersion,
@@ -166,16 +153,14 @@ export async function requestDnse<T>(
     response = await fetch(url, {
       method,
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
       cache: "no-store",
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Network request failed"
-    throw new DnseApiError(
-      `DNSE network error: ${message}`,
-      0,
-      "NETWORK_ERROR"
-    )
+    const message =
+      err instanceof Error ? err.message : "Network request failed"
+    throw new DnseApiError(`DNSE network error: ${message}`, 0, "NETWORK_ERROR")
   }
 
   const text = await response.text()
@@ -184,9 +169,10 @@ export async function requestDnse<T>(
   if (!response.ok) {
     const errorPayload = parseErrorPayload(payload)
     throw new DnseApiError(
-      errorPayload?.message ?? `DNSE request failed with status ${response.status}`,
+      errorPayload?.message ??
+        `DNSE request failed with status ${response.status}`,
       response.status,
-      errorPayload?.code
+      errorPayload?.code,
     )
   }
 

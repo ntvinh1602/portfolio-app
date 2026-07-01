@@ -35,12 +35,12 @@ export interface DnseBalancesResponse {
 
 export interface DnsePosition {
   id: number
-  marketType: "STOCK" | "DERIVATIVE" | string
+  marketType: "STOCK" | "DERIVATIVE"
   symbol: string
   accountNo: string
-  status: string
+  status: "OPEN" | "PENDING_CLOSE" | "CLOSED" | "ODD_LOT"
   loanPackageId?: number
-  side?: "NB" | "NS" | string
+  side?: "NB" | "NS"
   accumulateQuantity?: number
   tradeQuantity?: number
   closedQuantity?: number

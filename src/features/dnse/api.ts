@@ -1,13 +1,11 @@
-import { requestDnse } from "@/lib/dnse/client"
+import { requestDnse } from "@/features/dnse/client"
 import type {
   DnseAccountsResponse,
   DnseBalancesResponse,
   DnseDashboardData,
   DnsePosition,
   DnsePositionsResponse,
-} from "@/lib/dnse/types"
-
-const STOCK_POSITIONS_PAGE_SIZE = 100
+} from "@/features/dnse/types"
 
 export async function getDnseAccounts() {
   return requestDnse<DnseAccountsResponse>("GET", "/accounts")
@@ -16,7 +14,7 @@ export async function getDnseAccounts() {
 export async function getDnseBalances(accountNo: string) {
   return requestDnse<DnseBalancesResponse>(
     "GET",
-    `/accounts/${encodeURIComponent(accountNo)}/balances`
+    `/accounts/${encodeURIComponent(accountNo)}/balances`,
   )
 }
 
@@ -27,18 +25,21 @@ export async function getDnseStockPositions(accountNo: string) {
     {
       query: {
         marketType: "STOCK",
-        pageSize: STOCK_POSITIONS_PAGE_SIZE,
+        pageSize: 20,
       },
-    }
+    },
   )
 }
 
 export async function getDnseDashboardData(
-  requestedAccountNo?: string | string[]
+  requestedAccountNo?: string | string[],
 ): Promise<DnseDashboardData> {
   const accounts = await getDnseAccounts()
   const availableAccounts = accounts.accounts ?? []
-  const selectedAccount = pickSelectedAccount(availableAccounts, requestedAccountNo)
+  const selectedAccount = pickSelectedAccount(
+    availableAccounts,
+    requestedAccountNo,
+  )
 
   if (!selectedAccount) {
     return {
@@ -66,7 +67,7 @@ export async function getDnseDashboardData(
 
 function pickSelectedAccount(
   accounts: DnseAccountsResponse["accounts"],
-  requestedAccountNo?: string | string[]
+  requestedAccountNo?: string | string[],
 ) {
   const normalizedAccountNo = Array.isArray(requestedAccountNo)
     ? requestedAccountNo[0]
@@ -74,7 +75,7 @@ function pickSelectedAccount(
 
   if (normalizedAccountNo) {
     const matchedAccount = accounts.find(
-      (account) => account.id === normalizedAccountNo
+      (account) => account.id === normalizedAccountNo,
     )
     if (matchedAccount) {
       return matchedAccount
