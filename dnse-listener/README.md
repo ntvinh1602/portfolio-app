@@ -1,6 +1,6 @@
 # DNSE Listener
 
-Standalone Node.js daemon for persisting DNSE `ohlc_closed` bars into Supabase.
+Standalone Node.js daemon for persisting DNSE `ohlc_closed` bars into the `m1_intraday_close` Supabase table.
 
 ## Files
 
@@ -8,7 +8,7 @@ Standalone Node.js daemon for persisting DNSE `ohlc_closed` bars into Supabase.
 - `src/ws.js`: DNSE WebSocket lifecycle, heartbeat, reconnect, replay
 - `src/symbols.js`: Supabase RPC fetch for active stock tickers
 - `src/subscriptions.js`: desired symbol reconciliation
-- `src/sink.js`: PostgREST upsert with bounded retry and drop-on-failure policy
+- `src/sink.js`: PostgREST upsert into `m1_intraday_close` with bounded retry and drop-on-failure policy
 - `dnse-listener.service`: systemd unit for the VPS
 
 ## Environment
@@ -43,8 +43,8 @@ sudo chmod 600 /etc/dnse-listener.env
 
 ## Supabase Notes
 
-- Run the migration `supabase/migrations/20260702093000_add_ohlc_listener.sql`.
-- The migration explicitly grants `service_role` access to the table and RPC.
+- The `m1_intraday_close` table must exist in the `public` schema with `service_role` access.
+- The `active_stock_tickers()` RPC function must be executable by `service_role`.
 - If your cloud project uses the 2026 Data API exposure defaults, keep `public`
   exposed and do not loosen grants for `anon` or `authenticated` unless the web
-  app also needs direct browser reads from `ohlc_bars`.
+  app also needs direct browser reads from `m1_intraday_close`.

@@ -1,7 +1,7 @@
 import process from "node:process"
 
 import { createLogger } from "./log.js"
-import { createBarSink } from "./sink.js"
+import { createIntradaySink } from "./sink.js"
 import { SubscriptionRegistry } from "./subscriptions.js"
 import { fetchActiveSymbols } from "./symbols.js"
 import { createDnseWsClient } from "./ws.js"
@@ -49,7 +49,7 @@ function loadConfig() {
 const config = loadConfig()
 const logger = createLogger({ service: "dnse-listener" })
 const registry = new SubscriptionRegistry()
-const sink = createBarSink({
+const sink = createIntradaySink({
   supabaseUrl: config.supabaseUrl,
   serviceRoleKey: config.serviceRoleKey,
   logger: logger.child({ component: "sink" }),
@@ -64,8 +64,8 @@ const wsClient = createDnseWsClient({
   resolution: config.resolution,
   heartbeatMs: config.heartbeatMs,
   logger: logger.child({ component: "ws" }),
-  onClosedBar(message) {
-    return sink.upsertClosedBar(message)
+  onIntradayClose(message) {
+    return sink.upsertIntradayClose(message)
   },
   onReady() {
     const symbols = registry.getDesiredSymbols()

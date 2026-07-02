@@ -3,13 +3,14 @@ function parseSymbols(payload) {
     throw new Error("active_stock_tickers RPC did not return an array")
   }
 
-  return [...new Set(
-    payload
-      .map((row) => row?.ticker)
-      .filter((ticker) => typeof ticker === "string")
-      .map((ticker) => ticker.trim().toUpperCase())
-      .filter(Boolean),
-  )].sort()
+  return [
+    ...new Set(
+      payload
+        .filter((item) => typeof item === "string")
+        .map((ticker) => ticker.trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ].sort()
 }
 
 export async function fetchActiveSymbols({
@@ -18,16 +19,19 @@ export async function fetchActiveSymbols({
   logger,
   signal,
 }) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/active_stock_tickers`, {
-    method: "POST",
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/rpc/active_stock_tickers`,
+    {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+      signal,
     },
-    body: "{}",
-    signal,
-  })
+  )
 
   if (!response.ok) {
     throw new Error(

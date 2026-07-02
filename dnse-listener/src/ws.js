@@ -66,7 +66,7 @@ export function createDnseWsClient({
   resolution,
   heartbeatMs,
   logger,
-  onClosedBar,
+  onIntradayClose,
   onReady,
   onDisconnect,
 }) {
@@ -281,7 +281,7 @@ export function createDnseWsClient({
 
       if (message.T === "bc") {
         lastPongTime = Date.now()
-        void onClosedBar(message)
+        void onIntradayClose(message)
         return
       }
 
