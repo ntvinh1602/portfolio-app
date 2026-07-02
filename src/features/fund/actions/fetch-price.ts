@@ -13,22 +13,6 @@ type PriceRefreshResult = {
 type HistoricalPriceInsert =
   Database["public"]["Tables"]["historical_prices"]["Insert"]
 
-function normalizeDnseDate(time: string | undefined) {
-  if (!time) return null
-
-  const directDateMatch = /^(\d{4}-\d{2}-\d{2})/.exec(time)
-  if (directDateMatch) {
-    return directDateMatch[1]
-  }
-
-  const parsed = new Date(time)
-  if (Number.isNaN(parsed.getTime())) {
-    return null
-  }
-
-  return parsed.toISOString().split("T")[0]
-}
-
 export async function fetchPrices(): Promise<PriceRefreshResult> {
   const supabase = await createClient()
 
@@ -83,26 +67,27 @@ export async function fetchPrices(): Promise<PriceRefreshResult> {
       }
 
       const response = await getDnseClosePrice(ticker)
-      const closePrice = response.prices?.closePrice
-      const priceDate = normalizeDnseDate(response.prices?.time)
+      const priceEntry = response.prices?.find((p) => p.boardId === "G1")
+      const closePrice = priceEntry?.closePrice
 
-      if (!Number.isFinite(closePrice)) {
+      if (closePrice === undefined || !Number.isFinite(closePrice)) {
         throw new Error(`Missing close price for ${ticker}`)
       }
 
-      if (!priceDate) {
+      if (!priceEntry?.time) {
         throw new Error(`Missing valid price date for ${ticker}`)
       }
 
       return {
         asset_id: assetId,
-        date: priceDate,
-        close: closePrice,
+        date: priceEntry.time.slice(0, 10),
+        close: closePrice * 1000,
       }
     }),
   )
 
   const rows: HistoricalPriceInsert[] = []
+  const errors: string[] = []
 
   priceResults.forEach((result, index) => {
     if (result.status === "fulfilled") {
@@ -111,10 +96,19 @@ export async function fetchPrices(): Promise<PriceRefreshResult> {
     }
 
     failedTickers.push(mappedTickers[index])
+    const reason =
+      result.reason instanceof Error
+        ? result.reason.message
+        : String(result.reason)
+    errors.push(`${mappedTickers[index]}: ${reason}`)
   })
 
   if (!rows.length) {
-    throw new Error("Failed to fetch DNSE close prices for all active tickers")
+    const detail = errors.slice(0, 3).join("; ")
+    const suffix = errors.length > 3 ? ` (+${errors.length - 3} more)` : ""
+    throw new Error(
+      `Failed to fetch DNSE close prices for all ${errors.length} ticker(s): ${detail}${suffix}`,
+    )
   }
 
   const { error: upsertError } = await supabase

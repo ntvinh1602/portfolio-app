@@ -5,6 +5,6 @@ import type { DnseClosePrice } from "@/features/dnse/types"
 export async function getDnseClosePrice(symbol: string) {
   return requestDnse<DnseClosePrice>(
     "GET",
-    `/prices/${encodeURIComponent(symbol)}/close`,
+    `/price/${encodeURIComponent(symbol)}/close`,
   )
 }

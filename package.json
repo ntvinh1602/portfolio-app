@@ -35,11 +35,11 @@
     "he": "^1.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.18.0",
-    "next": "^16.2.9",
+    "next": "^16.3.0-canary.75",
     "radix-ui": "^1.5.0",
-    "react": "^19.2.4",
+    "react": "19.2.7",
     "react-day-picker": "^10.0.1",
-    "react-dom": "^19.2.4",
+    "react-dom": "19.2.7",
     "react-hook-form": "^7.71.1",
     "react-leaflet": "^5.0.0",
     "recharts": "3.8.0",
@@ -59,14 +59,14 @@
     "@types/he": "^1.2.3",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20.19.4",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "autoprefixer": "^10.4.24",
     "dotenv": "^17.2.2",
-    "eslint": "^9.39.3",
-    "eslint-config-next": "^16.2.9",
+    "eslint": "10.6.0",
+    "eslint-config-next": "16.2.10",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.2"
@@ -74,5 +74,9 @@
   "allowScripts": {
     "sharp@0.34.5": true,
     "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3"
   }
 }

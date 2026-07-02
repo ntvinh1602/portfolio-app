@@ -28,7 +28,7 @@ serve(async (req: Request) => {
       .from("assets")
       .select("id, ticker")
       .eq("is_active", true)
-      .in("asset_class", ["stock", "index"])
+      .in("asset_class", ["index"])
 
     if (assetError) throw assetError
     if (!assets?.length) {
