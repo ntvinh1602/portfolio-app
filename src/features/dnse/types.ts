@@ -33,6 +33,17 @@ export interface DnseBalancesResponse {
   derivative?: Record<string, number | string | null> | null
 }
 
+export interface DnseClosePrice {
+  prices: {
+    marketId: "DVX" | "HCX" | "STO" | "STX" | "UPX"
+    boardId: "G1" | "G4" | "T1" | "T3" | "T4" | "T6"
+    isin: string
+    symbol: string
+    closePrice: number
+    time: string
+  }
+}
+
 export interface DnsePosition {
   id: number
   marketType: "STOCK" | "DERIVATIVE"
