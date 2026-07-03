@@ -2,7 +2,7 @@ import process from "node:process"
 
 import { createLogger } from "./log.js"
 import { createOrderSink } from "./order-sink.js"
-import { createIntradaySink } from "./sink.js"
+import { createIntradaySink } from "./m1-ohlc-sink.js"
 import { SubscriptionRegistry } from "./subscriptions.js"
 import { fetchActiveSymbols } from "./symbols.js"
 import { createDnseWsClient } from "./ws.js"

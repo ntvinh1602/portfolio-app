@@ -11,20 +11,18 @@ export function toOrderEventRow(message) {
   const o = message.order ?? message
   return {
     id: Number(o.id),
-    side: String(o.side ?? "").trim(),
+    side: o.side == "NB" ? "buy" : "sell",
     account_no: String(o.accountNo ?? "").trim(),
     symbol: String(o.symbol ?? "").trim().toUpperCase(),
     order_type: String(o.orderType ?? "").trim(),
     price: Number(o.price),
+    avg_price: Number(o.averagePrice),
     quantity: Math.trunc(Number(o.quantity)),
     fill_quantity: Math.trunc(Number(o.fillQuantity ?? 0)),
     canceled_quantity: Math.trunc(Number(o.canceledQuantity ?? 0)),
     leave_quantity: Math.trunc(Number(o.leaveQuantity ?? 0)),
     order_status: String(o.orderStatus ?? "").trim(),
     loan_package_id: o.loanPackageId != null ? Number(o.loanPackageId) : null,
-    market_type: String(o.marketType ?? "").trim(),
-    trans_date: o.transDate,
-    created_date: o.createdDate,
     modified_date: o.modifiedDate,
   }
 }

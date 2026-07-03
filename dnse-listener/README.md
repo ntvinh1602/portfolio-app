@@ -12,7 +12,7 @@ Subscribes to two WebSocket channels on a single connection:
 - `src/ws.js`: DNSE WebSocket lifecycle — transport-only, single `onMessage` callback
 - `src/symbols.js`: Supabase RPC fetch for active stock tickers
 - `src/subscriptions.js`: desired symbol reconciliation
-- `src/sink.js`: PostgREST upsert into `m1_intraday_close` (OHLC bars)
+- `src/m1-ohlc-sink.js`: PostgREST upsert into `m1_intraday_close` (OHLC bars)
 - `src/order-sink.js`: PostgREST insert into `dnse_order_events` (order events)
 - `dnse-listener.service`: systemd unit for the VPS
 
@@ -45,11 +45,3 @@ sudo chmod 600 /etc/dnse-listener.env
 4. Run `sudo systemctl daemon-reload`.
 5. Run `sudo systemctl enable --now dnse-listener`.
 6. Inspect logs with `journalctl -u dnse-listener -f`.
-
-## Supabase Notes
-
-- The `m1_intraday_close` and `dnse_order_events` tables must exist in the `public` schema with `service_role` access.
-- The `active_stock_tickers()` RPC function must be executable by `service_role`.
-- If your cloud project uses the 2026 Data API exposure defaults, keep `public`
-  exposed and do not loosen grants for `anon` or `authenticated` unless the web
-  app also needs direct browser reads from these tables.
