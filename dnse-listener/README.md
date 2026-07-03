@@ -1,14 +1,19 @@
 # DNSE Listener
 
-Standalone Node.js daemon for persisting DNSE `ohlc_closed` bars into the `m1_intraday_close` Supabase table.
+Standalone Node.js daemon for persisting DNSE market data and order events into Supabase.
+
+Subscribes to two WebSocket channels on a single connection:
+- `ohlc_closed` — 1-minute OHLC bars → `m1_intraday_close`
+- `order.STOCK.json` — real-time stock order events → `dnse_order_events`
 
 ## Files
 
-- `src/index.js`: bootstrap, config validation, symbol refresh loop
-- `src/ws.js`: DNSE WebSocket lifecycle, heartbeat, reconnect, replay
+- `src/index.js`: bootstrap, config, message routing, symbol refresh loop
+- `src/ws.js`: DNSE WebSocket lifecycle — transport-only, single `onMessage` callback
 - `src/symbols.js`: Supabase RPC fetch for active stock tickers
 - `src/subscriptions.js`: desired symbol reconciliation
-- `src/sink.js`: PostgREST upsert into `m1_intraday_close` with bounded retry and drop-on-failure policy
+- `src/sink.js`: PostgREST upsert into `m1_intraday_close` (OHLC bars)
+- `src/order-sink.js`: PostgREST insert into `dnse_order_events` (order events)
 - `dnse-listener.service`: systemd unit for the VPS
 
 ## Environment
@@ -43,8 +48,8 @@ sudo chmod 600 /etc/dnse-listener.env
 
 ## Supabase Notes
 
-- The `m1_intraday_close` table must exist in the `public` schema with `service_role` access.
+- The `m1_intraday_close` and `dnse_order_events` tables must exist in the `public` schema with `service_role` access.
 - The `active_stock_tickers()` RPC function must be executable by `service_role`.
 - If your cloud project uses the 2026 Data API exposure defaults, keep `public`
   exposed and do not loosen grants for `anon` or `authenticated` unless the web
-  app also needs direct browser reads from `m1_intraday_close`.
+  app also needs direct browser reads from these tables.

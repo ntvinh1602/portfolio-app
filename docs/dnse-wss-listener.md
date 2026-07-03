@@ -3,9 +3,9 @@
 ## Overview
 
 A standalone Node.js daemon running on a 512 MB VPS that listens to the DNSE
-LightSpeed market-data WebSocket, subscribes to **closed OHLC bars**
-(`ohlc_closed`) for the tickers you currently hold, and upserts each bar into
-Supabase. Read-only market data only — no trading, no order/position channels.
+LightSpeed WebSocket, subscribes to **closed OHLC bars** (`ohlc_closed`) for
+the tickers you currently hold and **real-time order events** (`order.STOCK`),
+and persists each to Supabase.
 
 ```
 DNSE WS Gateway  ──WSS──►  VPS Node Daemon  ──HTTPS──►  Supabase
@@ -17,7 +17,7 @@ wss://ws-openapi...         (512 MB RAM)                 (REST API)
 
 ### Node.js Daemon
 
-**Purpose:** Listen to DNSE WebSocket, subscribe to OHLC closed bars for active holdings, upsert bars to Supabase.
+**Purpose:** Listen to DNSE WebSocket, subscribe to OHLC closed bars and order events, persist to Supabase.
 
 **Location:** `/opt/dnse-listener/`
 
@@ -26,12 +26,14 @@ dnse-listener/
 ├─ package.json                 # deps: ws (crypto & fetch built-in on Node 18+)
 ├─ .env                         # not committed; loaded via systemd EnvironmentFile
 ├─ src/
-│  ├─ index.js                  # bootstrap, config, wiring, refresh loop
+│  ├─ index.js                  # bootstrap, config, wiring, message routing, refresh loop
 │  ├─ ws.js                     # WS lifecycle: connect → welcome → auth → subscribe,
 │  │                            #   ping/pong, health check, unbounded reconnect
+│  │                            #   transport-only — single onMessage callback
 │  ├─ symbols.js                # POST rpc/active_stock_tickers via service_role
 │  ├─ subscriptions.js          # desired/subscribed reconcile logic
-│  ├─ sink.js                   # PostgREST upsert (merge-duplicates) + bounded retry
+│  ├─ sink.js                   # PostgREST upsert into m1_intraday_close (OHLC bars)
+│  ├─ order-sink.js             # PostgREST insert into dnse_order_events (order events)
 │  └─ log.js                    # minimal structured logging → journald
 └─ dnse-listener.service        # systemd unit
 ```
@@ -39,9 +41,28 @@ dnse-listener/
 **Key architectural decisions:**
 - **Dedicated persistent process** — WebSocket listening is long-lived and stateful; cannot run on Vercel/serverless
 - **Single-connection, hand-rolled Node `ws` client** — official DNSE SDK ships a full Python WS client (6-worker dispatch pool), overkill for this volume
+- **Transport-only ws.js** — connection, auth, heartbeat, subscription. Single `onMessage` callback; all routing logic lives in `index.js`
+- **Channel config via array** — channels defined once in `index.js`, subscribed on connect. Adding a new channel = append to array + routing rule
 - **No REST dependency in the daemon** — ticker list comes from Supabase RPC, removing DNSE HTTP-Signature signing and Caddy coupling
-- **Idempotent upserts** keyed on `(symbol, resolution, bar_time)` — reconnect-driven duplicates are harmless since `ohlc_closed` bars are immutable
+- **Idempotent upserts** keyed on `(symbol, last_updated)` for OHLC bars — reconnect-driven duplicates are harmless since bars are immutable
+- **Append-only inserts** for order events — every status change is a new row, full history preserved
 - **Two layers of recovery:** unbounded in-app reconnect (exponential backoff, capped at 60 s) **plus** systemd `Restart=always`
+
+### Message Routing
+
+`ws.js` handles connection lifecycle and passes all data frames to a single `onMessage` callback. Routing lives in `index.js`:
+
+```
+onMessage(message):
+  T === "bc"  →  sink.upsertIntradayClose(message)     # OHLC closed bar
+  T === "b"   →  ignore                                 # OHLC in-progress bar
+  else        →  orderSink.upsertOrderEvent(message)    # order events + anything else
+```
+
+Adding a new channel:
+1. Append `{ name: "channel.name.json" }` to the `channels` array
+2. Add a routing rule in `onMessage`
+3. Create a new sink module
 
 ### systemd Unit
 
@@ -49,7 +70,7 @@ dnse-listener/
 
 ```ini
 [Unit]
-Description=DNSE WSS OHLC Listener
+Description=DNSE WSS Listener
 After=network-online.target
 Wants=network-online.target
 
@@ -87,26 +108,50 @@ journalctl -u dnse-listener -f          # live logs
 
 ### Supabase Objects
 
-**Bars table** (`public.ohlc_bars`):
+**OHLC bars table** (`public.m1_intraday_close`):
 
 ```sql
-create table if not exists public.ohlc_bars (
+create table if not exists public.m1_intraday_close (
   symbol        text        not null,
-  resolution    text        not null,
-  bar_time      timestamptz not null,          -- = payload.time (bar open)
-  open          numeric     not null,
-  high          numeric     not null,
-  low           numeric     not null,
   close         numeric     not null,
   volume        bigint      not null,
-  type          text,                            -- STOCK / DERIVATIVE / INDEX
-  last_updated  timestamptz,                     -- = payload.lastUpdated
+  last_updated  timestamptz not null,
   received_at   timestamptz not null default now(),
-  primary key (symbol, resolution, bar_time)
+  primary key (symbol, last_updated)
 );
 
-alter table public.ohlc_bars enable row level security;
+alter table public.m1_intraday_close enable row level security;
 ```
+
+**Order events table** (`public.dnse_order_events`):
+
+```sql
+create table if not exists public.dnse_order_events (
+  id                 bigserial    not null,   -- auto-increment PK
+  -- fields from message.order payload
+  order_id           bigint       not null,   -- DNSE order ID
+  side               text         not null,
+  account_no         text         not null,
+  symbol             text         not null,
+  order_type         text         not null,
+  price              numeric      not null,
+  quantity           integer      not null,
+  fill_quantity      integer      not null default 0,
+  canceled_quantity  integer      not null default 0,
+  leave_quantity     integer      not null default 0,
+  order_status       text         not null,
+  loan_package_id    integer,
+  market_type        text         not null,
+  trans_date         timestamptz  not null,
+  created_date       timestamptz  not null,
+  modified_date      timestamptz  not null,
+  received_at        timestamptz  not null default now()
+);
+
+alter table public.dnse_order_events enable row level security;
+```
+
+Every order event (new, partially filled, filled, canceled, etc.) is a new row — full status history is preserved.
 
 **Active tickers RPC** (`public.active_stock_tickers()`):
 
@@ -143,11 +188,9 @@ REFRESH_MS=300000
 HEARTBEAT_MS=25000
 ```
 
-No DNSE account number or REST base URL — those are gone with the positions endpoint.
-
 ## Protocol Reference
 
-Source of truth: [dnse-tech/openapi-sdk](https://github.com/dnse-tech/openapi-sdk). The following was confirmed by reading the SDK source.
+Source of truth: [dnse-tech/openapi-sdk](https://github.com/dnse-tech/openapi-sdk).
 
 ### Connection
 
@@ -175,25 +218,25 @@ Uses `encoding=json` — no extra dependency, human-inspectable frames in logs.
    - `signature = HMAC_SHA256_hex(api_secret, "{api_key}:{timestamp}:{nonce}")`
 3. **Auth result** (server → client): success ⇒ `{"action":"auth_success"}`. Failure ⇒ `{"action":"auth_error"}` or `{"action":"error"}`.
 
-> ⚠️ This differs from some doc summaries that show a nested `data:{apiKey,...}` payload. The SDK source is authoritative: **flat `api_key`, success action is `auth_success`.**
-
 ### Subscribe
 
 ```json
 {
   "action": "subscribe",
   "channels": [
-    { "name": "ohlc_closed.1.json", "symbols": ["SSI", "HPG"] }
+    { "name": "ohlc_closed.1.json", "symbols": ["SSI", "HPG"] },
+    { "name": "order.STOCK.json" }
   ]
 }
 ```
 
 - Symbols live **inside each channel object** — no top-level `symbols` and no `data` wrapper.
+- Order channels are account-level — no per-symbol filtering needed.
 - Confirmation frame: `{"action":"subscribed"}`
 - **Must be sent only after `auth_success`.**
 - **Must be re-sent after every reconnect** — subscriptions do not survive a new socket.
 
-### Data Frames — dispatch on `T` type tag
+### Data Frames — OHLC
 
 | `T` value | Meaning | Action |
 |---|---|---|
@@ -216,6 +259,40 @@ Uses `encoding=json` — no extra dependency, human-inspectable frames in logs.
   "type": "STOCK"
 }
 ```
+
+### Data Frames — Order Events
+
+Order events arrive wrapped with metadata:
+
+```json
+{
+  "T": "eo",
+  "action": "order_update",
+  "event": "...",
+  "sequence": 12345,
+  "timestamp": "...",
+  "order": {
+    "id": 596,
+    "side": "NS",
+    "accountNo": "0001179019",
+    "symbol": "41I1G5000",
+    "orderType": "LO",
+    "price": 1920.0,
+    "quantity": 5,
+    "fillQuantity": 2,
+    "canceledQuantity": 0,
+    "leaveQuantity": 3,
+    "orderStatus": "PartiallyFilled",
+    "loanPackageId": 2278,
+    "marketType": "DERIVATIVE",
+    "transDate": "2026-04-06T00:00:00Z",
+    "createdDate": "2026-04-13T04:24:05.274Z",
+    "modifiedDate": "2026-04-13T04:28:27.749Z"
+  }
+}
+```
+
+The `order` field contains the actual order data. The outer fields (`T`, `action`, `event`, etc.) are DNSE transport metadata and may change without notice — the sink extracts from `message.order`.
 
 ### Keepalive (ping / pong)
 
@@ -248,7 +325,8 @@ every REFRESH_MS:
   remove = subscribed − desired  → ws.unsubscribe(remove)
   subscribed = desired
 on ws (re)connect after auth_success:
-  ws.subscribe(subscribed)     // replay current set
+  ws.subscribeToChannels()      // static channels (order)
+  ws.subscribe(subscribed)      // symbol-based channels (OHLC)
 ```
 
 ## Troubleshooting
@@ -258,6 +336,7 @@ on ws (re)connect after auth_success:
 | Daemon not running | systemd crash loop | `journalctl -u dnse-listener -n 50` — check logs for auth or network errors |
 | `auth_error` | Invalid API key/secret | Verify `DNSE_API_KEY` / `DNSE_API_SECRET` in `/etc/dnse-listener.env` |
 | No bars appearing | Subscription mismatch | Check `active_stock_tickers()` RPC returns expected tickers |
+| No order events | Channel not subscribed | Check `ws.subscription_ack` for `order.STOCK.json` in logs |
 | Bars stalling after 2×HB | No pong received | Daemon tears down and reconnects automatically; check network egress from VPS |
 | High memory usage | Log accumulation or leak | `systemctl status dnse-listener` — RSS should be < 256 MB; restart if needed |
 | OOM kill | Transient spike exceeded cgroup limit | Ensure 1–2 GB swapfile is configured; check `dmesg` for OOM events |
@@ -273,7 +352,6 @@ on ws (re)connect after auth_success:
 
 ## Explicitly Out of Scope
 
-- Trading (order placement) — requires the 8-hour trading-token flow and `order` / `position` channels
 - Derivative symbols — requires mapping `symbol → symbolType` (e.g. `VN30F1M`); STOCK-only for now
-- Other market-data channels (`quotes`, `trades`, `foreign`, indices) — design generalizes to them (same connection, add channel objects), but only `ohlc_closed.1` is in scope
+- Other market-data channels (`quotes`, `trades`, `foreign`, indices) — design generalizes to them (same connection, add channel objects)
 - Backfill/gap-fill via REST `GET /price/ohlc` — noted as recovery mechanism for dropped bars, not implemented in v1

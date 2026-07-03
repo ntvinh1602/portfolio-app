@@ -63,14 +63,13 @@ function reconnectDelaySeconds(attempt) {
 export function createDnseWsClient({
   apiKey,
   apiSecret,
-  resolution,
+  channels,
   heartbeatMs,
   logger,
-  onIntradayClose,
+  onMessage,
   onReady,
   onDisconnect,
 }) {
-  const channelName = `ohlc_closed.${resolution}.json`
   let socket = null
   let stopped = false
   let isAuthenticated = false
@@ -204,7 +203,6 @@ export function createDnseWsClient({
 
     logger.info("ws.connecting", {
       url: DNSE_STREAM_URL,
-      channel: channelName,
     })
 
     isAuthenticated = false
@@ -279,20 +277,10 @@ export function createDnseWsClient({
         return
       }
 
-      if (message.T === "bc") {
-        lastPongTime = Date.now()
-        void onIntradayClose(message)
-        return
+      lastPongTime = Date.now()
+      if (onMessage) {
+        void onMessage(message)
       }
-
-      if (message.T === "b") {
-        return
-      }
-
-      logger.debug("ws.ignored_frame", {
-        action: message.action ?? null,
-        type: message.T ?? null,
-      })
     })
 
     socket.on("pong", () => {
@@ -329,45 +317,76 @@ export function createDnseWsClient({
     })
   }
 
-  function subscriptionPayload(action, symbols) {
-    const normalizedSymbols = normalizeSymbols(symbols)
-    if (normalizedSymbols.length === 0) {
-      return null
+  function subscribeToChannels() {
+    if (!isLive()) {
+      return
     }
 
-    return {
-      action,
-      channels: [
-        {
-          name: channelName,
-          symbols: normalizedSymbols,
-        },
-      ],
+    for (const channel of channels) {
+      logger.info("ws.subscription_send", {
+        action: "subscribe",
+        channel: channel.name,
+      })
+
+      sendJson({
+        action: "subscribe",
+        channels: [channel],
+      })
     }
   }
 
-  function sendSubscription(action, symbols) {
-    const payload = subscriptionPayload(action, symbols)
-    if (!payload) {
+  function subscribe(symbols) {
+    if (!isLive()) {
       return false
     }
 
-    if (!isLive()) {
-      logger.warn("ws.subscription_skipped", {
-        action,
-        symbols: payload.channels[0].symbols,
-        reason: "socket_not_live",
-      })
+    const normalizedSymbols = normalizeSymbols(symbols)
+    if (normalizedSymbols.length === 0) {
+      return false
+    }
+
+    const ohlcChannel = channels.find((ch) => ch.name.startsWith("ohlc_closed"))
+    if (!ohlcChannel) {
       return false
     }
 
     logger.info("ws.subscription_send", {
-      action,
-      channel: channelName,
-      symbols: payload.channels[0].symbols,
+      action: "subscribe",
+      channel: ohlcChannel.name,
+      symbols: normalizedSymbols,
     })
 
-    return sendJson(payload)
+    return sendJson({
+      action: "subscribe",
+      channels: [{ name: ohlcChannel.name, symbols: normalizedSymbols }],
+    })
+  }
+
+  function unsubscribe(symbols) {
+    if (!isLive()) {
+      return false
+    }
+
+    const normalizedSymbols = normalizeSymbols(symbols)
+    if (normalizedSymbols.length === 0) {
+      return false
+    }
+
+    const ohlcChannel = channels.find((ch) => ch.name.startsWith("ohlc_closed"))
+    if (!ohlcChannel) {
+      return false
+    }
+
+    logger.info("ws.subscription_send", {
+      action: "unsubscribe",
+      channel: ohlcChannel.name,
+      symbols: normalizedSymbols,
+    })
+
+    return sendJson({
+      action: "unsubscribe",
+      channels: [{ name: ohlcChannel.name, symbols: normalizedSymbols }],
+    })
   }
 
   function start() {
@@ -395,11 +414,8 @@ export function createDnseWsClient({
     start,
     stop,
     isLive,
-    subscribe(symbols) {
-      return sendSubscription("subscribe", symbols)
-    },
-    unsubscribe(symbols) {
-      return sendSubscription("unsubscribe", symbols)
-    },
+    subscribe,
+    unsubscribe,
+    subscribeToChannels,
   }
 }

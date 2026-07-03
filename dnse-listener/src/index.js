@@ -1,6 +1,7 @@
 import process from "node:process"
 
 import { createLogger } from "./log.js"
+import { createOrderSink } from "./order-sink.js"
 import { createIntradaySink } from "./sink.js"
 import { SubscriptionRegistry } from "./subscriptions.js"
 import { fetchActiveSymbols } from "./symbols.js"
@@ -55,21 +56,42 @@ const sink = createIntradaySink({
   logger: logger.child({ component: "sink" }),
 })
 
+const orderSink = createOrderSink({
+  supabaseUrl: config.supabaseUrl,
+  serviceRoleKey: config.serviceRoleKey,
+  logger: logger.child({ component: "order_sink" }),
+})
+
+const channels = [
+  { name: `ohlc_closed.${config.resolution}.json` },
+  { name: "order.STOCK.json" },
+]
+
 let refreshTimer = null
 let shuttingDown = false
 
 const wsClient = createDnseWsClient({
   apiKey: config.dnseApiKey,
   apiSecret: config.dnseApiSecret,
-  resolution: config.resolution,
+  channels,
   heartbeatMs: config.heartbeatMs,
   logger: logger.child({ component: "ws" }),
-  onIntradayClose(message) {
-    return sink.upsertIntradayClose(message)
+  onMessage(message) {
+    if (message.T === "bc") {
+      void sink.upsertIntradayClose(message)
+      return
+    }
+
+    if (message.T === "b") {
+      return
+    }
+
+    void orderSink.upsertOrderEvent(message)
   },
   onReady() {
-    const symbols = registry.getDesiredSymbols()
+    wsClient.subscribeToChannels()
 
+    const symbols = registry.getDesiredSymbols()
     if (symbols.length === 0) {
       logger.info("subscriptions.idle")
       return
