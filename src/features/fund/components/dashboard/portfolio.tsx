@@ -1,5 +1,3 @@
-"use client"
-
 import {
   Card,
   CardAction,
@@ -16,30 +14,30 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 
-export function Portfolio({ data }: { data: BSheetView[] }) {
-  const equity = data
-    .filter((r) => r.asset_class === "equity")
-    .reduce((sum, r) => sum + r.total_value, 0)
+interface Props {
+  cash: number
+  stock: number
+  fund: number
+  equity: number
+  margin: number
+  debt: number
+  totalAsset: number
+  bsheet: BSheetView[]
+}
 
-  const cash = data
-    .filter((r) => r.asset_class == "cash")
-    .reduce((sum, r) => sum + r.total_value, 0)
-
-  const stock = data
-    .filter((r) => r.asset_class == "stock")
-    .reduce((sum, r) => sum + r.total_value, 0)
-
-  const fund = data
-    .filter((r) => r.asset_class == "fund")
-    .reduce((sum, r) => sum + r.total_value, 0)
-
-  const margin = data.find((r) => r.ticker == "MARGIN")?.total_value || 0
-  const totalAsset = cash + stock + fund
-  const debt = totalAsset - equity - margin
-
+export function Portfolio({
+  cash,
+  stock,
+  fund,
+  equity,
+  margin,
+  debt,
+  totalAsset,
+  bsheet,
+}: Props) {
   return (
     <Card>
-      <StockHoldings bs={data} />
+      <StockHoldings bs={bsheet} />
       <div className="flex flex-1">
         <AumChart
           cash={cash}

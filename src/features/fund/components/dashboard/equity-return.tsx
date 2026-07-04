@@ -1,16 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { EquityChart } from "@fund/components/chart/equity-chart"
-import { ReturnChart } from "@fund/components/chart/return-chart"
-import type { EquityReturnView } from "@fund/fund.types"
+import { EquityChartSection } from "./equity-chart-section"
+import { ReturnChartSection } from "./return-chart-section"
+import { useDashboardDateRange } from "./context"
 import { withAllTime } from "@fund/config"
 
-export function EquityReturn({ data }: { data: EquityReturnView }) {
-  const [dateRange, setDateRange] = useState("last_1y")
+export function EquityReturnSection() {
+  const { dateRange, setDateRange } = useDashboardDateRange()
+
   return (
     <div className="@container/main flex flex-col gap-6">
       <div className="flex bg-card gap-2 p-1 rounded-4xl items-center">
@@ -31,16 +31,8 @@ export function EquityReturn({ data }: { data: EquityReturnView }) {
           ))}
         </ToggleGroup>
       </div>
-      <EquityChart
-        dateRange={dateRange}
-        chartData={data.equitychart}
-        data={data}
-      />
-      <ReturnChart
-        dateRange={dateRange}
-        chartData={data.returnchart}
-        data={data}
-      />
+      <EquityChartSection />
+      <ReturnChartSection />
     </div>
   )
 }

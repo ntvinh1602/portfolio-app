@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import {
-  EquityReturnView,
+  EquityRollingView,
+  BenchmarkRollingView,
   NewsArticle,
   BSheetView,
   ProfitView,
@@ -36,9 +37,9 @@ export async function getBalanceSheet() {
 // News
 
 export async function getNews() {
-  "use cache: private"
+  "use cache"
   cacheTag("news")
-  cacheLife("days")
+  cacheLife("hours")
 
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -59,13 +60,24 @@ export async function getNews() {
 
 // Equity & Benchmark
 
-export async function getEquityReturn() {
+export async function getEquityRolling() {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from("equity_return_data")
+    .from("equity_rollings")
     .select()
     .single()
 
   if (error) throw new Error(error.message)
-  return data as EquityReturnView
+  return data as EquityRollingView
+}
+
+export async function getBenchmarkRolling() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("benchmark_rollings")
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data as BenchmarkRollingView
 }

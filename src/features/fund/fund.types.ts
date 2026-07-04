@@ -65,28 +65,17 @@ export interface BSheetView {
   net_profit: number | null
 }
 
-export interface PerformanceView {
-  year: number
-  avg_expense: number
-  avg_profit: number
-  deposits: number
-  equity_ret: number
-  total_pnl: number
-  vn_ret: number
-  withdrawals: number
-  profit_chart: ProfitChartCols
-  return_chart: BenchmarkChartCols
-  stock_pnl: StockPnl[]
-}
-
-export type EquityReturnView = {
+export type EquityRollingView = {
   pnl_ytd: number
   pnl_mtd: number
+  total_equity: number
+  equitychart: EquityChartWindows
+}
+
+export type BenchmarkRollingView = {
   twr_ytd: number
   twr_all: number
-  total_equity: number
   cagr: number
-  equitychart: EquityChartWindows
   returnchart: BenchmarkChartWindows
 }
 

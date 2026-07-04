@@ -1,4 +1,4 @@
-import getBalanceSheet from "@fund/actions/get-balancesheet"
+import { getBalanceSheet } from "@fund/actions/get-dashboard"
 import { Spinner } from "@/components/ui/spinner"
 import { Suspense } from "react"
 import BalanceSheet from "@fund/components/dashboard/balance-sheet"

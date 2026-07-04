@@ -6,43 +6,30 @@ import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
 import { benchmarkChart } from "@fund/config"
-import { useMemo } from "react"
-import type {
-  BenchmarkChartCols,
-  BenchmarkChartWindows,
-  EquityReturnView,
-} from "@fund/fund.types"
 import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   dateRange: string
-  chartData: BenchmarkChartWindows // columnar now
-  data: EquityReturnView
+  chartTimeframe: Record<string, string | number>[]
+  twrYtd: number
+  twrAll: number
+  cagr: number
 }
 
-function colsToRows({ d, p, v }: BenchmarkChartCols) {
-  const out = new Array(d.length)
-  for (let i = 0; i < d.length; i++) {
-    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
-  }
-  return out
-}
-
-export function ReturnChart({ dateRange, chartData, data }: Props) {
-  const cols =
-    chartData[dateRange as keyof typeof chartData] ?? chartData.last_1y
-
-  const chartTimeframe = useMemo(() => colsToRows(cols), [cols])
-
+export function ReturnChart({
+  dateRange,
+  chartTimeframe,
+  twrYtd,
+  twrAll,
+  cagr,
+}: Props) {
   const xAxisTickFormatter = (ms: number) =>
     ["last_1y", "all"].includes(dateRange)
       ? format(new Date(ms), "MMM yyyy")
       : format(new Date(ms), "dd MMM")
 
-  // VALUE formatter — one arg, formats the equity/return number
   const tooltipFormatter = (v: number) => formatNum(v, 2)
 
-  // LABEL formatter — typed to match the prop, reads epoch from the row
   const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {
     const ms = payload?.[0]?.payload?.t as number | undefined
     if (ms == null) return ""
@@ -53,12 +40,12 @@ export function ReturnChart({ dateRange, chartData, data }: Props) {
       <ChartCardHeader
         title="Return"
         titleLegend="this year"
-        heroStat={pctNum(data.twr_ytd)}
-        stat1={data.twr_all}
-        formattedStat1={pctNum(data.twr_all)}
+        heroStat={pctNum(twrYtd)}
+        stat1={twrAll}
+        formattedStat1={pctNum(twrAll)}
         descriptionStat1="all time"
-        stat2={data.cagr}
-        formattedStat2={pctNum(data.cagr)}
+        stat2={cagr}
+        formattedStat2={pctNum(cagr)}
         descriptionStat2="annualized"
       />
       <Areachart
@@ -69,8 +56,8 @@ export function ReturnChart({ dateRange, chartData, data }: Props) {
         className="w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
-        tooltipFormatter={tooltipFormatter} // value → (value: number) => string
-        tooltipLabelFormatter={tooltipLabelFormatter} // label → TooltipLabelFormatter
+        tooltipFormatter={tooltipFormatter}
+        tooltipLabelFormatter={tooltipLabelFormatter}
       />
     </Card>
   )

@@ -857,6 +857,15 @@ export type Database = {
         }
         Relationships: []
       }
+      benchmark_rollings: {
+        Row: {
+          cagr: number | null
+          returnchart: Json | null
+          twr_all: number | null
+          twr_ytd: number | null
+        }
+        Relationships: []
+      }
       benchmark_yearly: {
         Row: {
           equity_ret: number | null
@@ -896,16 +905,12 @@ export type Database = {
         }
         Relationships: []
       }
-      equity_return_data: {
+      equity_rollings: {
         Row: {
-          cagr: number | null
           equitychart: Json | null
           pnl_mtd: number | null
           pnl_ytd: number | null
-          returnchart: Json | null
           total_equity: number | null
-          twr_all: number | null
-          twr_ytd: number | null
         }
         Relationships: []
       }
