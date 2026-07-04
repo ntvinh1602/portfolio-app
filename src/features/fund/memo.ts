@@ -10,8 +10,7 @@ export const CASHFLOW = {
   ],
   expense: [
     "Margin interest",
-    "Other services/operation fees",
     "Cash advance interest",
-    "Monthly depository fee",
+    "Operational fees",
   ],
 } as const

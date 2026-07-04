@@ -4,7 +4,7 @@ import type { Last1YProfitView } from "@fund/fund.types"
 export default async function get1yProfit() {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from("last_1y_profit")
+    .from("pnl_expense_last1y")
     .select()
     .single()
 

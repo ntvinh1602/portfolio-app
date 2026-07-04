@@ -1,36 +1,21 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
 import { YearPicker } from "@/components/year-picker"
-import { ExpenseChart } from "../chart/expense-chart"
-import { TopStocks } from "./top-stocks"
-import { Cashflow } from "./cashflow"
-import { ReturnChart } from "./return-chart"
-import type { PerformanceView } from "@fund/fund.types"
-import { NetProfitChart } from "../chart/netprofit-chart"
+import { usePerformanceYear } from "./context"
+import { CashflowSection } from "./cashflow-section"
+import { ExpenseChartSection } from "./expense-chart-section"
+import { TopStocksSection } from "./top-stocks-section"
+import { NetProfitSection } from "./netprofit-section"
+import { ReturnChartSection } from "./return-chart-section"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
 
-export function Performance({
-  results,
-  startYear,
-}: {
-  results: PerformanceView[]
-  startYear: number
-}) {
-  const [year, setYear] = useState<number | null>(null)
+export function Performance() {
+  const { year, setYear, startYear } = usePerformanceYear()
 
-  useEffect(() => {
-    setYear(new Date().getFullYear())
-  }, [])
-  const yearMap = useMemo(
-    () => Object.fromEntries(results.map((d) => [d.year, d])),
-    [results],
-  )
-  const yearData = year !== null ? yearMap[year] : undefined
-  if (!yearData || year === null) return null
+  if (year === null) return null
 
   return (
     <div className="@container/main flex flex-1">
@@ -43,25 +28,17 @@ export function Performance({
                 onChange={setYear}
                 startYear={startYear}
               />
-              <Cashflow
-                deposits={yearData.deposits}
-                withdrawals={yearData.withdrawals}
-              />
+              <CashflowSection />
             </div>
 
-            <ExpenseChart profitChart={yearData.profit_chart} />
+            <ExpenseChartSection />
           </div>
-          <TopStocks year={year} stockData={yearData.stock_pnl} />
+          <TopStocksSection />
         </div>
 
         <div className="flex flex-col flex-1 gap-6">
-          <NetProfitChart year={year} data={yearData} />
-          <ReturnChart
-            year={year}
-            equityReturn={yearData.equity_ret}
-            vnIndexReturn={yearData.vn_ret}
-            chartData={yearData.return_chart}
-          />
+          <NetProfitSection />
+          <ReturnChartSection />
         </div>
       </div>
     </div>

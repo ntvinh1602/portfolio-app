@@ -1,19 +1,10 @@
-import { Suspense } from "react"
-import getPerformance from "@/features/fund/actions/get-performance"
-import {
-  Performance,
-  PerformanceSkeleton,
-} from "@fund/components/performance/wrapper"
+import { PerformanceYearProvider } from "@fund/components/performance/context"
+import { Performance } from "@fund/components/performance/wrapper"
 
 export default function Page() {
   return (
-    <Suspense fallback={<PerformanceSkeleton />}>
-      <PerformanceCard />
-    </Suspense>
+    <PerformanceYearProvider startYear={2021}>
+      <Performance />
+    </PerformanceYearProvider>
   )
-}
-
-async function PerformanceCard() {
-  const data = await getPerformance()
-  return <Performance results={data} startYear={2021} />
 }
