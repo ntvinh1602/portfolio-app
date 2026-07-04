@@ -1,32 +1,20 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import type { PerformanceView } from "@fund/fund.types"
+import {
+  BenchmarkView,
+  CashflowView,
+  ProfitView,
+  StockPnl,
+} from "@fund/fund.types"
 
-export type CashflowView = Pick<PerformanceView, "year" | "deposits" | "withdrawals">
-export type StocksRow = {
-  ticker: string
-  name: string
-  logo_url: string
-  total_pnl: number
-}
-export type StocksView = StocksRow[]
-export type ProfitView = Pick<
-  PerformanceView,
-  "year" | "profit_chart" | "total_pnl" | "avg_profit" | "avg_expense"
->
-export type ReturnView = Pick<
-  PerformanceView,
-  "year" | "return_chart" | "equity_ret" | "vn_ret"
->
-
-// ── Cashflow ────────────────────────────────────────────────
+// Cashflow
 
 export async function getCashflow(year: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("cashflow_yearly")
-    .select("year, deposits, withdrawals")
+    .select("deposits, withdrawals")
     .eq("year", year)
     .single()
 
@@ -45,17 +33,17 @@ export async function getCashflowAllTime() {
   return data as CashflowView
 }
 
-// ── Stocks ──────────────────────────────────────────────────
+// Stocks
 
 export async function getStocks(year: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("stock_pnl_yearly")
-    .select("year, ticker, name, logo_url, total_pnl")
+    .select("ticker, name, logo_url, total_pnl")
     .eq("year", year)
 
   if (error) throw new Error(error.message)
-  return data as StocksView
+  return data as StockPnl[]
 }
 
 export async function getStocksAll() {
@@ -65,16 +53,16 @@ export async function getStocksAll() {
     .select("ticker, name, logo_url, total_pnl")
 
   if (error) throw new Error(error.message)
-  return data as StocksView
+  return data as StockPnl[]
 }
 
-// ── Profit ──────────────────────────────────────────────────
+// Pnl & Expenses
 
 export async function getProfit(year: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("pnl_expense_yearly")
-    .select()
+    .select("profit_chart, total_pnl, avg_profit, avg_expense")
     .eq("year", year)
     .single()
 
@@ -93,18 +81,18 @@ export async function getProfitAllTime() {
   return data as ProfitView
 }
 
-// ── Return ──────────────────────────────────────────────────
+// Benchmark
 
 export async function getReturn(year: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("benchmark_yearly")
-    .select("year, return_chart, equity_ret, vn_ret")
+    .select("return_chart, equity_ret, vn_ret")
     .eq("year", year)
     .single()
 
   if (error) throw new Error(error.message)
-  return data as ReturnView
+  return data as BenchmarkView
 }
 
 export async function getReturnAllTime() {
@@ -115,5 +103,5 @@ export async function getReturnAllTime() {
     .single()
 
   if (error) throw new Error(error.message)
-  return data as ReturnView
+  return data as BenchmarkView
 }

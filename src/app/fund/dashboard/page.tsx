@@ -1,7 +1,7 @@
-import getNews from "@fund/actions/get-news"
-import get1yProfit from "@/features/fund/actions/get-1y-profit"
+import { getNews } from "@fund/actions/get-dashboard"
+import { get1yProfit } from "@/features/fund/actions/get-dashboard"
 import getStockHoldings from "@fund/actions/get-stock-holdings"
-import getBalanceSheet from "@fund/actions/get-balancesheet"
+import { getBalanceSheet } from "@fund/actions/get-dashboard"
 import { Suspense } from "react"
 import { NewsSkeleton, NewsWidget } from "@fund/components/dashboard/news"
 import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
@@ -13,7 +13,8 @@ import {
 import { NetProfitChart } from "@fund/components/chart/netprofit-chart"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import getEquityReturn from "@fund/actions/get-equity-return"
+import { getEquityReturn } from "@fund/actions/get-dashboard"
+import { ProfitChartCols, ProfitView } from "@/features/fund/fund.types"
 
 export default function Page() {
   return (
@@ -63,7 +64,14 @@ async function PortfolioData() {
 
 async function NetProfitData() {
   const data = await get1yProfit()
-  return <NetProfitChart data={data} />
+  return (
+    <NetProfitChart
+      totalPnl={data.total_pnl}
+      avgProfit={data.avg_profit}
+      avgExpense={data.avg_expense}
+      chartRows={data.profit_chart as ProfitView[]}
+    />
+  )
 }
 
 async function NewsData() {

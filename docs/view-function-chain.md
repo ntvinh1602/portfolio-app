@@ -18,8 +18,10 @@ flowchart LR
     B6("get_return_chart()") --> C1[benchmark_yearly benchmark_all]
     B4("calculate_twr()") --> C2[benchmark_yearly benchmark_all]
     B5("calculate_pnl()") --> C1[equity_return_data]
+    A2[balance_sheet] --> C1[equity_return_data]
 
     A1@{ shape: internal-storage}
+    A2@{ shape: internal-storage}
     A3@{ shape: internal-storage}
     C1@{ shape: internal-storage}
     C2@{ shape: internal-storage}

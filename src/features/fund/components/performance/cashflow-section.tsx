@@ -1,51 +1,57 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
 import { Cashflow } from "./cashflow"
-import { getCashflow, getCashflowAllTime } from "@/features/fund/actions/get-performance"
-import type { CashflowView } from "@/features/fund/actions/get-performance"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { AssetItemSkeleton } from "@/components/skeletons/item"
+import { useCashflow } from "@fund/hooks/use-performance-data"
+import { Item, ItemContent, ItemGroup, ItemTitle } from "@/components/ui/item"
+import { formatNum } from "@/lib/utils"
+import StatusLabel from "@/components/status-label"
+
+function useCashflowSummary(
+  deposits: number | undefined,
+  withdrawals: number | undefined,
+) {
+  return useMemo(() => {
+    const inflow = deposits ?? 0
+    const outflow = Math.abs(withdrawals ?? 0)
+    const net = inflow + (withdrawals ?? 0)
+    return { inflow, outflow, net }
+  }, [deposits, withdrawals])
+}
 
 export function CashflowSection() {
   const { year } = usePerformanceYear()
-  const [data, setData] = useState<CashflowView | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, error, isLoading } = useCashflow(year)
+  const { inflow, outflow, net } = useCashflowSummary(
+    data?.deposits,
+    data?.withdrawals,
+  )
 
-  useEffect(() => {
-    if (year === null) return
-    let cancelled = false
-    setData(null)
-    setLoading(true)
-    setError(null)
-
-    const fn = year === 9999 ? getCashflowAllTime : () => getCashflow(year)
-    fn()
-      .then((d) => { if (!cancelled) setData(d) })
-      .catch((e) => { if (!cancelled) setError(e.message) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-
-    return () => { cancelled = true }
-  }, [year])
-
-  if (loading) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <AssetItemSkeleton />
-        </CardHeader>
-        <CardContent>
-          <AssetItemSkeleton />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error || !data) return null
+  if (isLoading) return <StatusLabel type="loading" />
+  if (error) return <StatusLabel type="error" />
+  if (!data) return null
 
   return (
-    <Cashflow deposits={data.deposits} withdrawals={data.withdrawals} />
+    <Cashflow net={net}>
+      <ItemGroup className="bg-muted/50 rounded-2xl p-2">
+        <Item size="xs">
+          <ItemContent>
+            <ItemTitle>Deposit</ItemTitle>
+          </ItemContent>
+          <ItemContent>
+            <ItemTitle>{formatNum(inflow)}</ItemTitle>
+          </ItemContent>
+        </Item>
+        <Item size="xs">
+          <ItemContent>
+            <ItemTitle>Withdraw</ItemTitle>
+          </ItemContent>
+          <ItemContent>
+            <ItemTitle>{formatNum(outflow)}</ItemTitle>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </Cashflow>
   )
 }

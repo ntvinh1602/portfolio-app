@@ -1,51 +1,58 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
 import { TopStocks } from "./top-stocks"
-import { getStocks, getStocksAll } from "@/features/fund/actions/get-performance"
-import type { StocksView } from "@/features/fund/actions/get-performance"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { AssetItemSkeleton } from "@/components/skeletons/item"
+import { useStockPnl } from "@fund/hooks/use-performance-data"
+import AssetItem from "@fund/components/asset-item"
+import StatusLabel from "@/components/status-label"
+import type { StockPnl } from "@fund/fund.types"
+
+function useTopPerformers(data: StockPnl[] | undefined) {
+  return useMemo(() => {
+    if (!data) return []
+    return [...data].sort((a, b) => b.total_pnl - a.total_pnl).slice(0, 10)
+  }, [data])
+}
 
 export function TopStocksSection() {
   const { year } = usePerformanceYear()
-  const [data, setData] = useState<StocksView>([])
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useStockPnl(year)
+  const topPerformers = useTopPerformers(data)
 
-  useEffect(() => {
-    if (year === null) return
-    let cancelled = false
-    setData([])
-    setLoading(true)
-
-    const fn = year === 9999 ? getStocksAll : () => getStocks(year)
-    fn()
-      .then((d) => { if (!cancelled) setData(d) })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false) })
-
-    return () => { cancelled = true }
-  }, [year])
-
-  if (loading) {
+  if (isLoading) return <StatusLabel type="loading" />
+  if (error)
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <AssetItemSkeleton />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <AssetItemSkeleton />
-          <AssetItemSkeleton />
-          <AssetItemSkeleton />
-        </CardContent>
-      </Card>
+      <StatusLabel
+        type="error"
+        title={error.name}
+        description={error.message}
+      />
     )
-  }
-
-  if (!data.length) return null
+  if (!data) return null
 
   return (
-    <TopStocks year={year!} stockData={data} />
+    <TopStocks>
+      {topPerformers.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {topPerformers.map((stock) => (
+            <AssetItem
+              key={stock.ticker}
+              variant="performance"
+              ticker={stock.ticker}
+              name={stock.name}
+              logo_url={stock.logo_url}
+              total_value={stock.total_pnl}
+            />
+          ))}
+        </div>
+      ) : (
+        <StatusLabel
+          type="empty"
+          title="No stocks found"
+          description="Top performers will show here once realized P/L is made"
+        />
+      )}
+    </TopStocks>
   )
 }

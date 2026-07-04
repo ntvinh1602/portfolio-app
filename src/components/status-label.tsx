@@ -35,8 +35,22 @@ const statusConfig = {
   }
 >
 
-export default function StatusLabel({ type }: { type: StatusType }) {
-  const { title, description, icon: Icon } = statusConfig[type]
+interface StatusLabelProps {
+  type: StatusType
+  title?: string
+  description?: string
+}
+
+export default function StatusLabel({
+  type,
+  title,
+  description,
+}: StatusLabelProps) {
+  const {
+    title: defaultTitle,
+    description: defaultDescription,
+    icon: Icon,
+  } = statusConfig[type]
 
   return (
     <Empty>
@@ -48,9 +62,9 @@ export default function StatusLabel({ type }: { type: StatusType }) {
           <Icon />
         </EmptyMedia>
 
-        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyTitle>{title ?? defaultTitle}</EmptyTitle>
 
-        <EmptyDescription>{description}</EmptyDescription>
+        <EmptyDescription>{description ?? defaultDescription}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   )

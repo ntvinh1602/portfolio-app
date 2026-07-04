@@ -10,27 +10,13 @@ import { Piechart } from "@/components/charts/piechart"
 import { expenseChart } from "../../config"
 import { formatNum } from "@/lib/utils"
 import { HandCoins } from "lucide-react"
-import type { ProfitChartCols } from "@fund/fund.types"
 
-export function ExpenseChart({
-  profitChart,
-}: {
-  profitChart: ProfitChartCols
-}) {
-  // Each series is stored negative (e.g. -fee); negate the sum to get a positive total.
-  const sum = (xs: number[]) => xs.reduce((acc, n) => acc + (n || 0), 0)
+interface Props {
+  totalExpenses: number
+  chartData: Record<string, unknown>[]
+}
 
-  const totalTax = -sum(profitChart.tax)
-  const totalFee = -sum(profitChart.fee)
-  const totalInterest = -sum(profitChart.interest)
-  const totalExpenses = totalTax + totalFee + totalInterest
-
-  const expenseChartData = [
-    { liability: "tax", allocation: totalTax },
-    { liability: "fee", allocation: totalFee },
-    { liability: "interest", allocation: totalInterest },
-  ].filter((d) => d.allocation > 0)
-
+export function ExpenseChart({ totalExpenses, chartData }: Props) {
   return (
     <Card>
       <CardHeader>
@@ -44,7 +30,7 @@ export function ExpenseChart({
       </CardHeader>
       <CardContent>
         <Piechart
-          data={expenseChartData}
+          data={chartData}
           chartConfig={expenseChart}
           dataKey="allocation"
           nameKey="liability"

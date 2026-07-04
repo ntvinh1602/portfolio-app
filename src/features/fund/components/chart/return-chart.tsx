@@ -5,22 +5,22 @@ import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import { returnChart } from "@fund/config"
+import { benchmarkChart } from "@fund/config"
 import { useMemo } from "react"
 import type {
-  ReturnChartCols,
-  ReturnChartWindows,
+  BenchmarkChartCols,
+  BenchmarkChartWindows,
   EquityReturnView,
 } from "@fund/fund.types"
 import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   dateRange: string
-  chartData: ReturnChartWindows // columnar now
+  chartData: BenchmarkChartWindows // columnar now
   data: EquityReturnView
 }
 
-function colsToRows({ d, p, v }: ReturnChartCols) {
+function colsToRows({ d, p, v }: BenchmarkChartCols) {
   const out = new Array(d.length)
   for (let i = 0; i < d.length; i++) {
     out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
@@ -63,7 +63,7 @@ export function ReturnChart({ dateRange, chartData, data }: Props) {
       />
       <Areachart
         data={chartTimeframe}
-        config={returnChart}
+        config={benchmarkChart}
         xAxisDataKey={"t"}
         xAxisType="number"
         className="w-full"

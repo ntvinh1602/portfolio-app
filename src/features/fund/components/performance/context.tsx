@@ -1,9 +1,9 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useState, use } from "react"
 
 interface PerformanceYearContextValue {
-  year: number | null
+  year: number
   setYear: (year: number) => void
   startYear: number
 }
@@ -19,11 +19,7 @@ export function PerformanceYearProvider({
   startYear: number
   children: React.ReactNode
 }) {
-  const [year, setYear] = useState<number | null>(null)
-
-  useEffect(() => {
-    setYear(new Date().getFullYear())
-  }, [])
+  const [year, setYear] = useState<number>(() => new Date().getFullYear())
 
   return (
     <PerformanceYearContext.Provider value={{ year, setYear, startYear }}>
@@ -33,7 +29,7 @@ export function PerformanceYearProvider({
 }
 
 export function usePerformanceYear() {
-  const ctx = useContext(PerformanceYearContext)
+  const ctx = use(PerformanceYearContext)
   if (!ctx) throw new Error("usePerformanceYear must be used within PerformanceYearProvider")
   return ctx
 }

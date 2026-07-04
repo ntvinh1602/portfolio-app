@@ -1,39 +1,26 @@
 "use client"
 
-import { useMemo } from "react"
 import { formatNum, compactNum, pctNum } from "@/lib/utils"
 import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import { returnChart } from "../../config"
-import type { ReturnChartCols } from "@fund/fund.types"
+import { benchmarkChart } from "../../config"
 import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
   year: number
   equityReturn: number
   vnIndexReturn: number
-  chartData: ReturnChartCols
+  chartRows: Record<string, string | number>[]
 }
 
-type ReturnRow = { t: number; portfolio_value: number; vni_value: number }
-
-function colsToRows({ d, p, v }: ReturnChartCols): ReturnRow[] {
-  const out: ReturnRow[] = new Array(d.length)
-  for (let i = 0; i < d.length; i++) {
-    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
-  }
-  return out
-}
-
-export function ReturnChart({
+export function BenchmarkChart({
   year,
   equityReturn,
   vnIndexReturn,
-  chartData,
+  chartRows,
 }: Props) {
-  const rows = useMemo(() => colsToRows(chartData), [chartData])
 
   const xAxisTickFormatter = (ms: number) =>
     year === 9999
@@ -61,8 +48,8 @@ export function ReturnChart({
         descriptionStat2="VNI return"
       />
       <Areachart
-        data={rows}
-        config={returnChart}
+        data={chartRows}
+        config={benchmarkChart}
         xAxisDataKey={"t"}
         xAxisType="number"
         className="h-full w-full"

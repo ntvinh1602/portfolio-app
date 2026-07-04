@@ -78,7 +78,7 @@ export const equityChart: ChartConfig = {
   cumulative_cashflow: { label: "Deposit", color: "var(--chart-2)" },
 }
 
-export const returnChart: ChartConfig = {
+export const benchmarkChart: ChartConfig = {
   portfolio_value: { label: "Equity", color: "var(--chart-1)" },
   vni_value: { label: "VN-Index", color: "var(--chart-2)" },
 }

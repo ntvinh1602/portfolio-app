@@ -9,7 +9,7 @@ npm run dev        # Next.js dev server (turbo mode)
 npm run build      # Production build
 npm run start      # Production server
 npm run lint       # ESLint
-npm run gen-types  # Regenerate Supabase types from local DB
+npm run sbtypes    # Regenerate Supabase types from local DB
 ```
 
 ## Architecture
@@ -42,12 +42,6 @@ features/{domain}/
   {domain}.types.ts  Domain TypeScript types
 ```
 
-**Fund domain** (`src/features/fund/`): Dashboard, performance, transactions, balance sheet. Uses `public` DB schema. Also has `memo.ts` (predefined cashflow memo labels).
-
-**Flights domain** (`src/features/flights/`): Route map, flight history. Uses `flight` DB schema.
-
-**Auth** (`src/features/auth/`): A simpler domain — no separate DB schema, no server actions or hooks. Contains just the login and forgot-password form components that call `supabase.auth` directly from the browser client.
-
 ### Path Aliases
 
 ```
@@ -57,188 +51,11 @@ features/{domain}/
 @auth/*      → src/features/auth/*
 ```
 
-## Data Fetching
-
-### Cached Server Actions (reads)
-
-All read-only data fetching uses cached server actions. Pattern:
-
-```tsx
-// src/features/flights/actions/get-airports.ts
-import { createClient } from "@/lib/supabase/server"
-import { cacheLife, cacheTag } from "next/cache"
-
-type AirportRow = Database["flight"]["Tables"]["airports"]["Row"]
-export type Airport = { [K in keyof AirportRow]: NonNullable<AirportRow[K]> }
-
-export default async function getAirports() {
-  "use cache: private"
-  cacheTag("flights")
-  cacheLife("days")
-
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .schema("flight")
-    .from("airports")
-    .select("id, iata_code, name, lat, lng")
-
-  if (error) throw new Error(error.message)
-  return data as Airport[]
-}
-```
-
-Rules:
-- `"use cache: private"` as the first statement in the function body
-- `cacheTag()` with a whitelisted tag: `"analytics"`, `"flights"`, or `"news"`
-- `cacheLife("days")` for reference data; shorter lifetimes where appropriate
-- Default export for cached reads; named exports for mutations
-- Export the function as default; export the return type alongside it
-- Use `createClient()` from `@/lib/supabase/server` (never the browser client)
-- Throw on error — the `<Suspense>` boundary handles it
-
-### Mutations
-
-Write operations use `"use server"` and call Supabase RPC functions:
-
-```tsx
-// src/features/flights/actions/add-flight.ts
-"use server"
-
-export async function AddFlight(values: FlightFormValues) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .schema("flight")
-    .rpc("insert_flight_with_timezone", { ... })
-  if (error) throw new Error(error.message)
-  return data
-}
-```
-
-Mutations are called from client-side form submit handlers. After success, call `onSuccess?.()` (closes the dialog) and `triggerRefresh?.()` (invalidates any active infinite queries).
-
-Some mutations use the browser Supabase client directly from form components (e.g., `StockForm` calls `supabase.rpc("add_stock_event")`). Both patterns are valid — the browser client is acceptable for mutations inside `"use client"` form components.
-
 ### Client-Side Infinite Query
 
 For paginated, filterable lists (flight history, transactions), use `useInfiniteQuery` from `src/hooks/use-infinite-query.ts`. This hook uses `useSyncExternalStore` with a custom store that manages `data`, `count`, `isLoading`, `isFetching`, `hasMore`, `error`, and `fetchNextPage`. The store is recreated when `trailingQueryKey` changes.
 
 Paired with `InfiniteList` from `src/components/infinite-list.tsx` which provides scroll-based loading, loading/empty/error states, and an end-of-list message.
-
-### Legacy: SWR
-
-Some older components use SWR. Prefer server actions for new server data and `useInfiniteQuery` for new paginated lists.
-
-## Page Patterns
-
-Pages in `src/app/` are thin server components. There are three variations depending on data needs.
-
-### Pattern A: Multiple Independent Data Sources
-
-Each data source gets its own `<Suspense>` boundary so they stream independently. The exported page wraps inline async data-fetcher functions.
-
-```tsx
-// src/app/flights/map/page.tsx
-export default function FlightsMapPage() {
-  return (
-    <div className="flex flex-col h-full gap-4 px-4 pb-4">
-      <Suspense fallback={<Spinner />}>
-        <StatsCarouselData />
-      </Suspense>
-      <Suspense fallback={<Spinner />}>
-        <MapData />
-      </Suspense>
-    </div>
-  )
-}
-
-async function StatsCarouselData() {
-  const stats = await getLifetimeStats()
-  return <StatsCarousel stats={stats} />
-}
-
-async function MapData() {
-  const [routes, airports] = await Promise.all([
-    getRoutesGeoJSON(),
-    getAirports(),
-  ])
-  return (
-    <div className="relative h-full rounded-2xl overflow-hidden isolate">
-      <LeafletMapDynamic routes={routes} airports={airports} />
-    </div>
-  )
-}
-```
-
-Used in: `/flights/map`, `/fund/dashboard`
-
-### Pattern B: Reference Data Before Client Render
-
-When a client component needs reference data (option lists for filters and forms), fetch it all server-side and pass as props. Single `<Suspense>` boundary.
-
-```tsx
-// src/app/flights/history/page.tsx
-export default function FlightsHistoryPage() {
-  return (
-    <Suspense fallback={<Spinner />}>
-      <FlightsListData />
-    </Suspense>
-  )
-}
-
-async function FlightsListData() {
-  const [airlines, aircrafts, airports] = await Promise.all([
-    getAirlines(),
-    getAircrafts(),
-    getAirports(),
-  ])
-
-  // Transform into option shapes on the server
-  const airlineFilterOptions = airlines.map(a => ({ label: a.name, value: a.name }))
-  const airlineFormOptions = airlines.map(a => ({ label: a.name, value: a.id }))
-  const aircraftFormOptions = aircrafts.map(a => ({
-    label: a.model ? `${a.icao_code} — ${a.model}` : a.icao_code,
-    value: a.id,
-  }))
-  const airportFormOptions = airports.map(a => ({
-    label: `${a.iata_code} — ${a.name}`,
-    value: a.id,
-  }))
-
-  return (
-    <FlightsList
-      airlineFilterOptions={airlineFilterOptions}
-      startYear={2019}
-      airlineFormOptions={airlineFormOptions}
-      aircraftFormOptions={aircraftFormOptions}
-      airportFormOptions={airportFormOptions}
-    />
-  )
-}
-```
-
-Used in: `/flights/history`
-
-### Pattern C: Fully Client-Driven
-
-When there is no server data to pre-fetch — the client component handles its own data via `useInfiniteQuery`.
-
-```tsx
-// src/app/fund/transactions/page.tsx
-export default function TransactionsPage() {
-  return <TransactionsClient />
-}
-```
-
-Used in: `/fund/transactions`
-
-### Inline Data-Fetcher Rules
-
-Functions defined below the page (not exported, file-private):
-- Call cached server actions
-- Transform raw data into prop shapes (option arrays, computed values)
-- Pass resolved data to client components
-- Never contain complex JSX — delegate to client components
-- May include a debug skeleton delay behind `NEXT_PUBLIC_DEBUG_SKELETON === "1"`
 
 ## Form Pattern
 
@@ -438,6 +255,166 @@ For empty-state displays. `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle`, `E
 
 Used in `InfiniteList`, `StatusLabel`, and any component that needs an empty state.
 
+## Component Composition Patterns
+
+Follow these patterns when building new feature components. Derived from [Vercel's React composition patterns](https://github.com/vercel/composition-patterns) and [React best practices](https://github.com/vercel/react-best-practices).
+
+### Section / Presentation Split
+
+Each dashboard widget follows a two-file split. The **section** owns data fetching and state; the **presentation** component owns pure rendering. Presentation components accept `children` or typed props — never call hooks or fetch data.
+
+```
+features/{domain}/components/{feature}/
+  {feature}-section.tsx   # "use client" — data hook, loading/error/null guards, passes to presentation
+  {feature}.tsx            # pure rendering — Card shell, accepts children or typed props
+```
+
+**Section** (`top-stocks-section.tsx`):
+- `"use client"` — calls data hooks (SWR), reads context
+- Handles loading / error / empty states (returns `StatusLabel` or skeleton)
+- Transforms raw data (sort, filter, slice) via memoized hooks
+- Passes clean data to the presentation component
+
+**Presentation** (`top-stocks.tsx`):
+- Server component by default (no `"use client"` unless it uses hooks)
+- Accepts `children` or typed props — never boolean flags
+- Composes shared UI primitives (Card, Item, Empty)
+
+Reference: `src/features/fund/components/performance/top-stocks-section.tsx` + `top-stocks.tsx`
+
+### Custom Hooks for Derived Data
+
+Extract data transformations into custom hooks with `useMemo`. This decouples *how* data is computed from *how* it's rendered.
+
+```tsx
+function useTopPerformers(data: StockPnl[] | undefined) {
+  return useMemo(() => {
+    if (!data) return []
+    return [...data].sort((a, b) => b.total_pnl - a.total_pnl).slice(0, 10)
+  }, [data])
+}
+```
+
+**Critical — Rules of Hooks**: Call derived-data hooks **before** any conditional early return. The hook must execute in the same order on every render.
+
+```tsx
+// ✅ CORRECT — hook before early returns
+export function TopStocksSection() {
+  const { year } = usePerformanceYear()
+  const { data, error, isLoading } = useStockPnl(year)
+  const topPerformers = useTopPerformers(data) // always called
+
+  if (isLoading) return <StatusLabel type="loading" />
+  if (error) return <StatusLabel type="error" />
+  if (!data) return null
+  // ...
+}
+
+// ❌ WRONG — hook after early returns; hook count changes between renders
+export function TopStocksSection() {
+  const { year } = usePerformanceYear()
+  const { data, error, isLoading } = useStockPnl(year)
+
+  if (isLoading) return <StatusLabel type="loading" />
+  if (!data) return null
+  const topPerformers = useTopPerformers(data) // skipped on loading render!
+}
+```
+
+### Children over Render Props
+
+Use `children` for composition instead of `renderX` props. Children compose naturally and avoid callback signatures.
+
+```tsx
+// ✅ CORRECT — children for composition
+<TopStocks>
+  <div className="flex flex-col gap-2">
+    {items.map(item => <AssetItem key={item.id} {...item} />)}
+  </div>
+</TopStocks>
+
+// ❌ WRONG — render props
+<TopStocks renderItems={(items) => items.map(...)} />
+```
+
+### Static JSX Hoisting
+
+Hoist static JSX to module scope so React reconciliation can skip the subtree on re-renders.
+
+```tsx
+// ✅ CORRECT — hoisted to module scope
+const topStocksHeader = (
+  <CardHeader>
+    <CardTitle>Best Performers</CardTitle>
+    <CardAction><Trophy /></CardAction>
+  </CardHeader>
+)
+
+export function TopStocks({ children }: { children: React.ReactNode }) {
+  return <Card>{topStocksHeader}<CardContent>{children}</CardContent></Card>
+}
+```
+
+### React 19: `use()` over `useContext()`
+
+In React 19, use `use()` to read context. It handles synchronous context values identically to `useContext()`.
+
+```tsx
+// ✅ CORRECT — React 19
+import { createContext, useState, use } from "react"
+
+export function usePerformanceYear() {
+  const ctx = use(PerformanceYearContext)
+  if (!ctx) throw new Error("must be used within provider")
+  return ctx
+}
+```
+
+### React 19: `useState` Lazy Initializer over `useEffect` Bootstrap
+
+Use the lazy initializer form of `useState` instead of `useState(null)` + `useEffect` to set the initial value. This eliminates the null render pass.
+
+```tsx
+// ✅ CORRECT — single render with valid value
+const [year, setYear] = useState<number>(() => new Date().getFullYear())
+
+// ❌ WRONG — double render: first null, then useEffect fires, then real value
+const [year, setYear] = useState<number | null>(null)
+useEffect(() => { setYear(new Date().getFullYear()) }, [])
+```
+
+**Prerendering**: If the lazy initializer uses `new Date()` or other unstable values, wrap the component in `<Suspense>` on the server page so Next.js can statically prerender:
+
+```tsx
+// page.tsx
+export default function Page() {
+  return (
+    <Suspense>
+      <PerformanceYearProvider startYear={2021}>
+        <Performance />
+      </PerformanceYearProvider>
+    </Suspense>
+  )
+}
+```
+
+### When NOT to Use Compound Components
+
+A compound component (with its own context) is only warranted when subcomponents need to share **implicit state** (e.g., `Tabs` + `TabList` + `TabPanel` sharing the active tab index). A component that receives dynamic content as `children` and wraps it in a layout shell does **not** need its own context. Adding one is unnecessary indirection.
+
+### No Boolean Props
+
+Don't add boolean props to customize behavior (`isEditing`, `showHeader`, `variant`). Each boolean doubles possible states. Use composition or explicit variant components instead.
+
+```tsx
+// ✅ CORRECT — explicit variant components
+function ThreadComposer({ channelId }: { channelId: string }) { /* ... */ }
+function EditComposer({ messageId }: { messageId: string }) { /* ... */ }
+
+// ❌ WRONG — boolean prop proliferation
+function Composer({ isThread, isEditing, isForwarding }: Props) { /* ... */ }
+```
+
 ## Supabase Infrastructure
 
 ### Clients
@@ -448,37 +425,7 @@ Three client variants in `src/lib/supabase/`, all using `NEXT_PUBLIC_SUPABASE_PU
 |--------|------|-----|
 | Browser | `client.ts` | Client Components — `createBrowserClient()` from `@supabase/ssr` |
 | Server | `server.ts` | Server Components and `"use cache"` actions — `createServerClient()` with cookie `getAll`/`setAll` |
-| Proxy | `proxy.ts` | Auth middleware — `createServerClient()` with `getClaims()`, redirects unauthenticated users to `/auth/login` |
-
-### Database Schemas
-
-- **`public`** (fund): `assets`, `tx_entries`, `tx_cashflow`, `tx_stock`, `tx_debt`, `tx_legs`, `asset_positions`, `currencies`, `historical_prices`, `historical_fxrate`, `dnse_orders`, `news_articles`
-- **`flight`** (flights): `airlines`, `airports`, `aircrafts`, `flights`
-
-Key views and materialized views: `balance_sheet`, `daily_snapshots` (materialized), `dashboard_data` (materialized), `recaps_data` (materialized), `monthly_snapshots`, `yearly_snapshots`, `stock_holdings`, `outstanding_debts`, `stock_annual_pnl`, `tx_summary`, `flights_readable`, `routes_geojson`, `lifetime_stats`.
-
-Business logic lives in Postgres RPC functions: `add_stock_event`, `add_cashflow_event`, `add_borrow_event`, `add_repay_event`, `insert_flight_with_timezone`, `calculate_pnl`, `calculate_twr`, `get_equity_chart`, `get_return_chart`, `rebuild_ledger`, `process_dnse_order`, `process_refresh_queue`, `revalidate_news`.
-
-### Cache Invalidation
-
-`/api/update` (POST) accepts `{ tags: ["analytics", "flights", "news"] }` with `x-update-secret` header. Only these three tags are whitelisted. Uses `updateTag()` from `next/cache` to purge cached server actions.
-
-Trigger flow: DB trigger → `net.http_post` to `/api/update` → `updateTag()` → next request re-fetches.
-
-### Edge Functions
-
-Deno functions in `supabase/functions/`, invoked by `pg_cron`:
-
-- **`fetch-yahoofinance`** — fetches stock/index prices from Yahoo Finance, upserts into `historical_prices`
-- **`fetch-exchange-rates`** — fetches FX rates from OpenExchangeRates, upserts into `historical_fxrate`
-- **`upsert-dnse-orders`** — syncs filled orders from DNSE brokerage API into `dnse_orders` (a DB trigger then calls `process_dnse_order`)
-- **`ingest-news`** — parses Vietnamese finance RSS feeds (VnEconomy, Vietnambiz), extracts stock tickers, validates against `assets` table, upserts into `news_articles` (with `related_stocks` text array column). Uses `withSupabase({ auth: 'secret' })` for service-to-service auth via `pg_cron`
-
-### Migrations and Seeds
-
-Migrations in `supabase/migrations/`. Apply with `supabase db push`. After schema changes, run `npm run gen-types` to regenerate `src/types/database.types.ts`.
-
-Seeds in `supabase/.seeds/` — `users.sql` for auth users, `data.sql` for domain data.
+| Proxy | `proxy.ts` | Auth middleware — `createServerClient()` with `getClaims()`, redirects unauthen
 
 ## Auth
 
@@ -514,12 +461,6 @@ When extending the app with a third domain:
 6. Add nav entries to `AppSidebar` (`src/components/sidebar/app-sidebar.tsx`)
 7. Follow the established patterns: cached server actions for reads, `useInfiniteQuery` for paginated lists, Zod + React Hook Form for forms
 
-## Anti-Patterns
-
-- Do not put `"use client"` on pages that can be server components
-- Do not fetch reference data client-side — use cached server actions (airlines, airports, assets are reference data)
-- Do not create new data-fetching hooks — use server actions for reads, `useInfiniteQuery` for paginated lists
-- Do not inline complex JSX in data-fetcher functions — delegate to client components
-- Do not bypass the form pattern — new forms should use Zod schemas, React Hook Form, and shared field components
-- Do not create a new Supabase client pattern — use one of the three existing clients
-- Do not hardcode cache tag names in server actions — reference the whitelisted set in `/api/update`
+## Important Rules
+- This file might contain outdated data. If encounter discrepancy, ask user for confirmation on latest conventions.
+- When making changes other than UI or styling, always make sure to follow best practices of Next/Vercel and React.

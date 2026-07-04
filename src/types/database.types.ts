@@ -326,6 +326,60 @@ export type Database = {
         }
         Relationships: []
       }
+      dnse_order_events: {
+        Row: {
+          account_no: string
+          avg_price: number | null
+          canceled_quantity: number
+          fill_quantity: number
+          id: number
+          leave_quantity: number
+          loan_package_id: number | null
+          modified_date: string
+          order_status: string
+          order_type: string
+          price: number
+          quantity: number
+          received_at: string
+          side: string
+          symbol: string
+        }
+        Insert: {
+          account_no: string
+          avg_price?: number | null
+          canceled_quantity?: number
+          fill_quantity?: number
+          id: number
+          leave_quantity?: number
+          loan_package_id?: number | null
+          modified_date: string
+          order_status: string
+          order_type: string
+          price: number
+          quantity: number
+          received_at?: string
+          side: string
+          symbol: string
+        }
+        Update: {
+          account_no?: string
+          avg_price?: number | null
+          canceled_quantity?: number
+          fill_quantity?: number
+          id?: number
+          leave_quantity?: number
+          loan_package_id?: number | null
+          modified_date?: string
+          order_status?: string
+          order_type?: string
+          price?: number
+          quantity?: number
+          received_at?: string
+          side?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
       dnse_orders: {
         Row: {
           average_price: number | null
@@ -379,7 +433,14 @@ export type Database = {
             foreignKeyName: "dnse_orders_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
-            referencedRelation: "stock_annual_pnl"
+            referencedRelation: "stock_pnl_all"
+            referencedColumns: ["ticker"]
+          },
+          {
+            foreignKeyName: "dnse_orders_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "stock_pnl_yearly"
             referencedColumns: ["ticker"]
           },
         ]
@@ -436,6 +497,30 @@ export type Database = {
           },
         ]
       }
+      m1_intraday_close: {
+        Row: {
+          close: number
+          last_updated: string
+          received_at: string
+          symbol: string
+          volume: number
+        }
+        Insert: {
+          close: number
+          last_updated: string
+          received_at?: string
+          symbol: string
+          volume: number
+        }
+        Update: {
+          close?: number
+          last_updated?: string
+          received_at?: string
+          symbol?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       news_articles: {
         Row: {
           excerpt: string | null
@@ -466,35 +551,23 @@ export type Database = {
         }
         Relationships: []
       }
-      refresh_queue: {
-        Row: {
-          created_at: string
-          id: number
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-        }
-        Update: {
-          created_at?: string
-          id?: number
-        }
-        Relationships: []
-      }
       tx_borrow: {
         Row: {
+          is_paid: boolean
           lender: string
           principal: number
           rate: number
           tx_id: string
         }
         Insert: {
+          is_paid?: boolean
           lender: string
           principal: number
           rate: number
           tx_id: string
         }
         Update: {
+          is_paid?: boolean
           lender?: string
           principal?: number
           rate?: number
@@ -737,6 +810,21 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          dnse_account_id: string | null
+          user_id: string
+        }
+        Insert: {
+          dnse_account_id?: string | null
+          user_id: string
+        }
+        Update: {
+          dnse_account_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       balance_sheet: {
@@ -761,13 +849,49 @@ export type Database = {
           },
         ]
       }
+      benchmark_all: {
+        Row: {
+          equity_ret: number | null
+          return_chart: Json | null
+          vn_ret: number | null
+        }
+        Relationships: []
+      }
+      benchmark_yearly: {
+        Row: {
+          equity_ret: number | null
+          return_chart: Json | null
+          vn_ret: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
+      cashflow_all: {
+        Row: {
+          deposits: number | null
+          withdrawals: number | null
+        }
+        Relationships: []
+      }
+      cashflow_yearly: {
+        Row: {
+          deposits: number | null
+          withdrawals: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
       daily_snapshots: {
         Row: {
-          cumulative_cashflow: number | null
-          equity_index: number | null
-          net_cashflow: number | null
-          net_equity: number | null
+          intraday_cashflow: number | null
+          intraday_fee: number | null
+          intraday_interest: number | null
+          intraday_pnl: number | null
+          intraday_return: number | null
+          intraday_tax: number | null
           snapshot_date: string | null
+          total_cashflow: number | null
+          total_equity: number | null
           user_id: string | null
         }
         Relationships: []
@@ -785,7 +909,7 @@ export type Database = {
         }
         Relationships: []
       }
-      last_1y_profit: {
+      pnl_expense_all: {
         Row: {
           avg_expense: number | null
           avg_profit: number | null
@@ -794,41 +918,40 @@ export type Database = {
         }
         Relationships: []
       }
-      monthly_snapshots: {
-        Row: {
-          fee: number | null
-          interest: number | null
-          pnl: number | null
-          snapshot_date: string | null
-          tax: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
-      performance_data: {
+      pnl_expense_last1y: {
         Row: {
           avg_expense: number | null
           avg_profit: number | null
-          deposits: number | null
-          equity_ret: number | null
           profit_chart: Json | null
-          return_chart: Json | null
-          stock_pnl: Json | null
           total_pnl: number | null
-          user_id: string | null
-          vn_ret: number | null
-          withdrawals: number | null
+        }
+        Relationships: []
+      }
+      pnl_expense_yearly: {
+        Row: {
+          avg_expense: number | null
+          avg_profit: number | null
+          profit_chart: Json | null
+          total_pnl: number | null
           year: number | null
         }
         Relationships: []
       }
-      stock_annual_pnl: {
+      stock_pnl_all: {
         Row: {
           logo_url: string | null
           name: string | null
           ticker: string | null
           total_pnl: number | null
-          user_id: string | null
+        }
+        Relationships: []
+      }
+      stock_pnl_yearly: {
+        Row: {
+          logo_url: string | null
+          name: string | null
+          ticker: string | null
+          total_pnl: number | null
           year: number | null
         }
         Relationships: []
@@ -844,19 +967,9 @@ export type Database = {
         }
         Relationships: []
       }
-      yearly_snapshots: {
-        Row: {
-          deposits: number | null
-          equity_ret: number | null
-          user_id: string | null
-          vn_ret: number | null
-          withdrawals: number | null
-          year: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
+      active_stock_tickers: { Args: never; Returns: Json }
       add_borrow_event: {
         Args: { p_lender: string; p_principal: number; p_rate: number }
         Returns: undefined
@@ -883,6 +996,7 @@ export type Database = {
           p_side: string
           p_tax?: number
           p_ticker: string
+          p_user_id?: string
         }
         Returns: undefined
       }
@@ -930,8 +1044,8 @@ export type Database = {
       }
       equity_point: {
         snapshot_date: string | null
-        net_equity: number | null
-        cumulative_cashflow: number | null
+        total_cashflow: number | null
+        total_equity: number | null
       }
     }
   }

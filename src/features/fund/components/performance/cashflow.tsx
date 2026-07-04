@@ -1,68 +1,36 @@
-"use client"
-
 import {
   Card,
   CardContent,
   CardAction,
   CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
 } from "@/components/ui/card"
-import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { formatNum } from "@/lib/utils"
-import {
-  ArrowDownCircle,
-  ArrowLeftRight,
-  ArrowUpCircle
-} from "lucide-react"
+import { ArrowLeftRight } from "lucide-react"
 
 interface CashflowProps {
-  deposits: number
-  withdrawals: number
+  net: number
+  children: React.ReactNode
 }
 
-export function Cashflow({
-  deposits,
-  withdrawals
-}: CashflowProps) {
+const cashflowHeader = (net: number) => (
+  <CardHeader>
+    <CardDescription>Net Cashflow</CardDescription>
+    <CardTitle className="text-base sm:text-xl">
+      {formatNum(Math.abs(net))}
+    </CardTitle>
+    <CardAction>
+      <ArrowLeftRight className="stroke-1" />
+    </CardAction>
+  </CardHeader>
+)
 
-  const inflow = deposits ?? 0
-  const outflow = Math.abs(withdrawals ?? 0)
-  const net = inflow + withdrawals
-
+export function Cashflow({ net, children }: CashflowProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardDescription>Net Cashflow</CardDescription>
-        <CardTitle className="text-base sm:text-xl">
-          {formatNum(Math.abs(net))}
-        </CardTitle>
-        <CardAction>
-          <ArrowLeftRight className="stroke-1" />
-        </CardAction>
-      </CardHeader>
-
-      <CardContent>
-        <ItemGroup className="bg-muted/50 rounded-2xl p-2">
-          <Item size="xs">
-            <ItemContent>
-              <ItemTitle>Deposit</ItemTitle>
-            </ItemContent>
-            <ItemContent>
-              <ItemTitle>{formatNum(inflow)}</ItemTitle>
-            </ItemContent>
-          </Item>
-          <Item size="xs">
-            <ItemContent>
-              <ItemTitle>Withdraw</ItemTitle>
-            </ItemContent>
-            <ItemContent>
-              <ItemTitle>{formatNum(outflow)}</ItemTitle>
-            </ItemContent>
-          </Item>
-        </ItemGroup>
-
-      </CardContent>
+      {cashflowHeader(net)}
+      <CardContent>{children}</CardContent>
     </Card>
   )
 }

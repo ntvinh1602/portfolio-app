@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "type": "module",
     "sbtypes": "npx supabase gen types typescript --local > src/types/database.types.ts",
-    "sbseed": "npx supabase db dump --data-only --linked -s public,flight -x public.tx_legs,public.asset_positions,public.news_articles -f supabase/.seeds/data.sql"
+    "sbseed": "npx supabase db dump --data-only --linked -s public,flight -x public.tx_legs,public.news_articles -f supabase/.seeds/data.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

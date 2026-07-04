@@ -1,34 +1,45 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
 import { ExpenseChart } from "../chart/expense-chart"
-import { getProfit, getProfitAllTime } from "@/features/fund/actions/get-performance"
-import type { ProfitView } from "@/features/fund/actions/get-performance"
+import { useProfit } from "@fund/hooks/use-performance-data"
+import type { ProfitChartCols } from "@fund/fund.types"
 import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import StatusLabel from "@/components/status-label"
+
+type ExpenseChartDatum = Record<string, unknown>
+
+const sum = (xs: number[]) => xs.reduce((acc, n) => acc + (n || 0), 0)
+
+function useExpenseChartData(
+  profitChart: ProfitChartCols | undefined,
+): { totalExpenses: number; chartData: ExpenseChartDatum[] } | null {
+  return useMemo(() => {
+    if (!profitChart) return null
+    const totalTax = -sum(profitChart.tax)
+    const totalFee = -sum(profitChart.fee)
+    const totalInterest = -sum(profitChart.interest)
+    const totalExpenses = totalTax + totalFee + totalInterest
+    const chartData: ExpenseChartDatum[] = [
+      { liability: "tax", allocation: totalTax },
+      { liability: "fee", allocation: totalFee },
+      { liability: "interest", allocation: totalInterest },
+    ].filter((d) => d.allocation > 0)
+    return { totalExpenses, chartData }
+  }, [profitChart])
+}
 
 export function ExpenseChartSection() {
   const { year } = usePerformanceYear()
-  const [data, setData] = useState<ProfitView | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, error, isLoading } = useProfit(year)
+  const expenseData = useExpenseChartData(
+    data?.profit_chart as ProfitChartCols | undefined,
+  )
 
-  useEffect(() => {
-    if (year === null) return
-    let cancelled = false
-    setData(null)
-    setLoading(true)
+  if (isLoading) return <ChartCardSkeleton showMetricsSection={false} />
+  if (error) return <StatusLabel type="error" />
+  if (!data || !expenseData) return null
 
-    const fn = year === 9999 ? getProfitAllTime : () => getProfit(year)
-    fn()
-      .then((d) => { if (!cancelled) setData(d) })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false) })
-
-    return () => { cancelled = true }
-  }, [year])
-
-  if (loading) return <ChartCardSkeleton showMetricsSection={false} />
-  if (!data) return null
-
-  return <ExpenseChart profitChart={data.profit_chart} />
+  return <ExpenseChart {...expenseData} />
 }

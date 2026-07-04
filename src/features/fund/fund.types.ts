@@ -1,8 +1,21 @@
-export interface StockPnLItem {
-  logo_url: string
-  name: string
-  ticker: string
-  total_pnl: number
+import { Tables } from "@/types/database.types"
+
+export type CashflowView = {
+  [K in keyof Tables<"cashflow_all">]: NonNullable<Tables<"cashflow_all">[K]>
+}
+
+export type StockPnl = {
+  [K in keyof Tables<"stock_pnl_all">]: NonNullable<Tables<"stock_pnl_all">[K]>
+}
+
+export type ProfitView = {
+  [K in keyof Tables<"pnl_expense_all">]: NonNullable<
+    Tables<"pnl_expense_all">[K]
+  >
+}
+
+export type BenchmarkView = {
+  [K in keyof Tables<"benchmark_all">]: NonNullable<Tables<"benchmark_all">[K]>
 }
 
 // Columnar equity series: keys stored once, not per-point.
@@ -20,7 +33,7 @@ export type EquityChartCols = {
   c: number[] // c = cumulative_cashflow (rounded)
 }
 
-export type ReturnChartCols = {
+export type BenchmarkChartCols = {
   d: number[] // epoch-days
   p: number[] // portfolio_value (normalized, 2dp)
   v: number[] // vni_value (normalized, 2dp)
@@ -33,11 +46,11 @@ export type EquityChartWindows = {
   all: EquityChartCols
 }
 
-export type ReturnChartWindows = {
-  last_1y: ReturnChartCols
-  last_3m: ReturnChartCols
-  last_6m: ReturnChartCols
-  all: ReturnChartCols
+export type BenchmarkChartWindows = {
+  last_1y: BenchmarkChartCols
+  last_3m: BenchmarkChartCols
+  last_6m: BenchmarkChartCols
+  all: BenchmarkChartCols
 }
 
 export interface BSheetView {
@@ -62,15 +75,8 @@ export interface PerformanceView {
   vn_ret: number
   withdrawals: number
   profit_chart: ProfitChartCols
-  return_chart: ReturnChartCols
-  stock_pnl: StockPnLItem[]
-}
-
-export type Last1YProfitView = {
-  total_pnl: number
-  avg_profit: number
-  avg_expense: number
-  profit_chart: ProfitChartCols
+  return_chart: BenchmarkChartCols
+  stock_pnl: StockPnl[]
 }
 
 export type EquityReturnView = {
@@ -81,7 +87,7 @@ export type EquityReturnView = {
   total_equity: number
   cagr: number
   equitychart: EquityChartWindows
-  returnchart: ReturnChartWindows
+  returnchart: BenchmarkChartWindows
 }
 
 export type NewsArticle = {
