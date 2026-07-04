@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createPublicClient } from "@/lib/supabase/public"
 import {
   EquityRollingView,
   BenchmarkRollingView,
@@ -41,7 +42,7 @@ export async function getNews() {
   cacheTag("news")
   cacheLife("hours")
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data, error } = await supabase
     .from("news_articles")
     .select("id, title, url, source, excerpt, published_at, related_stocks")
