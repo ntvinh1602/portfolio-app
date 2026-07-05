@@ -2,10 +2,10 @@
 
 import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
-import { NetProfitChart } from "../chart/netprofit-chart"
+import { NetProfitChart } from "../ui/netprofit-chart"
 import { useProfit } from "@fund/hooks/use-performance-data"
 import type { ProfitView, ProfitChartCols } from "@fund/fund.types"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
 
 type ProfitChartRow = {
@@ -43,9 +43,40 @@ export function NetProfitSection() {
   const { data, error, isLoading } = useProfit(year)
   const chartData = useNetProfitChartData(data as ProfitView | undefined)
 
-  if (isLoading) return <ChartCardSkeleton />
-  if (error) return <StatusLabel type="error" />
-  if (!data || !chartData) return null
+  const meta = { name: "Net Profit", stat1: "avg. profit", stat2: "avg. cost" }
 
-  return <NetProfitChart year={year!} {...chartData} />
+  if (isLoading)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="loading"
+          title="In progress..."
+          description="Pulling in data to draw your chart"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (error)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description={error.message}
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (!data || !chartData)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description="Unable to get any data"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+
+
+  return <NetProfitChart meta={meta} year={year!} {...chartData} />
 }

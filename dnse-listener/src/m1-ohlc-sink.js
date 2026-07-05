@@ -54,7 +54,7 @@ export function createIntradaySink({ supabaseUrl, serviceRoleKey, logger, notify
     for (let attempt = 1; attempt <= MAX_UPSERT_ATTEMPTS; attempt += 1) {
       try {
         const response = await fetch(
-          `${supabaseUrl}/rest/v1/m1_intraday_close`,
+          `${supabaseUrl}/rest/v1/dnse_m1_close`,
           {
             method: "POST",
             headers: {

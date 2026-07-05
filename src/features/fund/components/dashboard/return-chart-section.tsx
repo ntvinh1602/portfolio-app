@@ -2,22 +2,12 @@
 
 import { useMemo } from "react"
 import { useDashboardDateRange } from "./context"
-import { ReturnChart } from "@fund/components/chart/return-chart"
+import { ReturnChart } from "@/features/fund/components/ui/return-chart"
 import { useBenchmarkRolling } from "@fund/hooks/use-dashboard-data"
-import type {
-  BenchmarkChartCols,
-  BenchmarkRollingView,
-} from "@fund/fund.types"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import type { BenchmarkRollingView } from "@fund/fund.types"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
-
-function colsToRows({ d, p, v }: BenchmarkChartCols) {
-  const out = new Array(d.length)
-  for (let i = 0; i < d.length; i++) {
-    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
-  }
-  return out
-}
+import { colsToRows } from "@fund/utils"
 
 function useReturnChartData(
   data: BenchmarkRollingView | undefined,
@@ -41,10 +31,39 @@ export function ReturnChartSection() {
   const { dateRange } = useDashboardDateRange()
   const { data, error, isLoading } = useBenchmarkRolling()
   const chartData = useReturnChartData(data, dateRange)
+  const meta = { name: "Return", stat1: "all time", stat2: "annualized" }
 
-  if (isLoading) return <ChartCardSkeleton />
-  if (error) return <StatusLabel type="error" />
-  if (!chartData) return null
+  if (!isLoading)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="loading"
+          title="In progress..."
+          description="Pulling in data to draw your chart"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (error)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description={error.message}
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (!data || !chartData)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description="Unable to get any data"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
 
   return <ReturnChart dateRange={dateRange} {...chartData} />
 }

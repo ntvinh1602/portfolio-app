@@ -7,22 +7,22 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
-import { expenseChart } from "../../config"
-import { formatNum } from "@/lib/utils"
+import { expenseChart } from "@fund/config"
 import { HandCoins } from "lucide-react"
 
 interface Props {
-  totalExpenses: number
+  name: string
+  totalExpenses: string
   chartData: Record<string, unknown>[]
 }
 
-export function ExpenseChart({ totalExpenses, chartData }: Props) {
+export function ExpenseChart({ name, totalExpenses, chartData }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardDescription>Total Expenses</CardDescription>
+        <CardDescription>{name}</CardDescription>
         <CardTitle className="text-base sm:text-xl">
-          {formatNum(totalExpenses)}
+          {totalExpenses}
         </CardTitle>
         <CardAction>
           <HandCoins className="stroke-1" />

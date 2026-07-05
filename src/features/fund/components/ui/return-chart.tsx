@@ -27,9 +27,6 @@ export function ReturnChart({
     ["last_1y", "all"].includes(dateRange)
       ? format(new Date(ms), "MMM yyyy")
       : format(new Date(ms), "dd MMM")
-
-  const tooltipFormatter = (v: number) => formatNum(v, 2)
-
   const tooltipLabelFormatter: TooltipLabelFormatter = (_label, payload) => {
     const ms = payload?.[0]?.payload?.t as number | undefined
     if (ms == null) return ""
@@ -56,7 +53,7 @@ export function ReturnChart({
         className="w-full"
         xAxisTickFormatter={xAxisTickFormatter}
         yAxisTickFormatter={(v) => compactNum(v)}
-        tooltipFormatter={tooltipFormatter}
+        tooltipFormatter={(v: number) => formatNum(v, 2)}
         tooltipLabelFormatter={tooltipLabelFormatter}
       />
     </Card>

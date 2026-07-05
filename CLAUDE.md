@@ -437,4 +437,5 @@ When extending the app with a third domain:
 
 ## Important Rules
 - This file might contain outdated data. If encounter discrepancy, ask user for confirmation on latest conventions.
-- When making changes other than UI or styling, always make sure to follow best practices of Next/Vercel and React.
+- When making architecture pattern changes other than UI or styling, always make sure to follow best practices of Next/Vercel and React.
+- When asked to deploy to VPS, usually it will be the ws listener client on `dnse-listener/`. Find the VPS host address in .env, deploy the changed files based on guidance in `README.md` and restart the service.

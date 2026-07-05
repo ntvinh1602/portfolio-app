@@ -17,13 +17,13 @@ const statusConfig = {
     icon: (props) => <Loader2 className="animate-spin" {...props} />,
   },
   empty: {
-    title: "No Data",
+    title: "No data",
     description: "Unable to find any items.",
     icon: FileExclamationPoint,
   },
   error: {
-    title: "Something Went Wrong",
-    description: "Unable to load your data.",
+    title: "Unexpected error",
+    description: "Something wrong when loading data.",
     icon: (props) => <TriangleAlert className="text-destructive" {...props} />,
   },
 } satisfies Record<
@@ -39,12 +39,14 @@ interface StatusLabelProps {
   type: StatusType
   title?: string
   description?: string
+  className?: string
 }
 
 export default function StatusLabel({
   type,
   title,
   description,
+  className
 }: StatusLabelProps) {
   const {
     title: defaultTitle,
@@ -53,7 +55,7 @@ export default function StatusLabel({
   } = statusConfig[type]
 
   return (
-    <Empty>
+    <Empty className={cn(className)}>
       <EmptyHeader>
         <EmptyMedia
           variant="icon"
@@ -64,7 +66,9 @@ export default function StatusLabel({
 
         <EmptyTitle>{title ?? defaultTitle}</EmptyTitle>
 
-        <EmptyDescription>{description ?? defaultDescription}</EmptyDescription>
+        <EmptyDescription className="first-letter:uppercase lowercase">
+          {description ?? defaultDescription}
+        </EmptyDescription>
       </EmptyHeader>
     </Empty>
   )

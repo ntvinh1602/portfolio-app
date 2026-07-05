@@ -88,3 +88,9 @@ export type NewsArticle = {
   published_at: string
   tickers?: string[]
 }
+
+export interface ChartMeta {
+  name: string
+  stat1: string | null
+  stat2: string | null
+}

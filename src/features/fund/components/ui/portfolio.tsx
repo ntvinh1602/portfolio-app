@@ -7,12 +7,13 @@ import {
 } from "@/components/ui/card"
 import type { BSheetView } from "@fund/fund.types"
 import { Separator } from "@/components/ui/separator"
-import { AumChart } from "@fund/components/chart/aum-chart"
-import { LeverageChart } from "@fund/components/chart/leverage-chart"
-import { StockHoldings } from "./stock-holdings"
+import { AumChart } from "@/features/fund/components/ui/aum-chart"
+import { LeverageChart } from "@/features/fund/components/ui/leverage-chart"
+import { StockHoldings } from "../dashboard/stock-holdings"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
+import StatusLabel from "@/components/status-label"
 
 interface Props {
   cash: number
@@ -75,8 +76,20 @@ export function PortfolioSkeleton() {
         </CardContent>
       </Card>
       <div className="flex w-full gap-4">
-        <ChartCardSkeleton showMetricsSection={false} />
-        <ChartCardSkeleton showMetricsSection={false} />
+        <FullChartSkeleton
+          name="Alpha"
+          stat1="equity return"
+          stat2="vnindex return"
+        >
+          <StatusLabel type="loading" />
+        </FullChartSkeleton>
+        <FullChartSkeleton
+          name="Alpha"
+          stat1="equity return"
+          stat2="vnindex return"
+        >
+          <StatusLabel type="loading" />
+        </FullChartSkeleton>
       </div>
     </div>
   )

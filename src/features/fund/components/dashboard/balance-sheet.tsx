@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
-import AssetItem from "@fund/components/asset-item"
+import AssetItem from "@/features/fund/components/ui/asset-item"
 import {
   Item,
   ItemContent,

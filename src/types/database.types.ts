@@ -278,7 +278,6 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
           id: string
-          is_active: boolean
           logo_url: string | null
           name: string
           ticker: string
@@ -287,7 +286,6 @@ export type Database = {
           asset_class: Database["public"]["Enums"]["asset_class"]
           currency_code: string
           id?: string
-          is_active?: boolean
           logo_url?: string | null
           name: string
           ticker: string
@@ -296,7 +294,6 @@ export type Database = {
           asset_class?: Database["public"]["Enums"]["asset_class"]
           currency_code?: string
           id?: string
-          is_active?: boolean
           logo_url?: string | null
           name?: string
           ticker?: string
@@ -326,6 +323,59 @@ export type Database = {
         }
         Relationships: []
       }
+      dnse_m1_close: {
+        Row: {
+          close: number
+          last_updated: string
+          received_at: string
+          symbol: string
+          volume: number
+        }
+        Insert: {
+          close: number
+          last_updated: string
+          received_at?: string
+          symbol: string
+          volume: number
+        }
+        Update: {
+          close?: number
+          last_updated?: string
+          received_at?: string
+          symbol?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "m1_intraday_close_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["ticker"]
+          },
+          {
+            foreignKeyName: "m1_intraday_close_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "balance_sheet"
+            referencedColumns: ["ticker"]
+          },
+          {
+            foreignKeyName: "m1_intraday_close_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "stock_pnl_all"
+            referencedColumns: ["ticker"]
+          },
+          {
+            foreignKeyName: "m1_intraday_close_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: false
+            referencedRelation: "stock_pnl_yearly"
+            referencedColumns: ["ticker"]
+          },
+        ]
+      }
       dnse_order_events: {
         Row: {
           account_no: string
@@ -336,12 +386,12 @@ export type Database = {
           leave_quantity: number
           loan_package_id: number | null
           modified_date: string
-          order_status: string
+          order_status: Database["public"]["Enums"]["dnse_order_status"]
           order_type: string
           price: number
           quantity: number
           received_at: string
-          side: string
+          side: Database["public"]["Enums"]["stock_ops"]
           symbol: string
         }
         Insert: {
@@ -353,12 +403,12 @@ export type Database = {
           leave_quantity?: number
           loan_package_id?: number | null
           modified_date: string
-          order_status: string
+          order_status: Database["public"]["Enums"]["dnse_order_status"]
           order_type: string
           price: number
           quantity: number
           received_at?: string
-          side: string
+          side: Database["public"]["Enums"]["stock_ops"]
           symbol: string
         }
         Update: {
@@ -370,74 +420,45 @@ export type Database = {
           leave_quantity?: number
           loan_package_id?: number | null
           modified_date?: string
-          order_status?: string
+          order_status?: Database["public"]["Enums"]["dnse_order_status"]
           order_type?: string
           price?: number
           quantity?: number
           received_at?: string
-          side?: string
+          side?: Database["public"]["Enums"]["stock_ops"]
           symbol?: string
-        }
-        Relationships: []
-      }
-      dnse_orders: {
-        Row: {
-          average_price: number | null
-          fee: number | null
-          fill_quantity: number | null
-          id: number
-          modified_date: string | null
-          order_status: string | null
-          side: string
-          symbol: string
-          tax: number | null
-        }
-        Insert: {
-          average_price?: number | null
-          fee?: number | null
-          fill_quantity?: number | null
-          id: number
-          modified_date?: string | null
-          order_status?: string | null
-          side: string
-          symbol: string
-          tax?: number | null
-        }
-        Update: {
-          average_price?: number | null
-          fee?: number | null
-          fill_quantity?: number | null
-          id?: number
-          modified_date?: string | null
-          order_status?: string | null
-          side?: string
-          symbol?: string
-          tax?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "dnse_orders_symbol_fkey"
+            foreignKeyName: "dnse_order_events_account_no_fkey"
+            columns: ["account_no"]
+            isOneToOne: false
+            referencedRelation: "user_settings"
+            referencedColumns: ["dnse_account_id"]
+          },
+          {
+            foreignKeyName: "dnse_order_events_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
             referencedRelation: "assets"
             referencedColumns: ["ticker"]
           },
           {
-            foreignKeyName: "dnse_orders_symbol_fkey"
+            foreignKeyName: "dnse_order_events_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
             referencedRelation: "balance_sheet"
             referencedColumns: ["ticker"]
           },
           {
-            foreignKeyName: "dnse_orders_symbol_fkey"
+            foreignKeyName: "dnse_order_events_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
             referencedRelation: "stock_pnl_all"
             referencedColumns: ["ticker"]
           },
           {
-            foreignKeyName: "dnse_orders_symbol_fkey"
+            foreignKeyName: "dnse_order_events_symbol_fkey"
             columns: ["symbol"]
             isOneToOne: false
             referencedRelation: "stock_pnl_yearly"
@@ -496,30 +517,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      m1_intraday_close: {
-        Row: {
-          close: number
-          last_updated: string
-          received_at: string
-          symbol: string
-          volume: number
-        }
-        Insert: {
-          close: number
-          last_updated: string
-          received_at?: string
-          symbol: string
-          volume: number
-        }
-        Update: {
-          close?: number
-          last_updated?: string
-          received_at?: string
-          symbol?: string
-          volume?: number
-        }
-        Relationships: []
       }
       news_articles: {
         Row: {
@@ -813,14 +810,17 @@ export type Database = {
       user_settings: {
         Row: {
           dnse_account_id: string | null
+          inception_date: string
           user_id: string
         }
         Insert: {
           dnse_account_id?: string | null
+          inception_date?: string
           user_id: string
         }
         Update: {
           dnse_account_id?: string | null
+          inception_date?: string
           user_id?: string
         }
         Relationships: []
@@ -1021,7 +1021,6 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string; p_threshold?: number }
         Returns: Json
       }
-      process_refresh_queue: { Args: never; Returns: undefined }
       process_tx_borrow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_cashflow: { Args: { p_tx_id: string }; Returns: undefined }
       process_tx_repay: { Args: { p_tx_id: string }; Returns: undefined }
@@ -1038,6 +1037,18 @@ export type Database = {
         | "liability"
         | "index"
       cashflow_ops: "deposit" | "withdraw" | "income" | "expense"
+      dnse_order_status:
+        | "Pending"
+        | "PendingNew"
+        | "New"
+        | "PartiallyFilled"
+        | "Filled"
+        | "PendingReplace"
+        | "PendingCancel"
+        | "Canceled"
+        | "Rejected"
+        | "Expired"
+        | "DoneForDay"
       stock_ops: "buy" | "sell"
       tx_category: "stock" | "cashflow" | "borrow" | "repay"
     }
@@ -1192,6 +1203,19 @@ export const Constants = {
         "index",
       ],
       cashflow_ops: ["deposit", "withdraw", "income", "expense"],
+      dnse_order_status: [
+        "Pending",
+        "PendingNew",
+        "New",
+        "PartiallyFilled",
+        "Filled",
+        "PendingReplace",
+        "PendingCancel",
+        "Canceled",
+        "Rejected",
+        "Expired",
+        "DoneForDay",
+      ],
       stock_ops: ["buy", "sell"],
       tx_category: ["stock", "cashflow", "borrow", "repay"],
     },

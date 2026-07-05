@@ -2,21 +2,12 @@
 
 import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
-import { BenchmarkChart } from "./benchmark-chart"
+import { BenchmarkChart } from "../ui/benchmark-chart"
 import { useBenchmark } from "@fund/hooks/use-performance-data"
 import type { BenchmarkView, BenchmarkChartCols } from "@fund/fund.types"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
-
-type BenchmarkRow = { t: number; portfolio_value: number; vni_value: number }
-
-function colsToRows({ d, p, v }: BenchmarkChartCols): BenchmarkRow[] {
-  const out: BenchmarkRow[] = new Array(d.length)
-  for (let i = 0; i < d.length; i++) {
-    out[i] = { t: d[i] * 86_400_000, portfolio_value: p[i], vni_value: v[i] }
-  }
-  return out
-}
+import { colsToRows } from "@fund/utils"
 
 function useBenchmarkChartData(data: BenchmarkView | undefined) {
   return useMemo(() => {
@@ -33,13 +24,43 @@ export function BenchmarkSection() {
   const { year } = usePerformanceYear()
   const { data, error, isLoading } = useBenchmark(year)
   const chartData = useBenchmarkChartData(data)
+  const meta = { name: "Alpha", stat1: "equity return", stat2: "VNI return" }
 
-  if (isLoading) return <ChartCardSkeleton />
-  if (error) return <StatusLabel type="error" />
-  if (!data || !chartData) return null
+  if (isLoading)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="loading"
+          title="In progress..."
+          description="Pulling in data to draw your chart"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (error)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description={error.message}
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
+  if (!data || !chartData)
+    return (
+      <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
+        <StatusLabel
+          type="error"
+          description="Unable to get any data"
+          className="py-25"
+        />
+      </FullChartSkeleton>
+    )
 
   return (
     <BenchmarkChart
+      meta={meta}
       year={year!}
       equityReturn={chartData.equityReturn}
       vnIndexReturn={chartData.vnIndexReturn}

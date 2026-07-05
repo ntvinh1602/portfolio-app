@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Portfolio, PortfolioSkeleton } from "./portfolio"
+import { Portfolio, PortfolioSkeleton } from "../ui/portfolio"
 import { useBalanceSheet } from "@fund/hooks/use-dashboard-data"
 import type { BSheetView } from "@fund/fund.types"
 import StatusLabel from "@/components/status-label"

@@ -1,15 +1,16 @@
 import { getNews, get1yProfit } from "@fund/actions/get-dashboard"
 import getStockHoldings from "@fund/actions/get-stock-holdings"
 import { Suspense } from "react"
-import { NewsSkeleton } from "@fund/components/dashboard/news"
+import { NewsSkeleton } from "@/features/fund/components/ui/news"
 import { NewsSection } from "@fund/components/dashboard/news-section"
 import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
 import { EquityReturnSection } from "@fund/components/dashboard/equity-return"
 import { DashboardDateRangeProvider } from "@fund/components/dashboard/context"
 import { PortfolioSection } from "@fund/components/dashboard/portfolio-section"
-import { NetProfitChart } from "@fund/components/chart/netprofit-chart"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { NetProfitChart } from "@/features/fund/components/ui/netprofit-chart"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
 import type { ProfitChartCols } from "@fund/fund.types"
+import StatusLabel from "@/components/status-label"
 
 export default function Page() {
   return (
@@ -21,7 +22,17 @@ export default function Page() {
 
         <div className="flex flex-col flex-1 gap-6">
           <PortfolioSection />
-          <Suspense fallback={<ChartCardSkeleton />}>
+          <Suspense
+            fallback={
+              <FullChartSkeleton
+                name="Alpha"
+                stat1="equity return"
+                stat2="vnindex return"
+              >
+                <StatusLabel type="loading" />
+              </FullChartSkeleton>
+            }
+          >
             <NetProfitData />
           </Suspense>
         </div>
@@ -47,8 +58,10 @@ async function NetProfitData() {
     interest: profit.interest[i],
     tax: profit.tax[i],
   }))
+  const meta = { name: "Net Profit", stat1: "avg. profit", stat2: "avg. cost"}
   return (
     <NetProfitChart
+      meta={meta}
       totalPnl={data.total_pnl}
       avgProfit={data.avg_profit}
       avgExpense={data.avg_expense}

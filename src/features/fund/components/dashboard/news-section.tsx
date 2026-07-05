@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { NewsWidget } from "./news"
+import { NewsWidget } from "../ui/news"
 import type { NewsArticle } from "@fund/fund.types"
 
 function usePortfolioNews(

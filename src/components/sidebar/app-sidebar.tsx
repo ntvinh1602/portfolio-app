@@ -19,7 +19,7 @@ const data = {
   navMenu: [
     {
       title: "Fund",
-      url: "#",
+      url: "/fund/dashboard",
       icon: PiggyBank,
       isActive: true,
       items: [
@@ -39,7 +39,7 @@ const data = {
     },
     {
       title: "Flights",
-      url: "#",
+      url: "/fights/map",
       icon: Plane,
       isActive: true,
       items: [

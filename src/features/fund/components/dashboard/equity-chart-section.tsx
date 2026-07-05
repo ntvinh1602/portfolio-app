@@ -2,10 +2,10 @@
 
 import { useMemo } from "react"
 import { useDashboardDateRange } from "./context"
-import { EquityChart } from "@fund/components/chart/equity-chart"
+import { EquityChart } from "@/features/fund/components/ui/equity-chart"
 import { useEquityRolling } from "@fund/hooks/use-dashboard-data"
 import type { EquityChartCols, EquityRollingView } from "@fund/fund.types"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { FullChartSkeleton } from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
 
 function colsToRows({ d, e, c }: EquityChartCols) {
@@ -43,7 +43,16 @@ export function EquityChartSection() {
   const { data, error, isLoading } = useEquityRolling()
   const chartData = useEquityChartData(data, dateRange)
 
-  if (isLoading) return <ChartCardSkeleton />
+  if (isLoading)
+    return (
+      <FullChartSkeleton
+        name="Alpha"
+        stat1="equity return"
+        stat2="vnindex return"
+      >
+        <StatusLabel type="loading" />
+      </FullChartSkeleton>
+    )
   if (error) return <StatusLabel type="error" />
   if (!chartData) return null
 

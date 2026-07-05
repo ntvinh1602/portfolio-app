@@ -2,11 +2,13 @@
 
 import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
-import { ExpenseChart } from "../chart/expense-chart"
+import { ExpenseChart } from "../ui/expense-chart"
 import { useProfit } from "@fund/hooks/use-performance-data"
 import type { ProfitChartCols } from "@fund/fund.types"
-import ChartCardSkeleton from "@/components/skeletons/chart-card"
+import { SimpleChartSkeleton } from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { formatNum } from "@/lib/utils"
 
 type ExpenseChartDatum = Record<string, unknown>
 
@@ -36,10 +38,32 @@ export function ExpenseChartSection() {
   const expenseData = useExpenseChartData(
     data?.profit_chart as ProfitChartCols | undefined,
   )
+  const meta = { name: "Total Expenses" }
 
-  if (isLoading) return <ChartCardSkeleton showMetricsSection={false} />
-  if (error) return <StatusLabel type="error" />
-  if (!data || !expenseData) return null
+  if (isLoading)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <Skeleton className="h-30 w-full" />
+      </SimpleChartSkeleton>
+    )
+  if (error)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description={error.message} />
+      </SimpleChartSkeleton>
+    )
+  if (!data || !expenseData)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description="Unable to get any data" />
+      </SimpleChartSkeleton>
+    )
 
-  return <ExpenseChart {...expenseData} />
+  return (
+    <ExpenseChart
+      name={meta.name}
+      totalExpenses={formatNum(expenseData.totalExpenses)}
+      chartData={expenseData.chartData}
+    />
+  )
 }

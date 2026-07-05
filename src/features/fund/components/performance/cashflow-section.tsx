@@ -2,11 +2,12 @@
 
 import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
-import { Cashflow } from "./cashflow"
+import { Cashflow } from "../ui/cashflow"
 import { useCashflow } from "@fund/hooks/use-performance-data"
-import { Item, ItemContent, ItemGroup, ItemTitle } from "@/components/ui/item"
-import { formatNum } from "@/lib/utils"
 import StatusLabel from "@/components/status-label"
+import { SimpleChartSkeleton } from "@/components/skeletons/chart-card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { formatNum } from "@/lib/utils"
 
 function useCashflowSummary(
   deposits: number | undefined,
@@ -27,31 +28,33 @@ export function CashflowSection() {
     data?.deposits,
     data?.withdrawals,
   )
+  const meta = { name: "Net Cashflow" }
 
-  if (isLoading) return <StatusLabel type="loading" />
-  if (error) return <StatusLabel type="error" />
-  if (!data) return null
+  if (isLoading)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <Skeleton className="h-30 w-full" />
+      </SimpleChartSkeleton>
+    )
+  if (error)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description={error.message} />
+      </SimpleChartSkeleton>
+    )
+  if (!data)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description="Unable to get any data" />
+      </SimpleChartSkeleton>
+    )
 
   return (
-    <Cashflow net={net}>
-      <ItemGroup className="bg-muted/50 rounded-2xl p-2">
-        <Item size="xs">
-          <ItemContent>
-            <ItemTitle>Deposit</ItemTitle>
-          </ItemContent>
-          <ItemContent>
-            <ItemTitle>{formatNum(inflow)}</ItemTitle>
-          </ItemContent>
-        </Item>
-        <Item size="xs">
-          <ItemContent>
-            <ItemTitle>Withdraw</ItemTitle>
-          </ItemContent>
-          <ItemContent>
-            <ItemTitle>{formatNum(outflow)}</ItemTitle>
-          </ItemContent>
-        </Item>
-      </ItemGroup>
-    </Cashflow>
+    <Cashflow
+      name={meta.name}
+      net={formatNum(Math.abs(net))}
+      inflow={formatNum(inflow)}
+      outflow={formatNum(outflow)}
+    />
   )
 }
