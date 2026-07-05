@@ -30,6 +30,7 @@ import { PlusIcon } from "lucide-react"
 import { ItemGroup } from "@/components/ui/item"
 import { useTransactionFilters } from "@fund/hooks/use-transaction-filters"
 import StatusLabel from "@/components/status-label"
+import { PageTitle } from "@/components/page-title"
 
 type TransactionFormType = "stock" | "cashflow" | "borrow" | "repay"
 type Transaction = {
@@ -115,8 +116,7 @@ export default function TransactionsPage() {
   return (
     <div className="@container/main flex flex-1 flex-col ">
       <div className="flex flex-col w-full xl:max-w-250 gap-6 mx-auto">
-        <div className="flex w-full xl:pt-15 justify-between items-center">
-          <h1 className="text-2xl font-normal">Transaction Events</h1>
+        <PageTitle title="Transaction Events">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="rounded-2xl">
@@ -152,7 +152,7 @@ export default function TransactionsPage() {
               onSuccess={triggerRefresh}
             />
           )}
-        </div>
+        </PageTitle>
         <div className="flex flex-col xl:flex-row w-full gap-6">
           <TxFilter
             filters={filters}

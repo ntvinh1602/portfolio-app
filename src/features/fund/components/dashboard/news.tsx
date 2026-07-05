@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo } from "react"
 import {
   Card,
   CardHeader,
@@ -81,31 +80,17 @@ function NewsTabContent({ articles }: { articles: NewsArticle[] }) {
 }
 
 type NewsWidgetProps = {
-  stocks: {
-    ticker: string
-  }[]
-  news: NewsArticle[]
+  allNews: NewsArticle[]
+  portfolioNews: NewsArticle[]
 }
 
-export function NewsWidget({ stocks, news }: NewsWidgetProps) {
-  // Create a fast lookup set of stock holding tickers from the balance sheet
-  const stockTickers = useMemo(() => {
-    return new Set(stocks.map((asset) => asset.ticker))
-  }, [stocks])
-
-  // Filter logic
-  const filteredArticles = useMemo(() => {
-    return news.filter((article) =>
-      article.tickers?.some((ticker) => stockTickers.has(ticker)),
-    )
-  }, [news, stockTickers])
-
+export function NewsWidget({ allNews, portfolioNews }: NewsWidgetProps) {
   const tabs = [
-    { value: "all", label: "All news", articles: news },
+    { value: "all", label: "All news", articles: allNews },
     {
       value: "portfolio",
       label: "Portfolio related",
-      articles: filteredArticles,
+      articles: portfolioNews,
     },
   ]
 

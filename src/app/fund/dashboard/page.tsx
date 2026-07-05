@@ -1,7 +1,8 @@
 import { getNews, get1yProfit } from "@fund/actions/get-dashboard"
 import getStockHoldings from "@fund/actions/get-stock-holdings"
 import { Suspense } from "react"
-import { NewsSkeleton, NewsWidget } from "@fund/components/dashboard/news"
+import { NewsSkeleton } from "@fund/components/dashboard/news"
+import { NewsSection } from "@fund/components/dashboard/news-section"
 import { TradingViewWidget } from "@fund/components/dashboard/trading-view"
 import { EquityReturnSection } from "@fund/components/dashboard/equity-return"
 import { DashboardDateRangeProvider } from "@fund/components/dashboard/context"
@@ -58,5 +59,5 @@ async function NetProfitData() {
 
 async function NewsData() {
   const [news, stocks] = await Promise.all([getNews(), getStockHoldings()])
-  return <NewsWidget stocks={stocks} news={news} />
+  return <NewsSection stocks={stocks} news={news} />
 }

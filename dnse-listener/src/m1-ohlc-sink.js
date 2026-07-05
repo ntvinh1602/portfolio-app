@@ -1,5 +1,6 @@
 const MAX_UPSERT_ATTEMPTS = 3
 const RETRY_DELAYS_MS = [250, 750]
+const OHLC_NOTIFY_COOLDOWN_MS = 30 * 60 * 1000
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -30,7 +31,9 @@ export function toIntradayRow(message) {
   }
 }
 
-export function createIntradaySink({ supabaseUrl, serviceRoleKey, logger }) {
+export function createIntradaySink({ supabaseUrl, serviceRoleKey, logger, notify }) {
+  let lastNotifiedAt = 0
+
   async function upsertIntradayClose(message) {
     let row
 
@@ -81,6 +84,10 @@ export function createIntradaySink({ supabaseUrl, serviceRoleKey, logger }) {
             status: response.status,
             body,
           })
+          if (Date.now() - lastNotifiedAt > OHLC_NOTIFY_COOLDOWN_MS) {
+            lastNotifiedAt = Date.now()
+            void notify(`[DNSE] OHLC upsert failed — ${row.symbol} (${response.status})`)
+          }
           return false
         }
 
@@ -101,6 +108,10 @@ export function createIntradaySink({ supabaseUrl, serviceRoleKey, logger }) {
             error_message:
               error instanceof Error ? error.message : "Unknown sink error",
           })
+          if (Date.now() - lastNotifiedAt > OHLC_NOTIFY_COOLDOWN_MS) {
+            lastNotifiedAt = Date.now()
+            void notify(`[DNSE] OHLC upsert failed — ${row.symbol} (${error instanceof Error ? error.message : "error"})`)
+          }
           return false
         }
 

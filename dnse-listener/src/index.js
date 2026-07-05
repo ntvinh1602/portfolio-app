@@ -6,6 +6,7 @@ import { createIntradaySink } from "./m1-ohlc-sink.js"
 import { SubscriptionRegistry } from "./subscriptions.js"
 import { fetchActiveSymbols } from "./symbols.js"
 import { createDnseWsClient } from "./ws.js"
+import { createTelegramNotifier } from "./telegram.js"
 
 function requireEnv(name) {
   const value = process.env[name]
@@ -44,22 +45,31 @@ function loadConfig() {
       process.env.HEARTBEAT_MS,
       "25000",
     ),
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+    telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
   }
 }
 
 const config = loadConfig()
 const logger = createLogger({ service: "dnse-listener" })
 const registry = new SubscriptionRegistry()
+const telegram = createTelegramNotifier({
+  botToken: config.telegramBotToken,
+  chatId: config.telegramChatId,
+  logger: logger.child({ component: "telegram" }),
+})
 const sink = createIntradaySink({
   supabaseUrl: config.supabaseUrl,
   serviceRoleKey: config.serviceRoleKey,
   logger: logger.child({ component: "sink" }),
+  notify: telegram.send,
 })
 
 const orderSink = createOrderSink({
   supabaseUrl: config.supabaseUrl,
   serviceRoleKey: config.serviceRoleKey,
   logger: logger.child({ component: "order_sink" }),
+  notify: telegram.send,
 })
 
 const channels = [

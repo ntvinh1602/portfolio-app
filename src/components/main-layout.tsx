@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Toaster } from "sonner"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { SiteHeader } from "@/components/header-bar"
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (

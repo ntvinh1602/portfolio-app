@@ -5,7 +5,7 @@ import YahooFinance from "https://esm.sh/yahoo-finance2@3.11.2"
 
 // === CONFIG ===
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-const serviceRoleKey = Deno.env.get("SB_SECRET_KEY")!
+const serviceRoleKey = Deno.env.get("SUPABASE_SECRET_KEYS")!
 const supabase = createClient(supabaseUrl, serviceRoleKey)
 const today = new Date().toISOString().split("T")[0]
 
@@ -27,7 +27,6 @@ serve(async (req: Request) => {
     const { data: assets, error: assetError } = await supabase
       .from("assets")
       .select("id, ticker")
-      .eq("is_active", true)
       .in("asset_class", ["index"])
 
     if (assetError) throw assetError

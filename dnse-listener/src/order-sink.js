@@ -1,5 +1,6 @@
 const MAX_UPSERT_ATTEMPTS = 3
 const RETRY_DELAYS_MS = [250, 750]
+const ORDER_NOTIFY_COOLDOWN_MS = 60 * 1000
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -27,7 +28,9 @@ export function toOrderEventRow(message) {
   }
 }
 
-export function createOrderSink({ supabaseUrl, serviceRoleKey, logger }) {
+export function createOrderSink({ supabaseUrl, serviceRoleKey, logger, notify }) {
+  let lastNotifiedAt = 0
+
   async function upsertOrderEvent(message) {
     let row
 
@@ -81,6 +84,10 @@ export function createOrderSink({ supabaseUrl, serviceRoleKey, logger }) {
             status: response.status,
             body,
           })
+          if (Date.now() - lastNotifiedAt > ORDER_NOTIFY_COOLDOWN_MS) {
+            lastNotifiedAt = Date.now()
+            void notify(`[DNSE] Order upsert failed — #${row.id} ${row.symbol} (${response.status})`)
+          }
           return false
         }
 
@@ -101,6 +108,10 @@ export function createOrderSink({ supabaseUrl, serviceRoleKey, logger }) {
             error_message:
               error instanceof Error ? error.message : "Unknown order sink error",
           })
+          if (Date.now() - lastNotifiedAt > ORDER_NOTIFY_COOLDOWN_MS) {
+            lastNotifiedAt = Date.now()
+            void notify(`[DNSE] Order upsert failed — #${row.id} ${row.symbol} (${error instanceof Error ? error.message : "error"})`)
+          }
           return false
         }
 

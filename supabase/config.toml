@@ -417,7 +417,5 @@ enabled = true
 
 [functions.fetch-yahoofinance]
 
-[functions.upsert-dnse-orders]
-
 [functions.ingest-news]
 verify_jwt = false

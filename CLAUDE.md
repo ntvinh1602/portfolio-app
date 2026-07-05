@@ -229,32 +229,6 @@ Colors reference CSS variables `--chart-1` through `--chart-5` defined in `globa
 
 `ChartCardHeader` (`src/components/charts/chartcard-header.tsx`) provides a standard card header with title, hero stat, and two sub-stats with trend icons.
 
-### Skeleton Co-Exports
-
-Many fund dashboard components export a `*Skeleton` variant alongside the component (e.g., `Portfolio` + `PortfolioSkeleton`, `NewsWidget` + `NewsSkeleton`). Shared skeleton components are in `src/components/skeletons/` (`chart-card.tsx`, `item.tsx`).
-
-## Compound Component Families
-
-Three compound component families provide consistent layout primitives. All in `src/components/ui/`.
-
-### Item
-
-For list items and stat displays. `Item`, `ItemContent`, `ItemTitle`, `ItemDescription`, `ItemMedia`, `ItemGroup`, `ItemSeparator`, plus header/footer/actions subcomponents. Variants: `default`, `outline`, `muted`. Sizes: `default`, `sm`, `xs`.
-
-Used in flight items, transaction items, asset items, chart stat displays, and news article cards.
-
-### Field
-
-For form field layout and metadata. `Field`, `FieldGroup`, `FieldLabel`, `FieldDescription`, `FieldError`, plus content/title/set/legend/separator subcomponents. Orientations: `vertical`, `horizontal`, `responsive`.
-
-Used in all form field wrappers and filter components.
-
-### Empty
-
-For empty-state displays. `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle`, `EmptyDescription`, `EmptyContent`. Media variants: `default`, `icon`.
-
-Used in `InfiniteList`, `StatusLabel`, and any component that needs an empty state.
-
 ## Component Composition Patterns
 
 Follow these patterns when building new feature components. Derived from [Vercel's React composition patterns](https://github.com/vercel/composition-patterns) and [React best practices](https://github.com/vercel/react-best-practices).

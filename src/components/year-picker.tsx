@@ -17,11 +17,13 @@ export function YearPicker({
   endYear,
   value,
   onChange,
+  iconDisplay = true,
 }: {
   startYear: number
   endYear?: number
   value?: number
   onChange?: (value: number) => void
+  iconDisplay?: boolean
 }) {
   const endYearState = new Date().getFullYear()
   const finalEndYear = endYear ?? endYearState
@@ -33,7 +35,7 @@ export function YearPicker({
   return (
     <Field orientation="horizontal">
       <FieldLabel>
-        <Calendar className="stroke-1 size-5" />
+        {iconDisplay && <Calendar className="stroke-1 size-5" />}
       </FieldLabel>
       <Select
         value={value?.toString()}
