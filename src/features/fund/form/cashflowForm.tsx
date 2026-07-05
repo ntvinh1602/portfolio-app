@@ -8,6 +8,7 @@ import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
+import { DateTimeField } from "@/components/form/datetime-field"
 import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { getCashAssets } from "@fund/actions/get-cash-assets"
@@ -91,12 +92,17 @@ export function CashflowForm({
   async function onSubmit(data: FormValues) {
     onLoadingChange(true)
     try {
+      const createdAt = data.created_at
+        ? new Date(data.created_at).toISOString()
+        : undefined
+
       const { error } = await supabase.rpc("add_cashflow_event", {
         p_operation: data.operation,
         p_asset_id: data.asset,
         p_quantity: data.quantity,
         p_fx_rate: data.fx_rate ?? 1,
         p_memo: data.memo,
+        p_created_at: createdAt,
       })
 
       if (error) {
@@ -123,52 +129,56 @@ export function CashflowForm({
   }, [form, resetFormRef])
 
   return (
-    <div className="flex flex-col gap-6">
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
-        <FieldGroup>
-          <RadioGroupField
-            control={form.control}
-            name="operation"
-            options={cashflowOps}
-            column={2}
-          />
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
+      <FieldGroup className="gap-3">
+        <DateTimeField
+          control={form.control}
+          name="created_at"
+          label="Date & Time"
+        />
 
-          <ComboboxField
-            control={form.control}
-            name="memo"
-            label="Description"
-            items={filteredMemos}
-            placeholder="Select description preset"
-            searchPlaceholder="Search for description..."
-          />
+        <RadioGroupField
+          control={form.control}
+          name="operation"
+          options={cashflowOps}
+          column={2}
+        />
 
-          <ComboboxField
-            control={form.control}
-            name="asset"
-            label="Asset"
-            items={assetIDs}
-            placeholder="Select cash or fund asset"
-            searchPlaceholder="Search for asset..."
-          />
+        <ComboboxField
+          control={form.control}
+          name="memo"
+          label="Description"
+          items={filteredMemos}
+          placeholder="Select description preset"
+          searchPlaceholder="Search for description..."
+        />
 
-          <NumberField
-            control={form.control}
-            name="quantity"
-            label="Quantity"
-            placeholder="Total amount in original currency"
-            suffix="VND"
-          />
+        <ComboboxField
+          control={form.control}
+          name="asset"
+          label="Asset"
+          items={assetIDs}
+          placeholder="Select cash or fund asset"
+          searchPlaceholder="Search for asset..."
+        />
 
-          <NumberField
-            control={form.control}
-            name="fx_rate"
-            label="FX Rate"
-            placeholder="Foreign exchange rate to VND"
-            disabled={isVND}
-            suffix="VND"
-          />
-        </FieldGroup>
-      </form>
-    </div>
+        <NumberField
+          control={form.control}
+          name="quantity"
+          label="Quantity"
+          placeholder="Total amount in original currency"
+          suffix="VND"
+        />
+
+        <NumberField
+          control={form.control}
+          name="fx_rate"
+          label="FX Rate"
+          placeholder="Foreign exchange rate to VND"
+          disabled={isVND}
+          suffix="VND"
+        />
+      </FieldGroup>
+    </form>
   )
 }

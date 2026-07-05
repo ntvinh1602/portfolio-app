@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { TextField } from "@/components/form/text-field"
+import { DateTimeField } from "@/components/form/datetime-field"
 import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { borrowSchema } from "./schema"
@@ -20,23 +21,33 @@ interface BorrowFormProps {
   resetFormRef: { current: () => void }
 }
 
-export function BorrowForm({ onSuccess, formId, onLoadingChange, resetFormRef }: BorrowFormProps) {
+export function BorrowForm({
+  onSuccess,
+  formId,
+  onLoadingChange,
+  resetFormRef,
+}: BorrowFormProps) {
   const supabase = createClient()
 
   const form = useForm<FormValues>({
     resolver: zodResolver(borrowSchema),
     defaultValues: {
-      lender: ""
+      lender: "",
     },
   })
 
   async function onSubmit(data: FormValues) {
     onLoadingChange(true)
     try {
+      const createdAt = data.created_at
+        ? new Date(data.created_at).toISOString()
+        : undefined
+
       const { error } = await supabase.rpc("add_borrow_event", {
         p_principal: data.principal,
         p_lender: data.lender,
         p_rate: data.rate,
+        p_created_at: createdAt,
       })
 
       if (error) {
@@ -46,10 +57,11 @@ export function BorrowForm({ onSuccess, formId, onLoadingChange, resetFormRef }:
         form.reset()
         onSuccess?.()
       }
-      
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unexpected error occurred. Please try again later."
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again later."
       toast.error("Unexpected error", { description: message })
     } finally {
       onLoadingChange(false)
@@ -62,33 +74,37 @@ export function BorrowForm({ onSuccess, formId, onLoadingChange, resetFormRef }:
   }, [form, resetFormRef])
 
   return (
-    <div className="flex flex-col gap-6">
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
-        <FieldGroup>
-          <TextField
-            control={form.control}
-            name="lender"
-            label="Lender"
-            placeholder="Add suffix for repeated lenders"
-          />
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
+      <FieldGroup className="gap-3">
+        <DateTimeField
+          control={form.control}
+          name="created_at"
+          label="Date & Time"
+        />
 
-          <NumberField
-            control={form.control}
-            name="principal"
-            label="Debt Principal"
-            placeholder="Input debt principal as a whole number"
-            suffix="VND"
-          />
+        <TextField
+          control={form.control}
+          name="lender"
+          label="Lender"
+          placeholder="Add suffix for repeated lenders"
+        />
 
-          <NumberField
-            control={form.control}
-            name="rate"
-            label="Interest rate"
-            placeholder="Input interest rate, up to 2 decimal points"
-            suffix="% per annum"
-          />
-        </FieldGroup>
-      </form>
-    </div>
+        <NumberField
+          control={form.control}
+          name="principal"
+          label="Debt Principal"
+          placeholder="Input debt principal as a whole number"
+          suffix="VND"
+        />
+
+        <NumberField
+          control={form.control}
+          name="rate"
+          label="Interest rate"
+          placeholder="Input interest rate, up to 2 decimal points"
+          suffix="% per annum"
+        />
+      </FieldGroup>
+    </form>
   )
 }

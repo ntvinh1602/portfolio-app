@@ -52,16 +52,17 @@ export function Combobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="secondary"
           role="combobox"
+          size="lg"
           aria-expanded={open}
-          className={cn("w-full justify-between bg-transparent", className)}
+          className={cn("w-full justify-between", className)}
         >
           {selectedItem
             ? <span>{selectedItem.label}</span>
             : <span className="text-muted-foreground">{placeholder}</span>
           }
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

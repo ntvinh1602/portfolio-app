@@ -6,7 +6,7 @@ import { FilterCard } from "@/components/filter/filter-card"
 import { FilterSelect } from "@/components/filter/filter-select"
 import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
 import { FilterSearch } from "@/components/filter/filter-search"
-import { DatePicker } from "@/components/date-picker"
+import { DateRangePicker } from "@/components/date-picker"
 import { txCategory, txOps, withCustom } from "@fund/config"
 import {
   Select,
@@ -89,7 +89,7 @@ export function TxFilter({
         </Select>
       </Field>
 
-      <DatePicker
+      <DateRangePicker
         dateFrom={resolvedStartDate}
         dateTo={resolvedEndDate}
         onDateFromChange={onCustomStartDateChange}

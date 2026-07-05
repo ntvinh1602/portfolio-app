@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
+import { DateTimeField } from "@/components/form/datetime-field"
 import { FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { repaySchema } from "./schema"
@@ -40,9 +41,8 @@ export function RepayForm({
   React.useEffect(() => {
     async function loadDebts() {
       const { data, error } = await supabase
-        .from("tx_borrow")
+        .from("outstanding_debts")
         .select("tx_id,lender,principal,rate")
-        .filter("is_paid", "eq", false)
 
       if (error) {
         toast.error("Failed to load debts", { description: error.message })
@@ -63,9 +63,14 @@ export function RepayForm({
   async function onSubmit(data: FormValues) {
     onLoadingChange(true)
     try {
+      const createdAt = data.created_at
+        ? new Date(data.created_at).toISOString()
+        : undefined
+
       const { error } = await supabase.rpc("add_repay_event", {
         p_repay_tx: data.repay_tx,
         p_interest: data.interest,
+        p_created_at: createdAt,
       })
 
       if (error) {
@@ -75,7 +80,6 @@ export function RepayForm({
         form.reset()
         onSuccess?.()
       }
-      
     } catch (err) {
       const message =
         err instanceof Error
@@ -93,27 +97,31 @@ export function RepayForm({
   }, [form, resetFormRef])
 
   return (
-    <div className="flex flex-col gap-6">
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
-        <FieldGroup>
-          <ComboboxField
-            control={form.control}
-            name="repay_tx"
-            label="Deal"
-            items={debtOptions}
-            placeholder="Select debt"
-            searchPlaceholder="Search for debts..."
-          />
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
+      <FieldGroup className="gap-3">
+        <DateTimeField
+          control={form.control}
+          name="created_at"
+          label="Date & Time"
+        />
 
-          <NumberField
-            control={form.control}
-            name="interest"
-            label="Paid Interest"
-            placeholder="Input actual amount of interest paid in this deal"
-            suffix="VND"
-          />
-        </FieldGroup>
-      </form>
-    </div>
+        <ComboboxField
+          control={form.control}
+          name="repay_tx"
+          label="Deal"
+          items={debtOptions}
+          placeholder="Select debt"
+          searchPlaceholder="Search for debts..."
+        />
+
+        <NumberField
+          control={form.control}
+          name="interest"
+          label="Paid Interest"
+          placeholder="Input actual amount of interest paid in this deal"
+          suffix="VND"
+        />
+      </FieldGroup>
+    </form>
   )
 }

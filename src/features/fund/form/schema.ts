@@ -14,7 +14,8 @@ export const stockSchema = z.object({
     .min(0, "Fee cannot be negative"),
   tax: z.coerce.number()
     .int("Tax must be a whole number")
-    .min(0, "Tax cannot be negative").optional()
+    .min(0, "Tax cannot be negative").optional(),
+  created_at: z.string().optional()
 })
 
 export const cashflowSchema = z.object({
@@ -22,7 +23,8 @@ export const cashflowSchema = z.object({
   asset: z.string().uuid(),
   quantity: z.coerce.number().positive("Quantity must be positive"),
   fx_rate: z.coerce.number().min(1, "FX Rate cant be less than 1").optional(),
-  memo: z.string()
+  memo: z.string(),
+  created_at: z.string().optional()
 })
 
 export const borrowSchema = z.object({
@@ -30,7 +32,8 @@ export const borrowSchema = z.object({
     .int("Principal must be a whole number")
     .positive("Principal must be positive"),
   lender: z.string(),
-  rate: z.coerce.number().min(0, "Interest rate cannot be negative")
+  rate: z.coerce.number().min(0, "Interest rate cannot be negative"),
+  created_at: z.string().optional()
 })
 
 export const repaySchema = z.object({
@@ -38,4 +41,5 @@ export const repaySchema = z.object({
   interest: z.coerce.number()
     .int("Interest must be a whole number")
     .min(0, "Interest cannot be negative"),
+  created_at: z.string().optional()
 })

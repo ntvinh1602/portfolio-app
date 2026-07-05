@@ -11,34 +11,23 @@ import {
 import { Calendar } from "./ui/calendar"
 import { cn } from "@/lib/utils"
 
-type DatePickerProps = {
-  dateFrom: Date
-  dateTo: Date
-  onDateFromChange: (date: Date) => void
-  onDateToChange: (date: Date) => void
-  disabled?: boolean
-}
-
-function DatePopover({
-  label,
-  date,
-  onDateChange,
-  open,
-  onOpenChange,
-  disabled,
-}: {
-  label: string
+type SinglePickerProps = {
   date: Date
   onDateChange: (date: Date) => void
   open: boolean
   onOpenChange: (open: boolean) => void
   disabled: boolean
-}) {
+}
+
+function SingleDatePicker({
+  date,
+  onDateChange,
+  open,
+  onOpenChange,
+  disabled,
+}: SinglePickerProps) {
   return (
     <div className="flex items-center w-full gap-2">
-      <span className={cn(disabled && "opacity-50 pointer-events-none")}>
-        {label}
-      </span>
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
@@ -70,7 +59,15 @@ function DatePopover({
   )
 }
 
-export function DatePicker({
+type DatePickerProps = {
+  dateFrom: Date
+  dateTo: Date
+  onDateFromChange: (date: Date) => void
+  onDateToChange: (date: Date) => void
+  disabled?: boolean
+}
+
+export function DateRangePicker({
   dateFrom,
   dateTo,
   onDateFromChange,
@@ -82,16 +79,20 @@ export function DatePicker({
 
   return (
     <div className="flex items-center w-full justify-between gap-2">
-      <DatePopover
-        label="From"
+      <span className={cn(disabled && "opacity-50 pointer-events-none")}>
+        From
+      </span>
+      <SingleDatePicker
         date={dateFrom}
         onDateChange={onDateFromChange}
         open={openFrom}
         onOpenChange={setOpenFrom}
         disabled={disabled}
       />
-      <DatePopover
-        label="To"
+      <span className={cn(disabled && "opacity-50 pointer-events-none")}>
+        To
+      </span>
+      <SingleDatePicker
         date={dateTo}
         onDateChange={onDateToChange}
         open={openTo}

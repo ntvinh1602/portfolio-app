@@ -25,9 +25,9 @@ function formatLocalDateTime(date: Date) {
   const pad = (n: number) => n.toString().padStart(2, "0")
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
+    date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-    date.getSeconds()
+    date.getSeconds(),
   )}`
 }
 
@@ -51,9 +51,7 @@ export function DateTimeField<T extends FieldValues>({
       render={({ field }) => {
         const value = field.value ? new Date(field.value) : undefined
         const [time, setTime] = React.useState(
-          value
-            ? value.toTimeString().slice(0, 8)
-            : "10:30:00"
+          value ? value.toTimeString().slice(0, 8) : "10:30:00",
         )
 
         function handleDateChange(date?: Date) {
@@ -70,9 +68,7 @@ export function DateTimeField<T extends FieldValues>({
           field.onChange(formatLocalDateTime(updated))
         }
 
-        function handleTimeChange(
-          e: React.ChangeEvent<HTMLInputElement>
-        ) {
+        function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
           const newTime = e.target.value
           setTime(newTime)
 
@@ -89,26 +85,23 @@ export function DateTimeField<T extends FieldValues>({
         return (
           <Field>
             <FieldLabel>{label}</FieldLabel>
-
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
+                  size="lg"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !field.value && "text-muted-foreground"
+                    !field.value && "text-muted-foreground",
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon />
                   {formatDisplay(field.value)}
                 </Button>
               </PopoverTrigger>
 
-              <PopoverContent
-                className="bg-card/25 backdrop-blur-sm w-auto overflow-hidden p-0"
-                align="center"
-              >
+              <PopoverContent className="w-auto p-0" align="center">
                 <Calendar
                   mode="single"
                   captionLayout="dropdown"
