@@ -33,7 +33,7 @@ export function ReturnChartSection() {
   const chartData = useReturnChartData(data, dateRange)
   const meta = { name: "Return", stat1: "all time", stat2: "annualized" }
 
-  if (!isLoading)
+  if (isLoading)
     return (
       <FullChartSkeleton name={meta.name} stat1={meta.stat1} stat2={meta.stat2}>
         <StatusLabel
