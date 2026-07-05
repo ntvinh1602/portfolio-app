@@ -19,7 +19,7 @@ import {
 import StatusLabel from "@/components/status-label"
 
 interface Props {
-  cash: number
+  normalizedCash: number
   stock: number
   fund: number
   equity: number
@@ -30,7 +30,7 @@ interface Props {
 }
 
 export function Portfolio({
-  cash,
+  normalizedCash,
   stock,
   fund,
   equity,
@@ -44,7 +44,7 @@ export function Portfolio({
       <StockHoldings bs={bsheet} />
       <div className="flex flex-1">
         <AumChart
-          cash={cash}
+          cash={normalizedCash}
           stock={stock}
           fund={fund}
           totalAsset={totalAsset}

@@ -17,6 +17,8 @@ function usePortfolioMetrics(data: BSheetView[] | undefined) {
       .filter((r) => r.asset_class == "cash")
       .reduce((sum, r) => sum + r.total_value, 0)
 
+    const normalizedCash = Math.max(cash, 0)
+
     const stock = data
       .filter((r) => r.asset_class == "stock")
       .reduce((sum, r) => sum + r.total_value, 0)
@@ -26,10 +28,10 @@ function usePortfolioMetrics(data: BSheetView[] | undefined) {
       .reduce((sum, r) => sum + r.total_value, 0)
 
     const margin = data.find((r) => r.ticker == "MARGIN")?.total_value || 0
-    const totalAsset = cash + stock + fund
+    const totalAsset = normalizedCash + stock + fund
     const debt = totalAsset - equity - margin
 
-    return { equity, cash, stock, fund, margin, totalAsset, debt }
+    return { equity, normalizedCash, stock, fund, margin, totalAsset, debt }
   }, [data])
 }
 

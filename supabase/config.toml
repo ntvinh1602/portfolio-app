@@ -415,7 +415,5 @@ enabled = true
 
 [functions.fetch-exchange-rates]
 
-[functions.fetch-yahoofinance]
-
 [functions.ingest-news]
 verify_jwt = false
