@@ -5,25 +5,27 @@ import {
   ItemTitle,
   ItemDescription,
 } from "@/components/ui/item"
-import { useIsMobile } from "@/hooks/use-mobile"
 import Image from "next/image"
-import { formatNum, compactNum, pctNum } from "@/lib/utils"
+import { formatNum, compactNum, pctNum, cn } from "@/lib/utils"
 
-interface Props {
-  variant: "bs" | "dashboard" | "performance"
+interface AssetItemProps {
   ticker: string
   name: string
   logo_url: string | null
   total_value: number
-  asset_class?: string
-  currency_code?: string
-  quantity?: number
-  mkt_price?: number | null
-  net_profit?: number | null
 }
 
-export default function AssetItem({
-  variant,
+interface AssetItemBSProps extends AssetItemProps {
+  variant?: "bs" | "dashboard"
+  asset_class: string
+  currency_code: string
+  quantity: number
+  mkt_price: number
+  net_profit: number
+}
+
+export function AssetItemBS({
+  variant = "bs",
   ticker,
   name,
   asset_class,
@@ -33,18 +35,13 @@ export default function AssetItem({
   total_value,
   mkt_price,
   net_profit,
-}: Props) {
-  const isMobile = useIsMobile()
-  const pct_profit = pctNum(((net_profit || 0) / total_value))
-  const compact_profit = compactNum(net_profit || 0)
-  const color = (net_profit || 0) >= 0 ? "text-primary" : "text-destructive"
+}: AssetItemBSProps) {
+  const color = net_profit >= 0 ? "text-primary" : "text-destructive"
   const unit = asset_class == "stock" ? " shares" : `${currency_code}`
+  const background = variant == "bs" ? "default" : "muted"
 
   return (
-    <Item
-      className={`${variant == "bs" && "px-0 py-1"}`}
-      variant={`${variant == "bs" ? "default" : "muted"}`}
-    >
+    <Item className={cn(variant == "bs" && "px-0 py-1")} variant={background}>
       <ItemMedia variant="image">
         {logo_url && (
           <Image
@@ -59,29 +56,52 @@ export default function AssetItem({
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{name}</ItemTitle>
-        {ticker !== "FX.VND" && variant !== "performance" && (
+        {ticker !== "FX.VND" && (
           <ItemDescription className="text-xs">
-            {`${formatNum(quantity || 0)} ${unit} @ ${formatNum(mkt_price || 0)}`}
+            {`${formatNum(quantity)} ${unit} @ ${formatNum(mkt_price)}`}
           </ItemDescription>
-        )}
-        {variant == "performance" && (
-          <ItemDescription>{ticker}</ItemDescription>
         )}
       </ItemContent>
       <ItemContent className="items-end">
-        {variant !== "performance" && (
-          <ItemDescription>
-            {!isMobile ? formatNum(total_value) : compactNum(total_value)}
+        <ItemDescription>
+          {formatNum(Math.max(total_value, 0))}
+        </ItemDescription>
+        {ticker !== "FX.VND" && (
+          <ItemDescription className={cn(color, "text-xs")}>
+            {`${compactNum(net_profit)} (${pctNum((net_profit) / total_value)})`}
           </ItemDescription>
         )}
-        {ticker !== "FX.VND" && variant !== "performance" && (
-          <ItemDescription className={`${color} text-xs`}>
-            {!isMobile ? `${compact_profit} (${pct_profit})` : pct_profit}
-          </ItemDescription>
+      </ItemContent>
+    </Item>
+  )
+}
+
+export function AssetItemTopStock({
+  ticker,
+  name,
+  logo_url,
+  total_value,
+}: AssetItemProps) {
+  return (
+    <Item variant="muted">
+      <ItemMedia variant="image">
+        {logo_url && (
+          <Image
+            src={`${process.env.NEXT_PUBLIC_STORAGE_URL}/logo/stock/${logo_url}`}
+            alt={name}
+            width={44}
+            height={44}
+            unoptimized
+            loading="eager"
+          />
         )}
-        {variant == "performance" && (
-          <ItemTitle>{formatNum(total_value)}</ItemTitle>
-        )}
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{name}</ItemTitle>
+        <ItemDescription>{ticker}</ItemDescription>
+      </ItemContent>
+      <ItemContent className="items-end">
+        <ItemTitle>{formatNum(Math.max(total_value, 0))}</ItemTitle>
       </ItemContent>
     </Item>
   )

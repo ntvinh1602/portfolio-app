@@ -50,7 +50,8 @@ export default function Page() {
 
 async function NetProfitData() {
   const data = await get1yProfit()
-  const profit = data.profit_chart as ProfitChartCols
+  const profit = data.profit_chart as ProfitChartCols | null
+  if (!profit?.snapshot_date) return null
   const chartRows = profit.snapshot_date.map((snapshot_date, i) => ({
     snapshot_date,
     revenue: profit.revenue[i],

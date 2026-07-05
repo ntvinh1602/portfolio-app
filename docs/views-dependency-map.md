@@ -10,7 +10,6 @@ flowchart LR
     A1[daily_snapshots] --> C4[pnl_expense_yearly pnl_expense_last1y pnl_expense_all]
     A1[daily_snapshots] --> C3[cashflow_yearly cashflow_all]
     A1[daily_snapshots] -.-> B1("get_equity_chart()")
-    A2[balance_sheet] --> C1[equity_rollings]
     A1[daily_snapshots] -.-> B4("calculate_twr()")
     A1[daily_snapshots] -.-> B5("calculate_pnl()")
     A1[daily_snapshots] -.-> B6("get_return_chart()")
@@ -22,7 +21,6 @@ flowchart LR
     B6("get_return_chart()") --> C2[benchmark_yearly benchmark_all benchmark_rollings]
 
     A1@{ shape: internal-storage}
-    A2@{ shape: internal-storage}
     A3@{ shape: internal-storage}
     C1@{ shape: internal-storage}
     C2@{ shape: internal-storage}

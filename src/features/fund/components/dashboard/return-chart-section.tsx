@@ -18,6 +18,7 @@ function useReturnChartData(
     const chartData = data.returnchart
     const cols =
       chartData[dateRange as keyof typeof chartData] ?? chartData.last_1y
+    if (!cols?.d) return null
     return {
       chartTimeframe: colsToRows(cols),
       twrYtd: data.twr_ytd,

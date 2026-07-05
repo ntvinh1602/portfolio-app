@@ -4,14 +4,14 @@ import { useMemo } from "react"
 import { usePerformanceYear } from "./context"
 import { TopStocks } from "../ui/top-stocks"
 import { useStockPnl } from "@fund/hooks/use-performance-data"
-import AssetItem from "@/features/fund/components/ui/asset-item"
+import { AssetItemTopStock } from "@/features/fund/components/ui/asset-item"
 import StatusLabel from "@/components/status-label"
 import type { StockPnl } from "@fund/fund.types"
 import { ItemGroup } from "@/components/ui/item"
 
 function useTopPerformers(data: StockPnl[] | undefined) {
   return useMemo(() => {
-    if (!data) return []
+    if (!data) return null
     return [...data].sort((a, b) => b.total_pnl - a.total_pnl).slice(0, 10)
   }, [data])
 }
@@ -37,7 +37,7 @@ export function TopStocksSection() {
         <StatusLabel type="error" description={error.message} />
       </TopStocks>
     )
-  if (!data)
+  if (!data || !topPerformers)
     return (
       <TopStocks>
         <StatusLabel
@@ -52,9 +52,8 @@ export function TopStocksSection() {
     <TopStocks>
       <ItemGroup className="gap-2">
         {topPerformers.map((stock) => (
-          <AssetItem
+          <AssetItemTopStock
             key={stock.ticker}
-            variant="performance"
             ticker={stock.ticker}
             name={stock.name}
             logo_url={stock.logo_url}

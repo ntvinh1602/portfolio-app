@@ -8,7 +8,7 @@ export type LifetimeStats = {
   [K in keyof StatsRow]: NonNullable<StatsRow[K]>
 }
 
-export default async function getLifetimeStats() {
+export default async function getLifetimeStats(): Promise<LifetimeStats | null> {
   "use cache: private"
   cacheTag("flights")
   cacheLife("days")
@@ -18,8 +18,9 @@ export default async function getLifetimeStats() {
     .schema("flight")
     .from("lifetime_stats")
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) throw new Error(error.message)
+  if (!data) return null
   return data as LifetimeStats
 }

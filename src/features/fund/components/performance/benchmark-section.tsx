@@ -12,10 +12,12 @@ import { colsToRows } from "@fund/utils"
 function useBenchmarkChartData(data: BenchmarkView | undefined) {
   return useMemo(() => {
     if (!data) return null
+    const returnChart = data.return_chart as BenchmarkChartCols | null
+    if (!returnChart?.d) return null
     return {
       equityReturn: data.equity_ret,
       vnIndexReturn: data.vn_ret,
-      chartRows: colsToRows(data.return_chart as BenchmarkChartCols),
+      chartRows: colsToRows(returnChart),
     }
   }, [data])
 }

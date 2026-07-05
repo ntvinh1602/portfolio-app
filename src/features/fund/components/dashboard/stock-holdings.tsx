@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { ButtonGroup } from "@/components/ui/button-group"
-import AssetItem from "@/features/fund/components/ui/asset-item"
+import { AssetItemBS } from "@/features/fund/components/ui/asset-item"
 import { ItemGroup } from "@/components/ui/item"
 import { useState } from "react"
 import { fetchPrices } from "@fund/actions/fetch-price"
@@ -76,7 +76,7 @@ export function StockHoldings({ bs }: Props) {
         {sortedStocks.length > 0 ? (
           <ItemGroup className="gap-2">
             {sortedStocks.map((bs) => (
-              <AssetItem
+              <AssetItemBS
                 variant="dashboard"
                 key={bs.ticker}
                 ticker={bs.ticker}

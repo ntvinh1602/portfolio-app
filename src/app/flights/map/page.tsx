@@ -22,6 +22,7 @@ export default function FlightsMapPage() {
 
 async function StatsCarouselData() {
   const stats = await getLifetimeStats()
+  if (!stats) return null
   return <StatsCarousel stats={stats} />
 }
 

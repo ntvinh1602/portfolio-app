@@ -12,7 +12,8 @@ import { formatNum } from "@/lib/utils"
 
 type ExpenseChartDatum = Record<string, unknown>
 
-const sum = (xs: number[]) => xs.reduce((acc, n) => acc + (n || 0), 0)
+const sum = (xs: number[] | null) =>
+  (xs ?? []).reduce((acc, n) => acc + (n || 0), 0)
 
 function useExpenseChartData(
   profitChart: ProfitChartCols | undefined,
@@ -33,12 +34,18 @@ function useExpenseChartData(
 }
 
 export function ExpenseChartSection() {
+  const meta = { name: "Total Expenses" }
   const { year } = usePerformanceYear()
   const { data, error, isLoading } = useProfit(year)
   const expenseData = useExpenseChartData(
     data?.profit_chart as ProfitChartCols | undefined,
   )
-  const meta = { name: "Total Expenses" }
+  if (!data || !expenseData)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description="Unable to get any data" />
+      </SimpleChartSkeleton>
+    )
 
   if (isLoading)
     return (
@@ -50,12 +57,6 @@ export function ExpenseChartSection() {
     return (
       <SimpleChartSkeleton name={meta.name}>
         <StatusLabel type="error" description={error.message} />
-      </SimpleChartSkeleton>
-    )
-  if (!data || !expenseData)
-    return (
-      <SimpleChartSkeleton name={meta.name}>
-        <StatusLabel type="error" description="Unable to get any data" />
       </SimpleChartSkeleton>
     )
 

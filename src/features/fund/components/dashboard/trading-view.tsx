@@ -12,38 +12,40 @@ function TradingViewWidgetComponent() {
     container.current.innerHTML = ""
 
     const script = document.createElement("script")
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
+    script.src =
+      "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
     script.type = "text/javascript"
     script.async = true
     script.innerHTML = JSON.stringify({
-      "lineWidth": 1.5,
-      "lineType": 2,
-      "chartType": "area",
-      "fontColor": "rgb(106, 109, 120)",
-      "gridLineColor": "rgba(242, 242, 242, 0.06)",
-      "volumeUpColor": "rgba(34, 171, 148, 0.5)",
-      "volumeDownColor": "rgba(247, 82, 95, 0.5)",
-      "backgroundColor": "#171717",
-      "widgetFontColor": "#DBDBDB",
-      "upColor": "#22ab94",
-      "downColor": "#f7525f",
-      "borderUpColor": "#22ab94",
-      "borderDownColor": "#f7525f",
-      "wickUpColor": "#22ab94",
-      "wickDownColor": "#f7525f",
-      "colorTheme": "dark",
-      "isTransparent": true,
-      "locale": "en",
-      "chartOnly": false,
-      "scalePosition": "right",
-      "scaleMode": "Normal",
-      "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-      "valuesTracking": "1",
-      "changeMode": "price-and-percent",
+      lineWidth: 1.5,
+      lineType: 2,
+      chartType: "area",
+      fontColor: "rgb(106, 109, 120)",
+      gridLineColor: "rgba(242, 242, 242, 0.06)",
+      volumeUpColor: "rgba(34, 171, 148, 0.5)",
+      volumeDownColor: "rgba(247, 82, 95, 0.5)",
+      backgroundColor: "#171717",
+      widgetFontColor: "#DBDBDB",
+      upColor: "#22ab94",
+      downColor: "#f7525f",
+      borderUpColor: "#22ab94",
+      borderDownColor: "#f7525f",
+      wickUpColor: "#22ab94",
+      wickDownColor: "#f7525f",
+      colorTheme: "dark",
+      isTransparent: true,
+      locale: "en",
+      chartOnly: false,
+      scalePosition: "right",
+      scaleMode: "Normal",
+      fontFamily:
+        "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+      valuesTracking: "1",
+      changeMode: "price-and-percent",
       symbols: [
         ["Gold", "CAPITALCOM:GOLD|7D"],
         ["Brent Oil", "TVC:UKOIL|7D"],
-        ["Bitcoin", "BINANCE:BTCUSDT|7D"]
+        ["Bitcoin", "BINANCE:BTCUSDT|7D"],
       ],
       dateRanges: [
         "1d|5",
@@ -69,11 +71,13 @@ function TradingViewWidgetComponent() {
   }, [])
 
   return (
-    <div
-      ref={container}
-      className="bg-card shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10 rounded-4xl max-h-120 hidden xl:block tradingview-widget-container"
-    >
-      <div className="tradingview-widget-container__widget" />
+    <div className="h-120">
+      <div
+        ref={container}
+        className="bg-card shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10 rounded-4xl h-full hidden xl:block tradingview-widget-container"
+      >
+        <div className="tradingview-widget-container__widget" />
+      </div>
     </div>
   )
 }

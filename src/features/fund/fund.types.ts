@@ -61,8 +61,8 @@ export interface BSheetView {
   currency_code: string
   quantity: number
   total_value: number
-  mkt_price: number | null
-  net_profit: number | null
+  mkt_price: number
+  net_profit: number
 }
 
 export type EquityRollingView = {

@@ -12,7 +12,10 @@ import { LeverageChart } from "@/features/fund/components/ui/leverage-chart"
 import { StockHoldings } from "../dashboard/stock-holdings"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AssetItemSkeleton } from "@/components/skeletons/item"
-import { FullChartSkeleton } from "@/components/skeletons/chart-card"
+import {
+  FullChartSkeleton,
+  SimpleChartSkeleton,
+} from "@/components/skeletons/chart-card"
 import StatusLabel from "@/components/status-label"
 
 interface Props {
@@ -76,20 +79,12 @@ export function PortfolioSkeleton() {
         </CardContent>
       </Card>
       <div className="flex w-full gap-4">
-        <FullChartSkeleton
-          name="Alpha"
-          stat1="equity return"
-          stat2="vnindex return"
-        >
+        <SimpleChartSkeleton name="Total AUM">
           <StatusLabel type="loading" />
-        </FullChartSkeleton>
-        <FullChartSkeleton
-          name="Alpha"
-          stat1="equity return"
-          stat2="vnindex return"
-        >
+        </SimpleChartSkeleton>
+        <SimpleChartSkeleton name="Leverage">
           <StatusLabel type="loading" />
-        </FullChartSkeleton>
+        </SimpleChartSkeleton>
       </div>
     </div>
   )

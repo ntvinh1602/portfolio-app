@@ -14,21 +14,28 @@ function useCashflowSummary(
   withdrawals: number | undefined,
 ) {
   return useMemo(() => {
-    const inflow = deposits ?? 0
-    const outflow = Math.abs(withdrawals ?? 0)
-    const net = inflow + (withdrawals ?? 0)
+    if (deposits == null || withdrawals == null) return null
+    const inflow = deposits
+    const outflow = Math.abs(withdrawals)
+    const net = inflow + withdrawals
     return { inflow, outflow, net }
   }, [deposits, withdrawals])
 }
 
 export function CashflowSection() {
+  const meta = { name: "Net Cashflow" }
   const { year } = usePerformanceYear()
   const { data, error, isLoading } = useCashflow(year)
-  const { inflow, outflow, net } = useCashflowSummary(
-    data?.deposits,
-    data?.withdrawals,
-  )
-  const meta = { name: "Net Cashflow" }
+  const summary = useCashflowSummary(data?.deposits, data?.withdrawals)
+
+  if (!data || !summary)
+    return (
+      <SimpleChartSkeleton name={meta.name}>
+        <StatusLabel type="error" description="Unable to get any data" />
+      </SimpleChartSkeleton>
+    )
+
+  const { inflow, outflow, net } = summary
 
   if (isLoading)
     return (
@@ -36,16 +43,11 @@ export function CashflowSection() {
         <Skeleton className="h-30 w-full" />
       </SimpleChartSkeleton>
     )
+    
   if (error)
     return (
       <SimpleChartSkeleton name={meta.name}>
         <StatusLabel type="error" description={error.message} />
-      </SimpleChartSkeleton>
-    )
-  if (!data)
-    return (
-      <SimpleChartSkeleton name={meta.name}>
-        <StatusLabel type="error" description="Unable to get any data" />
       </SimpleChartSkeleton>
     )
 

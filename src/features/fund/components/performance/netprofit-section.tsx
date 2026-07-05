@@ -29,11 +29,13 @@ function columnsToRows(cols: ProfitChartCols): ProfitChartRow[] {
 function useNetProfitChartData(data: ProfitView | undefined) {
   return useMemo(() => {
     if (!data) return null
+    const profitChart = data.profit_chart as ProfitChartCols | null
+    if (!profitChart?.snapshot_date) return null
     return {
       totalPnl: data.total_pnl,
       avgProfit: data.avg_profit,
       avgExpense: data.avg_expense,
-      chartRows: columnsToRows(data.profit_chart as ProfitChartCols),
+      chartRows: columnsToRows(profitChart),
     }
   }, [data])
 }

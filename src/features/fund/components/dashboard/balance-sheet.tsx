@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { formatNum } from "@/lib/utils"
-import AssetItem from "@/features/fund/components/ui/asset-item"
+import { AssetItemBS } from "@/features/fund/components/ui/asset-item"
 import {
   Item,
   ItemContent,
@@ -80,7 +80,7 @@ export default function BalanceSheet({ bsData, liability, equity }: Props) {
             <ItemGroup>
               {Object.entries(groupedAssets).map(([assetClass, items]) => {
                 const totalValue = items.reduce(
-                  (sum, i) => sum + (i.total_value ?? 0),
+                  (sum, i) => sum + Math.max(i.total_value ?? 0, 0),
                   0,
                 )
                 return (
@@ -94,8 +94,7 @@ export default function BalanceSheet({ bsData, liability, equity }: Props) {
                     <ItemSeparator />
                     <ItemGroup>
                       {items.map((item) => (
-                        <AssetItem
-                          variant="bs"
+                        <AssetItemBS
                           key={item.ticker}
                           ticker={item.ticker}
                           name={item.name}
@@ -136,7 +135,7 @@ export default function BalanceSheet({ bsData, liability, equity }: Props) {
                       </ItemContent>
                       <ItemContent>
                         <ItemDescription>
-                          {item.total_value ? formatNum(item.total_value) : "0"}
+                          {formatNum(item.total_value)}
                         </ItemDescription>
                       </ItemContent>
                     </Item>

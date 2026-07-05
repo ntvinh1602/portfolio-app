@@ -28,11 +28,60 @@ export async function get1yProfit() {
 
 export async function getBalanceSheet() {
   const supabase = await createClient()
-  const { data, error } = await supabase.from("balance_sheet").select()
+  const [bsResult, interestResult] = await Promise.all([
+    supabase.from("balance_sheet").select(),
+    supabase.rpc("get_accrued_interest"),
+  ])
 
-  if (error) throw new Error(error.message)
+  if (bsResult.error) throw new Error(bsResult.error.message)
+  if (interestResult.error) throw new Error(interestResult.error.message)
 
-  return data as BSheetView[]
+  const bsData = (bsResult.data ?? []) as BSheetView[]
+  const accruedInterest = interestResult.data ?? 0
+
+  bsData.push({
+    ticker: "INTERESTS",
+    name: "Accrued Interest",
+    asset_class: "liability",
+    logo_url: null,
+    currency_code: "VND",
+    quantity: accruedInterest,
+    total_value: accruedInterest,
+    mkt_price: 0,
+    net_profit: -accruedInterest,
+  })
+
+  const fxVnd = bsData.find((r) => r.ticker === "FX.VND")
+  const marginValue =
+    fxVnd && fxVnd.total_value < 0 ? -fxVnd.total_value : 0
+
+  bsData.push({
+    ticker: "MARGIN",
+    name: "Margin",
+    asset_class: "liability",
+    logo_url: null,
+    currency_code: "VND",
+    quantity: marginValue,
+    total_value: marginValue,
+    mkt_price: 0,
+    net_profit: 0,
+  })
+
+  const unrealized = bsData.reduce((sum, r) => sum + r.net_profit, 0)
+
+  bsData.push({
+    ticker: "UNREALIZED",
+    name: "Unrealized PnL",
+    asset_class: "equity",
+    logo_url: null,
+    currency_code: "VND",
+    quantity: unrealized,
+    total_value: unrealized,
+    mkt_price: 0,
+    net_profit: 0,
+  })
+
+  return bsData
 }
 
 // News

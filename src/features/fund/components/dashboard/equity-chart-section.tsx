@@ -29,6 +29,7 @@ function useEquityChartData(
     const chartData = data.equitychart
     const cols =
       chartData[dateRange as keyof typeof chartData] ?? chartData.last_1y
+    if (!cols?.d) return null
     return {
       chartTimeframe: colsToRows(cols),
       totalEquity: data.total_equity,
@@ -46,8 +47,8 @@ export function EquityChartSection() {
   if (isLoading)
     return (
       <FullChartSkeleton
-        name="Alpha"
-        stat1="equity return"
+        name="Equity"
+        stat1="this month"
         stat2="vnindex return"
       >
         <StatusLabel type="loading" />
