@@ -48,4 +48,3 @@ next-env.d.ts
 /.claude/
 /.playwright/
 /.playwright-cli/
-/.dev-notes/
