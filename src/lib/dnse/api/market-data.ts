@@ -1,5 +1,5 @@
-import { requestDnse } from "@/features/dnse/client"
-import type { DnseClosePrice } from "@/features/dnse/types"
+import { requestDnse } from "@/lib/dnse/client"
+import type { DnseClosePrice } from "@/lib/dnse/dnse.types"
 
 // Close price
 export async function getDnseClosePrice(symbol: string) {

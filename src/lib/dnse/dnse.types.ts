@@ -1,4 +1,11 @@
-export type DnseMetricTone = "default" | "positive" | "negative" | "muted"
+type dnseOrderType = "Pending" 
+  | "PendingNew" 
+  | "New" 
+  | "PartiallyFilled" 
+  | "Filled" 
+  | "Rejected" 
+  | "Expired" 
+  | "DoneForDay"
 
 export interface DnseAccount {
   id: string
@@ -31,6 +38,36 @@ export interface DnseStockBalance {
 export interface DnseBalancesResponse {
   stock?: DnseStockBalance | null
   derivative?: Record<string, number | string | null> | null
+}
+
+export interface DnseOrderDetailsRes {
+  id: number
+  side: "NB" | "NS"
+  accountNo: string
+  symbol: string
+  price: number // order placed price
+  quantity: number // placed volume
+  orderType: "LO" | "MOK" | "MAK" | "MTL" | "ATO" | "ATC" | "PLO"
+  loanPackageId: number
+  orderCategory: "NORMAL"
+  orderStatus: dnseOrderType
+  fillQuantity: number // filled quantity up to now
+  lastQuantity: number // last filled quantity
+  lastPrice: number // last matched price
+  averagePrice: number
+  transDate: string
+  taxRate: number
+  exchangeFeeRate: number
+  feeRate: number
+  leaveQuantity: number // unmatched quantity
+  canceledQuantity: number
+  error: string
+  marketType: "DERIVATIVE" | "STOCK"
+  priceSecure: number
+  createdDate: string // ISO 8601 datetime
+  modifiedDate: string // ISO 8601 datetime
+  metadata: string // json string
+  reports: unknown[]
 }
 
 export interface DnseClosePrice {
@@ -71,47 +108,4 @@ export interface DnsePositionsResponse {
   pageSize?: number
   pageNumber?: number
   total?: number
-}
-
-export interface DnseDashboardData {
-  accounts: DnseAccountsResponse
-  availableAccounts: DnseAccount[]
-  selectedAccount: DnseAccount | null
-  balances: DnseBalancesResponse | null
-  positions: DnsePosition[]
-}
-
-export interface DnseAccountOption {
-  value: string
-  label: string
-  description: string
-}
-
-export interface DnseSummaryMetric {
-  label: string
-  value: string
-  tone?: DnseMetricTone
-}
-
-export interface DnseOverviewModel {
-  investorName: string
-  custodyCode: string
-  investorId: string
-  accountId: string
-  derivativeStatus: string
-  hasDerivative: boolean
-  isDealAccount: boolean
-  metrics: DnseSummaryMetric[]
-}
-
-export interface DnseHoldingItem {
-  id: string
-  symbol: string
-  status: string
-  quantity: string
-  averagePrice: string
-  marketPrice: string
-  marketValue: string
-  pnl: string
-  pnlTone: DnseMetricTone
 }

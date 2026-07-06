@@ -1,11 +1,9 @@
-import { requestDnse } from "@/features/dnse/client"
+import { requestDnse } from "@/lib/dnse/client"
 import type {
   DnseAccountsResponse,
   DnseBalancesResponse,
-  DnseDashboardData,
-  DnsePosition,
   DnsePositionsResponse,
-} from "@/features/dnse/types"
+} from "@/lib/dnse/dnse.types"
 
 // Account info
 export async function getDnseAccounts() {

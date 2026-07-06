@@ -1,6 +1,6 @@
 "use server"
 
-import { getDnseClosePrice } from "@/features/dnse/api/market-data"
+import { getDnseClosePrice } from "@/lib/dnse/api/market-data"
 import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/types/database.types"
 
