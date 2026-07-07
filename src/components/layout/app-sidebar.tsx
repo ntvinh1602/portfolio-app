@@ -1,25 +1,20 @@
 "use client"
 
-import { LogOut, Plane, PiggyBank, ClipboardPen, Landmark } from "lucide-react"
-import { NavMenu } from "@/components/sidebar/nav-menu"
+import { Plane, PiggyBank, ClipboardPen, Landmark } from "lucide-react"
+import { NavMenu } from "@/components/layout/sidebar-menu"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenuButton,
   SidebarMenu,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { ConfirmDialog } from "../confirm-dialog"
 
 const data = {
   navMenu: [
     {
       title: "Fund",
-      url: "/fund/dashboard",
       icon: PiggyBank,
       isActive: true,
       items: [
@@ -39,7 +34,6 @@ const data = {
     },
     {
       title: "Flights",
-      url: "/fights/map",
       icon: Plane,
       isActive: true,
       items: [
@@ -55,7 +49,6 @@ const data = {
     },
     {
       title: "DNSE",
-      url: "#",
       icon: Landmark,
       isActive: true,
       items: [
@@ -63,22 +56,14 @@ const data = {
           title: "Dashboard",
           url: "/dnse",
         },
-      ],
-    },
+    ],
+  },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const router = useRouter()
-
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
-
   return (
-    <Sidebar collapsible="icon" variant="floating" {...props}>
+    <Sidebar collapsible="icon" variant="sidebar" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -98,18 +83,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMenu items={data.navMenu} />
       </SidebarContent>
-
-      <SidebarFooter>
-        <ConfirmDialog
-          onConfirm={handleSignOut}
-          message="Do you really want to log out?"
-        >
-          <SidebarMenuButton>
-            <LogOut />
-            <span className="font-light">Logout</span>
-          </SidebarMenuButton>
-        </ConfirmDialog>
-      </SidebarFooter>
     </Sidebar>
   )
 }

@@ -36,7 +36,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.18.0",
     "next": "^16.3.0-canary.75",
-    "radix-ui": "^1.5.0",
+    "radix-ui": "^1.6.2",
     "react": "19.2.7",
     "react-day-picker": "^10.0.1",
     "react-dom": "19.2.7",

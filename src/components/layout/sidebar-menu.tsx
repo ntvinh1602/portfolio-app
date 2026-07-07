@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
-
 import {
   Collapsible,
   CollapsibleContent,
@@ -18,12 +17,9 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export function NavMenu({
-  items,
-}: {
+interface Menu {
   items: {
     title: string
-    url: string
     icon?: LucideIcon
     isActive?: boolean
     items?: {
@@ -31,7 +27,9 @@ export function NavMenu({
       url: string
     }[]
   }[]
-}) {
+}
+
+export function NavMenu({ items }: Menu) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Domains</SidebarGroupLabel>
@@ -55,7 +53,7 @@ export function NavMenu({
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild size="md" className="py-5">
+                      <SidebarMenuSubButton asChild size="md" className="p-4">
                         <a href={subItem.url}>
                           <span>{subItem.title}</span>
                         </a>

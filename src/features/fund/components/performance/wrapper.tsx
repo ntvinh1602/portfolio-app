@@ -14,7 +14,7 @@ export function Performance() {
 
   return (
     <div className="@container/main flex flex-1">
-      <div className="flex flex-col w-full gap-6 xl:grid-cols-2 max-w-280 mx-auto">
+      <div className="flex flex-col w-full gap-6 xl:grid-cols-2 max-w-300 mx-auto">
         <PageTitle title="Annual Performance">
           <div className="w-40">
             <YearPicker
