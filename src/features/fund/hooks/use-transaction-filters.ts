@@ -42,7 +42,7 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
     endDate: Date
   } | null>(null)
   const [filters, setFilters] = useState<TransactionFilterState>({
-    categories: null,
+    categories: "stock",
     operation: null,
     search: "",
   })
@@ -87,9 +87,7 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
     (query: any) => {
       query = query.gte("created_at", startISO).lte("created_at", endISO)
 
-      if (filters.categories) {
-        query = query.eq("category", filters.categories)
-      }
+      query = query.eq("category", filters.categories)
       if (filters.operation) {
         query = query.eq("operation", filters.operation)
       }

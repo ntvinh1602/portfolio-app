@@ -1,29 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Calendar,
-  Tags,
-  Repeat,
-  FilePenLine,
-  RotateCcw,
-  Search,
-  SearchIcon,
-} from "lucide-react"
-import { FilterSelect } from "@/components/filter/filter-select"
-import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
+import { Calendar, SearchIcon } from "lucide-react"
 import { DateRangePicker } from "@/components/date-picker"
 import { txCategory, txOps, withCustom } from "@fund/config"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ButtonGroup } from "@/components/ui/button-group"
 import {
@@ -34,7 +26,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 export interface TransactionFilterState {
-  categories: string | null
+  categories: string
   operation: string | null
   search: string
 }
@@ -110,11 +102,6 @@ export function TxFilter({
   onCustomStartDateChange,
   onCustomEndDateChange,
 }: TransactionFilterProps) {
-  const hasFilters =
-    filters.categories !== null ||
-    filters.operation !== null ||
-    filters.search !== ""
-
   const setFilter = <K extends keyof TransactionFilterState>(
     key: K,
     value: TransactionFilterState[K],
@@ -122,41 +109,73 @@ export function TxFilter({
     onFiltersChange({ ...filters, [key]: value })
   }
 
-  const resetFilters = () => {
-    onFiltersChange({
-      categories: null,
-      operation: null,
-      search: "",
-    })
-  }
-
   return (
     <FieldGroup className="gap-5">
-      <Field orientation="horizontal" className="border-b border-muted">
-        <FieldLabel className="sr-only">Category</FieldLabel>
-        <ToggleGroup
-          type="single"
-          value={filters.categories ?? undefined}
-          onValueChange={(v) => setFilter("categories", v || null)}
-          variant="default"
-          spacing={2}
-          className="w-full"
-        >
-          {txCategory.map((option) => {
-            const OptionIcon = option.icon
-            return (
-              <ToggleGroupItem
-                key={option.key}
-                value={option.key}
-                className="px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground"
-              >
-                <OptionIcon />
-                {option.label}
-              </ToggleGroupItem>
-            )
-          })}
-        </ToggleGroup>
-      </Field>
+      <div className="flex w-full flex-col gap-4 md:flex-row md:items-center">
+        <div className="w-full min-w-0 overflow-hidden border-b border-muted md:flex-1">
+          <Field orientation="horizontal" className="w-full">
+            <FieldLabel className="sr-only">Category</FieldLabel>
+            <ToggleGroup
+              type="single"
+              value={filters.categories || "stock"}
+              onValueChange={(v) => {
+                if (v) setFilter("categories", v)
+              }}
+              variant="default"
+              spacing={2}
+              className="w-full justify-start overflow-x-auto"
+            >
+              {txCategory.map((option) => {
+                const OptionIcon = option.icon
+                return (
+                  <ToggleGroupItem
+                    key={option.key}
+                    value={option.key}
+                    className="px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground"
+                  >
+                    <OptionIcon />
+                    {option.label}
+                  </ToggleGroupItem>
+                )
+              })}
+            </ToggleGroup>
+          </Field>
+        </div>
+        <div className="w-full flex-none md:w-auto md:pl-4">
+          <Field orientation="horizontal" className="w-full md:w-auto">
+            <FieldLabel className="sr-only">Operations</FieldLabel>
+            <Select
+              value={filters.operation ?? "all"}
+              onValueChange={(v) => setFilter("operation", v)}
+            >
+              <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10 md:w-40">
+                <SelectValue placeholder="Operation" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectGroup>
+                  <SelectItem value="all">All Operations</SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Only transactions with...</SelectLabel>
+                  {txOps.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.icon ? (
+                        <span className="flex items-center gap-2">
+                          <option.icon className="size-3.5" />
+                          {option.label}
+                        </span>
+                      ) : (
+                        option.label
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </div>
 
       <div className="flex flex-col xl:flex-row gap-4 w-full">
         <SearchField
@@ -165,7 +184,7 @@ export function TxFilter({
           onCommit={(v) => setFilter("search", v)}
         />
 
-        <Separator orientation="vertical" className="my-3 hidden xl:block"/>
+        <Separator orientation="vertical" className="my-3 hidden xl:block" />
 
         <Field orientation="horizontal" className="xl:max-w-60">
           <FieldLabel className="sr-only">Select time preset</FieldLabel>
@@ -174,6 +193,7 @@ export function TxFilter({
             onValueChange={(value) => onPresetChange(value as Preset)}
           >
             <SelectTrigger className="w-full rounded-xl data-[size=default]:h-10 bg-background border border-muted">
+              <Calendar />
               <SelectValue placeholder="Preset" />
             </SelectTrigger>
             <SelectContent>
@@ -194,27 +214,6 @@ export function TxFilter({
           disabled={preset !== "CUSTOM"}
         />
       </div>
-
-      <FilterSelect
-        icon={Repeat}
-        placeholder="Operation"
-        value={filters.operation}
-        onValueChange={(v) => setFilter("operation", v)}
-        allLabel="All Operations"
-        groupLabel="Only transactions with..."
-        options={txOps}
-      />
-
-      {hasFilters && (
-        <Button
-          variant="secondary"
-          onClick={resetFilters}
-          className="w-fit mx-auto"
-        >
-          <RotateCcw />
-          Reset
-        </Button>
-      )}
     </FieldGroup>
   )
 }

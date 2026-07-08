@@ -9,7 +9,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar } from "./ui/calendar"
-import { cn } from "@/lib/utils"
 
 type SinglePickerProps = {
   date: Date
@@ -17,6 +16,7 @@ type SinglePickerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   disabled: boolean
+  label?: string
 }
 
 function SingleDatePicker({
@@ -25,18 +25,20 @@ function SingleDatePicker({
   open,
   onOpenChange,
   disabled,
+  label,
 }: SinglePickerProps) {
   return (
     <div className="flex items-center w-full gap-2">
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
-            variant="secondary"
+            variant="outline"
             size="lg"
             id="dates"
             disabled={disabled}
-            className="flex-1"
+            className="flex-1 justify-between"
           >
+            <span>{label || ""}</span>
             {format(date, "dd MMM yyyy")}
           </Button>
         </PopoverTrigger>
@@ -78,26 +80,22 @@ export function DateRangePicker({
   const [openTo, setOpenTo] = useState(false)
 
   return (
-    <div className="flex items-center w-full justify-between gap-2">
-      <span className={cn(disabled && "opacity-50 pointer-events-none")}>
-        From
-      </span>
+    <div className="flex items-center w-full justify-between gap-4">
       <SingleDatePicker
         date={dateFrom}
         onDateChange={onDateFromChange}
         open={openFrom}
         onOpenChange={setOpenFrom}
         disabled={disabled}
+        label="From"
       />
-      <span className={cn(disabled && "opacity-50 pointer-events-none")}>
-        To
-      </span>
       <SingleDatePicker
         date={dateTo}
         onDateChange={onDateToChange}
         open={openTo}
         onOpenChange={setOpenTo}
         disabled={disabled}
+        label="To"
       />
     </div>
   )

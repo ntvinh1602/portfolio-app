@@ -62,7 +62,7 @@ export function Transactions() {
             />
           )}
         </PageTitle>
-        <div className="flex flex-col w-full gap-6">
+        <div className="flex flex-col w-full gap-8">
           <TransactionsFilterSection />
           <TransactionsListSection />
         </div>
