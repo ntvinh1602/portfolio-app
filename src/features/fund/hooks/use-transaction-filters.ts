@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { subMonths, startOfDay, endOfDay } from "date-fns"
+import { categoryOps } from "@fund/config"
 import type {
   TransactionFilterState,
   Preset,
@@ -43,7 +44,7 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
   } | null>(null)
   const [filters, setFilters] = useState<TransactionFilterState>({
     categories: "stock",
-    operation: null,
+    operation: categoryOps["stock"].map((op) => op.key),
     search: "",
   })
   const [refreshCounter, setRefreshCounter] = useState(0)
@@ -88,8 +89,9 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
       query = query.gte("created_at", startISO).lte("created_at", endISO)
 
       query = query.eq("category", filters.categories)
-      if (filters.operation) {
-        query = query.eq("operation", filters.operation)
+      const totalOps = (categoryOps[filters.categories] ?? []).length
+      if (filters.operation.length > 0 && filters.operation.length < totalOps) {
+        query = query.in("operation", filters.operation)
       }
       if (filters.search) {
         query = query.ilike("memo", `%${filters.search}%`)

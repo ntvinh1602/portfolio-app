@@ -92,7 +92,7 @@ export default function FlightsList({
                 : "Loading..."}
             </CardDescription>
             <CardAction>
-              <Button onClick={() => setOpen(true)} className="rounded-2xl">
+              <Button onClick={() => setOpen(true)}>
                 <PlusIcon />
                 Add Flight
               </Button>

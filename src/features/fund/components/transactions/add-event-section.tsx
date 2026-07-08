@@ -25,7 +25,7 @@ export function AddEventSection() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="rounded-2xl">
+          <Button>
             <PlusIcon />
             Add Event
           </Button>

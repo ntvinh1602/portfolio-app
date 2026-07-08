@@ -9,7 +9,7 @@ import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import { FieldGroup } from "@/components/ui/field"
+import { FieldGroup, FieldTitle } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
@@ -130,54 +130,60 @@ export function CashflowForm({
 
   return (
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
-      <FieldGroup className="gap-3">
-        <DateTimeField
-          control={form.control}
-          name="created_at"
-          label="Date & Time"
-        />
+      <FieldGroup className="gap-6">
+        <div className="flex flex-col gap-3">
+          <FieldTitle>Operation</FieldTitle>
+          <RadioGroupField
+            control={form.control}
+            name="operation"
+            options={cashflowOps}
+            column={2}
+          />
+        </div>
 
-        <RadioGroupField
-          control={form.control}
-          name="operation"
-          options={cashflowOps}
-          column={2}
-        />
+        <div className="flex flex-col gap-3">
+          <FieldTitle>Details</FieldTitle>
+          <DateTimeField
+            control={form.control}
+            name="created_at"
+            label="Date time"
+          />
 
-        <ComboboxField
-          control={form.control}
-          name="memo"
-          label="Description"
-          items={filteredMemos}
-          placeholder="Select description preset"
-          searchPlaceholder="Search for description..."
-        />
+          <ComboboxField
+            control={form.control}
+            name="memo"
+            label="Description"
+            items={filteredMemos}
+            placeholder="Event description"
+            searchPlaceholder="Search for description..."
+          />
 
-        <ComboboxField
-          control={form.control}
-          name="asset"
-          label="Asset"
-          items={assetIDs}
-          placeholder="Select cash or fund asset"
-          searchPlaceholder="Search for asset..."
-        />
+          <ComboboxField
+            control={form.control}
+            name="asset"
+            label="Asset"
+            items={assetIDs}
+            placeholder="Cash / fund asset"
+            searchPlaceholder="Search for asset..."
+          />
 
-        <NumberField
-          control={form.control}
-          name="quantity"
-          label="Quantity"
-          placeholder="Total amount in original currency"
-          suffix="VND"
-        />
+          <NumberField
+            control={form.control}
+            name="quantity"
+            label="Quantity"
+            placeholder="Amount in original currency"
+            suffix="VND"
+          />
 
-        <NumberField
-          control={form.control}
-          name="fx_rate"
-          label="FX Rate"
-          placeholder="Foreign exchange rate to VND"
-          disabled={isVND}
-          suffix="VND"
-        />
+          <NumberField
+            control={form.control}
+            name="fx_rate"
+            label="FX Rate"
+            placeholder="Exchange rate to VND"
+            disabled={isVND}
+            suffix="VND"
+          />
+        </div>
       </FieldGroup>
     </form>
   )

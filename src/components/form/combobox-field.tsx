@@ -1,13 +1,18 @@
 "use client"
 
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Combobox } from "@/components/combobox"
 
 interface ComboboxFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
-  label?: string
+  label: string
   items: { value: string; label: string }[]
   placeholder?: string
   searchPlaceholder?: string
@@ -31,7 +36,7 @@ export function ComboboxField<T extends FieldValues>({
       control={control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
-          {label && <FieldLabel>{label}</FieldLabel>}
+          <FieldLabel className="sr-only">{label}</FieldLabel>
           <Combobox
             items={items}
             value={field.value}

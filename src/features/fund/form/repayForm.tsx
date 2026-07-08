@@ -118,7 +118,7 @@ export function RepayForm({
           control={form.control}
           name="interest"
           label="Paid Interest"
-          placeholder="Input actual amount of interest paid in this deal"
+          placeholder="Interest paid"
           suffix="VND"
         />
       </FieldGroup>

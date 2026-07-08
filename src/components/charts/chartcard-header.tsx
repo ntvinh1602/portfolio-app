@@ -73,7 +73,7 @@ export function ChartCardHeader({
         </span>
       </CardTitle>
       <CardAction>
-        <ItemGroup className="flex-row rounded-2xl bg-muted/50">
+        <ItemGroup className="flex-row rounded-xl bg-muted/50">
           <Stat
             stat={stat1}
             formatted={formattedStat1}

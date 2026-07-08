@@ -1,6 +1,10 @@
-import { ReactNode } from "react"
+import { ReactNode, Suspense } from "react"
 import MainLayout from "@/components/layout/body-layout"
 
 export default function FundLayout({ children }: { children: ReactNode }) {
-  return <MainLayout>{children}</MainLayout>
+  return (
+    <Suspense>
+      <MainLayout>{children}</MainLayout>
+    </Suspense>
+  )
 }

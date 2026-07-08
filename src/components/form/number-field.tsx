@@ -4,9 +4,15 @@ import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group"
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 
 interface NumberFieldProps<T extends FieldValues> {
@@ -32,9 +38,9 @@ export function NumberField<T extends FieldValues>({
       control={control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
-          {label && <FieldLabel>{label}</FieldLabel>}
-          <InputGroup className="flex gap-2">
-            <Input
+          <FieldLabel className="sr-only">{label}</FieldLabel>
+          <InputGroup className="pl-1">
+            <InputGroupInput
               type="number"
               value={field.value ?? ""}
               onChange={(e) => field.onChange(e.target.value)}
@@ -44,7 +50,9 @@ export function NumberField<T extends FieldValues>({
             />
             {suffix && (
               <InputGroupAddon align="inline-end">
-                <InputGroupText className="text-nowrap">{suffix}</InputGroupText>
+                <InputGroupText className="text-nowrap">
+                  {suffix}
+                </InputGroupText>
               </InputGroupAddon>
             )}
           </InputGroup>

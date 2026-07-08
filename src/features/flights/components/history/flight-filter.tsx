@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react"
-import { TicketsPlane, Users, Star } from "lucide-react"
+import { Users } from "lucide-react"
 import { YearPicker } from "@/components/year-picker"
 import { FilterCard } from "@/components/filter/filter-card"
 import { FilterSelect } from "@/components/filter/filter-select"
@@ -64,14 +63,12 @@ export function FlightFilter({
       />
 
       <FilterToggleGroup
-        icon={Star}
         value={filters.seatTypes}
         onValueChange={(v) => setFilter("seatTypes", v)}
         options={seatType}
       />
 
       <FilterSearch
-        icon={TicketsPlane}
         placeholder="Flight number"
         value={filters.search}
         onCommit={(v) => setFilter("search", v)}

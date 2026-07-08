@@ -23,22 +23,22 @@ export const formConfig: Record<
   }
 > = {
   stock: {
-    title: "Add Stock Trades",
-    subtitle: "Record sales or acquisition of stocks",
+    title: "Add Stock Event",
+    subtitle: "Record buy, sell, stock options operations",
     Component: StockForm,
   },
   cashflow: {
-    title: "Add Cashflow Events",
+    title: "Add Cashflow Event",
     subtitle: "Record cash assets transactions",
     Component: CashflowForm,
   },
   borrow: {
-    title: "Add Debts",
+    title: "Add Borrow Event",
     subtitle: "Record a new debt",
     Component: BorrowForm,
   },
   repay: {
-    title: "Add Repayment",
+    title: "Add Repay Event",
     subtitle: "Record a debt settlement",
     Component: RepayForm,
   },

@@ -1,33 +1,33 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, SearchIcon } from "lucide-react"
+import { Calendar, ChevronDown, MinusIcon, PlusIcon } from "lucide-react"
 import { DateRangePicker } from "@/components/date-picker"
-import { txCategory, txOps, withCustom } from "@fund/config"
+import { txCategory, categoryOps, withCustom } from "@fund/config"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
-import { Button } from "@/components/ui/button"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { ButtonGroup } from "@/components/ui/button-group"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { FilterSearch } from "@/components/filter/filter-search"
+import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
 import { Separator } from "@/components/ui/separator"
 
 export interface TransactionFilterState {
   categories: string
-  operation: string | null
+  operation: string[]
   search: string
 }
 
@@ -42,54 +42,6 @@ interface TransactionFilterProps {
   resolvedEndDate: Date
   onCustomStartDateChange: (date: Date | undefined) => void
   onCustomEndDateChange: (date: Date | undefined) => void
-}
-
-function SearchField({
-  placeholder,
-  value,
-  onCommit,
-}: {
-  placeholder: string
-  value: string
-  onCommit: (value: string) => void
-}) {
-  const [searchInput, setSearchInput] = useState(value)
-
-  const commitSearch = () => {
-    onCommit(searchInput)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") commitSearch()
-  }
-
-  return (
-    <Field orientation="horizontal">
-      <FieldLabel className="sr-only">{placeholder}</FieldLabel>
-      <ButtonGroup className="w-full">
-        <InputGroup className="rounded-xl h-10 bg-background">
-          <InputGroupInput
-            placeholder={placeholder}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="w-full"
-          />
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-        </InputGroup>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={commitSearch}
-          aria-label="Search"
-        >
-          Search
-        </Button>
-      </ButtonGroup>
-    </Field>
-  )
 }
 
 export function TxFilter({
@@ -109,76 +61,116 @@ export function TxFilter({
     onFiltersChange({ ...filters, [key]: value })
   }
 
+  const currentOps = categoryOps[filters.categories] ?? []
+  const allSelected =
+    currentOps.length > 0 &&
+    currentOps.every((op) => filters.operation.includes(op.key))
+
+  const [draftOps, setDraftOps] = useState(filters.operation)
+
   return (
     <FieldGroup className="gap-4">
       <div className="flex w-full flex-col gap-4 md:flex-row md:items-center">
         <div className="w-full min-w-0 overflow-hidden border-b border-muted md:flex-1">
-          <Field orientation="horizontal" className="w-full">
-            <FieldLabel className="sr-only">Category</FieldLabel>
-            <ToggleGroup
-              type="single"
-              value={filters.categories || "stock"}
-              onValueChange={(v) => {
-                if (v) setFilter("categories", v)
-              }}
-              variant="default"
-              spacing={2}
-              className="flex w-full justify-start overflow-x-auto md:inline-flex md:w-fit md:max-w-full"
-            >
-              {txCategory.map((option) => {
-                const OptionIcon = option.icon
-                return (
-                  <ToggleGroupItem
-                    key={option.key}
-                    value={option.key}
-                    className="flex-1 px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
-                  >
-                    <OptionIcon />
-                    {option.label}
-                  </ToggleGroupItem>
-                )
-              })}
-            </ToggleGroup>
-          </Field>
+          <FilterToggleGroup
+            value={filters.categories || "stock"}
+            onValueChange={(v) => {
+              if (v) {
+                const nextOps = (categoryOps[v] ?? []).map((op) => op.key)
+                onFiltersChange({
+                  ...filters,
+                  categories: v,
+                  operation: nextOps,
+                })
+              }
+            }}
+            options={txCategory}
+          />
         </div>
         <div className="w-full flex-none md:w-auto md:pl-4">
           <Field orientation="horizontal" className="w-full md:w-auto">
             <FieldLabel className="sr-only">Operations</FieldLabel>
-            <Select
-              value={filters.operation ?? "all"}
-              onValueChange={(v) => setFilter("operation", v)}
+            <DropdownMenu
+              onOpenChange={(open) => {
+                if (open) {
+                  setDraftOps(filters.operation)
+                } else {
+                  setFilter("operation", draftOps)
+                }
+              }}
             >
-              <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10 md:w-40">
-                <SelectValue placeholder="Operation" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectGroup>
-                  <SelectItem value="all">All Operations</SelectItem>
-                </SelectGroup>
-                <SelectSeparator />
-                <SelectGroup>
-                  <SelectLabel>Only transactions with...</SelectLabel>
-                  {txOps.map((option) => (
-                    <SelectItem key={option.key} value={option.key}>
-                      {option.icon ? (
-                        <span className="flex items-center gap-2">
-                          <option.icon className="size-3.5" />
-                          {option.label}
-                        </span>
-                      ) : (
-                        option.label
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              <DropdownMenuTrigger
+                className="flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-muted bg-background px-3 text-sm md:w-44 [&[data-state=open]]:border-foreground/20"
+                disabled={currentOps.length <= 1}
+              >
+                <span className="truncate">
+                  {allSelected
+                    ? "All operations"
+                    : `${filters.operation.length} operation${filters.operation.length !== 1 ? "s" : ""}`}
+                </span>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[var(--dropdown-menu-trigger-width)]"
+              >
+                {currentOps.map((option) => {
+                  const OptionIcon = option.icon
+                  const checked = draftOps.includes(option.key)
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={option.key}
+                      checked={checked}
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        setDraftOps(
+                          checked
+                            ? draftOps.filter((k) => k !== option.key)
+                            : [...draftOps, option.key],
+                        )
+                      }}
+                    >
+                      <OptionIcon className="size-3.5" />
+                      {option.label}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+                {currentOps.length > 1 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>
+                      Shortcuts
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        setDraftOps(currentOps.map((op) => op.key))
+                      }}
+                      className="justify-between"
+                    >
+                      Select all
+                      <PlusIcon />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        setDraftOps([])
+                      }}
+                      className="justify-between"
+                    >
+                      Remove all
+                      <MinusIcon />
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </Field>
         </div>
       </div>
 
       <div className="flex flex-col xl:flex-row gap-4 w-full">
-        <SearchField
+        <FilterSearch
           placeholder="Search by memo…"
           value={filters.search}
           onCommit={(v) => setFilter("search", v)}
@@ -196,7 +188,7 @@ export function TxFilter({
                 <Calendar />
                 <SelectValue placeholder="Preset" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper">
                 {withCustom.map(({ key, label }) => (
                   <SelectItem key={key} value={key}>
                     {label}

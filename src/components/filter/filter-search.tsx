@@ -1,20 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { Search } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { ButtonGroup } from "../ui/button-group"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 
 interface FilterSearchProps {
-  icon: LucideIcon
   placeholder: string
   value: string
   onCommit: (value: string) => void
 }
 
-function FilterSearchInput({
+export function FilterSearch({
   placeholder,
   value,
   onCommit,
@@ -34,38 +33,30 @@ function FilterSearchInput({
   }
 
   return (
-    <>
-      <Input
-        placeholder={placeholder}
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        className="w-full"
-      />
-      <Button size="icon" onClick={commitSearch} aria-label="Search">
-        <Search className="size-4" />
-      </Button>
-    </>
-  )
-}
-
-export function FilterSearch({
-  icon: Icon,
-  placeholder,
-  value,
-  onCommit,
-}: FilterSearchProps) {
-  return (
     <Field orientation="horizontal">
-      <FieldLabel>
-        <Icon className="stroke-1 size-5" />
-      </FieldLabel>
-      <FilterSearchInput
-        key={value}
-        placeholder={placeholder}
-        value={value}
-        onCommit={onCommit}
-      />
+      <FieldLabel className="sr-only">{placeholder}</FieldLabel>
+      <ButtonGroup className="w-full">
+        <InputGroup className="rounded-xl h-10 bg-background">
+          <InputGroupInput
+            placeholder={placeholder}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full"
+          />
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+        </InputGroup>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={commitSearch}
+          aria-label="Search"
+        >
+          Search
+        </Button>
+      </ButtonGroup>
     </Field>
   )
 }

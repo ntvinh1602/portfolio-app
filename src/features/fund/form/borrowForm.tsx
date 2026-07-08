@@ -8,7 +8,7 @@ import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
 import { TextField } from "@/components/form/text-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import { FieldGroup } from "@/components/ui/field"
+import { FieldDescription, FieldGroup } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { borrowSchema } from "./schema"
 
@@ -86,14 +86,16 @@ export function BorrowForm({
           control={form.control}
           name="lender"
           label="Lender"
-          placeholder="Add suffix for repeated lenders"
+          placeholder="Lender name"
         />
-
+        <FieldDescription className="text-right">
+          Note: Add unique identifier for repeated lenders
+        </FieldDescription>
         <NumberField
           control={form.control}
           name="principal"
           label="Debt Principal"
-          placeholder="Input debt principal as a whole number"
+          placeholder="Debt principal in whole number"
           suffix="VND"
         />
 
@@ -101,8 +103,8 @@ export function BorrowForm({
           control={form.control}
           name="rate"
           label="Interest rate"
-          placeholder="Input interest rate, up to 2 decimal points"
-          suffix="% per annum"
+          placeholder="Interest rate"
+          suffix="% p.a"
         />
       </FieldGroup>
     </form>

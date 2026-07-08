@@ -9,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -26,13 +25,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-const user = {
-  name: "Vinh Nguyen",
-  email: "ntvinh1602@gmail.com",
-  avatar: "",
+interface HeaderUserProps {
+  displayName: string | null
+  avatar: string | null
 }
 
-export function HeaderUser() {
+export function HeaderUser({ displayName, avatar }: HeaderUserProps) {
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -44,15 +42,17 @@ export function HeaderUser() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="lg" className="rounded-lg">
+        <Button variant="ghost" size="lg">
           <div className="grid flex-1 text-right text-sm leading-tight px-1">
-            <span className="truncate font-semibold">{user.name}</span>
             <span className="truncate text-xs text-muted-foreground">
-              {user.email}
+              Hello
+            </span>
+            <span className="truncate font-semibold">
+              {displayName ?? "User"}
             </span>
           </div>
           <Avatar>
-            {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+            {avatar && <AvatarImage src={avatar} alt={displayName ?? "User"} />}
             <AvatarFallback>
               <UserIcon />
             </AvatarFallback>
@@ -76,7 +76,7 @@ export function HeaderUser() {
             <AlertDialogTrigger asChild>
               <DropdownMenuItem
                 onSelect={(e) => e.preventDefault()}
-                className="text-destructive focus:text-destructive"
+                variant="destructive"
               >
                 <LogOut data-icon="inline-start" />
                 Log out
@@ -84,14 +84,17 @@ export function HeaderUser() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>Confirmation</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Do you really want to log out?
+                  Click Continue to finish logging out.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSignOut}>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={handleSignOut}
+                >
                   Continue
                 </AlertDialogAction>
               </AlertDialogFooter>

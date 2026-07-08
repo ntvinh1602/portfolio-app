@@ -1,7 +1,12 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 
 interface TextFieldProps<T extends FieldValues> {
@@ -25,7 +30,7 @@ export function TextField<T extends FieldValues>({
       control={control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
-          {label && <FieldLabel>{label}</FieldLabel>}
+          <FieldLabel className="sr-only">{label}</FieldLabel>
           <Input
             type="text"
             value={field.value ?? ""}
@@ -33,6 +38,7 @@ export function TextField<T extends FieldValues>({
             inputMode="text"
             placeholder={placeholder}
             disabled={disabled}
+            className="px-4"
           />
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>

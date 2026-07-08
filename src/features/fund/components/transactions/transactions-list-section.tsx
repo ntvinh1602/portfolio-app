@@ -2,7 +2,7 @@
 
 import { InfiniteList } from "@/components/infinite-list"
 import { TxnItem } from "./tx-item"
-import { ItemGroup } from "@/components/ui/item"
+import { ItemGroup, ItemTitle } from "@/components/ui/item"
 import StatusLabel from "@/components/status-label"
 import { useTransactionsData } from "./transactions-data-context"
 

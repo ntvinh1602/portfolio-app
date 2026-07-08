@@ -8,7 +8,7 @@ type Props = {
 export function PageTitle({ title, children }: Props) {
   return (
     <div className="flex w-full xl:pt-15 justify-between items-center">
-      <h1 className="text-2xl font-normal">{title}</h1>
+      <h1 className="text-2xl font-medium">{title}</h1>
       {children}
     </div>
   )

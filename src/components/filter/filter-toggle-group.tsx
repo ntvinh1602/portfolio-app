@@ -9,30 +9,26 @@ interface FilterToggleOption {
 }
 
 interface FilterToggleGroupProps {
-  icon: LucideIcon
-  value: string[]
-  onValueChange: (value: string[]) => void
+  value: string
+  onValueChange: (value: string) => void
   options: readonly FilterToggleOption[]
 }
 
 export function FilterToggleGroup({
-  icon: Icon,
   value,
   onValueChange,
   options,
 }: FilterToggleGroupProps) {
   return (
-    <Field orientation="horizontal">
-      <FieldLabel>
-        <Icon className="stroke-1 size-5" />
-      </FieldLabel>
+    <Field orientation="horizontal" className="w-full">
+      <FieldLabel className="sr-only">Category</FieldLabel>
       <ToggleGroup
-        type="multiple"
+        type="single"
         value={value}
         onValueChange={onValueChange}
-        variant="outline"
-        spacing={0}
-        className="w-full"
+        variant="default"
+        spacing={2}
+        className="flex w-full justify-start overflow-x-auto md:inline-flex md:w-fit md:max-w-full"
       >
         {options.map((option) => {
           const OptionIcon = option.icon
@@ -40,9 +36,9 @@ export function FilterToggleGroup({
             <ToggleGroupItem
               key={option.key}
               value={option.key}
-              className="rounded-xl px-3 text-xs flex-1"
+              className="flex-1 px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
             >
-              <OptionIcon className="size-3.5" />
+              <OptionIcon />
               {option.label}
             </ToggleGroupItem>
           )

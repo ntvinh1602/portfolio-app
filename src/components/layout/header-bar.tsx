@@ -36,13 +36,18 @@ function getBreadcrumbs(pathname: string): { label: string; href?: string }[] {
   })
 }
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  displayName?: string | null
+  avatar?: string | null
+}
+
+export function SiteHeader({ displayName, avatar }: SiteHeaderProps) {
   const pathname = usePathname()
   const breadcrumbs = getBreadcrumbs(pathname)
 
   return (
-    <header className="sticky top-0 z-50 flex w-full items-center border-b border-border bg-background">
-      <div className="flex h-14 w-full items-center justify-between gap-2 px-4">
+    <header className="sticky top-0 z-50 flex w-full items-center border-b border-border  backdrop-blur-xl bg-transparent">
+      <div className="flex h-14 w-full items-center justify-between gap-2 pl-4">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <div>
@@ -74,7 +79,7 @@ export function SiteHeader() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <HeaderUser />
+        <HeaderUser displayName={displayName ?? null} avatar={avatar ?? null} />
       </div>
     </header>
   )

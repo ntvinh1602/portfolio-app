@@ -9,7 +9,10 @@ import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import { FieldGroup } from "@/components/ui/field"
+import {
+  FieldGroup,
+  FieldTitle,
+} from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { stockSchema } from "./schema"
 import {
@@ -123,62 +126,68 @@ export function StockForm({
 
   return (
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
-      <FieldGroup className="gap-3">
-        <RadioGroupField
-          control={form.control}
-          name="side"
-          options={stockOps}
-          column={2}
-        />
+      <FieldGroup className="gap-6">
+        <div className="flex flex-col gap-3">
+          <FieldTitle>Operation</FieldTitle>
+          <RadioGroupField
+            control={form.control}
+            name="side"
+            options={stockOps}
+            column={2}
+          />
+        </div>
 
-        <DateTimeField
-          control={form.control}
-          name="created_at"
-          label="Date & Time"
-        />
+        <div className="flex flex-col gap-3">
+          <FieldTitle>Details</FieldTitle>
+          <DateTimeField
+            control={form.control}
+            name="created_at"
+            label="Date Time"
+          />
 
-        <ComboboxField
-          control={form.control}
-          name="ticker"
-          label="Stock"
-          items={stockOptions}
-          onSearchChange={setSearch}
-          placeholder="Select a stock"
-          searchPlaceholder="Enter ticker to search..."
-        />
+          <ComboboxField
+            control={form.control}
+            name="ticker"
+            label="Stock"
+            items={stockOptions}
+            onSearchChange={setSearch}
+            placeholder="Stock ticker"
+            searchPlaceholder="Input ticker here"
+          />
 
-        <NumberField
-          control={form.control}
-          name="price"
-          label="Price"
-          placeholder="Input price in full, no decimals"
-          suffix="VND"
-        />
+          <NumberField
+            control={form.control}
+            name="price"
+            label="Price"
+            placeholder="Matched price in whole number"
+            suffix="VND"
+          />
 
-        <NumberField
-          control={form.control}
-          name="quantity"
-          label="Quantity"
-          placeholder="Number of shares"
-          suffix="Units"
-        />
+          <NumberField
+            control={form.control}
+            name="quantity"
+            label="Quantity"
+            placeholder="Number of shares"
+            suffix="Units"
+          />
 
-        <NumberField
-          control={form.control}
-          name="fee"
-          label="Fee"
-          placeholder="Total transaction fees"
-          suffix="VND"
-        />
+          <NumberField
+            control={form.control}
+            name="fee"
+            label="Fee"
+            placeholder="Transaction fees"
+            suffix="VND"
+          />
 
-        <NumberField
-          control={form.control}
-          name="tax"
-          label="Tax"
-          placeholder="Total income tax"
-          suffix="VND"
-          disabled={side === "buy"}
-        />
+          <NumberField
+            control={form.control}
+            name="tax"
+            label="Tax"
+            placeholder="Income tax"
+            suffix="VND"
+            disabled={side === "buy"}
+          />
+        </div>
       </FieldGroup>
     </form>
   )

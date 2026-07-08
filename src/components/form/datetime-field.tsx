@@ -36,7 +36,7 @@ function formatDisplay(dateString?: string) {
 
   const date = parseISO(dateString)
 
-  return format(date, "dd-MMM-yyyy HH:mm")
+  return format(date, "dd MMM yyyy, HH:mm")
 }
 
 export function DateTimeField<T extends FieldValues>({
@@ -84,7 +84,7 @@ export function DateTimeField<T extends FieldValues>({
 
         return (
           <Field>
-            <FieldLabel>{label}</FieldLabel>
+            <FieldLabel className="sr-only">{label}</FieldLabel>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -92,12 +92,12 @@ export function DateTimeField<T extends FieldValues>({
                   variant="secondary"
                   size="lg"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "justify-between",
                     !field.value && "text-muted-foreground",
                   )}
                 >
-                  <CalendarIcon />
                   {formatDisplay(field.value)}
+                  <CalendarIcon />
                 </Button>
               </PopoverTrigger>
 
