@@ -1,13 +1,16 @@
 import { Suspense } from "react"
-import { TransactionsProvider } from "@fund/components/transactions/context"
+import { AddEventProvider } from "@fund/components/transactions/add-event-context"
 import { Transactions } from "@fund/components/transactions/transactions"
+import { TransactionsDataProvider } from "@fund/components/transactions/transactions-data-context"
 
 export default function TransactionsPage() {
   return (
     <Suspense>
-      <TransactionsProvider>
-        <Transactions />
-      </TransactionsProvider>
+      <TransactionsDataProvider>
+        <AddEventProvider>
+          <Transactions />
+        </AddEventProvider>
+      </TransactionsDataProvider>
     </Suspense>
   )
 }

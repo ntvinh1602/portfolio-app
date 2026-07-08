@@ -4,19 +4,13 @@ import { InfiniteList } from "@/components/infinite-list"
 import { TxnItem } from "./tx-item"
 import { ItemGroup } from "@/components/ui/item"
 import StatusLabel from "@/components/status-label"
-import { useTransactions } from "./context"
+import { useTransactionsData } from "./transactions-data-context"
 
 export function TransactionsListSection() {
   const {
-    data,
-    count,
-    isSuccess,
-    isLoading,
-    isFetching,
-    error,
-    hasMore,
-    fetchNextPage,
-  } = useTransactions()
+    state: { data, count, isLoading, isFetching, error, hasMore },
+    actions: { fetchNextPage },
+  } = useTransactionsData()
 
   return (
     <>
@@ -34,9 +28,7 @@ export function TransactionsListSection() {
           {data.length > 0 && (
             <div className="grid gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
               <ItemGroup>
-                <span>
-                  Found {data.length} transactions
-                </span>
+                <span>Found {data.length} transactions</span>
                 {data.map((tx) => (
                   <TxnItem key={tx.id} transaction={tx} />
                 ))}

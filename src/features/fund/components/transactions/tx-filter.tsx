@@ -110,7 +110,7 @@ export function TxFilter({
   }
 
   return (
-    <FieldGroup className="gap-5">
+    <FieldGroup className="gap-4">
       <div className="flex w-full flex-col gap-4 md:flex-row md:items-center">
         <div className="w-full min-w-0 overflow-hidden border-b border-muted md:flex-1">
           <Field orientation="horizontal" className="w-full">
@@ -123,7 +123,7 @@ export function TxFilter({
               }}
               variant="default"
               spacing={2}
-              className="w-full justify-start overflow-x-auto"
+              className="flex w-full justify-start overflow-x-auto md:inline-flex md:w-fit md:max-w-full"
             >
               {txCategory.map((option) => {
                 const OptionIcon = option.icon
@@ -131,7 +131,7 @@ export function TxFilter({
                   <ToggleGroupItem
                     key={option.key}
                     value={option.key}
-                    className="px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground"
+                    className="flex-1 px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
                   >
                     <OptionIcon />
                     {option.label}
@@ -185,34 +185,35 @@ export function TxFilter({
         />
 
         <Separator orientation="vertical" className="my-3 hidden xl:block" />
+        <div className="flex flex-col md:flex-row w-full gap-4">
+          <Field orientation="horizontal" className="md:max-w-60">
+            <FieldLabel className="sr-only">Select time preset</FieldLabel>
+            <Select
+              value={preset}
+              onValueChange={(value) => onPresetChange(value as Preset)}
+            >
+              <SelectTrigger className="w-full rounded-xl data-[size=default]:h-10 bg-background border border-muted">
+                <Calendar />
+                <SelectValue placeholder="Preset" />
+              </SelectTrigger>
+              <SelectContent>
+                {withCustom.map(({ key, label }) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-        <Field orientation="horizontal" className="xl:max-w-60">
-          <FieldLabel className="sr-only">Select time preset</FieldLabel>
-          <Select
-            value={preset}
-            onValueChange={(value) => onPresetChange(value as Preset)}
-          >
-            <SelectTrigger className="w-full rounded-xl data-[size=default]:h-10 bg-background border border-muted">
-              <Calendar />
-              <SelectValue placeholder="Preset" />
-            </SelectTrigger>
-            <SelectContent>
-              {withCustom.map(({ key, label }) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <DateRangePicker
-          dateFrom={resolvedStartDate}
-          dateTo={resolvedEndDate}
-          onDateFromChange={onCustomStartDateChange}
-          onDateToChange={onCustomEndDateChange}
-          disabled={preset !== "CUSTOM"}
-        />
+          <DateRangePicker
+            dateFrom={resolvedStartDate}
+            dateTo={resolvedEndDate}
+            onDateFromChange={onCustomStartDateChange}
+            onDateToChange={onCustomEndDateChange}
+            disabled={preset !== "CUSTOM"}
+          />
+        </div>
       </div>
     </FieldGroup>
   )

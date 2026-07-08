@@ -1,19 +1,18 @@
 "use client"
 
-import { useTransactions } from "./context"
+import { useTransactionsData } from "./transactions-data-context"
 import { TxFilter } from "./tx-filter"
 
 export function TransactionsFilterSection() {
   const {
-    filters,
-    setFilters,
-    preset,
-    setPreset,
-    resolvedStartDate,
-    resolvedEndDate,
-    onCustomStartDateChange,
-    onCustomEndDateChange,
-  } = useTransactions()
+    state: { filters, preset, resolvedStartDate, resolvedEndDate },
+    actions: {
+      setFilters,
+      setPreset,
+      onCustomStartDateChange,
+      onCustomEndDateChange,
+    },
+  } = useTransactionsData()
 
   return (
     <TxFilter
