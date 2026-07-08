@@ -34,7 +34,8 @@ export const withCustom = [
 export const txCategory: IconLabel[] = [
   { key: "stock", label: "Stock", icon: Box },
   { key: "cashflow", label: "Cashflow", icon: Banknote },
-  { key: "debt", label: "Debt", icon: HandCoins },
+  { key: "borrow", label: "Borrow", icon: HandCoins },
+  { key: "repay", label: "Repaid", icon: Handshake },
 ]
 
 export const txOps: IconLabel[] = [

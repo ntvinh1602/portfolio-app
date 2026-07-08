@@ -1,11 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Calendar, Tags, Repeat, FilePenLine } from "lucide-react"
-import { FilterCard } from "@/components/filter/filter-card"
+import { useState } from "react"
+import {
+  Calendar,
+  Tags,
+  Repeat,
+  FilePenLine,
+  RotateCcw,
+  Search,
+  SearchIcon,
+} from "lucide-react"
 import { FilterSelect } from "@/components/filter/filter-select"
 import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
-import { FilterSearch } from "@/components/filter/filter-search"
 import { DateRangePicker } from "@/components/date-picker"
 import { txCategory, txOps, withCustom } from "@fund/config"
 import {
@@ -15,10 +21,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ButtonGroup } from "@/components/ui/button-group"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { Separator } from "@/components/ui/separator"
 
 export interface TransactionFilterState {
-  categories: string[]
+  categories: string | null
   operation: string | null
   search: string
 }
@@ -36,6 +52,54 @@ interface TransactionFilterProps {
   onCustomEndDateChange: (date: Date | undefined) => void
 }
 
+function SearchField({
+  placeholder,
+  value,
+  onCommit,
+}: {
+  placeholder: string
+  value: string
+  onCommit: (value: string) => void
+}) {
+  const [searchInput, setSearchInput] = useState(value)
+
+  const commitSearch = () => {
+    onCommit(searchInput)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") commitSearch()
+  }
+
+  return (
+    <Field orientation="horizontal">
+      <FieldLabel className="sr-only">{placeholder}</FieldLabel>
+      <ButtonGroup className="w-full">
+        <InputGroup className="rounded-xl h-10 bg-background">
+          <InputGroupInput
+            placeholder={placeholder}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full"
+          />
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+        </InputGroup>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={commitSearch}
+          aria-label="Search"
+        >
+          Search
+        </Button>
+      </ButtonGroup>
+    </Field>
+  )
+}
+
 export function TxFilter({
   filters,
   onFiltersChange,
@@ -47,7 +111,7 @@ export function TxFilter({
   onCustomEndDateChange,
 }: TransactionFilterProps) {
   const hasFilters =
-    filters.categories.length > 0 ||
+    filters.categories !== null ||
     filters.operation !== null ||
     filters.search !== ""
 
@@ -60,49 +124,76 @@ export function TxFilter({
 
   const resetFilters = () => {
     onFiltersChange({
-      categories: [],
+      categories: null,
       operation: null,
       search: "",
     })
   }
 
   return (
-    <FilterCard hasFilters={hasFilters} onReset={resetFilters}>
-      <Field orientation="horizontal">
-        <FieldLabel>
-          <Calendar className="stroke-1 size-5" />
-        </FieldLabel>
-        <Select
-          value={preset}
-          onValueChange={(value) => onPresetChange(value as Preset)}
+    <FieldGroup className="gap-5">
+      <Field orientation="horizontal" className="border-b border-muted">
+        <FieldLabel className="sr-only">Category</FieldLabel>
+        <ToggleGroup
+          type="single"
+          value={filters.categories ?? undefined}
+          onValueChange={(v) => setFilter("categories", v || null)}
+          variant="default"
+          spacing={2}
+          className="w-full"
         >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Preset" />
-          </SelectTrigger>
-          <SelectContent>
-            {withCustom.map(({ key, label }) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {txCategory.map((option) => {
+            const OptionIcon = option.icon
+            return (
+              <ToggleGroupItem
+                key={option.key}
+                value={option.key}
+                className="px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground"
+              >
+                <OptionIcon />
+                {option.label}
+              </ToggleGroupItem>
+            )
+          })}
+        </ToggleGroup>
       </Field>
 
-      <DateRangePicker
-        dateFrom={resolvedStartDate}
-        dateTo={resolvedEndDate}
-        onDateFromChange={onCustomStartDateChange}
-        onDateToChange={onCustomEndDateChange}
-        disabled={preset !== "CUSTOM"}
-      />
+      <div className="flex flex-col xl:flex-row gap-4 w-full">
+        <SearchField
+          placeholder="Search by memo…"
+          value={filters.search}
+          onCommit={(v) => setFilter("search", v)}
+        />
 
-      <FilterToggleGroup
-        icon={Tags}
-        value={filters.categories}
-        onValueChange={(v) => setFilter("categories", v)}
-        options={txCategory}
-      />
+        <Separator orientation="vertical" className="my-3 hidden xl:block"/>
+
+        <Field orientation="horizontal" className="xl:max-w-60">
+          <FieldLabel className="sr-only">Select time preset</FieldLabel>
+          <Select
+            value={preset}
+            onValueChange={(value) => onPresetChange(value as Preset)}
+          >
+            <SelectTrigger className="w-full rounded-xl data-[size=default]:h-10 bg-background border border-muted">
+              <SelectValue placeholder="Preset" />
+            </SelectTrigger>
+            <SelectContent>
+              {withCustom.map(({ key, label }) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        <DateRangePicker
+          dateFrom={resolvedStartDate}
+          dateTo={resolvedEndDate}
+          onDateFromChange={onCustomStartDateChange}
+          onDateToChange={onCustomEndDateChange}
+          disabled={preset !== "CUSTOM"}
+        />
+      </div>
 
       <FilterSelect
         icon={Repeat}
@@ -114,12 +205,16 @@ export function TxFilter({
         options={txOps}
       />
 
-      <FilterSearch
-        icon={FilePenLine}
-        placeholder="Search by memo…"
-        value={filters.search}
-        onCommit={(v) => setFilter("search", v)}
-      />
-    </FilterCard>
+      {hasFilters && (
+        <Button
+          variant="secondary"
+          onClick={resetFilters}
+          className="w-fit mx-auto"
+        >
+          <RotateCcw />
+          Reset
+        </Button>
+      )}
+    </FieldGroup>
   )
 }
