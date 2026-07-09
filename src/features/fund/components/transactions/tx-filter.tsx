@@ -1,18 +1,7 @@
 "use client"
-
-import { useState } from "react"
-import { Calendar, ChevronDown, MinusIcon, PlusIcon } from "lucide-react"
+import { Calendar } from "lucide-react"
 import { DateRangePicker } from "@/components/date-picker"
 import { txCategory, categoryOps, withCustom } from "@fund/config"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Select,
   SelectContent,
@@ -22,12 +11,13 @@ import {
 } from "@/components/ui/select"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
 import { FilterSearch } from "@/components/filter/filter-search"
+import { FilterSelect } from "@/components/filter/filter-select"
 import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
 import { Separator } from "@/components/ui/separator"
 
 export interface TransactionFilterState {
   categories: string
-  operation: string[]
+  operation: string
   search: string
 }
 
@@ -62,11 +52,7 @@ export function TxFilter({
   }
 
   const currentOps = categoryOps[filters.categories] ?? []
-  const allSelected =
-    currentOps.length > 0 &&
-    currentOps.every((op) => filters.operation.includes(op.key))
-
-  const [draftOps, setDraftOps] = useState(filters.operation)
+  const hasSingleOp = currentOps.length === 1
 
   return (
     <FieldGroup className="gap-4">
@@ -76,11 +62,12 @@ export function TxFilter({
             value={filters.categories || "stock"}
             onValueChange={(v) => {
               if (v) {
-                const nextOps = (categoryOps[v] ?? []).map((op) => op.key)
+                const ops = categoryOps[v] ?? []
+                const nextOp = ops.length === 1 ? ops[0].key : "all"
                 onFiltersChange({
                   ...filters,
                   categories: v,
-                  operation: nextOps,
+                  operation: nextOp,
                 })
               }
             }}
@@ -88,84 +75,14 @@ export function TxFilter({
           />
         </div>
         <div className="w-full flex-none md:w-auto md:pl-4">
-          <Field orientation="horizontal" className="w-full md:w-auto">
-            <FieldLabel className="sr-only">Operations</FieldLabel>
-            <DropdownMenu
-              onOpenChange={(open) => {
-                if (open) {
-                  setDraftOps(filters.operation)
-                } else {
-                  setFilter("operation", draftOps)
-                }
-              }}
-            >
-              <DropdownMenuTrigger
-                className="flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-muted bg-background px-3 text-sm md:w-44 [&[data-state=open]]:border-foreground/20"
-                disabled={currentOps.length <= 1}
-              >
-                <span className="truncate">
-                  {allSelected
-                    ? "All operations"
-                    : `${filters.operation.length} operation${filters.operation.length !== 1 ? "s" : ""}`}
-                </span>
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-[var(--dropdown-menu-trigger-width)]"
-              >
-                {currentOps.map((option) => {
-                  const OptionIcon = option.icon
-                  const checked = draftOps.includes(option.key)
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={option.key}
-                      checked={checked}
-                      onSelect={(e) => {
-                        e.preventDefault()
-                        setDraftOps(
-                          checked
-                            ? draftOps.filter((k) => k !== option.key)
-                            : [...draftOps, option.key],
-                        )
-                      }}
-                    >
-                      <OptionIcon className="size-3.5" />
-                      {option.label}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-                {currentOps.length > 1 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>
-                      Shortcuts
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault()
-                        setDraftOps(currentOps.map((op) => op.key))
-                      }}
-                      className="justify-between"
-                    >
-                      Select all
-                      <PlusIcon />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault()
-                        setDraftOps([])
-                      }}
-                      className="justify-between"
-                    >
-                      Remove all
-                      <MinusIcon />
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </Field>
+          <FilterSelect
+            placeholder="Operation"
+            value={filters.operation === "all" ? null : filters.operation}
+            onValueChange={(v) => setFilter("operation", v ?? "all")}
+            allLabel="All operations"
+            options={currentOps}
+            disabled={hasSingleOp}
+          />
         </div>
       </div>
 

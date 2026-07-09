@@ -18,13 +18,14 @@ interface FilterSelectOption {
 }
 
 interface FilterSelectProps {
-  icon: LucideIcon
+  icon?: LucideIcon
   placeholder: string
   value: string | null
   onValueChange: (value: string | null) => void
   allLabel: string
-  groupLabel: string
-  options: FilterSelectOption[]
+  groupLabel?: string
+  options: readonly FilterSelectOption[]
+  disabled?: boolean
 }
 
 export function FilterSelect({
@@ -35,17 +36,21 @@ export function FilterSelect({
   allLabel,
   groupLabel,
   options,
+  disabled,
 }: FilterSelectProps) {
   return (
     <Field orientation="horizontal">
-      <FieldLabel>
-        <Icon className="stroke-1 size-5" />
-      </FieldLabel>
+      {Icon && (
+        <FieldLabel>
+          <Icon className="stroke-1 size-5" />
+        </FieldLabel>
+      )}
       <Select
         value={value ?? "all"}
         onValueChange={(v) => onValueChange(v === "all" ? null : v)}
+        disabled={disabled}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent position="popper">
@@ -54,7 +59,7 @@ export function FilterSelect({
           </SelectGroup>
           <SelectSeparator />
           <SelectGroup>
-            <SelectLabel>{groupLabel}</SelectLabel>
+            {groupLabel && <SelectLabel>{groupLabel}</SelectLabel>}
             {options.map((option) => (
               <SelectItem key={option.key} value={option.key}>
                 {option.icon ? (
