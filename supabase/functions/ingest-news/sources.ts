@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import Parser from "https://esm.sh/rss-parser@3.13.0"
 import he from "https://esm.sh/he@1.2.0"
 
@@ -10,14 +9,28 @@ export type NormalizedArticle = {
   source: string
 }
 
+interface RssItem {
+  title?: string
+  link?: string
+  guid?: string
+  isoDate?: string
+  contentSnippet?: string
+  "content:encodedSnippet"?: string
+  "content:encoded"?: string
+}
+
+interface CustomFields {
+  item?: string[]
+}
+
 export type NewsSourceConfig = {
   name: string
   url: string
   parser: Parser
-  mapItem: (item: any) => NormalizedArticle | null
+  mapItem: (item: RssItem) => NormalizedArticle | null
 }
 
-function createParser(customFields?: any) {
+function createParser(customFields?: CustomFields) {
   return new Parser({ timeout: 10000, customFields })
 }
 

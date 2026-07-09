@@ -73,7 +73,8 @@ export function FlightsDataProvider({
     columns: "*",
     pageSize: 12,
     schema: "flight",
-    trailingQuery,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    trailingQuery: trailingQuery as any,
     trailingQueryKey,
   })
 

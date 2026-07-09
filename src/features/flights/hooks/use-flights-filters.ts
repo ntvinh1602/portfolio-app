@@ -3,6 +3,14 @@
 import { useState, useMemo, useCallback } from "react"
 import type { FilterState } from "@flight/flight.types"
 
+interface FlightsQueryBuilder {
+  gte(column: string, value: string): this
+  lte(column: string, value: string): this
+  eq(column: string, value: string): this
+  ilike(column: string, value: string): this
+  order(column: string, opts: { ascending: boolean }): this
+}
+
 const EMPTY_FILTERS: FilterState = {
   year: null,
   airline: null,
@@ -16,7 +24,7 @@ export function useFlightsFilters() {
 
   // Build a trailing query that applies all active filters
   const trailingQuery = useCallback(
-    (query: any) => {
+    (query: FlightsQueryBuilder) => {
       if (filters.year) {
         query = query
           .gte("departure_time", `${filters.year}-01-01`)

@@ -41,10 +41,7 @@ export function StockForm({
   const [assets, setAssets] = React.useState<AssetSearchResult[]>([])
 
   React.useEffect(() => {
-    if (search.length < 2) {
-      setAssets([])
-      return
-    }
+    if (search.length < 2) return
     const timer = setTimeout(() => {
       searchAssets(search, "stock").then(setAssets)
     }, 300)
@@ -53,11 +50,13 @@ export function StockForm({
 
   const stockOptions = React.useMemo(
     () =>
-      assets.map((a) => ({
-        value: a.ticker,
-        label: `${a.ticker} — ${a.name}`,
-      })),
-    [assets],
+      search.length < 2
+        ? []
+        : assets.map((a) => ({
+            value: a.ticker,
+            label: `${a.ticker} — ${a.name}`,
+          })),
+    [assets, search.length],
   )
 
   const form = useForm<FormValues>({

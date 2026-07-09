@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { NEWS_SOURCES, type NormalizedArticle } from "./sources.ts"
 import { extractTickers } from "./utils.ts"
@@ -27,7 +26,7 @@ export async function ingestAllSources(supabase: SupabaseClient) {
 
     const articleTickerMap = new Map<
       string,
-      { article: any; tickers: string[] }
+      { article: NormalizedArticle; tickers: string[] }
     >()
     const allTickers = new Set<string>()
 
@@ -51,9 +50,9 @@ export async function ingestAllSources(supabase: SupabaseClient) {
 
     if (!assets?.length) continue
 
-    const validTickers = new Set(assets.map((a) => a.ticker))
+    const validTickers = new Set(assets.map((a: { id: string; ticker: string }) => a.ticker))
 
-    const articlesWithTickers: { article: any; tickers: string[] }[] = []
+    const articlesWithTickers: { article: NormalizedArticle; tickers: string[] }[] = []
 
     for (const [url, { article, tickers }] of articleTickerMap.entries()) {
       const matched = tickers.filter((t) => validTickers.has(t))

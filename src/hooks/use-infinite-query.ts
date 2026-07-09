@@ -5,7 +5,7 @@ import {
   type PostgrestClientOptions,
 } from "@supabase/postgrest-js"
 import { type SupabaseClient } from "@supabase/supabase-js"
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useSyncExternalStore } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 
@@ -18,24 +18,58 @@ type SupabaseClientType = typeof supabase
 type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
 
 // Extracts the database type from the supabase client. If the supabase client doesn't have a type, it will fallback properly.
+// Fallback types when the Supabase client has no generated types.
+// These must satisfy GenericSchema from @supabase/postgrest-js.
+type GenericFallbackRelationship = {
+  foreignKeyName: string
+  columns: string[]
+  isOneToOne?: boolean
+  referencedRelation: string
+  referencedColumns: string[]
+}
+
+type GenericFallbackTable = {
+  Row: Record<string, unknown>
+  Insert: Record<string, unknown>
+  Update: Record<string, unknown>
+  Relationships: GenericFallbackRelationship[]
+}
+
+type GenericFallbackView = {
+  Row: Record<string, unknown>
+  Relationships: GenericFallbackRelationship[]
+}
+
+type GenericFallbackFunction = {
+  Args: Record<string, unknown> | never
+  Returns: unknown
+  SetofOptions?: {
+    isSetofReturn?: boolean
+    isOneToOne?: boolean
+    isNotNullable?: boolean
+    to: string
+    from: string
+  }
+}
+
 type Database =
   SupabaseClientType extends SupabaseClient<infer U>
     ? IfAny<
         U,
         {
           public: {
-            Tables: Record<string, any>
-            Views: Record<string, any>
-            Functions: Record<string, any>
+            Tables: Record<string, GenericFallbackTable>
+            Views: Record<string, GenericFallbackView>
+            Functions: Record<string, GenericFallbackFunction>
           }
         },
         U
       >
     : {
         public: {
-          Tables: Record<string, any>
-          Views: Record<string, any>
-          Functions: Record<string, any>
+          Tables: Record<string, GenericFallbackTable>
+          Views: Record<string, GenericFallbackView>
+          Functions: Record<string, GenericFallbackFunction>
         }
       }
 
@@ -199,7 +233,7 @@ function createStore<
 }
 
 // Empty initial state to avoid hydration errors.
-const initialState: any = {
+const initialState: StoreState<unknown> = {
   data: [],
   count: 0,
   isSuccess: false,
@@ -219,9 +253,6 @@ function useInfiniteQuery<
   const schema = props.schema
   const trailingQuery = props.trailingQuery
   const trailingQueryKey = props.trailingQueryKey
-  const trailingQueryRef = useRef(trailingQuery)
-
-  trailingQueryRef.current = trailingQuery
 
   const store = useMemo(
     () =>
@@ -230,9 +261,9 @@ function useInfiniteQuery<
         columns,
         pageSize,
         schema,
-        getTrailingQuery: () => trailingQueryRef.current,
+        getTrailingQuery: () => trailingQuery,
       }),
-    [tableName, columns, pageSize, schema, trailingQueryKey],
+    [tableName, columns, pageSize, schema, trailingQuery, trailingQueryKey],
   )
 
   const state = useSyncExternalStore(

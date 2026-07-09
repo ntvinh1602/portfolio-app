@@ -34,9 +34,12 @@ export function InfiniteList({
   const isFetchingRef = useRef(isFetching)
   const fetchNextPageRef = useRef(fetchNextPage)
 
-  hasMoreRef.current = hasMore
-  isFetchingRef.current = isFetching
-  fetchNextPageRef.current = fetchNextPage
+  // Sync refs with latest props so the scroll handler reads fresh values
+  useEffect(() => {
+    hasMoreRef.current = hasMore
+    isFetchingRef.current = isFetching
+    fetchNextPageRef.current = fetchNextPage
+  })
 
   // Scroll-based infinite loading — simpler and more reliable than
   // IntersectionObserver, which can miss events when isFetching toggles

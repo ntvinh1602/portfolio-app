@@ -23,6 +23,14 @@ function getDateRangeFromPreset(preset: Preset, now: Date) {
   }
 }
 
+interface TxQueryBuilder {
+  gte(column: string, value: string): this
+  lte(column: string, value: string): this
+  eq(column: string, value: string): this
+  ilike(column: string, value: string): this
+  order(column: string, opts: { ascending: boolean }): this
+}
+
 interface UseTransactionFiltersOptions {
   defaultPreset?: Preset
 }
@@ -30,18 +38,11 @@ interface UseTransactionFiltersOptions {
 export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
   const defaultPreset: Preset = options?.defaultPreset ?? "3M"
 
-  // Defer Date.now()/new Date() to useEffect — cacheComponents requires
-  // deterministic values during server render.
-  const [now, setNow] = useState<Date | null>(null)
-  useEffect(() => {
-    setNow(new Date())
-  }, [])
-
   const [preset, setPreset] = useState<Preset>(defaultPreset)
   const [customRange, setCustomRange] = useState<{
     startDate: Date
     endDate: Date
-  } | null>(null)
+  }>(() => getDateRangeFromPreset(defaultPreset, new Date()))
   const [filters, setFilters] = useState<TransactionFilterState>({
     categories: "stock",
     operation: "all",
@@ -49,30 +50,19 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
   })
   const [refreshCounter, setRefreshCounter] = useState(0)
 
-  // Once the client clock is available, initialise the date range
-  useEffect(() => {
-    if (now && !customRange) {
-      setCustomRange(getDateRangeFromPreset(defaultPreset, now))
-    }
-  }, [now, customRange])
-
   // When switching to CUSTOM, snapshot the previous preset's range
   const prevPresetRef = useRef(preset)
   useEffect(() => {
-    if (preset === "CUSTOM" && prevPresetRef.current !== "CUSTOM" && now) {
-      setCustomRange(getDateRangeFromPreset(prevPresetRef.current, now))
+    if (preset === "CUSTOM" && prevPresetRef.current !== "CUSTOM") {
+      setCustomRange(getDateRangeFromPreset(prevPresetRef.current, new Date()))
     }
     prevPresetRef.current = preset
-  }, [preset, now])
+  }, [preset])
 
-  // Fallback range used during SSR — the real range kicks in after hydration
-  // and the useInfiniteQuery store is recreated via trailingQueryKey change.
-  const fallbackRange = { startDate: new Date(0), endDate: new Date(0) }
   const dateRange = useMemo(() => {
-    if (!customRange) return fallbackRange
     if (preset === "CUSTOM") return customRange
-    return getDateRangeFromPreset(preset, now ?? new Date())
-  }, [preset, customRange, now])
+    return getDateRangeFromPreset(preset, new Date())
+  }, [preset, customRange])
 
   const startISO = useMemo(
     () => startOfDay(dateRange.startDate).toISOString(),
@@ -85,7 +75,7 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
 
   // Build a trailing query that applies date range and all active filters
   const trailingQuery = useCallback(
-    (query: any) => {
+    (query: TxQueryBuilder) => {
       query = query.gte("created_at", startISO).lte("created_at", endISO)
 
       query = query.eq("category", filters.categories)

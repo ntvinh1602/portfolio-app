@@ -1,4 +1,11 @@
-import { CartesianGrid, XAxis, YAxis, Area, AreaChart } from "recharts"
+import {
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Area,
+  AreaChart,
+  type TooltipPayloadEntry,
+} from "recharts"
 import {
   ChartConfig,
   ChartContainer,
@@ -13,7 +20,7 @@ import type { ReactNode } from "react"
 
 export type TooltipLabelFormatter = (
   label: unknown,
-  payload: readonly any[], // readonly — matches Recharts
+  payload: readonly TooltipPayloadEntry[],
 ) => ReactNode
 
 type Props = {

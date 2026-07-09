@@ -66,9 +66,9 @@ export default function FlightForm({
         typeof err === "object" &&
         err !== null &&
         "message" in err &&
-        typeof (err as any).message === "string"
+        typeof (err as { message: unknown }).message === "string"
       ) {
-        message = (err as any).message
+        message = (err as { message: string }).message
       }
 
       toast.error("Failed to create flight", {

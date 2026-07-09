@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.96.0",
+    "https://esm.sh/@types/he@~1.2.3/index.d.ts": "https://esm.sh/@types/he@1.2.3/index.d.ts",
+    "https://esm.sh/@types/xml2js@~0.4.14/index.d.ts": "https://esm.sh/@types/xml2js@0.4.14/index.d.ts"
+  },
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.96.0": "c5a179bd572d3cbe716930ad1edeba4f0bcde58e531d8c1b894c6c1aaa8eab0f",
+    "https://esm.sh/he@1.2.0": "bc304782debd103009d8ad8554a39142d747ad2bc3e41dd4925879611f5fd0dd",
+    "https://esm.sh/rss-parser@3.13.0": "100ada7fd7ee4516db537404c919fe814c4ec625ebe020c9274fe429f9bb9fcc"
+  }
+}
