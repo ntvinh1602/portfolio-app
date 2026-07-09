@@ -19,6 +19,7 @@ type DateTimeFieldProps<T extends FieldValues> = {
   control: Control<T>
   name: Path<T>
   label: string
+  placeholder?: string
 }
 
 function formatLocalDateTime(date: Date) {
@@ -31,8 +32,11 @@ function formatLocalDateTime(date: Date) {
   )}`
 }
 
-function formatDisplay(dateString?: string) {
-  if (!dateString) return "Select date & time"
+function formatDisplay(
+  dateString?: string,
+  placeholder = "Select date & time",
+) {
+  if (!dateString) return placeholder
 
   const date = parseISO(dateString)
 
@@ -43,6 +47,7 @@ export function DateTimeField<T extends FieldValues>({
   control,
   name,
   label,
+  placeholder = "Select date & time",
 }: DateTimeFieldProps<T>) {
   return (
     <Controller
@@ -96,7 +101,7 @@ export function DateTimeField<T extends FieldValues>({
                     !field.value && "text-muted-foreground",
                   )}
                 >
-                  {formatDisplay(field.value)}
+                  {formatDisplay(field.value, placeholder)}
                   <CalendarIcon />
                 </Button>
               </PopoverTrigger>

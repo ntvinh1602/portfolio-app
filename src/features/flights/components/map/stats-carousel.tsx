@@ -68,7 +68,7 @@ export default function StatsCarousel({ stats }: { stats: LifetimeStats }) {
             key={stat.title}
             className="basis-1/2 xl:basis-1/4 2xl:basis-1/6"
           >
-            <Item variant="muted">
+            <Item variant="outline">
               <ItemMedia variant="icon">
                 <stat.icon />
               </ItemMedia>

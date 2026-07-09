@@ -6,10 +6,9 @@ import {
   SelectTrigger,
   SelectValue,
   SelectGroup,
-  SelectLabel,
   SelectSeparator,
 } from "@/components/ui/select"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 
 interface FilterSelectOption {
   key: string
@@ -17,40 +16,34 @@ interface FilterSelectOption {
   icon?: LucideIcon
 }
 
-interface FilterSelectProps {
+interface SelectAllEnabledProps {
   icon?: LucideIcon
   placeholder: string
   value: string | null
   onValueChange: (value: string | null) => void
   allLabel: string
-  groupLabel?: string
   options: readonly FilterSelectOption[]
   disabled?: boolean
 }
 
-export function FilterSelect({
+export function SelectAllEnabled({
   icon: Icon,
   placeholder,
   value,
   onValueChange,
   allLabel,
-  groupLabel,
   options,
   disabled,
-}: FilterSelectProps) {
+}: SelectAllEnabledProps) {
   return (
-    <Field orientation="horizontal">
-      {Icon && (
-        <FieldLabel>
-          <Icon className="stroke-1 size-5" />
-        </FieldLabel>
-      )}
+    <Field orientation="horizontal" className="min-w-50">
       <Select
         value={value ?? "all"}
         onValueChange={(v) => onValueChange(v === "all" ? null : v)}
         disabled={disabled}
       >
         <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10">
+          {Icon && <Icon />}
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent position="popper">
@@ -59,20 +52,52 @@ export function FilterSelect({
           </SelectGroup>
           <SelectSeparator />
           <SelectGroup>
-            {groupLabel && <SelectLabel>{groupLabel}</SelectLabel>}
             {options.map((option) => (
               <SelectItem key={option.key} value={option.key}>
-                {option.icon ? (
-                  <span className="flex items-center gap-2">
-                    <option.icon className="size-3.5" />
-                    {option.label}
-                  </span>
-                ) : (
-                  option.label
-                )}
+                {option.label}
               </SelectItem>
             ))}
           </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+interface SingleOptionSelectProps {
+  icon?: LucideIcon
+  placeholder: string
+  value: string
+  onValueChange: (value: string) => void
+  options: readonly FilterSelectOption[]
+  disabled?: boolean
+}
+
+export function SingleOptionSelect({
+  icon: Icon,
+  placeholder,
+  value,
+  onValueChange,
+  options,
+  disabled,
+}: SingleOptionSelectProps) {
+  return (
+    <Field orientation="horizontal" className="min-w-50">
+      <Select
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+      >
+        <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10">
+          {Icon && <Icon />}
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          {options.map((option) => (
+            <SelectItem key={option.key} value={option.key}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </Field>

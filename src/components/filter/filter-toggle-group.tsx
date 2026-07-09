@@ -27,7 +27,7 @@ export function FilterToggleGroup({
         value={value}
         onValueChange={onValueChange}
         variant="default"
-        spacing={2}
+        spacing={1}
         className="flex w-full justify-start overflow-x-auto md:inline-flex md:w-fit md:max-w-full"
       >
         {options.map((option) => {
@@ -36,7 +36,7 @@ export function FilterToggleGroup({
             <ToggleGroupItem
               key={option.key}
               value={option.key}
-              className="flex-1 px-4 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
+              className="flex-1 px-6 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
             >
               <OptionIcon />
               {option.label}

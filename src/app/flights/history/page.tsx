@@ -1,19 +1,21 @@
+import { Suspense } from "react"
+import { AddFlightProvider } from "@flight/components/history/add-flight-context"
+import { FlightsDataProvider } from "@flight/components/history/flights-data-context"
+import { FlightsHistory } from "@flight/components/history/flights-history"
 import getAirlines from "@flight/actions/get-airlines"
 import getAircrafts from "@flight/actions/get-aircrafts"
 import getAirports from "@flight/actions/get-airports"
-import FlightsList from "@flight/components/history/wrapper"
 import { Spinner } from "@/components/ui/spinner"
-import { Suspense } from "react"
 
 export default function FlightsHistoryPage() {
   return (
     <Suspense fallback={<Spinner />}>
-      <FlightsListData />
+      <FlightsHistoryData />
     </Suspense>
   )
 }
 
-async function FlightsListData() {
+async function FlightsHistoryData() {
   const [airlines, aircrafts, airports] = await Promise.all([
     getAirlines(),
     getAircrafts(),
@@ -43,12 +45,16 @@ async function FlightsListData() {
   }))
 
   return (
-    <FlightsList
+    <FlightsDataProvider
       airlineFilterOptions={airlineFilterOptions}
       startYear={2019}
       airlineFormOptions={airlineFormOptions}
       aircraftFormOptions={aircraftFormOptions}
       airportFormOptions={airportFormOptions}
-    />
+    >
+      <AddFlightProvider>
+        <FlightsHistory />
+      </AddFlightProvider>
+    </FlightsDataProvider>
   )
 }

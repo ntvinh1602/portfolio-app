@@ -6,7 +6,7 @@ import type { FilterState } from "@flight/flight.types"
 const EMPTY_FILTERS: FilterState = {
   year: null,
   airline: null,
-  seatTypes: [],
+  seatType: "eco",
   search: "",
 }
 
@@ -25,9 +25,7 @@ export function useFlightsFilters() {
       if (filters.airline) {
         query = query.eq("airline_name", filters.airline)
       }
-      if (filters.seatTypes.length > 0) {
-        query = query.in("seat_type", filters.seatTypes)
-      }
+      query = query.eq("seat_type", filters.seatType)
       if (filters.search) {
         query = query.ilike("flight_number", `%${filters.search}%`)
       }
@@ -42,7 +40,7 @@ export function useFlightsFilters() {
       JSON.stringify({
         year: filters.year,
         airline: filters.airline,
-        seatTypes: filters.seatTypes,
+        seatType: filters.seatType,
         search: filters.search,
         refreshCounter,
       }),

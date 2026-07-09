@@ -7,7 +7,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 
 interface SelectOption {
@@ -38,7 +43,7 @@ export function SelectField<T extends FieldValues>({
       control={control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
-          {label && <FieldLabel>{label}</FieldLabel>}
+          <FieldLabel className="sr-only">{label}</FieldLabel>
 
           <Select
             onValueChange={field.onChange}
@@ -48,7 +53,7 @@ export function SelectField<T extends FieldValues>({
             <SelectTrigger>
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               {options.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}

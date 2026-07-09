@@ -1,17 +1,13 @@
 "use client"
-import { Calendar } from "lucide-react"
+import { Calendar, Settings } from "lucide-react"
 import { DateRangePicker } from "@/components/date-picker"
 import { txCategory, categoryOps, withCustom } from "@fund/config"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { FilterSearch } from "@/components/filter/filter-search"
-import { FilterSelect } from "@/components/filter/filter-select"
+import {
+  SelectAllEnabled,
+  SingleOptionSelect,
+} from "@/components/filter/filter-select"
 import { FilterToggleGroup } from "@/components/filter/filter-toggle-group"
 import { Separator } from "@/components/ui/separator"
 
@@ -75,7 +71,8 @@ export function TxFilter({
           />
         </div>
         <div className="w-full flex-none md:w-auto md:pl-4">
-          <FilterSelect
+          <SelectAllEnabled
+            icon={Settings}
             placeholder="Operation"
             value={filters.operation === "all" ? null : filters.operation}
             onValueChange={(v) => setFilter("operation", v ?? "all")}
@@ -95,25 +92,13 @@ export function TxFilter({
 
         <Separator orientation="vertical" className="my-3 hidden xl:block" />
         <div className="flex flex-col md:flex-row w-full gap-4">
-          <Field orientation="horizontal" className="md:max-w-60">
-            <FieldLabel className="sr-only">Select time preset</FieldLabel>
-            <Select
-              value={preset}
-              onValueChange={(value) => onPresetChange(value as Preset)}
-            >
-              <SelectTrigger className="w-full rounded-xl data-[size=default]:h-10 bg-background border border-muted">
-                <Calendar />
-                <SelectValue placeholder="Preset" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {withCustom.map(({ key, label }) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <SingleOptionSelect
+            icon={Calendar}
+            placeholder="Preset"
+            value={preset}
+            onValueChange={(v) => onPresetChange(v as Preset)}
+            options={withCustom}
+          />
 
           <DateRangePicker
             dateFrom={resolvedStartDate}
