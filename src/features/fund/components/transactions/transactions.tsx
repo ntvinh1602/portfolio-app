@@ -1,6 +1,6 @@
 "use client"
 
-import { PageTitle } from "@/components/page-title"
+import { PageTitle } from "@/components/layout/page-title"
 import { AddEventSection } from "./add-event-section"
 import { TransactionsFilterSection } from "./transactions-filter-section"
 import { TransactionsListSection } from "./transactions-list-section"

@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Calendar } from "./ui/calendar"
+import { Calendar } from "../ui/calendar"
 
 type SinglePickerProps = {
   date: Date

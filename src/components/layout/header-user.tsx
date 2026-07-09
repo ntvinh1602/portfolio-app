@@ -12,18 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 
 interface HeaderUserProps {
   displayName: string | null
@@ -72,34 +62,18 @@ export function HeaderUser({ displayName, avatar }: HeaderUserProps) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault()}
-                variant="destructive"
-              >
-                <LogOut data-icon="inline-start" />
-                Log out
-              </DropdownMenuItem>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmation</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Click Continue to finish logging out.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={handleSignOut}
-                >
-                  Continue
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            message="Click Continue to finish logging out."
+            onConfirm={handleSignOut}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              variant="destructive"
+            >
+              <LogOut data-icon="inline-start" />
+              Log out
+            </DropdownMenuItem>
+          </ConfirmDialog>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

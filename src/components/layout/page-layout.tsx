@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/layout/sidebar-main"
 import { SiteHeader } from "@/components/layout/header-bar"
 import { createClient } from "@/lib/supabase/server"
 
-export default async function MainLayout({
+export default async function PageLayout({
   children,
 }: {
   children: ReactNode

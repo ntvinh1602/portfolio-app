@@ -17,11 +17,7 @@ export function FilterSearch({
   placeholder,
   value,
   onCommit,
-}: {
-  placeholder: string
-  value: string
-  onCommit: (value: string) => void
-}) {
+}: FilterSearchProps) {
   const [searchInput, setSearchInput] = useState(value)
 
   const commitSearch = () => {

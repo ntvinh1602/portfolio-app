@@ -3,8 +3,8 @@
 import { createContext, useState, use } from "react"
 
 interface PerformanceYearContextValue {
-  year: number
-  setYear: (year: number) => void
+  year: number | null
+  setYear: (year: number | null) => void
   startYear: number
 }
 

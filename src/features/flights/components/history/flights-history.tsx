@@ -1,6 +1,6 @@
 "use client"
 
-import { PageTitle } from "@/components/page-title"
+import { PageTitle } from "@/components/layout/page-title"
 import { FlightsFilterSection } from "./flights-filter-section"
 import { FlightsListSection } from "./flights-list-section"
 import { AddFlightSection } from "./add-flight-section"

@@ -1,10 +1,10 @@
 import { ReactNode, Suspense } from "react"
-import MainLayout from "@/components/layout/body-layout"
+import PageLayout from "@/components/layout/page-layout"
 
 export default function DnseLayout({ children }: { children: ReactNode }) {
   return (
     <Suspense>
-      <MainLayout>{children}</MainLayout>
+      <PageLayout>{children}</PageLayout>
     </Suspense>
   )
 }
