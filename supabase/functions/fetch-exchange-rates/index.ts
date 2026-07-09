@@ -1,10 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// Initialize the Supabase client with the service_role key
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SECRET_KEYS') ?? ''
-)
+import { withSupabase } from "npm:@supabase/server"
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID')
@@ -44,7 +39,7 @@ async function getExchangeRates(): Promise<ExchangeRates | null> {
   }
 }
 
-async function getCurrencies(): Promise<string[]> {
+async function getCurrencies(supabase: SupabaseClient): Promise<string[]> {
   const { data, error } = await supabase
     .from('currencies')
     .select('code')
@@ -58,79 +53,73 @@ async function getCurrencies(): Promise<string[]> {
   return data.map((c: { code: string }) => c.code)
 }
 
-Deno.serve(async (_req: Request) => {
+export default {
+  fetch: withSupabase({ auth: "secret" }, async (_req, ctx) => {
+    try {
+      const supabase = ctx.supabaseAdmin
+      const [rates, currenciesToFetch] = await Promise.all([
+        getExchangeRates(),
+        getCurrencies(supabase),
+      ])
 
-  try {
-    const [rates, currenciesToFetch] = await Promise.all([
-      getExchangeRates(),
-      getCurrencies(),
-    ])
+      if (!rates || !rates.VND) {
+        throw new Error('Failed to fetch exchange rates or missing VND rate.')
+      }
 
-    if (!rates || !rates.VND) {
-      throw new Error('Failed to fetch exchange rates or missing VND rate.')
-    }
+      if (currenciesToFetch.length === 0) {
+        throw new Error('No currencies found to process.')
+      }
 
-    if (currenciesToFetch.length === 0) {
-      throw new Error('No currencies found to process.')
-    }
+      const vndRate = rates.VND
+      const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
-    const vndRate = rates.VND
-    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+      const dataToUpsert = currenciesToFetch
+        .map(currencyCode => {
+          const currencyRate = rates[currencyCode]
+          if (!currencyRate) {
+            console.warn(`Rate for ${currencyCode} not found in API response. Skipping.`)
+            return null
+          }
+          const rateToVnd = vndRate / currencyRate
+          return {
+            date: today,
+            currency_code: currencyCode,
+            rate: rateToVnd,
+          }
+        })
+        .filter(item => item !== null)
 
-    const dataToUpsert = currenciesToFetch
-      .map(currencyCode => {
-        const currencyRate = rates[currencyCode]
-        if (!currencyRate) {
-          console.warn(`Rate for ${currencyCode} not found in API response. Skipping.`)
-          return null
-        }
-        const rateToVnd = vndRate / currencyRate
-        return {
-          date: today,
-          currency_code: currencyCode,
-          rate: rateToVnd,
+      if (dataToUpsert.length === 0) {
+        throw new Error('No valid exchange rates could be calculated.')
+      }
+
+      // @ts-ignore: dataToUpsert is not null here
+      const { error: upsertError } = await supabase
+        .from('historical_fxrate')
+        .upsert(dataToUpsert, { onConflict: 'currency_code,date' })
+
+      if (upsertError) {
+        throw new Error(`Database error: ${upsertError.message}`)
+      }
+
+      return Response.json({
+        success: true,
+        message: "Exchange rate fetching complete.",
+        stats: {
+          successful_updates: dataToUpsert.length,
+          total_currencies: currenciesToFetch.length
         }
       })
-      .filter(item => item !== null)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
 
-    if (dataToUpsert.length === 0) {
-      throw new Error('No valid exchange rates could be calculated.')
+      console.error('Critical error:', errorMessage)
+      await sendTelegramMessage(`🚨 ERROR (fetch-exchange-rates)\n\n${errorMessage}`)
+
+      return Response.json(
+        { success: false, error: errorMessage },
+        { status: 500 }
+      )
     }
-
-    // @ts-ignore: dataToUpsert is not null here
-    const { error: upsertError } = await supabase
-      .from('historical_fxrate')
-      .upsert(dataToUpsert, { onConflict: 'currency_code,date' })
-
-    if (upsertError) {
-      throw new Error(`Database error: ${upsertError.message}`)
-    }
-
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Exchange rate fetching complete.",
-      stats: {
-        successful_updates: dataToUpsert.length,
-        total_currencies: currenciesToFetch.length
-      }
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200,
-    })
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-
-    console.error('Critical error:', errorMessage)
-    await sendTelegramMessage(`🚨 ERROR (fetch-exchange-rates)\n\n${errorMessage}`)
-
-    return new Response(JSON.stringify({
-      success: false,
-      error: errorMessage,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 500,
-    })
-  }
-})
+  }),
+}
