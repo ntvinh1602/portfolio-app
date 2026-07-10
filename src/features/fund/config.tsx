@@ -38,17 +38,6 @@ export const txCategory: IconLabel[] = [
   { key: "repay", label: "Repay", icon: Handshake },
 ]
 
-export const txOps: IconLabel[] = [
-  { key: "buy", label: "Buy", icon: ArrowBigDownDash },
-  { key: "sell", label: "Sell", icon: ArrowBigUpDash },
-  { key: "deposit", label: "Deposit", icon: Download },
-  { key: "withdraw", label: "Withdraw", icon: Upload },
-  { key: "income", label: "Income", icon: TrendingUp },
-  { key: "expense", label: "Expense", icon: TrendingDown },
-  { key: "borrow", label: "Borrow", icon: HandCoins },
-  { key: "repay", label: "Repay", icon: Handshake },
-]
-
 export const cashflowOps: InfoLabel[] = [
   { key: "deposit", label: "Deposit", info: "For a bright future" },
   { key: "withdraw", label: "Withdraw", info: "Time for shopping" },

@@ -16,6 +16,8 @@ import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
 import { CASHFLOW } from "@fund/memo"
 import { cashflowOps } from "../config"
+import { ToggleGroupField } from "@/components/form/toggle-group-field"
+import { SelectField } from "@/components/form/select-field"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
@@ -133,11 +135,10 @@ export function CashflowForm({
       <FieldGroup className="gap-6">
         <div className="flex flex-col gap-3">
           <FieldTitle>Operation</FieldTitle>
-          <RadioGroupField
+          <ToggleGroupField
             control={form.control}
             name="operation"
             options={cashflowOps}
-            column={2}
           />
         </div>
 
@@ -149,22 +150,20 @@ export function CashflowForm({
             label="Date time"
           />
 
-          <ComboboxField
+          <SelectField
             control={form.control}
             name="memo"
             label="Description"
-            items={filteredMemos}
             placeholder="Event description"
-            searchPlaceholder="Search for description..."
+            options={filteredMemos}
           />
 
-          <ComboboxField
+          <SelectField
             control={form.control}
             name="asset"
             label="Asset"
-            items={assetIDs}
             placeholder="Cash / fund asset"
-            searchPlaceholder="Search for asset..."
+            options={assetIDs}
           />
 
           <NumberField

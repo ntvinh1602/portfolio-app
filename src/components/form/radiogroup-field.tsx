@@ -17,6 +17,13 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { InfoLabel } from "@/types/global.types"
 
+const columnClasses: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+}
+
 interface RadioGroupFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
@@ -39,7 +46,7 @@ export function RadioGroupField<T extends FieldValues>({
           <RadioGroup
             onValueChange={field.onChange}
             value={field.value}
-            className={`grid-cols-${column}`}
+            className={columnClasses[column] ?? "grid-cols-1"}
           >
             {options.map((opt) => (
               <FieldLabel

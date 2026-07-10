@@ -9,10 +9,7 @@ import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import {
-  FieldGroup,
-  FieldTitle,
-} from "@/components/ui/field"
+import { FieldGroup, FieldTitle } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
 import { stockSchema } from "./schema"
 import {
@@ -20,6 +17,7 @@ import {
   type AssetSearchResult,
 } from "@fund/actions/search-assets"
 import { stockOps } from "@fund/config"
+import { ToggleGroupField } from "@/components/form/toggle-group-field"
 
 type FormValues = z.infer<typeof stockSchema>
 
@@ -128,11 +126,10 @@ export function StockForm({
       <FieldGroup className="gap-6">
         <div className="flex flex-col gap-3">
           <FieldTitle>Operation</FieldTitle>
-          <RadioGroupField
+          <ToggleGroupField
             control={form.control}
             name="side"
             options={stockOps}
-            column={2}
           />
         </div>
 

@@ -1,56 +1,127 @@
-type dnseOrderType = "Pending" 
-  | "PendingNew" 
-  | "New" 
-  | "PartiallyFilled" 
-  | "Filled" 
-  | "Rejected" 
-  | "Expired" 
+type OrderStatus =
+  | "Pending"
+  | "PendingNew"
+  | "New"
+  | "PartiallyFilled"
+  | "Filled"
+  | "Rejected"
+  | "Expired"
   | "DoneForDay"
 
-export interface DnseAccount {
-  id: string
-  dealAccount?: boolean
-  derivativeAccount?: boolean
-  derivative?: {
-    status?: string | null
-  } | null
-}
+type OrderType = "LO" | "MOK" | "MAK" | "MTL" | "ATO" | "ATC" | "PLO"
+export type MarketType = "STOCK" | "DERIVATIVE"
+type OrderSide = "NB" | "NS"
 
 export interface DnseAccountsResponse {
   name: string
-  custodyCode: string
+  custodyCode: string // VSD depository account number
   investorId: string
-  accounts: DnseAccount[]
-}
-
-export interface DnseStockBalance {
-  totalCash?: number
-  availableCash?: number
-  depositInterest?: number
-  totalDebt?: number
-  depositFeeAmount?: number
-  secureAmount?: number
-  orderSecured?: number
-  withdrawableCash?: number
-  cashDividendReceiving?: number
+  accounts: {
+    id: string
+    dealAccount: boolean
+    derivativeAccount: boolean
+    derivative: {
+      status: "ACTIVE" | "INACTIVE"
+    }
+  }[]
 }
 
 export interface DnseBalancesResponse {
-  stock?: DnseStockBalance | null
-  derivative?: Record<string, number | string | null> | null
+  stock: {
+    totalCash: number
+    availableCash: number
+    depositInterest: number
+    totalDebt: number
+    depositFeeAmount: number
+    secureAmount: number
+    orderSecured: number
+    withdrawableCash: number
+    cashDividendReceiving: number
+  }
+  derivative: {
+    pendingDepositWithdraw: number
+    remainSecure: number
+    usedSecure: number
+    pendingSecure: number
+    holdTaxAndFee: number
+    totalLoanDebt: number
+  }
+}
+
+export interface DnseLoanPackagesRes {
+  symbolType: string
+  marketType: MarketType
+  loanPackages: {
+    id: number
+    name: string
+    initialRate: number
+    maintenanceRate: number
+    liquidRate: number
+    tradingFee: {
+      id: number
+      name: string
+      scope: number
+      channel: number
+      schemaType: "FIXED" | "PROGRESSIVE"
+      createdDate: string
+      modifiedDate: string
+      fixedTradingFee: number
+      fixedDailyCloseTradingFee: number
+      progressTradingFee: {
+        fromQuantity: number
+        toQuantity: number
+        fee: number
+      }[]
+      progressDailyCloseTradingFee: {
+        fromQuantity: number
+        toQuantity: number
+        fee: number
+      }[]
+    }
+  }[]
+}
+
+export interface DnsePPSERes {
+  qmaxBuy: number
+  qmaxSell: number
+  price: number
+}
+
+export interface DnseIntradayOrdersRes {
+  orders: {
+    id: number
+    side: OrderSide
+    accountNo: string
+    symbol: string
+    price: number
+    priceSecure: number
+    averagePrice: number
+    quantity: number
+    fillQuantity: number
+    canceledQuantity: number
+    leaveQuantity: number
+    orderType: OrderType
+    orderCategory: string
+    orderStatus: OrderStatus
+    loanPackageId: number
+    marketType: MarketType
+    transDate: string
+    createdDate: string
+    modifiedDate: string
+  }[]
 }
 
 export interface DnseOrderDetailsRes {
   id: number
-  side: "NB" | "NS"
+  side: OrderSide
   accountNo: string
   symbol: string
   price: number // order placed price
   quantity: number // placed volume
-  orderType: "LO" | "MOK" | "MAK" | "MTL" | "ATO" | "ATC" | "PLO"
+  orderType: OrderType
   loanPackageId: number
-  orderCategory: "NORMAL"
-  orderStatus: dnseOrderType
+  orderCategory: string
+  orderStatus: OrderStatus
   fillQuantity: number // filled quantity up to now
   lastQuantity: number // last filled quantity
   lastPrice: number // last matched price
@@ -62,7 +133,7 @@ export interface DnseOrderDetailsRes {
   leaveQuantity: number // unmatched quantity
   canceledQuantity: number
   error: string
-  marketType: "DERIVATIVE" | "STOCK"
+  marketType: MarketType
   priceSecure: number
   createdDate: string // ISO 8601 datetime
   modifiedDate: string // ISO 8601 datetime
@@ -83,29 +154,29 @@ export interface DnseClosePrice {
 
 export interface DnsePosition {
   id: number
-  marketType: "STOCK" | "DERIVATIVE"
+  marketType: MarketType
   symbol: string
   accountNo: string
   status: "OPEN" | "PENDING_CLOSE" | "CLOSED" | "ODD_LOT"
-  loanPackageId?: number
-  side?: "NB" | "NS"
-  accumulateQuantity?: number
-  tradeQuantity?: number
-  closedQuantity?: number
-  openQuantity?: number
-  overNightQuantity?: number
-  costPrice?: number
-  marketPrice?: number
-  breakEvenPrice?: number
-  averageClosePrice?: number
-  createdDate?: string
-  modifiedDate?: string
+  loanPackageId: number
+  side: OrderSide
+  accumulateQuantity: number
+  tradeQuantity: number
+  closedQuantity: number
+  openQuantity: number
+  overNightQuantity: number
+  costPrice: number
+  marketPrice: number
+  breakEvenPrice: number
+  averageClosePrice: number
+  createdDate: string
+  modifiedDate: string
 }
 
 export interface DnsePositionsResponse {
   positions: DnsePosition[]
-  pageIndex?: number
-  pageSize?: number
-  pageNumber?: number
-  total?: number
+  pageIndex: number
+  pageSize: number
+  pageNumber: number
+  total: number
 }

@@ -50,7 +50,7 @@ export function SelectField<T extends FieldValues>({
             value={field.value ?? ""} // ✅ ensure controlled value
             disabled={disabled}
           >
-            <SelectTrigger>
+            <SelectTrigger className="px-4">
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent position="popper">
