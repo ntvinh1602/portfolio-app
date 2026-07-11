@@ -16,13 +16,14 @@ import {
   type AssetSearchResult,
 } from "@fund/actions/search-assets"
 import { ToggleGroupField } from "@/components/form/toggle-group-field"
+import { txOperations } from "../components/ui/tx-filter"
 
 type FormValues = z.infer<typeof stockSchema>
 
-export const stockOps = [
-  { key: "buy", label: "Buy" },
-  { key: "sell", label: "Sell" },
-]
+export const stockOps = txOperations.cashflow.map(({ key, label }) => ({
+  key,
+  label,
+}))
 
 interface StockFormProps {
   onSuccess?: () => void

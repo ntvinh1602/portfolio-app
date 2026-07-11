@@ -6,7 +6,7 @@ import {
   Plane,
   Armchair,
   Star,
-  ArrowLeftRight,
+  CaseUpper,
 } from "lucide-react"
 import { IconLabel } from "@/types/global.types"
 import { Flight } from "./components/history/flight-item"
@@ -57,7 +57,7 @@ export const FlightDetail = [
   {
     key: "position",
     label: "Position",
-    icon: ArrowLeftRight,
+    icon: CaseUpper,
     getValue: (f) => f.seat_position,
   },
 ] as const satisfies ValueLabel<Flight>[]

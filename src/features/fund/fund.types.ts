@@ -39,18 +39,28 @@ export type BenchmarkChartCols = {
   v: number[] // vni_value (normalized, 2dp)
 }
 
-export type EquityChartWindows = {
-  last_1y: EquityChartCols
-  last_3m: EquityChartCols
-  last_6m: EquityChartCols
-  all: EquityChartCols
+export type EquityRollingView = {
+  pnl_ytd: number
+  pnl_mtd: number
+  total_equity: number
+  equitychart: {
+    last_1y: EquityChartCols
+    last_3m: EquityChartCols
+    last_6m: EquityChartCols
+    all: EquityChartCols
+  }
 }
 
-export type BenchmarkChartWindows = {
-  last_1y: BenchmarkChartCols
-  last_3m: BenchmarkChartCols
-  last_6m: BenchmarkChartCols
-  all: BenchmarkChartCols
+export type BenchmarkRollingView = {
+  twr_ytd: number
+  twr_all: number
+  cagr: number
+  returnchart: {
+    last_1y: BenchmarkChartCols
+    last_3m: BenchmarkChartCols
+    last_6m: BenchmarkChartCols
+    all: BenchmarkChartCols
+  }
 }
 
 export interface BSheetView {
@@ -63,20 +73,6 @@ export interface BSheetView {
   total_value: number
   mkt_price: number
   net_profit: number
-}
-
-export type EquityRollingView = {
-  pnl_ytd: number
-  pnl_mtd: number
-  total_equity: number
-  equitychart: EquityChartWindows
-}
-
-export type BenchmarkRollingView = {
-  twr_ytd: number
-  twr_all: number
-  cagr: number
-  returnchart: BenchmarkChartWindows
 }
 
 export type NewsArticle = {

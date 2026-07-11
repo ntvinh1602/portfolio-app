@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import { assetChart } from "@fund/config"
 
 interface Props {
   cash: number
@@ -35,7 +34,11 @@ export function AumChart({ cash, stock, fund, totalAsset }: Props) {
       <CardContent>
         <Piechart
           data={data}
-          chartConfig={assetChart}
+          chartConfig={{
+            cash: { label: "Cash", color: "var(--chart-1)" },
+            stock: { label: "Stock", color: "var(--chart-2)" },
+            fund: { label: "Fund", color: "var(--chart-3)" },
+          }}
           dataKey="allocation"
           nameKey="asset"
           className="w-full max-h-50"

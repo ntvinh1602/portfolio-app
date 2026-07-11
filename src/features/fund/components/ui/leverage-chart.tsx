@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import { liabilityChart } from "@fund/config"
 
 interface Props {
   equity: number
@@ -35,7 +34,11 @@ export function LeverageChart({ equity, debt, margin, totalAsset }: Props) {
       <CardContent>
         <Piechart
           data={data}
-          chartConfig={liabilityChart}
+          chartConfig={{
+            equity: { label: "Equity", color: "var(--chart-1)" },
+            debts: { label: "Debts", color: "var(--chart-2)" },
+            margin: { label: "Margin", color: "var(--chart-3)" },
+          }}
           dataKey="allocation"
           nameKey="liability"
           className="w-full max-h-50"

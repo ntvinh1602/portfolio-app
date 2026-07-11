@@ -12,18 +12,29 @@ import { createClient } from "@/lib/supabase/client"
 import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
-import { CASHFLOW } from "@fund/memo"
 import { ToggleGroupField } from "@/components/form/toggle-group-field"
 import { SelectField } from "@/components/form/select-field"
+import { txOperations } from "../components/ui/tx-filter"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
-const cashflowOps = [
-  { key: "deposit", label: "Deposit" },
-  { key: "withdraw", label: "Withdraw" },
-  { key: "income", label: "Income" },
-  { key: "expense", label: "Expense" },
-]
+const CASHFLOW_MEMO = {
+  deposit: ["Cash deposit", "EPF monthly contribution", "Reconciliation"],
+  withdraw: ["Reconciliation", "Cash withdrawal"],
+  income: [
+    "CASA balance interest",
+    "EPF dividend",
+    "Cash dividend from stock",
+    "Other reward/income",
+    "Loyalty program rewards",
+  ],
+  expense: ["Margin interest", "Cash advance interest", "Operational fees"],
+} as const
+
+const cashflowOps = txOperations.cashflow.map(({ key, label }) => ({
+  key,
+  label,
+}))
 
 interface Props {
   onSuccess?: () => void
@@ -66,7 +77,7 @@ export function CashflowForm({
     if (!operation) return []
 
     return (
-      CASHFLOW[operation]?.map((memo) => ({
+      CASHFLOW_MEMO[operation]?.map((memo) => ({
         value: memo,
         label: memo,
       })) ?? []

@@ -2,7 +2,6 @@
 
 import { Calendar, Coins, PiggyBank, Settings, ShoppingBag } from "lucide-react"
 import { DateRangePicker } from "@/components/filter/date-picker"
-import { withCustom } from "@fund/config"
 import { FieldGroup } from "@/components/ui/field"
 import { FilterSearch } from "@/components/filter/text-search"
 import {
@@ -33,7 +32,7 @@ export interface TransactionFilterState {
   search: string
 }
 
-const txOperations: Record<string, readonly IconLabel[]> = {
+export const txOperations: Record<string, IconLabel[]> = {
   stock: [
     { key: "buy", label: "Buy", icon: ShoppingBag },
     { key: "sell", label: "Sell", icon: Coins },
@@ -46,13 +45,22 @@ const txOperations: Record<string, readonly IconLabel[]> = {
   ],
   borrow: [{ key: "borrow", label: "Borrow", icon: HandCoins }],
   repay: [{ key: "repay", label: "Repay", icon: Handshake }],
-}
+} as const
+
 const txCategory: IconLabel[] = [
   { key: "stock", label: "Stock", icon: Box },
   { key: "cashflow", label: "Cashflow", icon: Banknote },
   { key: "borrow", label: "Borrow", icon: HandCoins },
   { key: "repay", label: "Repay", icon: Handshake },
-]
+] as const
+
+const withCustom = [
+  { key: "1M", label: "Last 1 months" },
+  { key: "3M", label: "Last 3 months" },
+  { key: "6M", label: "Last 6 months" },
+  { key: "1Y", label: "Last 1 year" },
+  { key: "CUSTOM", label: "Custom" },
+] as const
 
 export type Preset = (typeof withCustom)[number]["key"]
 

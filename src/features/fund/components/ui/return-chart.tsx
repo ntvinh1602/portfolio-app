@@ -5,7 +5,6 @@ import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import { benchmarkChart } from "@fund/config"
 import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
@@ -47,7 +46,10 @@ export function ReturnChart({
       />
       <Areachart
         data={chartTimeframe}
-        config={benchmarkChart}
+        config={{
+          portfolio_value: { label: "Equity", color: "var(--chart-1)" },
+          vni_value: { label: "VN-Index", color: "var(--chart-2)" },
+        }}
         xAxisDataKey={"t"}
         xAxisType="number"
         className="w-full"

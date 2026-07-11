@@ -5,7 +5,6 @@ import { format } from "date-fns"
 import { Areachart } from "@/components/charts/areachart"
 import { Card } from "@/components/ui/card"
 import { ChartCardHeader } from "@/components/charts/chartcard-header"
-import { equityChart } from "@fund/config"
 import type { TooltipLabelFormatter } from "@/components/charts/areachart"
 
 interface Props {
@@ -49,7 +48,10 @@ export function EquityChart({
       />
       <Areachart
         data={chartTimeframe}
-        config={equityChart}
+        config={{
+          net_equity: { label: "Equity", color: "var(--chart-1)" },
+          cumulative_cashflow: { label: "Deposit", color: "var(--chart-2)" },
+        }}
         xAxisDataKey={"t"}
         xAxisType="number"
         className="w-full"

@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button"
 import { EquityChartSection } from "./equity-chart-section"
 import { ReturnChartSection } from "./return-chart-section"
 import { useDashboardDateRange } from "./context"
-import { withAllTime } from "@fund/config"
+
+const withAllTime = [
+  { key: "last_3m", label: "3 months"},
+  { key: "last_6m", label: "6 months" },
+  { key: "last_1y", label: "1 year" },
+  { key: "all", label: "All time" },
+]
 
 export function EquityReturnSection() {
   const { dateRange, setDateRange } = useDashboardDateRange()

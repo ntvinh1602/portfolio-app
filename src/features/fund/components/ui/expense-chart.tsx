@@ -7,7 +7,6 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Piechart } from "@/components/charts/piechart"
-import { expenseChart } from "@fund/config"
 import { HandCoins } from "lucide-react"
 
 interface Props {
@@ -21,9 +20,7 @@ export function ExpenseChart({ name, totalExpenses, chartData }: Props) {
     <Card>
       <CardHeader>
         <CardDescription>{name}</CardDescription>
-        <CardTitle className="text-base sm:text-xl">
-          {totalExpenses}
-        </CardTitle>
+        <CardTitle className="text-base sm:text-xl">{totalExpenses}</CardTitle>
         <CardAction>
           <HandCoins className="stroke-1" />
         </CardAction>
@@ -31,7 +28,11 @@ export function ExpenseChart({ name, totalExpenses, chartData }: Props) {
       <CardContent>
         <Piechart
           data={chartData}
-          chartConfig={expenseChart}
+          chartConfig={{
+            tax: { label: "Tax", color: "var(--chart-4)" },
+            fee: { label: "Fee", color: "var(--chart-3)" },
+            interest: { label: "Interest", color: "var(--chart-1)" },
+          }}
           dataKey="allocation"
           nameKey="liability"
           className="w-full max-h-50"
