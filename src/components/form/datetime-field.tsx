@@ -93,7 +93,6 @@ function DateTimeFieldInner({
           <Button
             type="button"
             variant="secondary"
-            size="lg"
             className={cn(
               "justify-between",
               !field.value && "text-muted-foreground",

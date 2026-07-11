@@ -39,7 +39,7 @@ export default function StatsCarousel({ stats }: { stats: LifetimeStats }) {
       icon: Earth,
     },
     {
-      title: "Airframes",
+      title: "Aircraft Types",
       figure: stats.airframe_count,
       icon: Plane,
     },

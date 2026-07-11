@@ -38,7 +38,6 @@ export function TextField<T extends FieldValues>({
             inputMode="text"
             placeholder={placeholder}
             disabled={disabled}
-            className="px-4"
           />
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>

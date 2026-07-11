@@ -39,7 +39,7 @@ export function NumberField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
           <FieldLabel className="sr-only">{label}</FieldLabel>
-          <InputGroup className="pl-1">
+          <InputGroup>
             <InputGroupInput
               type="number"
               value={field.value ?? ""}

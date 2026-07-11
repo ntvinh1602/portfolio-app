@@ -54,7 +54,6 @@ export function ComboboxField<T extends FieldValues>({
             <ComboboxInput
               placeholder={placeholder}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              className="px-1"
               showClear
             />
             <ComboboxContent>

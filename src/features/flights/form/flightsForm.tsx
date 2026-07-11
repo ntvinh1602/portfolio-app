@@ -5,12 +5,11 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { AddFlight } from "@flight/actions/add-flight"
-
 import { TextField } from "@/components/form/text-field"
 import { SelectField } from "@/components/form/select-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import { FieldGroup, FieldTitle } from "@/components/ui/field"
+import { FieldDescription, FieldGroup, FieldTitle } from "@/components/ui/field"
 import { flightSchema, type FlightFormValues } from "./schema"
 
 interface FlightFormProps {
@@ -63,8 +62,6 @@ export default function FlightForm({
       form.reset()
       onSuccess?.()
     } catch (err: unknown) {
-      console.error("Create flight error:", err)
-
       let message = "Unexpected database error"
 
       if (err instanceof Error) {
@@ -89,46 +86,43 @@ export default function FlightForm({
   return (
     <form id={formId} onSubmit={handleSubmit}>
       <FieldGroup className="gap-3">
-        <FieldTitle>Departure</FieldTitle>
+        <FieldTitle>Departure from</FieldTitle>
         <ComboboxField
           control={form.control}
           name="departureAirportId"
           label="Departure Airport"
           items={airportOptions}
-          placeholder="Airport"
+          placeholder="Departure airport"
           emptyPlaceholder="No airport found"
         />
         <DateTimeField
           control={form.control}
           name="departureTimeLocal"
           label="Departure (Local Time)"
-          placeholder="Local time"
+          placeholder="Departure local time"
         />
-
-        <FieldTitle>Arrival</FieldTitle>
+        <FieldTitle>Arrive to</FieldTitle>
         <ComboboxField
           control={form.control}
           name="arrivalAirportId"
           label="Arrival Airport"
           items={airportOptions}
-          placeholder="Airport"
+          placeholder="Arrival airport"
           emptyPlaceholder="No airport found"
         />
         <DateTimeField
           control={form.control}
           name="arrivalTimeLocal"
           label="Arrival (Local Time)"
-          placeholder="Local time"
+          placeholder="Arrival local time"
         />
-
-        <FieldTitle>Flight Information</FieldTitle>
+        <FieldTitle>Flight Details</FieldTitle>
         <TextField
           control={form.control}
           name="flightNumber"
           label="Flight Number"
           placeholder="Flight number"
         />
-
         <SelectField<FlightFormValues>
           control={form.control}
           name="airlineId"
@@ -136,21 +130,22 @@ export default function FlightForm({
           options={airlineOptions}
           placeholder="Airlines"
         />
-
         <SelectField<FlightFormValues>
           control={form.control}
           name="aircraftId"
           label="Aircraft"
           options={aircraftOptions}
-          placeholder="Aircraft type"
+          placeholder="Aircraft type *"
         />
-
         <TextField
           control={form.control}
           name="notes"
           label="Notes"
-          placeholder="Notes"
+          placeholder="Notes *"
         />
+        <FieldDescription className="text-end text-xs px-2">
+          * Optional data, can edit later
+        </FieldDescription>
       </FieldGroup>
     </form>
   )
