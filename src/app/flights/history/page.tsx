@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { AddFlightProvider } from "@flight/components/history/add-flight-context"
 import { FlightsDataProvider } from "@flight/components/history/flights-data-context"
+import { FlightItemProvider } from "@flight/components/history/flight-item-context"
 import { FlightsHistory } from "@flight/components/history/flights-history"
 import getAirlines from "@flight/actions/get-airlines"
 import getAircrafts from "@flight/actions/get-aircrafts"
@@ -53,7 +54,9 @@ async function FlightsHistoryData() {
       airportFormOptions={airportFormOptions}
     >
       <AddFlightProvider>
-        <FlightsHistory />
+        <FlightItemProvider>
+          <FlightsHistory />
+        </FlightItemProvider>
       </AddFlightProvider>
     </FlightsDataProvider>
   )

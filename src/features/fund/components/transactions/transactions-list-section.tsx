@@ -24,14 +24,12 @@ export function TransactionsListSection() {
       fetchNextPage={fetchNextPage}
     >
       {data.length > 0 && (
-        <div className="grid gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
-          <ItemGroup>
-            <span>Found {data.length} transactions</span>
-            {data.map((tx) => (
-              <TxnItem key={tx.id} tx={tx} />
-            ))}
-          </ItemGroup>
-        </div>
+        <ItemGroup className="gap-2">
+          <ItemTitle className="pb-2">Found {data.length} transactions</ItemTitle>
+          {data.map((tx) => (
+            <TxnItem key={tx.id} tx={tx} />
+          ))}
+        </ItemGroup>
       )}
     </InfiniteList>
   )
