@@ -4,7 +4,7 @@ import { createContext, useState, use } from "react"
 
 interface PerformanceYearContextValue {
   year: number | null
-  setYear: (year: number | null) => void
+  setYear: React.Dispatch<React.SetStateAction<number | null>>
   startYear: number
 }
 
@@ -19,7 +19,7 @@ export function PerformanceYearProvider({
   startYear: number
   children: React.ReactNode
 }) {
-  const [year, setYear] = useState<number>(() => new Date().getFullYear())
+  const [year, setYear] = useState<number | null>(() => new Date().getFullYear())
 
   return (
     <PerformanceYearContext.Provider value={{ year, setYear, startYear }}>

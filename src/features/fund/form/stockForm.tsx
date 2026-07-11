@@ -7,7 +7,6 @@ import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { NumberField } from "@/components/form/number-field"
 import { ComboboxField } from "@/components/form/combobox-field"
-import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { DateTimeField } from "@/components/form/datetime-field"
 import { FieldGroup, FieldTitle } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
@@ -16,10 +15,14 @@ import {
   searchAssets,
   type AssetSearchResult,
 } from "@fund/actions/search-assets"
-import { stockOps } from "@fund/config"
 import { ToggleGroupField } from "@/components/form/toggle-group-field"
 
 type FormValues = z.infer<typeof stockSchema>
+
+export const stockOps = [
+  { key: "buy", label: "Buy" },
+  { key: "sell", label: "Sell" },
+]
 
 interface StockFormProps {
   onSuccess?: () => void
@@ -147,8 +150,8 @@ export function StockForm({
             label="Stock"
             items={stockOptions}
             onSearchChange={setSearch}
-            placeholder="Stock ticker"
-            searchPlaceholder="Input ticker here"
+            placeholder="Search stock by ticker"
+            emptyPlaceholder="No stock found"
           />
 
           <NumberField

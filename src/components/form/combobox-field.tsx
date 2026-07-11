@@ -7,15 +7,26 @@ import {
   type Path,
 } from "react-hook-form"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
-import { Combobox } from "@/components/combobox"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+
+type ComboboxOption = {
+  value: string
+  label: string
+}
 
 interface ComboboxFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
   label: string
-  items: { value: string; label: string }[]
+  items: ComboboxOption[]
   placeholder?: string
-  searchPlaceholder?: string
   emptyPlaceholder?: string
   onSearchChange?: (value: string) => void
 }
@@ -26,7 +37,6 @@ export function ComboboxField<T extends FieldValues>({
   label,
   items,
   placeholder,
-  searchPlaceholder,
   emptyPlaceholder,
   onSearchChange,
 }: ComboboxFieldProps<T>) {
@@ -34,18 +44,30 @@ export function ComboboxField<T extends FieldValues>({
     <Controller
       name={name}
       control={control}
-      render={({ field, fieldState }) => (
+      render={({ fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
           <FieldLabel className="sr-only">{label}</FieldLabel>
           <Combobox
             items={items}
-            value={field.value}
-            onChange={field.onChange}
-            onSearchChange={onSearchChange}
-            placeholder={placeholder}
-            searchPlaceholder={searchPlaceholder}
-            emptyPlaceholder={emptyPlaceholder}
-          />
+            itemToStringValue={(item: ComboboxOption) => item.label}
+          >
+            <ComboboxInput
+              placeholder={placeholder}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              className="px-1"
+              showClear
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>{emptyPlaceholder}</ComboboxEmpty>
+              <ComboboxList>
+                {(item) => (
+                  <ComboboxItem key={item.value} value={item.label}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}

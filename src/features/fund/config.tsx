@@ -1,18 +1,8 @@
 import {
-  TrendingUp,
-  TrendingDown,
-  Download,
-  Upload,
-  HandCoins,
-  Handshake,
-  ArrowBigDownDash,
-  ArrowBigUpDash,
-  Banknote,
-  Box,
   File,
 } from "lucide-react"
 import { ChartConfig } from "@/components/ui/chart"
-import { IconLabel, InfoLabel } from "@/types/global.types"
+import { IconLabel } from "@/types/global.types"
 
 /* --- TIME PRESETS --- */
 export const withAllTime = [
@@ -30,48 +20,6 @@ export const withCustom = [
   { key: "CUSTOM", label: "Custom", icon: File },
 ] as const satisfies readonly IconLabel[]
 
-/* --- TRANSACTIONS --- */
-export const txCategory: IconLabel[] = [
-  { key: "stock", label: "Stock", icon: Box },
-  { key: "cashflow", label: "Cashflow", icon: Banknote },
-  { key: "borrow", label: "Borrow", icon: HandCoins },
-  { key: "repay", label: "Repay", icon: Handshake },
-]
-
-export const cashflowOps: InfoLabel[] = [
-  { key: "deposit", label: "Deposit", info: "For a bright future" },
-  { key: "withdraw", label: "Withdraw", info: "Time for shopping" },
-  { key: "income", label: "Income", info: "Payday!" },
-  { key: "expense", label: "Expense", info: "So expensive!" },
-]
-
-export const stockOps: InfoLabel[] = [
-  { key: "buy", label: "Buy", info: "Is it bottom yet?" },
-  { key: "sell", label: "Sell", info: "Time to cash out!" },
-]
-
-const borrowOps: IconLabel[] = [
-  { key: "borrow", label: "Borrow", icon: HandCoins },
-]
-
-const repayOps: IconLabel[] = [
-  { key: "repay", label: "Repay", icon: Handshake },
-]
-
-export const categoryOps: Record<string, readonly IconLabel[]> = {
-  stock: [
-    { key: "buy", label: "Buy", icon: ArrowBigDownDash },
-    { key: "sell", label: "Sell", icon: ArrowBigUpDash },
-  ],
-  cashflow: [
-    { key: "deposit", label: "Deposit", icon: Download },
-    { key: "withdraw", label: "Withdraw", icon: Upload },
-    { key: "income", label: "Income", icon: TrendingUp },
-    { key: "expense", label: "Expense", icon: TrendingDown },
-  ],
-  borrow: borrowOps,
-  repay: repayOps,
-}
 
 /* --- CHART CONFIG --- */
 export const assetChart: ChartConfig = {

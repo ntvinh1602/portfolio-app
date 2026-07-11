@@ -1,7 +1,7 @@
 "use client"
 
 import { InfiniteList } from "@/components/infinite-list"
-import { TxnItem } from "./tx-item"
+import { TxnItem } from "../ui/tx-item"
 import { ItemGroup, ItemTitle } from "@/components/ui/item"
 import StatusLabel from "@/components/status-label"
 import { useTransactionsData } from "./transactions-data-context"
@@ -28,7 +28,7 @@ export function TransactionsListSection() {
           <ItemGroup>
             <span>Found {data.length} transactions</span>
             {data.map((tx) => (
-              <TxnItem key={tx.id} transaction={tx} />
+              <TxnItem key={tx.id} tx={tx} />
             ))}
           </ItemGroup>
         </div>

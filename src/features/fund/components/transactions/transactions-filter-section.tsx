@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransactionsData } from "./transactions-data-context"
-import { TxFilter } from "./tx-filter"
+import { TxFilter } from "../ui/tx-filter"
 
 export function TransactionsFilterSection() {
   const {

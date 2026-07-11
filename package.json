@@ -12,6 +12,7 @@
     "sbseed": "npx supabase db dump --data-only --linked -s public,flight -x public.tx_legs,public.news_articles -f supabase/.seeds/data.sql"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",

@@ -6,8 +6,6 @@ import { useWatch, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
 import { NumberField } from "@/components/form/number-field"
-import { ComboboxField } from "@/components/form/combobox-field"
-import { RadioGroupField } from "@/components/form/radiogroup-field"
 import { DateTimeField } from "@/components/form/datetime-field"
 import { FieldGroup, FieldTitle } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/client"
@@ -15,11 +13,17 @@ import { getCashAssets } from "@fund/actions/get-cash-assets"
 import type { Tables } from "@/types/database.types"
 import { cashflowSchema } from "./schema"
 import { CASHFLOW } from "@fund/memo"
-import { cashflowOps } from "../config"
 import { ToggleGroupField } from "@/components/form/toggle-group-field"
 import { SelectField } from "@/components/form/select-field"
 
 type FormValues = z.infer<typeof cashflowSchema>
+
+const cashflowOps = [
+  { key: "deposit", label: "Deposit" },
+  { key: "withdraw", label: "Withdraw" },
+  { key: "income", label: "Income" },
+  { key: "expense", label: "Expense" },
+]
 
 interface Props {
   onSuccess?: () => void

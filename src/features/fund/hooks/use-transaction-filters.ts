@@ -2,11 +2,11 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { subMonths, startOfDay, endOfDay } from "date-fns"
-import { categoryOps } from "@fund/config"
+import type { SupabaseQueryHandler } from "@/hooks/use-infinite-query"
 import type {
   TransactionFilterState,
   Preset,
-} from "@fund/components/transactions/tx-filter"
+} from "@/features/fund/components/ui/tx-filter"
 
 function getDateRangeFromPreset(preset: Preset, now: Date) {
   switch (preset) {
@@ -21,14 +21,6 @@ function getDateRangeFromPreset(preset: Preset, now: Date) {
     default:
       return { startDate: subMonths(now, 3), endDate: now }
   }
-}
-
-interface TxQueryBuilder {
-  gte(column: string, value: string): this
-  lte(column: string, value: string): this
-  eq(column: string, value: string): this
-  ilike(column: string, value: string): this
-  order(column: string, opts: { ascending: boolean }): this
 }
 
 interface UseTransactionFiltersOptions {
@@ -74,8 +66,8 @@ export function useTransactionFilters(options?: UseTransactionFiltersOptions) {
   )
 
   // Build a trailing query that applies date range and all active filters
-  const trailingQuery = useCallback(
-    (query: TxQueryBuilder) => {
+  const trailingQuery: SupabaseQueryHandler<"tx_summary"> = useCallback(
+    (query) => {
       query = query.gte("created_at", startISO).lte("created_at", endISO)
 
       query = query.eq("category", filters.categories)

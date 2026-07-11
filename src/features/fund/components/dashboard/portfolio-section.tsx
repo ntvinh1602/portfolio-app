@@ -41,7 +41,7 @@ export function PortfolioSection() {
 
   if (isLoading) return <PortfolioSkeleton />
   if (error) return <StatusLabel type="error" />
-  if (!data || !metrics) return null
+  if (!data || !metrics) return <StatusLabel type="error" />
 
   return <Portfolio bsheet={data} {...metrics} />
 }

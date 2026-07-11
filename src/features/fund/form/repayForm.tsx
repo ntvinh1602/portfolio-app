@@ -111,7 +111,6 @@ export function RepayForm({
           label="Deal"
           items={debtOptions}
           placeholder="Select debt"
-          searchPlaceholder="Search for debts..."
         />
 
         <NumberField

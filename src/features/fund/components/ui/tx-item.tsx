@@ -1,14 +1,14 @@
-"use client"
-
 import {
   TrendingUp,
   TrendingDown,
-  Download,
   Upload,
   HandCoins,
   Handshake,
-  ArrowBigDownDash,
-  ArrowBigUpDash,
+  Calendar,
+  Clock,
+  PiggyBank,
+  ShoppingBag,
+  Coins,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn, formatNum } from "@/lib/utils"
@@ -20,6 +20,7 @@ import {
   ItemDescription,
 } from "@/components/ui/item"
 import type { Tables } from "@/types/database.types"
+import { Badge } from "@/components/ui/badge"
 
 type Operation =
   | "buy"
@@ -31,20 +32,20 @@ type Operation =
   | "borrow"
   | "repay"
 
-const txOps = {
+const OperationCfg = {
   buy: {
     label: "Buy",
-    icon: ArrowBigDownDash,
+    icon: ShoppingBag,
     color: "bg-secondary text-primary",
   },
   sell: {
     label: "Sell",
-    icon: ArrowBigUpDash,
+    icon: Coins,
     color: "bg-secondary text-destructive",
   },
   deposit: {
     label: "Deposit",
-    icon: Download,
+    icon: PiggyBank,
     color: "bg-secondary text-primary",
   },
   withdraw: {
@@ -74,15 +75,14 @@ const txOps = {
   },
 } as const
 
-export function TxnItem({
-  transaction,
-}: {
-  transaction: {
+interface Props {
+  tx: {
     [K in keyof Tables<"tx_summary">]: NonNullable<Tables<"tx_summary">[K]>
   }
-}) {
-  const operation = txOps[transaction.operation as Operation]
-  const OperationIcon = operation.icon
+}
+
+export function TxnItem({ tx }: Props) {
+  const operation = OperationCfg[tx.operation as Operation]
 
   return (
     <Item variant="outline" size="sm">
@@ -90,22 +90,29 @@ export function TxnItem({
         <div
           className={cn(
             operation.color,
-            "flex aspect-square size-8 items-center justify-center rounded-xl",
+            "flex size-8 items-center justify-center rounded-xl",
           )}
         >
-          <OperationIcon className="size-4" />
+          <operation.icon className="size-4" />
         </div>
       </ItemMedia>
 
       <ItemContent>
-        <ItemTitle>{transaction.memo}</ItemTitle>
-        <ItemDescription className="text-xs">
-          {format(new Date(transaction.created_at), "yyyy-MM-dd HH:mm")}
+        <ItemTitle>{tx.memo}</ItemTitle>
+        <ItemDescription className="-ml-2">
+          <Badge variant="ghost" className="pointer-events-none">
+            <Calendar />
+            {format(new Date(tx.created_at), "yyyy-MM-dd")}
+          </Badge>
+          <Badge variant="ghost" className="pointer-events-none">
+            <Clock />
+            {format(new Date(tx.created_at), "HH:mm")}
+          </Badge>
         </ItemDescription>
       </ItemContent>
 
       <ItemContent className="items-end">
-        <ItemTitle>{formatNum(transaction.value)}</ItemTitle>
+        <ItemTitle>{formatNum(tx.value)}</ItemTitle>
         <ItemDescription className="text-xs">{operation.label}</ItemDescription>
       </ItemContent>
     </Item>

@@ -54,6 +54,7 @@ export function SelectAllEnabled({
           <SelectGroup>
             {options.map((option) => (
               <SelectItem key={option.key} value={option.key}>
+                {option.icon && <option.icon />}
                 {option.label}
               </SelectItem>
             ))}
@@ -83,11 +84,7 @@ export function SingleOptionSelect({
 }: SingleOptionSelectProps) {
   return (
     <Field orientation="horizontal" className="min-w-50">
-      <Select
-        value={value}
-        onValueChange={onValueChange}
-        disabled={disabled}
-      >
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className="w-full bg-background border border-muted data-[size=default]:h-10">
           {Icon && <Icon />}
           <SelectValue placeholder={placeholder} />

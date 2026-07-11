@@ -1,7 +1,8 @@
 "use client"
-import { Calendar, Settings } from "lucide-react"
+
+import { Calendar, Coins, PiggyBank, Settings, ShoppingBag } from "lucide-react"
 import { DateRangePicker } from "@/components/filter/date-picker"
-import { txCategory, categoryOps, withCustom } from "@fund/config"
+import { withCustom } from "@fund/config"
 import { FieldGroup } from "@/components/ui/field"
 import { FilterSearch } from "@/components/filter/text-search"
 import {
@@ -10,12 +11,48 @@ import {
 } from "@/components/filter/select-options"
 import { FilterToggleGroup } from "@/components/filter/toggle-options"
 import { Separator } from "@/components/ui/separator"
+import {
+  type LucideIcon,
+  TrendingUp,
+  TrendingDown,
+  Upload,
+  HandCoins,
+  Handshake,
+  Banknote,
+  Box,
+} from "lucide-react"
 
+interface IconLabel {
+  key: string
+  label: string
+  icon: LucideIcon
+}
 export interface TransactionFilterState {
   categories: string
   operation: string
   search: string
 }
+
+const txOperations: Record<string, readonly IconLabel[]> = {
+  stock: [
+    { key: "buy", label: "Buy", icon: ShoppingBag },
+    { key: "sell", label: "Sell", icon: Coins },
+  ],
+  cashflow: [
+    { key: "deposit", label: "Deposit", icon: PiggyBank },
+    { key: "withdraw", label: "Withdraw", icon: Upload },
+    { key: "income", label: "Income", icon: TrendingUp },
+    { key: "expense", label: "Expense", icon: TrendingDown },
+  ],
+  borrow: [{ key: "borrow", label: "Borrow", icon: HandCoins }],
+  repay: [{ key: "repay", label: "Repay", icon: Handshake }],
+}
+const txCategory: IconLabel[] = [
+  { key: "stock", label: "Stock", icon: Box },
+  { key: "cashflow", label: "Cashflow", icon: Banknote },
+  { key: "borrow", label: "Borrow", icon: HandCoins },
+  { key: "repay", label: "Repay", icon: Handshake },
+]
 
 export type Preset = (typeof withCustom)[number]["key"]
 
@@ -47,7 +84,7 @@ export function TxFilter({
     onFiltersChange({ ...filters, [key]: value })
   }
 
-  const currentOps = categoryOps[filters.categories] ?? []
+  const currentOps = txOperations[filters.categories] ?? []
   const hasSingleOp = currentOps.length === 1
 
   return (
@@ -58,7 +95,7 @@ export function TxFilter({
             value={filters.categories || "stock"}
             onValueChange={(v) => {
               if (v) {
-                const ops = categoryOps[v] ?? []
+                const ops = txOperations[v]
                 const nextOp = ops.length === 1 ? ops[0].key : "all"
                 onFiltersChange({
                   ...filters,
