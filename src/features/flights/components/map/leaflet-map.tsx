@@ -1,3 +1,6 @@
+"use client"
+
+import { useRef } from "react"
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet"
 import type { FeatureCollection, LineString } from "geojson"
 import type { RoutesGeoJSONProperties } from "@flight/actions/get-geojson-routes"
@@ -37,9 +40,14 @@ export default function LeafletMap({ routes, airports }: Props) {
   const frequencies = routes.features.map(f => f.properties?.route_frequency ?? 1)
   const maxFreq = Math.max(...frequencies, 1)
 
+  const mapKeyRef = useRef<string | null>(null)
+  if (mapKeyRef.current === null) {
+    mapKeyRef.current = crypto.randomUUID()
+  }
+
   return (
     <div className="h-full rounded-xl overflow-hidden">
-      <MapContainer center={[15, 105]} zoom={4} className="h-full w-full">
+      <MapContainer key={mapKeyRef.current} center={[15, 105]} zoom={4} className="h-full w-full">
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
 
         <GeoJSON

@@ -5,7 +5,6 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion"
-import { format } from "date-fns"
 import Image from "next/image"
 import {
   Item,
@@ -21,6 +20,7 @@ import { Plane, Calendar, Clock, ChevronRight } from "lucide-react"
 import { FlightItemMenu } from "../history/flight-item-menu"
 import type { Flight } from "./flight-config"
 import { FlightDetail } from "./flight-config"
+import { formatInTimeZone } from "date-fns-tz"
 
 // Re-export for consumers that import from here
 export type { Flight } from "./flight-config"
@@ -39,6 +39,26 @@ export function FlightItem({
   onDelete,
   onEditSuccess,
 }: FlightItemProps) {
+  const departureDate = formatInTimeZone(
+    flight.departure_time,
+    flight.departure_tz,
+    "yyyy-MM-dd",
+  )
+  const departureTime = formatInTimeZone(
+    flight.departure_time,
+    flight.departure_tz,
+    "HH:mm X",
+  )
+  const arrivalDate = formatInTimeZone(
+    flight.arrival_time,
+    flight.arrival_tz,
+    "yyyy-MM-dd",
+  )
+  const arrivalTime = formatInTimeZone(
+    flight.arrival_time,
+    flight.arrival_tz,
+    "HH:mm X",
+  )
   return (
     <AccordionItem value={itemKey} className="relative">
       <AccordionTrigger className="p-0 border-none hover:no-underline rounded-2xl [&>[data-slot=accordion-trigger-icon]]:hidden">
@@ -59,16 +79,16 @@ export function FlightItem({
           <ItemContent>
             <div className="flex gap-2">
               <Badge variant="secondary" className="hidden sm:block">
-                {flight.departure_airport_code}
+                {flight.departure_code}
               </Badge>
-              <ItemTitle>{flight.departure_airport_name}</ItemTitle>
+              <ItemTitle>{flight.departure_name}</ItemTitle>
             </div>
             <ItemDescription className="-ml-2">
               <Badge variant="ghost" className="pointer-events-none">
                 <Calendar />
-                {format(new Date(flight.departure_time), "yyyy-MM-dd")}
+                {departureDate}
                 <Clock />
-                {format(new Date(flight.departure_time), "HH:mm")}
+                {departureTime}
               </Badge>
             </ItemDescription>
           </ItemContent>
@@ -80,17 +100,17 @@ export function FlightItem({
           </ItemMedia>
           <ItemContent className="items-end">
             <div className="flex gap-2">
-              <ItemTitle>{flight.arrival_airport_name}</ItemTitle>
+              <ItemTitle>{flight.arrival_name}</ItemTitle>
               <Badge variant="secondary" className="hidden sm:block">
-                {flight.arrival_airport_code}
+                {flight.arrival_code}
               </Badge>
             </div>
             <ItemDescription className="-mr-2">
               <Badge variant="ghost" className="pointer-events-none">
                 <Calendar />
-                {format(new Date(flight.arrival_time), "yyyy-MM-dd")}
+                {arrivalDate}
                 <Clock />
-                {format(new Date(flight.arrival_time), "HH:mm")}
+                {arrivalTime}
               </Badge>
             </ItemDescription>
           </ItemContent>

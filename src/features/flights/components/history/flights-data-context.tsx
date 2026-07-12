@@ -52,7 +52,7 @@ export function FlightsDataProvider({
     fetchNextPage,
   } = useInfiniteQuery<Flight>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tableName: "flights_readable" as any,
+    tableName: "flights_summary" as any,
     columns: "*",
     pageSize: 12,
     schema: "flight",

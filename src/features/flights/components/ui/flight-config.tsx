@@ -10,7 +10,7 @@ import {
   Hash,
 } from "lucide-react"
 
-type FlightList = Database["flight"]["Views"]["flights_readable"]["Row"]
+type FlightList = Database["flight"]["Views"]["flights_summary"]["Row"]
 export type Flight = {
   [K in keyof FlightList]: NonNullable<FlightList[K]>
 }

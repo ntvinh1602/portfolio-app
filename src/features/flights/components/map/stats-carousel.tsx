@@ -40,7 +40,7 @@ export default function StatsCarousel({ stats }: { stats: LifetimeStats }) {
     },
     {
       title: "Aircraft Types",
-      figure: stats.airframe_count,
+      figure: stats.type_count,
       icon: Plane,
     },
     {
@@ -50,7 +50,7 @@ export default function StatsCarousel({ stats }: { stats: LifetimeStats }) {
     },
     {
       title: "Duration",
-      figure: stats.total_duration,
+      figure: `${stats.total_duration} hours`,
       icon: Clock,
     },
   ]

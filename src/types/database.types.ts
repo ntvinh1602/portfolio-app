@@ -217,14 +217,27 @@ export type Database = {
         }
         Relationships: []
       }
-      lifetime_stats: {
+      flights_summary: {
         Row: {
-          airframe_count: number | null
-          airports_count: number | null
-          country_count: number | null
-          flights_count: number | null
-          total_distance: number | null
-          total_duration: string | null
+          aircraft_type: string | null
+          airline_logo: string | null
+          airline_name: string | null
+          arrival_code: string | null
+          arrival_name: string | null
+          arrival_time: string | null
+          arrival_tz: string | null
+          departure_code: string | null
+          departure_name: string | null
+          departure_time: string | null
+          departure_tz: string | null
+          distance_km: number | null
+          duration: string | null
+          flight_number: string | null
+          id: string | null
+          seat_number: string | null
+          seat_position: Database["flight"]["Enums"]["seat_position"] | null
+          tail_number: string | null
+          ticket_class: Database["flight"]["Enums"]["ticket_class"] | null
           user_id: string | null
         }
         Relationships: []
@@ -271,6 +284,7 @@ export type Database = {
     }
     Enums: {
       seat_position: "window" | "middle" | "aisle"
+      seat_type: "eco" | "biz"
       ticket_class: "eco" | "biz"
     }
     CompositeTypes: {
@@ -1245,6 +1259,7 @@ export const Constants = {
   flight: {
     Enums: {
       seat_position: ["window", "middle", "aisle"],
+      seat_type: ["eco", "biz"],
       ticket_class: ["eco", "biz"],
     },
   },
