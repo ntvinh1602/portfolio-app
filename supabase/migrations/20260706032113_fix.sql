@@ -1,5 +1,4 @@
 SET check_function_bodies = false;
-DROP EXTENSION pg_graphql;
 CREATE OR REPLACE FUNCTION public.get_return_chart(p_start_date date, p_end_date date, p_threshold integer DEFAULT 150)
  RETURNS jsonb
  LANGUAGE plpgsql

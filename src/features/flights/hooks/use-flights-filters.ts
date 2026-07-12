@@ -14,7 +14,7 @@ interface FlightsQueryBuilder {
 const EMPTY_FILTERS: FilterState = {
   year: null,
   airline: null,
-  seatType: "eco",
+  ticketClass: "eco",
   search: "",
 }
 
@@ -33,7 +33,7 @@ export function useFlightsFilters() {
       if (filters.airline) {
         query = query.eq("airline_name", filters.airline)
       }
-      query = query.eq("seat_type", filters.seatType)
+      query = query.eq("ticket_class", filters.ticketClass)
       if (filters.search) {
         query = query.ilike("flight_number", `%${filters.search}%`)
       }
@@ -48,7 +48,7 @@ export function useFlightsFilters() {
       JSON.stringify({
         year: filters.year,
         airline: filters.airline,
-        seatType: filters.seatType,
+        seatType: filters.ticketClass,
         search: filters.search,
         refreshCounter,
       }),

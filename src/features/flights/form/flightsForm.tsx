@@ -5,12 +5,15 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { AddFlight } from "@flight/actions/add-flight"
+import { EditFlight } from "@flight/actions/edit-flight"
 import { TextField } from "@/components/form/text-field"
 import { SelectField } from "@/components/form/select-field"
 import { ComboboxField } from "@/components/form/combobox-field"
 import { DateTimeField } from "@/components/form/datetime-field"
-import { FieldDescription, FieldGroup, FieldTitle } from "@/components/ui/field"
+import { FieldGroup, FieldTitle } from "@/components/ui/field"
 import { flightSchema, type FlightFormValues } from "./schema"
+import { ticketClass } from "../components/ui/flight-item"
+import { ToggleGroupField } from "@/components/form/toggle-group-field"
 
 interface FlightFormProps {
   onSuccess?: () => void
@@ -20,6 +23,8 @@ interface FlightFormProps {
   airlineOptions: { value: string; label: string }[]
   aircraftOptions: { value: string; label: string }[]
   airportOptions: { value: string; label: string }[]
+  initialData?: Partial<FlightFormValues>
+  flightId?: string
 }
 
 export default function FlightForm({
@@ -30,18 +35,24 @@ export default function FlightForm({
   airlineOptions,
   aircraftOptions,
   airportOptions,
+  initialData,
+  flightId,
 }: FlightFormProps) {
   const form = useForm<FlightFormValues>({
     resolver: zodResolver(flightSchema),
     defaultValues: {
-      flightNumber: "",
-      airlineId: "",
-      aircraftId: "",
-      departureAirportId: "",
-      arrivalAirportId: "",
-      departureTimeLocal: "",
-      arrivalTimeLocal: "",
-      notes: "",
+      departureAirportId: initialData?.departureAirportId ?? "",
+      departureTimeLocal: initialData?.departureTimeLocal ?? "",
+      arrivalAirportId: initialData?.arrivalAirportId ?? "",
+      arrivalTimeLocal: initialData?.arrivalTimeLocal ?? "",
+      flightNumber: initialData?.flightNumber ?? "",
+      airlineId: initialData?.airlineId ?? "",
+      ticketClass: initialData?.ticketClass ?? "eco",
+      seatNo: initialData?.seatNo ?? null,
+      seatPos: initialData?.seatPos ?? null,
+      aircraftId: initialData?.aircraftId ?? null,
+      tailNo: initialData?.tailNo ?? null,
+      notes: initialData?.notes ?? null,
     },
   })
 
@@ -53,11 +64,17 @@ export default function FlightForm({
     onLoadingChange(true)
 
     try {
-      await AddFlight(values)
-
-      toast.success("Flight added successfully", {
-        description: `${values.flightNumber} created`,
-      })
+      if (flightId) {
+        await EditFlight(flightId, values)
+        toast.success("Flight updated successfully", {
+          description: `Flight number ${values.flightNumber} updated`,
+        })
+      } else {
+        await AddFlight(values)
+        toast.success("Flight added successfully", {
+          description: `Flight number ${values.flightNumber} created`,
+        })
+      }
 
       form.reset()
       onSuccess?.()
@@ -75,7 +92,7 @@ export default function FlightForm({
         message = (err as { message: string }).message
       }
 
-      toast.error("Failed to create flight", {
+      toast.error(flightId ? "Failed to update flight" : "Failed to create flight", {
         description: message,
       })
     } finally {
@@ -90,8 +107,8 @@ export default function FlightForm({
         <ComboboxField
           control={form.control}
           name="departureAirportId"
-          label="Departure Airport"
           items={airportOptions}
+          label="Departure Airport"
           placeholder="Departure airport"
           emptyPlaceholder="No airport found"
         />
@@ -105,8 +122,8 @@ export default function FlightForm({
         <ComboboxField
           control={form.control}
           name="arrivalAirportId"
-          label="Arrival Airport"
           items={airportOptions}
+          label="Arrival Airport"
           placeholder="Arrival airport"
           emptyPlaceholder="No airport found"
         />
@@ -126,26 +143,49 @@ export default function FlightForm({
         <SelectField<FlightFormValues>
           control={form.control}
           name="airlineId"
-          label="Airline"
           options={airlineOptions}
+          label="Airline"
           placeholder="Airlines"
+        />
+        <ToggleGroupField
+          control={form.control}
+          name="ticketClass"
+          options={ticketClass}
+        />
+        <TextField
+          control={form.control}
+          name="seatNo"
+          label="Seat Number"
+          placeholder="Seat number"
+        />
+        <ToggleGroupField
+          control={form.control}
+          name="seatPos"
+          options={[
+            { key: "window", label: "Window" },
+            { key: "middle", label: "Middle" },
+            { key: "aisle", label: "Aisle" },
+          ]}
         />
         <SelectField<FlightFormValues>
           control={form.control}
           name="aircraftId"
-          label="Aircraft"
           options={aircraftOptions}
-          placeholder="Aircraft type *"
+          label="Aircraft"
+          placeholder="Aircraft type"
+        />
+        <TextField
+          control={form.control}
+          name="tailNo"
+          label="Tail Number"
+          placeholder="Aircraft registration"
         />
         <TextField
           control={form.control}
           name="notes"
           label="Notes"
-          placeholder="Notes *"
+          placeholder="Notes"
         />
-        <FieldDescription className="text-end text-xs px-2">
-          * Optional data, can edit later
-        </FieldDescription>
       </FieldGroup>
     </form>
   )

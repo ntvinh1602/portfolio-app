@@ -1,48 +1,34 @@
 "use client"
 
-import { useCallback } from "react"
-import { InfiniteList } from "@/components/infinite-list"
-import { FlightItem } from "./flight-item"
-import { ItemGroup, ItemTitle } from "@/components/ui/item"
+import { useState } from "react"
 import StatusLabel from "@/components/status-label"
 import { useFlightsData } from "./flights-data-context"
+import { useDeleteFlight } from "@flight/hooks/use-delete-flight"
+import { FlightList } from "../ui/flight-list"
 
 export function FlightsListSection() {
   const {
-    state: { data, count, isSuccess, isLoading, isFetching, error, hasMore },
-    actions: { fetchNextPage },
+    state: { data, count, isLoading, isFetching, error, hasMore },
+    actions: { fetchNextPage, triggerRefresh },
   } = useFlightsData()
 
-  const renderEndMessage = useCallback(
-    (total: number) => (
-      <p className="text-sm text-muted-foreground">
-        You have reached the end — all {total} flights loaded.
-      </p>
-    ),
-    [],
-  )
+  const [openKey, setOpenKey] = useState("")
+  const deleteFlight = useDeleteFlight(triggerRefresh)
 
   if (error) return <StatusLabel type="error" />
 
   return (
-    <InfiniteList
-      hasMore={hasMore}
-      isFetching={isFetching}
-      isLoading={isLoading}
+    <FlightList
+      data={data}
       count={count ?? 0}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      hasMore={hasMore}
       fetchNextPage={fetchNextPage}
-      renderEndMessage={renderEndMessage}
-    >
-      <ItemGroup className="gap-2">
-        <ItemTitle className="pb-2">Found {data.length} flights</ItemTitle>
-        {data.map((flight, i) => (
-          <FlightItem
-            key={`${flight.flight_number}-${flight.departure_time}-${i}`}
-            flight={flight}
-            index={i}
-          />
-        ))}
-      </ItemGroup>
-    </InfiniteList>
+      onMutationSuccess={triggerRefresh}
+      openKey={openKey}
+      onOpenKeyChange={setOpenKey}
+      onDeleteFlight={deleteFlight}
+    />
   )
 }

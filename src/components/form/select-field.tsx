@@ -47,7 +47,7 @@ export function SelectField<T extends FieldValues>({
 
           <Select
             onValueChange={field.onChange}
-            value={field.value ?? ""} // ✅ ensure controlled value
+            value={field.value ?? undefined}
             disabled={disabled}
           >
             <SelectTrigger>

@@ -1,14 +1,15 @@
 "use client"
 
 import { useFlightsData } from "./flights-data-context"
-import { FlightFilter } from "./flight-filter"
+import { useFlightsOptions } from "./flights-options-context"
+import { FlightFilter } from "../ui/flight-filter"
 
 export function FlightsFilterSection() {
   const {
     state: { filters },
     actions: { setFilters },
-    options: { airlineFilterOptions, startYear },
   } = useFlightsData()
+  const { airlineFilterOptions, startYear } = useFlightsOptions()
 
   return (
     <FlightFilter

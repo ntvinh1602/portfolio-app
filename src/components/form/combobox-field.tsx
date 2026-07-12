@@ -44,12 +44,19 @@ export function ComboboxField<T extends FieldValues>({
     <Controller
       name={name}
       control={control}
-      render={({ fieldState }) => (
+      render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
           <FieldLabel className="sr-only">{label}</FieldLabel>
           <Combobox
             items={items}
-            itemToStringValue={(item: ComboboxOption) => item.label}
+            value={
+              field.value
+                ? (items.find((item) => item.value === field.value) ?? null)
+                : null
+            }
+            onValueChange={(item) => field.onChange(item?.value)}
+            itemToStringLabel={(item: ComboboxOption) => item.label}
+            isItemEqualToValue={(a, b) => a.value === b.value}
           >
             <ComboboxInput
               placeholder={placeholder}
@@ -60,7 +67,7 @@ export function ComboboxField<T extends FieldValues>({
               <ComboboxEmpty>{emptyPlaceholder}</ComboboxEmpty>
               <ComboboxList>
                 {(item) => (
-                  <ComboboxItem key={item.value} value={item.label}>
+                  <ComboboxItem key={item.value} value={item}>
                     {item.label}
                   </ComboboxItem>
                 )}

@@ -2,7 +2,7 @@ import { Users, Calendar } from "lucide-react"
 import { SelectAllEnabled } from "@/components/filter/select-options"
 import { FilterToggleGroup } from "@/components/filter/toggle-options"
 import { FilterSearch } from "@/components/filter/text-search"
-import { seatType } from "@flight/components/history/flight-item"
+import { ticketClass } from "./flight-item"
 import { FilterState } from "@flight/flight.types"
 import { FieldGroup } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
@@ -39,11 +39,11 @@ export function FlightFilter({
     <FieldGroup className="gap-4">
       <div className="w-full min-w-0 overflow-hidden border-b border-muted md:flex-1">
         <FilterToggleGroup
-          value={filters.seatType}
+          value={filters.ticketClass}
           onValueChange={(v) => {
-            if (v) setFilter("seatType", v)
+            if (v) setFilter("ticketClass", v)
           }}
-          options={seatType}
+          options={ticketClass}
         />
       </div>
 

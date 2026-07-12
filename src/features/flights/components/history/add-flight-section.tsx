@@ -1,21 +1,20 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { FormDialogWrapper } from "@/components/form/form-wrapper"
 import FlightForm from "@flight/form/flightsForm"
 import { PlusIcon } from "lucide-react"
-import { useAddFlight } from "./add-flight-context"
 import { useFlightsData } from "./flights-data-context"
+import { useFlightsOptions } from "./flights-options-context"
 
 export function AddFlightSection() {
-  const {
-    state: { open },
-    actions: { setOpen },
-  } = useAddFlight()
+  const [open, setOpen] = useState(false)
   const {
     actions: { triggerRefresh },
-    options: { airlineFormOptions, aircraftFormOptions, airportFormOptions },
   } = useFlightsData()
+  const { airlineFormOptions, aircraftFormOptions, airportFormOptions } =
+    useFlightsOptions()
 
   return (
     <>

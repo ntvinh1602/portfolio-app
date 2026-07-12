@@ -51,7 +51,7 @@ export function ToggleGroupField<T extends FieldValues>({
               <ToggleGroupItem
                 key={option.key}
                 value={option.key}
-                className="flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                className="flex-1"
               >
                 {option.icon && <option.icon />}
                 {option.label}

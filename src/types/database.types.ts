@@ -95,10 +95,10 @@ export type Database = {
           flight_number: string | null
           id: string
           notes: string | null
-          seat: string | null
+          seat_number: string | null
           seat_position: Database["flight"]["Enums"]["seat_position"] | null
-          seat_type: Database["flight"]["Enums"]["seat_type"] | null
           tail_number: string | null
+          ticket_class: Database["flight"]["Enums"]["ticket_class"] | null
           user_id: string | null
         }
         Insert: {
@@ -111,10 +111,10 @@ export type Database = {
           flight_number?: string | null
           id?: string
           notes?: string | null
-          seat?: string | null
+          seat_number?: string | null
           seat_position?: Database["flight"]["Enums"]["seat_position"] | null
-          seat_type?: Database["flight"]["Enums"]["seat_type"] | null
           tail_number?: string | null
+          ticket_class?: Database["flight"]["Enums"]["ticket_class"] | null
           user_id?: string | null
         }
         Update: {
@@ -127,10 +127,10 @@ export type Database = {
           flight_number?: string | null
           id?: string
           notes?: string | null
-          seat?: string | null
+          seat_number?: string | null
           seat_position?: Database["flight"]["Enums"]["seat_position"] | null
-          seat_type?: Database["flight"]["Enums"]["seat_type"] | null
           tail_number?: string | null
+          ticket_class?: Database["flight"]["Enums"]["ticket_class"] | null
           user_id?: string | null
         }
         Relationships: [
@@ -196,7 +196,7 @@ export type Database = {
     Views: {
       flights_readable: {
         Row: {
-          aircraft_model: string | null
+          aircraft_type: string | null
           airline_logo: string | null
           airline_name: string | null
           arrival_airport_code: string | null
@@ -208,10 +208,11 @@ export type Database = {
           distance_km: number | null
           duration: string | null
           flight_number: string | null
-          seat: string | null
+          id: string | null
+          seat_number: string | null
           seat_position: Database["flight"]["Enums"]["seat_position"] | null
-          seat_type: Database["flight"]["Enums"]["seat_type"] | null
           tail_number: string | null
+          ticket_class: Database["flight"]["Enums"]["ticket_class"] | null
           user_id: string | null
         }
         Relationships: []
@@ -252,20 +253,25 @@ export type Database = {
     Functions: {
       insert_flight_with_timezone: {
         Args: {
-          p_aircraft_id: string
+          p_aircraft_id?: string
           p_airline_id: string
           p_arrival_airport_id: string
           p_arrival_local: string
           p_departure_airport_id: string
           p_departure_local: string
           p_flight_number: string
+          p_notes?: string
+          p_seat_no?: string
+          p_seat_pos?: Database["flight"]["Enums"]["seat_position"]
+          p_tail_no?: string
+          p_ticket_class: Database["flight"]["Enums"]["ticket_class"]
         }
         Returns: undefined
       }
     }
     Enums: {
       seat_position: "window" | "middle" | "aisle"
-      seat_type: "eco" | "biz"
+      ticket_class: "eco" | "biz"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -381,6 +387,7 @@ export type Database = {
           account_no: string
           avg_price: number | null
           canceled_quantity: number
+          fee: number | null
           fill_quantity: number
           id: number
           leave_quantity: number
@@ -393,11 +400,13 @@ export type Database = {
           received_at: string
           side: Database["public"]["Enums"]["stock_ops"]
           symbol: string
+          tax: number | null
         }
         Insert: {
           account_no: string
           avg_price?: number | null
           canceled_quantity?: number
+          fee?: number | null
           fill_quantity?: number
           id: number
           leave_quantity?: number
@@ -410,11 +419,13 @@ export type Database = {
           received_at?: string
           side: Database["public"]["Enums"]["stock_ops"]
           symbol: string
+          tax?: number | null
         }
         Update: {
           account_no?: string
           avg_price?: number | null
           canceled_quantity?: number
+          fee?: number | null
           fill_quantity?: number
           id?: number
           leave_quantity?: number
@@ -427,6 +438,7 @@ export type Database = {
           received_at?: string
           side?: Database["public"]["Enums"]["stock_ops"]
           symbol?: string
+          tax?: number | null
         }
         Relationships: [
           {
@@ -550,21 +562,18 @@ export type Database = {
       }
       tx_borrow: {
         Row: {
-          is_paid: boolean
           lender: string
           principal: number
           rate: number
           tx_id: string
         }
         Insert: {
-          is_paid?: boolean
           lender: string
           principal: number
           rate: number
           tx_id: string
         }
         Update: {
-          is_paid?: boolean
           lender?: string
           principal?: number
           rate?: number
@@ -733,6 +742,13 @@ export type Database = {
             foreignKeyName: "tx_repay_borrow_tx_fkey"
             columns: ["borrow_tx"]
             isOneToOne: false
+            referencedRelation: "outstanding_debts"
+            referencedColumns: ["tx_id"]
+          },
+          {
+            foreignKeyName: "tx_repay_borrow_tx_fkey"
+            columns: ["borrow_tx"]
+            isOneToOne: false
             referencedRelation: "tx_borrow"
             referencedColumns: ["tx_id"]
           },
@@ -809,16 +825,22 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          avatar: string | null
+          display_name: string | null
           dnse_account_id: string | null
           inception_date: string
           user_id: string
         }
         Insert: {
+          avatar?: string | null
+          display_name?: string | null
           dnse_account_id?: string | null
           inception_date?: string
           user_id: string
         }
         Update: {
+          avatar?: string | null
+          display_name?: string | null
           dnse_account_id?: string | null
           inception_date?: string
           user_id?: string
@@ -830,6 +852,7 @@ export type Database = {
       balance_sheet: {
         Row: {
           asset_class: Database["public"]["Enums"]["asset_class"] | null
+          cost_basis: number | null
           currency_code: string | null
           logo_url: string | null
           mkt_price: number | null
@@ -914,6 +937,32 @@ export type Database = {
         }
         Relationships: []
       }
+      outstanding_debts: {
+        Row: {
+          accrued_interest: number | null
+          created_at: string | null
+          lender: string | null
+          principal: number | null
+          rate: number | null
+          tx_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tx_borrow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tx_borrow_tx_id_fkey"
+            columns: ["tx_id"]
+            isOneToOne: true
+            referencedRelation: "tx_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pnl_expense_all: {
         Row: {
           avg_expense: number | null
@@ -976,25 +1025,33 @@ export type Database = {
     Functions: {
       active_stock_tickers: { Args: never; Returns: Json }
       add_borrow_event: {
-        Args: { p_lender: string; p_principal: number; p_rate: number }
+        Args: {
+          p_created_at?: string
+          p_lender: string
+          p_principal: number
+          p_rate: number
+        }
         Returns: undefined
       }
       add_cashflow_event: {
         Args: {
           p_asset_id: string
+          p_created_at?: string
           p_fx_rate: number
           p_memo: string
           p_operation: string
           p_quantity: number
+          p_user_id?: string
         }
         Returns: undefined
       }
       add_repay_event: {
-        Args: { p_interest: number; p_repay_tx: string }
+        Args: { p_created_at?: string; p_interest: number; p_repay_tx: string }
         Returns: undefined
       }
       add_stock_event: {
         Args: {
+          p_created_at?: string
           p_fee: number
           p_price: number
           p_quantity: number
@@ -1188,7 +1245,7 @@ export const Constants = {
   flight: {
     Enums: {
       seat_position: ["window", "middle", "aisle"],
-      seat_type: ["eco", "biz"],
+      ticket_class: ["eco", "biz"],
     },
   },
   public: {

@@ -1,0 +1,48 @@
+create view flight.flights_readable
+with
+  (security_invoker = on) as
+select
+  f.user_id,
+  f.flight_number,
+  f.tail_number,
+  f.departure_time,
+  f.arrival_time,
+  dep.iata_code as departure_airport_code,
+  arr.iata_code as arrival_airport_code,
+  dep.name as departure_airport_name,
+  arr.name as arrival_airport_name,
+  al.name as airline_name,
+  al.logo as airline_logo,
+  ac.model as aircraft_model,
+  f.seat_number as seat,
+  f.ticket_class as seat_type,
+  f.seat_position,
+  r.distance_km,
+  concat(
+    floor(
+      EXTRACT(
+        epoch
+        from
+          f.arrival_time - f.departure_time
+      ) / 3600::numeric
+    ),
+    'h ',
+    floor(
+      EXTRACT(
+        epoch
+        from
+          f.arrival_time - f.departure_time
+      ) % 3600::numeric / 60::numeric
+    ),
+    'm'
+  ) as duration
+from
+  flight.flights f
+  left join flight.airlines al on al.id = f.airline_id
+  left join flight.aircrafts ac on ac.id = f.aircraft_id
+  left join flight.airports dep on dep.id = f.departure_airport_id
+  left join flight.airports arr on arr.id = f.arrival_airport_id
+  left join flight.routes_geojson r on r.airport_a_id = LEAST(f.departure_airport_id, f.arrival_airport_id)
+  and r.airport_b_id = GREATEST(f.departure_airport_id, f.arrival_airport_id)
+order by
+  f.departure_time desc;

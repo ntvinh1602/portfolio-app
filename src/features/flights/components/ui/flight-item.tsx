@@ -1,103 +1,50 @@
 "use client"
 
-import { useCallback } from "react"
+import {
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
 import { format } from "date-fns"
+import Image from "next/image"
 import {
   Item,
+  ItemGroup,
   ItemMedia,
   ItemContent,
   ItemTitle,
   ItemDescription,
   ItemSeparator,
-  ItemGroup,
 } from "@/components/ui/item"
-import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
-import type { Database } from "@/types/database.types"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { cn } from "@/lib/utils"
-import {
-  Leaf,
-  BriefcaseBusiness,
-  Users,
-  Armchair,
-  Star,
-  Clock,
-  Hash,
-  ChevronRight,
-  Plane,
-  Calendar,
-} from "lucide-react"
-import { useFlightItem } from "./flight-item-context"
+import { Plane, Calendar, Clock, ChevronRight } from "lucide-react"
+import { FlightItemMenu } from "../history/flight-item-menu"
+import type { Flight } from "./flight-config"
+import { FlightDetail } from "./flight-config"
 
-type FlightList = Database["flight"]["Views"]["flights_readable"]["Row"]
-export type Flight = {
-  [K in keyof FlightList]: NonNullable<FlightList[K]>
+// Re-export for consumers that import from here
+export type { Flight } from "./flight-config"
+export { ticketClass } from "./flight-config"
+
+interface FlightItemProps {
+  flight: Flight
+  itemKey: string
+  onDelete: () => void
+  onEditSuccess: () => void
 }
-export const seatType = [
-  { key: "eco", label: "Economy", icon: Leaf },
-  { key: "biz", label: "Business", icon: BriefcaseBusiness },
-] as const
-
-const FlightDetail = [
-  {
-    key: "tail",
-    icon: Hash,
-    getValue: (f: Flight) => f.tail_number,
-  },
-  {
-    key: "airline",
-    icon: Users,
-    getValue: (f: Flight) => f.airline_name,
-  },
-  {
-    key: "aircraft",
-    icon: Plane,
-    getValue: (f: Flight) => f.aircraft_model,
-  },
-  {
-    key: "duration",
-    icon: Clock,
-    getValue: (f: Flight) => f.duration,
-  },
-  {
-    key: "seat",
-    icon: Armchair,
-    getValue: (f: Flight) => `${f.seat} - ${f.seat_position}`,
-  },
-  {
-    key: "class",
-    icon: Star,
-    getValue: (f: Flight) =>
-      seatType.find((s) => s.key === f.seat_type)?.label ?? null,
-  },
-] as const
 
 export function FlightItem({
   flight,
-  index,
-}: {
-  flight: Flight
-  index: number
-}) {
-  const { state, actions } = useFlightItem()
-  const itemKey = `${flight.flight_number}-${flight.departure_time}-${index}`
-  const open = state.openKey === itemKey
-  const setOpen = useCallback(
-    (v: boolean) => actions.setOpenKey(v ? itemKey : null),
-    [actions, itemKey],
-  )
-
+  itemKey,
+  onDelete,
+  onEditSuccess,
+}: FlightItemProps) {
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
+    <AccordionItem value={itemKey} className="relative">
+      <AccordionTrigger className="p-0 border-none hover:no-underline rounded-2xl [&>[data-slot=accordion-trigger-icon]]:hidden">
         <Item
-          variant="outline"
-          className="cursor-pointer transition-colors hover:bg-accent/50"
+          variant="default"
+          className="cursor-pointer transition-colors hover:bg-accent/50 rounded-none"
         >
           <ItemMedia variant="image" className="hidden sm:block">
             <Image
@@ -120,8 +67,6 @@ export function FlightItem({
               <Badge variant="ghost" className="pointer-events-none">
                 <Calendar />
                 {format(new Date(flight.departure_time), "yyyy-MM-dd")}
-              </Badge>
-              <Badge variant="ghost" className="pointer-events-none">
                 <Clock />
                 {format(new Date(flight.departure_time), "HH:mm")}
               </Badge>
@@ -144,8 +89,6 @@ export function FlightItem({
               <Badge variant="ghost" className="pointer-events-none">
                 <Calendar />
                 {format(new Date(flight.arrival_time), "yyyy-MM-dd")}
-              </Badge>
-              <Badge variant="ghost" className="pointer-events-none">
                 <Clock />
                 {format(new Date(flight.arrival_time), "HH:mm")}
               </Badge>
@@ -153,21 +96,23 @@ export function FlightItem({
           </ItemContent>
           <ItemSeparator orientation="vertical" className="hidden sm:block" />
           <ChevronRight
-            className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
-              open && "rotate-90",
-            )}
+            data-slot="accordion-trigger-icon"
+            className="group-data-[state=open]/accordion-trigger:rotate-90 transition-transform duration-200"
           />
         </Item>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="px-2 md:px-4">
-        <ItemGroup className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-0 p-2">
+      </AccordionTrigger>
+      <AccordionContent className="h-full flex items-center border-t border-border pt-4">
+        <ItemGroup className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {FlightDetail.map((detail) => {
             const value = detail.getValue(flight)
             if (!value) return null
-
             return (
-              <Item key={detail.key} size="xs" className="p-1">
+              <Item
+                key={detail.key}
+                size="xs"
+                className="p-1"
+                variant="default"
+              >
                 <ItemMedia variant="icon" className="text-muted-foreground">
                   <detail.icon />
                 </ItemMedia>
@@ -180,7 +125,12 @@ export function FlightItem({
             )
           })}
         </ItemGroup>
-      </CollapsibleContent>
-    </Collapsible>
+        <FlightItemMenu
+          flight={flight}
+          onDelete={onDelete}
+          onEditSuccess={onEditSuccess}
+        />
+      </AccordionContent>
+    </AccordionItem>
   )
 }

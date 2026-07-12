@@ -1,9 +1,9 @@
 "use client"
 
-import { createContext, use } from "react"
+import { createContext, use, useMemo } from "react"
 import { useFlightsFilters } from "@flight/hooks/use-flights-filters"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
-import type { Flight } from "./flight-item"
+import type { Flight } from "../ui/flight-item"
 
 interface FlightsDataContextValue {
   state: {
@@ -24,31 +24,14 @@ interface FlightsDataContextValue {
   meta: {
     trailingQueryKey: string
   }
-  options: {
-    airlineFilterOptions: { label: string; value: string }[]
-    startYear: number
-    airlineFormOptions: { label: string; value: string }[]
-    aircraftFormOptions: { label: string; value: string }[]
-    airportFormOptions: { label: string; value: string }[]
-  }
 }
 
 const FlightsDataContext = createContext<FlightsDataContextValue | null>(null)
 
 export function FlightsDataProvider({
   children,
-  airlineFilterOptions,
-  startYear,
-  airlineFormOptions,
-  aircraftFormOptions,
-  airportFormOptions,
 }: {
   children: React.ReactNode
-  airlineFilterOptions: { label: string; value: string }[]
-  startYear: number
-  airlineFormOptions: { label: string; value: string }[]
-  aircraftFormOptions: { label: string; value: string }[]
-  airportFormOptions: { label: string; value: string }[]
 }) {
   const {
     filters,
@@ -78,36 +61,45 @@ export function FlightsDataProvider({
     trailingQueryKey,
   })
 
+  const value = useMemo<FlightsDataContextValue>(
+    () => ({
+      state: {
+        data: flights,
+        count,
+        isSuccess,
+        isLoading,
+        isFetching,
+        error,
+        hasMore,
+        filters,
+      },
+      actions: {
+        fetchNextPage,
+        setFilters,
+        triggerRefresh,
+      },
+      meta: {
+        trailingQueryKey,
+      },
+    }),
+    [
+      flights,
+      count,
+      isSuccess,
+      isLoading,
+      isFetching,
+      error,
+      hasMore,
+      filters,
+      fetchNextPage,
+      setFilters,
+      triggerRefresh,
+      trailingQueryKey,
+    ],
+  )
+
   return (
-    <FlightsDataContext.Provider
-      value={{
-        state: {
-          data: flights,
-          count,
-          isSuccess,
-          isLoading,
-          isFetching,
-          error,
-          hasMore,
-          filters,
-        },
-        actions: {
-          fetchNextPage,
-          setFilters,
-          triggerRefresh,
-        },
-        meta: {
-          trailingQueryKey,
-        },
-        options: {
-          airlineFilterOptions,
-          startYear,
-          airlineFormOptions,
-          aircraftFormOptions,
-          airportFormOptions,
-        },
-      }}
-    >
+    <FlightsDataContext.Provider value={value}>
       {children}
     </FlightsDataContext.Provider>
   )

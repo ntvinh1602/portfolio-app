@@ -10,7 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { CalendarIcon, ClockIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,8 @@ type DateTimeFieldProps<T extends FieldValues> = {
 }
 
 function formatLocalDateTime(date: Date) {
+  if (isNaN(date.getTime())) return ""
+
   const pad = (n: number) => n.toString().padStart(2, "0")
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
@@ -40,10 +42,12 @@ function formatDisplay(
 
   const date = parseISO(dateString)
 
+  if (isNaN(date.getTime())) return placeholder
+
   return format(date, "dd MMM yyyy, HH:mm")
 }
 
-function DateTimeFieldInner({
+function DateTimePicker({
   field,
   label,
   placeholder,
@@ -86,45 +90,42 @@ function DateTimeFieldInner({
   }
 
   return (
-    <Field>
-      <FieldLabel className="sr-only">{label}</FieldLabel>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="secondary"
-            className={cn(
-              "justify-between",
-              !field.value && "text-muted-foreground",
-            )}
-          >
-            {formatDisplay(field.value, placeholder)}
-            <CalendarIcon />
-          </Button>
-        </PopoverTrigger>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="secondary"
+          className={cn(
+            "justify-between",
+            !field.value && "text-muted-foreground",
+          )}
+        >
+          {formatDisplay(field.value, placeholder)}
+          <CalendarIcon />
+        </Button>
+      </PopoverTrigger>
 
-        <PopoverContent className="w-auto p-0" align="center">
-          <Calendar
-            mode="single"
-            captionLayout="dropdown"
-            weekStartsOn={1}
-            defaultMonth={value}
-            selected={value}
-            onSelect={handleDateChange}
+      <PopoverContent className="w-auto p-0" align="center">
+        <Calendar
+          mode="single"
+          captionLayout="dropdown"
+          weekStartsOn={1}
+          defaultMonth={value}
+          selected={value}
+          onSelect={handleDateChange}
+        />
+
+        <div className="flex items-center gap-2 px-4 pb-2">
+          <ClockIcon className="stroke-1" />
+          <Input
+            type="time"
+            step="1"
+            value={time}
+            onChange={handleTimeChange}
           />
-
-          <div className="flex items-center gap-2 px-4 pb-2">
-            <ClockIcon className="stroke-1" />
-            <Input
-              type="time"
-              step="1"
-              value={time}
-              onChange={handleTimeChange}
-            />
-          </div>
-        </PopoverContent>
-      </Popover>
-    </Field>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -138,12 +139,16 @@ export function DateTimeField<T extends FieldValues>({
     <Controller
       control={control}
       name={name}
-      render={({ field }) => (
-        <DateTimeFieldInner
-          field={field}
-          label={label}
-          placeholder={placeholder}
-        />
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel className="sr-only">{label}</FieldLabel>
+          <DateTimePicker
+            field={field}
+            label={label}
+            placeholder={placeholder}
+          />
+          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+        </Field>
       )}
     />
   )

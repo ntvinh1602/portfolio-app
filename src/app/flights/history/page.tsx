@@ -1,16 +1,17 @@
 import { Suspense } from "react"
-import { AddFlightProvider } from "@flight/components/history/add-flight-context"
 import { FlightsDataProvider } from "@flight/components/history/flights-data-context"
-import { FlightItemProvider } from "@flight/components/history/flight-item-context"
+import { FlightsOptionsProvider } from "@flight/components/history/flights-options-context"
 import { FlightsHistory } from "@flight/components/history/flights-history"
 import getAirlines from "@flight/actions/get-airlines"
 import getAircrafts from "@flight/actions/get-aircrafts"
 import getAirports from "@flight/actions/get-airports"
 import { Spinner } from "@/components/ui/spinner"
 
+const historyFallback = <Spinner />
+
 export default function FlightsHistoryPage() {
   return (
-    <Suspense fallback={<Spinner />}>
+    <Suspense fallback={historyFallback}>
       <FlightsHistoryData />
     </Suspense>
   )
@@ -29,35 +30,33 @@ async function FlightsHistoryData() {
     value: a.name,
   }))
 
-  // Compute form options (value = id for database references)
+  // Compute form options (value = string id for form field compatibility)
   const airlineFormOptions = airlines.map((a) => ({
     label: a.name,
-    value: a.id,
+    value: String(a.id),
   }))
 
   const aircraftFormOptions = aircrafts.map((a) => ({
     label: a.model ? `${a.icao_code} — ${a.model}` : a.icao_code,
-    value: a.id,
+    value: String(a.id),
   }))
 
   const airportFormOptions = airports.map((a) => ({
     label: `${a.iata_code} — ${a.name}`,
-    value: a.id,
+    value: String(a.id),
   }))
 
   return (
-    <FlightsDataProvider
+    <FlightsOptionsProvider
       airlineFilterOptions={airlineFilterOptions}
       startYear={2019}
       airlineFormOptions={airlineFormOptions}
       aircraftFormOptions={aircraftFormOptions}
       airportFormOptions={airportFormOptions}
     >
-      <AddFlightProvider>
-        <FlightItemProvider>
-          <FlightsHistory />
-        </FlightItemProvider>
-      </AddFlightProvider>
-    </FlightsDataProvider>
+      <FlightsDataProvider>
+        <FlightsHistory />
+      </FlightsDataProvider>
+    </FlightsOptionsProvider>
   )
 }
