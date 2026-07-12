@@ -20,7 +20,7 @@ import { txOperations } from "../components/ui/tx-filter"
 
 type FormValues = z.infer<typeof stockSchema>
 
-export const stockOps = txOperations.cashflow.map(({ key, label }) => ({
+export const stockOps = txOperations.stock.map(({ key, label }) => ({
   key,
   label,
 }))

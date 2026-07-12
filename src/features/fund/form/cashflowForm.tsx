@@ -15,7 +15,6 @@ import { cashflowSchema } from "./schema"
 import { ToggleGroupField } from "@/components/form/toggle-group-field"
 import { SelectField } from "@/components/form/select-field"
 import { txOperations } from "../components/ui/tx-filter"
-import { stockOps } from "./stockForm"
 
 type FormValues = z.infer<typeof cashflowSchema>
 
@@ -154,7 +153,7 @@ export function CashflowForm({
           <ToggleGroupField
             control={form.control}
             name="operation"
-            options={stockOps}
+            options={cashflowOps}
           />
         </div>
 
