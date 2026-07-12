@@ -194,29 +194,6 @@ export type Database = {
       }
     }
     Views: {
-      flights_readable: {
-        Row: {
-          aircraft_type: string | null
-          airline_logo: string | null
-          airline_name: string | null
-          arrival_airport_code: string | null
-          arrival_airport_name: string | null
-          arrival_time: string | null
-          departure_airport_code: string | null
-          departure_airport_name: string | null
-          departure_time: string | null
-          distance_km: number | null
-          duration: string | null
-          flight_number: string | null
-          id: string | null
-          seat_number: string | null
-          seat_position: Database["flight"]["Enums"]["seat_position"] | null
-          tail_number: string | null
-          ticket_class: Database["flight"]["Enums"]["ticket_class"] | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
       flights_summary: {
         Row: {
           aircraft_type: string | null
@@ -238,6 +215,18 @@ export type Database = {
           seat_position: Database["flight"]["Enums"]["seat_position"] | null
           tail_number: string | null
           ticket_class: Database["flight"]["Enums"]["ticket_class"] | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      lifetime_stats: {
+        Row: {
+          airports_count: number | null
+          country_count: number | null
+          flights_count: number | null
+          total_distance: number | null
+          total_duration: number | null
+          type_count: number | null
           user_id: string | null
         }
         Relationships: []

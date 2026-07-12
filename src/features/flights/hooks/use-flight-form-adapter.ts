@@ -28,11 +28,11 @@ export function useFlightFormAdapter({
       })
       const matchingDeparture = airportFormOptions.find((opt) => {
         const name = opt.label.split(" — ")[1]
-        return name === flight.departure_airport_name
+        return name === flight.departure_name
       })
       const matchingArrival = airportFormOptions.find((opt) => {
         const name = opt.label.split(" — ")[1]
-        return name === flight.arrival_airport_name
+        return name === flight.arrival_name
       })
 
       return {

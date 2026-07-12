@@ -56,17 +56,12 @@ export function LoginForm({
             <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <ClipboardPen className="size-4" />
             </div>
-            <span className="sr-only">Master Ledger</span>
+            <span className="sr-only">Welcome back to Logbook</span>
             <h1 className="text-xl font-bold">Welcome to Logbook</h1>
 
             <FieldDescription>
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                Sign up
-              </Link>
+              Don&apos;t have an account?
+              Contact admin.
             </FieldDescription>
           </div>
         </CardHeader>
