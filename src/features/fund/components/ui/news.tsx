@@ -19,42 +19,53 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import StatusLabel from "@/components/status-label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NewsItemSkeleton } from "@/components/skeletons/item"
+import { useState } from "react"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import StatusLabel from "@/components/status-label"
+import { Clock, Newspaper } from "lucide-react"
+
+type NewsWidgetProps = {
+  allNews: NewsArticle[]
+  portfolioNews: NewsArticle[]
+}
 
 function ArticleList({ articles }: { articles: NewsArticle[] }) {
   const now = new Date()
+
+  if (articles.length == 0) return <StatusLabel type="empty" />
+
   return (
-    <ItemGroup>
+    <ItemGroup className="gap-2">
       {articles.map((article) => (
         <Item
           key={article.id}
           variant="muted"
-          size="sm"
+          size="default"
           className="cursor-pointer hover:bg-accent transition-colors"
           onClick={() => window.open(article.url, "_blank")}
         >
-          <ItemMedia className="flex flex-col gap-1 min-w-10">
-            {(article.tickers ?? []).slice(0, 1).map((ticker) => (
-              <Badge key={ticker}>{ticker}</Badge>
-            ))}
-            {(article.tickers?.length ?? 0) > 1 && (
-              <span className="text-xs">+{article.tickers!.length - 1}</span>
-            )}
+          <ItemMedia>
+            <Badge>{article.tickers && article.tickers[0]}</Badge>
           </ItemMedia>
           <ItemContent>
             <ItemTitle>{article.title}</ItemTitle>
             <ItemDescription className="text-xs">
               {article.excerpt}
             </ItemDescription>
-            <ItemDescription className="text-xs">
-              {article.source} -{" "}
-              {now &&
-                formatDistance(new Date(article.published_at), now, {
-                  addSuffix: true,
-                })}
+            <ItemDescription className="-ml-2">
+              <Badge variant="ghost">
+                <Newspaper />
+                {article.source}
+              </Badge>
+              <Badge variant="ghost">
+                <Clock />
+                {now &&
+                  formatDistance(new Date(article.published_at), now, {
+                    addSuffix: true,
+                  })}
+              </Badge>
             </ItemDescription>
           </ItemContent>
         </Item>
@@ -63,69 +74,35 @@ function ArticleList({ articles }: { articles: NewsArticle[] }) {
   )
 }
 
-function NewsTabContent({ articles }: { articles: NewsArticle[] }) {
-  if (articles.length === 0) {
-    return (
-      <div className="flex h-full w-full flex-1 items-center justify-center">
-        <StatusLabel type="empty" />
-      </div>
-    )
-  }
-
-  return (
-    <ScrollArea className="h-full w-full">
-      <ArticleList articles={articles} />
-    </ScrollArea>
-  )
-}
-
-type NewsWidgetProps = {
-  allNews: NewsArticle[]
-  portfolioNews: NewsArticle[]
-}
-
 export function NewsWidget({ allNews, portfolioNews }: NewsWidgetProps) {
-  const tabs = [
-    { value: "all", label: "All news", articles: allNews },
-    {
-      value: "portfolio",
-      label: "Portfolio related",
-      articles: portfolioNews,
-    },
-  ]
+  const [selected, setSelected] = useState<"all" | "portfolio">("all")
+  const articles = selected === "all" ? allNews : portfolioNews
 
   return (
-    <Tabs defaultValue="all">
-      <Card className="h-120">
-        <CardHeader>
-          <CardTitle>Market Pulse</CardTitle>
-          <CardAction>
-            <TabsList className="w-fit rounded-3xl">
-              {tabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="rounded-2xl"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="flex flex-1 min-h-0 flex-col">
-          {tabs.map((tab) => (
-            <TabsContent
-              key={tab.value}
-              value={tab.value}
-              className="mt-0 flex flex-1 min-h-0 w-full flex-col"
-            >
-              <NewsTabContent articles={tab.articles} />
-            </TabsContent>
-          ))}
-        </CardContent>
-      </Card>
-    </Tabs>
+    <Card className="h-120">
+      <CardHeader>
+        <CardTitle>Market Pulse</CardTitle>
+        <CardAction>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={selected}
+            onValueChange={(value) => {
+              if (value) setSelected(value as "all" | "portfolio")
+            }}
+            spacing={0}
+          >
+            <ToggleGroupItem value="all">All news</ToggleGroupItem>
+            <ToggleGroupItem value="portfolio">Portfolio only</ToggleGroupItem>
+          </ToggleGroup>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex min-h-0 flex-1 flex-col">
+        <ScrollArea className="h-full w-full">
+          <ArticleList articles={articles} />
+        </ScrollArea>
+      </CardContent>
+    </Card>
   )
 }
 
