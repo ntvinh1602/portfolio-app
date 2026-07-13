@@ -19,10 +19,9 @@ interface FlightListProps {
   isFetching: boolean
   hasMore: boolean
   fetchNextPage: () => void
-  onMutationSuccess: () => void
   openKey: string
   onOpenKeyChange: (key: string) => void
-  onDeleteFlight: (flightId: string) => void
+  renderMenu: (flight: Flight) => React.ReactNode
 }
 
 export function FlightList({
@@ -32,10 +31,9 @@ export function FlightList({
   isFetching,
   hasMore,
   fetchNextPage,
-  onMutationSuccess,
   openKey,
   onOpenKeyChange,
-  onDeleteFlight,
+  renderMenu,
 }: FlightListProps) {
   return (
     <InfiniteList
@@ -62,8 +60,7 @@ export function FlightList({
                 key={itemKey}
                 flight={flight}
                 itemKey={itemKey}
-                onDelete={() => onDeleteFlight(flight.id)}
-                onEditSuccess={onMutationSuccess}
+                menuSlot={renderMenu(flight)}
               />
             )
           })}

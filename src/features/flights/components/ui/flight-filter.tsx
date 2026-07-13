@@ -41,7 +41,7 @@ export function FlightFilter({
         <FilterToggleGroup
           value={filters.ticketClass}
           onValueChange={(v) => {
-            if (v) setFilter("ticketClass", v)
+            if (v) setFilter("ticketClass", v as FilterState["ticketClass"])
           }}
           options={ticketClass}
         />

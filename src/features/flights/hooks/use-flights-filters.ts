@@ -2,14 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import type { FilterState } from "@flight/flight.types"
-
-interface FlightsQueryBuilder {
-  gte(column: string, value: string): this
-  lte(column: string, value: string): this
-  eq(column: string, value: string): this
-  ilike(column: string, value: string): this
-  order(column: string, opts: { ascending: boolean }): this
-}
+import type { SupabaseQueryHandler } from "@/hooks/use-infinite-query"
 
 const EMPTY_FILTERS: FilterState = {
   year: null,
@@ -23,8 +16,10 @@ export function useFlightsFilters() {
   const [refreshCounter, setRefreshCounter] = useState(0)
 
   // Build a trailing query that applies all active filters
-  const trailingQuery = useCallback(
-    (query: FlightsQueryBuilder) => {
+  const trailingQuery = useCallback<
+    SupabaseQueryHandler<"flights_summary", "flight">
+  >(
+    (query) => {
       if (filters.year) {
         query = query
           .gte("departure_time", `${filters.year}-01-01`)
@@ -48,7 +43,7 @@ export function useFlightsFilters() {
       JSON.stringify({
         year: filters.year,
         airline: filters.airline,
-        seatType: filters.ticketClass,
+        ticketClass: filters.ticketClass,
         search: filters.search,
         refreshCounter,
       }),

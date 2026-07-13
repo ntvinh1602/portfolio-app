@@ -1,119 +1,105 @@
 "use client"
 
-import {
-  PostgrestQueryBuilder,
-  type PostgrestClientOptions,
-} from "@supabase/postgrest-js"
-import { type SupabaseClient } from "@supabase/supabase-js"
 import { useEffect, useMemo, useSyncExternalStore } from "react"
 
 import { createClient } from "@/lib/supabase/client"
+import type { Database } from "@/types/database.types"
 
 const supabase = createClient()
 
-// The following types are used to make the hook type-safe. It extracts the database type from the supabase client.
-type SupabaseClientType = typeof supabase
+type SupabaseSchemaName = keyof Database
 
-// Utility type to check if the type is any
-type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
+type DatabaseSchema<TSchema extends SupabaseSchemaName> = Database[TSchema]
 
-// Extracts the database type from the supabase client. If the supabase client doesn't have a type, it will fallback properly.
-// Fallback types when the Supabase client has no generated types.
-// These must satisfy GenericSchema from @supabase/postgrest-js.
-type GenericFallbackRelationship = {
-  foreignKeyName: string
-  columns: string[]
-  isOneToOne?: boolean
-  referencedRelation: string
-  referencedColumns: string[]
+type SupabaseRelationName<TSchema extends SupabaseSchemaName> = keyof (
+  DatabaseSchema<TSchema>["Tables"] & DatabaseSchema<TSchema>["Views"]
+) &
+  string
+
+type SupabaseRelation<
+  TSchema extends SupabaseSchemaName,
+  TRelation extends SupabaseRelationName<TSchema>,
+> = (
+  DatabaseSchema<TSchema>["Tables"] & DatabaseSchema<TSchema>["Views"]
+)[TRelation]
+
+type SupabaseTableData<
+  TSchema extends SupabaseSchemaName,
+  TRelation extends SupabaseRelationName<TSchema>,
+> = SupabaseRelation<TSchema, TRelation> extends { Row: infer TRow }
+  ? TRow
+  : never
+
+type ComparableValue = string | number | boolean
+
+type ComparableColumnName<TData> = {
+  [TKey in keyof TData]: NonNullable<TData[TKey]> extends ComparableValue
+    ? TKey
+    : never
+}[keyof TData] &
+  string
+
+type StringColumnName<TData> = {
+  [TKey in keyof TData]: NonNullable<TData[TKey]> extends string ? TKey : never
+}[keyof TData] &
+  string
+
+type SupabaseSelectBuilder<
+  TSchema extends SupabaseSchemaName,
+  TRelation extends SupabaseRelationName<TSchema>,
+> = {
+  gte: <TKey extends ComparableColumnName<SupabaseTableData<TSchema, TRelation>>>(
+    column: TKey,
+    value: ComparableValue,
+  ) => SupabaseSelectBuilder<TSchema, TRelation>
+  lte: <TKey extends ComparableColumnName<SupabaseTableData<TSchema, TRelation>>>(
+    column: TKey,
+    value: ComparableValue,
+  ) => SupabaseSelectBuilder<TSchema, TRelation>
+  eq: <TKey extends ComparableColumnName<SupabaseTableData<TSchema, TRelation>>>(
+    column: TKey,
+    value: ComparableValue,
+  ) => SupabaseSelectBuilder<TSchema, TRelation>
+  ilike: <TKey extends StringColumnName<SupabaseTableData<TSchema, TRelation>>>(
+    column: TKey,
+    value: string,
+  ) => SupabaseSelectBuilder<TSchema, TRelation>
+  order: (column: keyof SupabaseTableData<TSchema, TRelation> & string, opts: {
+    ascending: boolean
+  }) => SupabaseSelectBuilder<TSchema, TRelation>
+  range: (
+    from: number,
+    to: number,
+  ) => Promise<{
+    data: SupabaseTableData<TSchema, TRelation>[] | null
+    count: number | null
+    error: Error | null
+  }>
 }
-
-type GenericFallbackTable = {
-  Row: Record<string, unknown>
-  Insert: Record<string, unknown>
-  Update: Record<string, unknown>
-  Relationships: GenericFallbackRelationship[]
-}
-
-type GenericFallbackView = {
-  Row: Record<string, unknown>
-  Relationships: GenericFallbackRelationship[]
-}
-
-type GenericFallbackFunction = {
-  Args: Record<string, unknown> | never
-  Returns: unknown
-  SetofOptions?: {
-    isSetofReturn?: boolean
-    isOneToOne?: boolean
-    isNotNullable?: boolean
-    to: string
-    from: string
-  }
-}
-
-type Database =
-  SupabaseClientType extends SupabaseClient<infer U>
-    ? IfAny<
-        U,
-        {
-          public: {
-            Tables: Record<string, GenericFallbackTable>
-            Views: Record<string, GenericFallbackView>
-            Functions: Record<string, GenericFallbackFunction>
-          }
-        },
-        U
-      >
-    : {
-        public: {
-          Tables: Record<string, GenericFallbackTable>
-          Views: Record<string, GenericFallbackView>
-          Functions: Record<string, GenericFallbackFunction>
-        }
-      }
-
-// Change this to the database schema you want to use
-type DatabaseSchema = Database["public"]
-
-// Extracts the table names from the database type
-type SupabaseTableName = keyof DatabaseSchema["Tables"]
-
-// Extracts the table definition from the database type
-type SupabaseTableData<T extends SupabaseTableName> =
-  DatabaseSchema["Tables"][T]["Row"]
-
-// Default client options for PostgrestQueryBuilder
-type DefaultClientOptions = PostgrestClientOptions
-
-type SupabaseSelectBuilder<T extends SupabaseTableName> = ReturnType<
-  PostgrestQueryBuilder<
-    DefaultClientOptions,
-    DatabaseSchema,
-    DatabaseSchema["Tables"][T],
-    T
-  >["select"]
->
 
 // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
-type SupabaseQueryHandler<T extends SupabaseTableName> = (
-  query: SupabaseSelectBuilder<T>,
-) => SupabaseSelectBuilder<T>
+type SupabaseQueryHandler<
+  TRelation extends SupabaseRelationName<TSchema>,
+  TSchema extends SupabaseSchemaName = "public",
+> = (
+  query: SupabaseSelectBuilder<TSchema, TRelation>,
+) => SupabaseSelectBuilder<TSchema, TRelation>
 
 interface UseInfiniteQueryProps<
-  T extends SupabaseTableName,
-  Query extends string = "*",
+  TSchema extends SupabaseSchemaName = "public",
+  TRelation extends SupabaseRelationName<TSchema> =
+    SupabaseRelationName<TSchema>,
 > {
   // The table name to query
-  tableName: T
+  tableName: TRelation
   // The columns to select, defaults to `*`
   columns?: string
   // The number of items to fetch per page, defaults to `20`
   pageSize?: number
   // Optional database schema name (e.g. "flight"). Defaults to "public".
-  schema?: string
+  schema?: TSchema
   // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
-  trailingQuery?: SupabaseQueryHandler<T>
+  trailingQuery?: SupabaseQueryHandler<TRelation, TSchema>
   // Optional key that identifies the current trailing query shape (e.g. filters/sort/search).
   // When this changes, the internal store is recreated so stale paginated rows are discarded.
   trailingQueryKey?: unknown
@@ -131,18 +117,22 @@ interface StoreState<TData> {
 
 type Listener = () => void
 
-interface StoreProps<T extends SupabaseTableName> {
-  tableName: T
+interface StoreProps<
+  TSchema extends SupabaseSchemaName,
+  TRelation extends SupabaseRelationName<TSchema>,
+> {
+  tableName: TRelation
   columns?: string
   pageSize?: number
-  schema?: string
-  getTrailingQuery: () => SupabaseQueryHandler<T> | undefined
+  schema?: TSchema
+  getTrailingQuery: () => SupabaseQueryHandler<TRelation, TSchema> | undefined
 }
 
 function createStore<
-  TData extends SupabaseTableData<T>,
-  T extends SupabaseTableName,
->(props: StoreProps<T>) {
+  TData extends object,
+  TSchema extends SupabaseSchemaName,
+  TRelation extends SupabaseRelationName<TSchema>,
+>(props: StoreProps<TSchema, TRelation>) {
   const {
     tableName,
     columns = "*",
@@ -184,7 +174,10 @@ function createStore<
     let query = (schemaName
       ? supabase.schema(schemaName).from(tableName)
       : supabase.from(tableName)
-    ).select(columns, { count: "exact" }) as unknown as SupabaseSelectBuilder<T>
+    ).select(columns, { count: "exact" }) as unknown as SupabaseSelectBuilder<
+      TSchema,
+      TRelation
+    >
 
     const trailingQuery = getTrailingQuery()
     if (trailingQuery) {
@@ -244,9 +237,11 @@ const initialState: StoreState<unknown> = {
 }
 
 function useInfiniteQuery<
-  TData extends SupabaseTableData<T>,
-  T extends SupabaseTableName = SupabaseTableName,
->(props: UseInfiniteQueryProps<T>) {
+  TData extends object,
+  TSchema extends SupabaseSchemaName = "public",
+  TRelation extends SupabaseRelationName<TSchema> =
+    SupabaseRelationName<TSchema>,
+>(props: UseInfiniteQueryProps<TSchema, TRelation>) {
   const tableName = props.tableName
   const columns = props.columns ?? "*"
   const pageSize = props.pageSize ?? 20
@@ -255,14 +250,18 @@ function useInfiniteQuery<
   const trailingQueryKey = props.trailingQueryKey
 
   const store = useMemo(
-    () =>
-      createStore<TData, T>({
+    () => {
+      // Recreate the store when the serialized query shape changes.
+      void trailingQueryKey
+
+      return createStore<TData, TSchema, TRelation>({
         tableName,
         columns,
         pageSize,
         schema,
         getTrailingQuery: () => trailingQuery,
-      }),
+      })
+    },
     [tableName, columns, pageSize, schema, trailingQuery, trailingQueryKey],
   )
 
@@ -294,6 +293,6 @@ export {
   useInfiniteQuery,
   type SupabaseQueryHandler,
   type SupabaseTableData,
-  type SupabaseTableName,
+  type SupabaseRelationName,
   type UseInfiniteQueryProps,
 }

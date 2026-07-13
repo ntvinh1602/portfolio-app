@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, use } from "react"
+import { createContext, use, useMemo } from "react"
 
 interface FlightsOptionsContextValue {
   airlineFilterOptions: { label: string; value: string }[]
@@ -15,10 +15,31 @@ const FlightsOptionsContext =
 
 export function FlightsOptionsProvider({
   children,
-  ...options
+  airlineFilterOptions,
+  startYear,
+  airlineFormOptions,
+  aircraftFormOptions,
+  airportFormOptions,
 }: FlightsOptionsContextValue & { children: React.ReactNode }) {
+  const value = useMemo<FlightsOptionsContextValue>(
+    () => ({
+      airlineFilterOptions,
+      startYear,
+      airlineFormOptions,
+      aircraftFormOptions,
+      airportFormOptions,
+    }),
+    [
+      airlineFilterOptions,
+      startYear,
+      airlineFormOptions,
+      aircraftFormOptions,
+      airportFormOptions,
+    ],
+  )
+
   return (
-    <FlightsOptionsContext.Provider value={options}>
+    <FlightsOptionsContext.Provider value={value}>
       {children}
     </FlightsOptionsContext.Provider>
   )

@@ -1,0 +1,1 @@
+select public.recompute_daily_snapshots(null, null);  -- full build once

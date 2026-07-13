@@ -3,17 +3,16 @@
 import { useState } from "react"
 import StatusLabel from "@/components/status-label"
 import { useFlightsData } from "./flights-data-context"
-import { useDeleteFlight } from "@flight/hooks/use-delete-flight"
+import { FlightItemMenu } from "./flight-item-menu"
 import { FlightList } from "../ui/flight-list"
 
 export function FlightsListSection() {
   const {
     state: { data, count, isLoading, isFetching, error, hasMore },
-    actions: { fetchNextPage, triggerRefresh },
+    actions: { fetchNextPage },
   } = useFlightsData()
 
   const [openKey, setOpenKey] = useState("")
-  const deleteFlight = useDeleteFlight(triggerRefresh)
 
   if (error) return <StatusLabel type="error" />
 
@@ -25,10 +24,9 @@ export function FlightsListSection() {
       isFetching={isFetching}
       hasMore={hasMore}
       fetchNextPage={fetchNextPage}
-      onMutationSuccess={triggerRefresh}
       openKey={openKey}
       onOpenKeyChange={setOpenKey}
-      onDeleteFlight={deleteFlight}
+      renderMenu={(flight) => <FlightItemMenu flight={flight} />}
     />
   )
 }

@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/item"
 import { Badge } from "@/components/ui/badge"
 import { Plane, Calendar, Clock, ChevronRight } from "lucide-react"
-import { FlightItemMenu } from "../history/flight-item-menu"
 import type { Flight } from "./flight-config"
 import { FlightDetail } from "./flight-config"
 import { formatInTimeZone } from "date-fns-tz"
@@ -29,16 +28,10 @@ export { ticketClass } from "./flight-config"
 interface FlightItemProps {
   flight: Flight
   itemKey: string
-  onDelete: () => void
-  onEditSuccess: () => void
+  menuSlot?: React.ReactNode
 }
 
-export function FlightItem({
-  flight,
-  itemKey,
-  onDelete,
-  onEditSuccess,
-}: FlightItemProps) {
+export function FlightItem({ flight, itemKey, menuSlot }: FlightItemProps) {
   const departureDate = formatInTimeZone(
     flight.departure_time,
     flight.departure_tz,
@@ -145,11 +138,7 @@ export function FlightItem({
             )
           })}
         </ItemGroup>
-        <FlightItemMenu
-          flight={flight}
-          onDelete={onDelete}
-          onEditSuccess={onEditSuccess}
-        />
+        {menuSlot}
       </AccordionContent>
     </AccordionItem>
   )

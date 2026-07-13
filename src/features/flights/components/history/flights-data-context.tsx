@@ -2,6 +2,7 @@
 
 import { createContext, use, useMemo } from "react"
 import { useFlightsFilters } from "@flight/hooks/use-flights-filters"
+import { useDeleteFlight } from "@flight/hooks/use-delete-flight"
 import { useInfiniteQuery } from "@/hooks/use-infinite-query"
 import type { Flight } from "../ui/flight-item"
 
@@ -18,6 +19,7 @@ interface FlightsDataContextValue {
   }
   actions: {
     fetchNextPage: () => void
+    deleteFlight: (flightId: string) => Promise<void>
     setFilters: ReturnType<typeof useFlightsFilters>["setFilters"]
     triggerRefresh: () => void
   }
@@ -40,6 +42,7 @@ export function FlightsDataProvider({
     trailingQueryKey,
     triggerRefresh,
   } = useFlightsFilters()
+  const deleteFlight = useDeleteFlight(triggerRefresh)
 
   const {
     data: flights,
@@ -50,14 +53,12 @@ export function FlightsDataProvider({
     error,
     hasMore,
     fetchNextPage,
-  } = useInfiniteQuery<Flight>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tableName: "flights_summary" as any,
+  } = useInfiniteQuery<Flight, "flight", "flights_summary">({
+    tableName: "flights_summary",
     columns: "*",
     pageSize: 12,
     schema: "flight",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    trailingQuery: trailingQuery as any,
+    trailingQuery,
     trailingQueryKey,
   })
 
@@ -75,6 +76,7 @@ export function FlightsDataProvider({
       },
       actions: {
         fetchNextPage,
+        deleteFlight,
         setFilters,
         triggerRefresh,
       },
@@ -92,6 +94,7 @@ export function FlightsDataProvider({
       hasMore,
       filters,
       fetchNextPage,
+      deleteFlight,
       setFilters,
       triggerRefresh,
       trailingQueryKey,

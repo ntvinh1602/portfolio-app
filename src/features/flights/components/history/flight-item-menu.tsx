@@ -12,23 +12,21 @@ import { ConfirmDialog } from "@/components/confirm-dialog"
 import { FormDialogWrapper } from "@/components/form/form-wrapper"
 import FlightForm from "@flight/form/flightsForm"
 import { useFlightsOptions } from "./flights-options-context"
+import { useFlightsData } from "./flights-data-context"
 import { useFlightFormAdapter } from "@flight/hooks/use-flight-form-adapter"
 import { MoreVertical, Pencil, Trash2 } from "lucide-react"
 import type { Flight } from "../ui/flight-config"
 
 interface FlightItemMenuProps {
   flight: Flight
-  onDelete: () => void
-  onEditSuccess: () => void
 }
 
-export function FlightItemMenu({
-  flight,
-  onDelete,
-  onEditSuccess,
-}: FlightItemMenuProps) {
+export function FlightItemMenu({ flight }: FlightItemMenuProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [editing, setEditing] = useState(false)
+  const {
+    actions: { deleteFlight, triggerRefresh },
+  } = useFlightsData()
 
   const handleEdit = () => {
     setDropdownOpen(false)
@@ -37,7 +35,7 @@ export function FlightItemMenu({
 
   const handleDelete = () => {
     setDropdownOpen(false)
-    onDelete()
+    void deleteFlight(flight.id)
   }
 
   return (
@@ -78,7 +76,7 @@ export function FlightItemMenu({
         onClose={() => setEditing(false)}
         onSuccess={() => {
           setEditing(false)
-          onEditSuccess()
+          triggerRefresh()
         }}
       />
     </>

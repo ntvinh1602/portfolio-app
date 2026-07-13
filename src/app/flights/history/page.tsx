@@ -8,6 +8,7 @@ import getAirports from "@flight/actions/get-airports"
 import { Spinner } from "@/components/ui/spinner"
 
 const historyFallback = <Spinner />
+const FLIGHTS_START_YEAR = 2019
 
 export default function FlightsHistoryPage() {
   return (
@@ -49,7 +50,7 @@ async function FlightsHistoryData() {
   return (
     <FlightsOptionsProvider
       airlineFilterOptions={airlineFilterOptions}
-      startYear={2019}
+      startYear={FLIGHTS_START_YEAR}
       airlineFormOptions={airlineFormOptions}
       aircraftFormOptions={aircraftFormOptions}
       airportFormOptions={airportFormOptions}

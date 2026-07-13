@@ -68,7 +68,7 @@ export function TransactionsDataProvider({
     error,
     hasMore,
     fetchNextPage,
-  } = useInfiniteQuery<Transaction>({
+  } = useInfiniteQuery<Transaction, "public", "tx_summary">({
     tableName: "tx_summary",
     columns: "*",
     pageSize: 12,
