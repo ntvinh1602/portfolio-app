@@ -32,7 +32,7 @@ export function FilterSearch({
     <Field orientation="horizontal">
       <FieldLabel className="sr-only">{placeholder}</FieldLabel>
       <ButtonGroup className="w-full">
-        <InputGroup className="rounded-xl h-10 bg-background">
+        <InputGroup>
           <InputGroupInput
             placeholder={placeholder}
             value={searchInput}
@@ -46,7 +46,6 @@ export function FilterSearch({
         </InputGroup>
         <Button
           variant="outline"
-          size="lg"
           onClick={commitSearch}
           aria-label="Search"
         >

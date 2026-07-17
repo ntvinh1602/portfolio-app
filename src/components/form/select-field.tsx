@@ -48,12 +48,13 @@ export function SelectField<T extends FieldValues>({
           <Select
             onValueChange={field.onChange}
             value={field.value ?? undefined}
+            items={options}
             disabled={disabled}
           >
             <SelectTrigger>
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
-            <SelectContent position="popper">
+            <SelectContent alignItemWithTrigger={false}>
               {options.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}

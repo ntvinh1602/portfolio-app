@@ -30,18 +30,19 @@ function SingleDatePicker({
   return (
     <div className="flex items-center w-full gap-2">
       <Popover open={open} onOpenChange={onOpenChange}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="lg"
-            id="dates"
-            disabled={disabled}
-            className="flex-1 justify-between"
-          >
-            <span>{label || ""}</span>
-            {format(date, "dd MMM yyyy")}
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              id="dates"
+              disabled={disabled}
+              className="flex-1 justify-between"
+            >
+              <span>{label || ""}</span>
+              {format(date, "dd MMM yyyy")}
+            </Button>
+          }
+        ></PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="center">
           <Calendar
             mode="single"

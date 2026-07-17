@@ -31,29 +31,29 @@ export function HeaderUser({ displayName, avatar }: HeaderUserProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="lg">
-          <div className="grid flex-1 text-right text-sm leading-tight px-1">
-            <span className="truncate text-xs text-muted-foreground">
-              Hello
-            </span>
-            <span className="truncate font-semibold">
-              {displayName ?? "User"}
-            </span>
-          </div>
-          <Avatar>
-            {avatar && <AvatarImage src={avatar} alt={displayName ?? "User"} />}
-            <AvatarFallback>
-              <UserIcon />
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width)"
-        side="bottom"
-        align="end"
-      >
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="lg">
+            <div className="grid flex-1 text-right text-sm leading-tight px-1">
+              <span className="truncate text-xs text-muted-foreground">
+                Hello
+              </span>
+              <span className="truncate font-semibold">
+                {displayName ?? "User"}
+              </span>
+            </div>
+            <Avatar>
+              {avatar && (
+                <AvatarImage src={avatar} alt={displayName ?? "User"} />
+              )}
+              <AvatarFallback>
+                <UserIcon />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        }
+      ></DropdownMenuTrigger>
+      <DropdownMenuContent side="bottom" align="end">
         <DropdownMenuGroup>
           <DropdownMenuItem>
             <User data-icon="inline-start" />

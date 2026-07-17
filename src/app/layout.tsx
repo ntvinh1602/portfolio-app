@@ -3,7 +3,7 @@ import { Manrope } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 
-const manrope = Manrope({subsets:['latin-ext'],variable:'--font-sans'});
+const manrope = Manrope({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Logbook",

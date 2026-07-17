@@ -15,13 +15,13 @@ export function ConfirmDialog({
   message,
   onConfirm,
 }: {
-  children: React.ReactNode
+  children: React.ReactElement
   message: string
   onConfirm: () => void
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogTrigger render={children} nativeButton={false} />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmation</AlertDialogTitle>

@@ -84,11 +84,10 @@ export function NewsWidget({ allNews, portfolioNews }: NewsWidgetProps) {
         <CardTitle>Market Pulse</CardTitle>
         <CardAction>
           <ToggleGroup
-            type="single"
             variant="outline"
-            value={selected}
+            value={[selected]}
             onValueChange={(value) => {
-              if (value) setSelected(value as "all" | "portfolio")
+              if (value.length > 0) setSelected(value[0] as "all" | "portfolio")
             }}
             spacing={0}
           >

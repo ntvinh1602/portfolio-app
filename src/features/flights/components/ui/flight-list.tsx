@@ -47,10 +47,9 @@ export function FlightList({
       <ItemGroup>
         <ItemTitle>Found {data.length} flights</ItemTitle>
         <Accordion
-          type="single"
-          collapsible
-          value={openKey}
-          onValueChange={onOpenKeyChange}
+          multiple={false}
+          value={openKey ? [openKey] : []}
+          onValueChange={(value) => onOpenKeyChange(value[0] ?? "")}
         >
           {data.map((flight) => {
             const itemKey = String(flight.id)

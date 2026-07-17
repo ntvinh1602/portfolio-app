@@ -186,7 +186,7 @@ export function CashflowForm({
             name="quantity"
             label="Quantity"
             placeholder="Amount in original currency"
-            suffix="VND"
+            suffix={selectedAsset ? selectedAsset.currency : "VND"}
           />
 
           <NumberField

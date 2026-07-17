@@ -23,9 +23,9 @@ export function FilterToggleGroup({
     <Field orientation="horizontal" className="w-full">
       <FieldLabel className="sr-only">Category</FieldLabel>
       <ToggleGroup
-        type="single"
-        value={value}
-        onValueChange={onValueChange}
+        multiple={false}
+        value={[value]}
+        onValueChange={(v) => onValueChange(v[0] ?? "")}
         variant="default"
         spacing={1}
         className="flex w-full justify-start overflow-x-auto md:inline-flex md:w-fit md:max-w-full"
@@ -36,7 +36,7 @@ export function FilterToggleGroup({
             <ToggleGroupItem
               key={option.key}
               value={option.key}
-              className="flex-1 px-6 rounded-none data-[state=on]:bg-muted/0 data-[state=on]:border-foreground data-[state=on]:border-b hover:bg-muted/0 text-muted-foreground data-[state=on]:text-foreground md:flex-none"
+              className="flex-1 px-6 rounded-none aria-pressed:bg-muted/0 aria-pressed:border-foreground aria-pressed:border-b hover:bg-muted/0 text-muted-foreground aria-pressed:text-foreground md:flex-none"
             >
               <OptionIcon />
               {option.label}

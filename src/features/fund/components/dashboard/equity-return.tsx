@@ -19,14 +19,15 @@ export function EquityReturnSection() {
 
   return (
     <div className="@container/main flex flex-col gap-6">
-      <div className="flex bg-card gap-2 p-1 rounded-4xl items-center">
+      <div className="flex bg-card gap-2 p-1 rounded-lg items-center">
         <Button variant="ghost" size="icon-lg" className="pointer-events-none">
           <Calendar />
         </Button>
         <ToggleGroup
-          type="single"
-          value={dateRange}
-          onValueChange={setDateRange}
+          value={[dateRange]}
+          onValueChange={(value) => {
+            if (value.length > 0) setDateRange(value[0])
+          }}
           spacing={1}
           className="w-full"
         >

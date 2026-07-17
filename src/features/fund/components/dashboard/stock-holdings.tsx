@@ -63,12 +63,16 @@ export function StockHoldings({ bs }: Props) {
               <RefreshCw className={`${isRefreshing && "animate-spin"}`} />
               Refresh
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/fund/dashboard/balance-sheet">
-                B. Sheet
-                <ArrowRight />
-              </Link>
-            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link href="/fund/dashboard/balance-sheet">
+                  B. Sheet
+                  <ArrowRight />
+                </Link>
+              }
+            ></Button>
           </ButtonGroup>
         </CardAction>
       </CardHeader>

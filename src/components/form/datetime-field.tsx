@@ -91,19 +91,21 @@ function DateTimePicker({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="secondary"
-          className={cn(
-            "justify-between",
-            !field.value && "text-muted-foreground",
-          )}
-        >
-          {formatDisplay(field.value, placeholder)}
-          <CalendarIcon />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "justify-between",
+              !field.value && "text-muted-foreground",
+            )}
+          >
+            {formatDisplay(field.value, placeholder)}
+            <CalendarIcon />
+          </Button>
+        }
+      ></PopoverTrigger>
 
       <PopoverContent className="w-auto p-0" align="center">
         <Calendar

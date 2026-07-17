@@ -37,10 +37,9 @@ export function ToggleGroupField<T extends FieldValues>({
         <Field data-invalid={fieldState.invalid} data-disabled={disabled}>
           <FieldLabel className="sr-only">{name}</FieldLabel>
           <ToggleGroup
-            type="single"
-            value={field.value ?? ""}
+            value={field.value ? [field.value] : []}
             onValueChange={(value) => {
-              if (value) field.onChange(value)
+              if (value.length > 0) field.onChange(value[0])
             }}
             variant="outline"
             disabled={disabled}

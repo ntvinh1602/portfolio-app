@@ -24,12 +24,14 @@ export function AddEventSection() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button>
-            <PlusIcon />
-            Add Event
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button>
+              <PlusIcon />
+              Add Event
+            </Button>
+          }
+        ></DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[180px]">
           <DropdownMenuItem onClick={() => openForm("stock")}>
             Stock Event

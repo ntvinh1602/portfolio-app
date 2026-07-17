@@ -41,17 +41,19 @@ export function FlightItemMenu({ flight }: FlightItemMenuProps) {
   return (
     <>
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreVertical className="size-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="size-4 text-muted-foreground" />
+            </Button>
+          }
+        ></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-full">
           <DropdownMenuItem onClick={handleEdit}>
             <Pencil className="size-4" />
             Edit Flight

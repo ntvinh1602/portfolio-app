@@ -54,7 +54,7 @@ export function FlightItem({ flight, itemKey, menuSlot }: FlightItemProps) {
   )
   return (
     <AccordionItem value={itemKey} className="relative">
-      <AccordionTrigger className="p-0 border-none hover:no-underline rounded-2xl [&>[data-slot=accordion-trigger-icon]]:hidden">
+      <AccordionTrigger className="p-0 border-none hover:no-underline rounded-2xl [&>[data-slot=accordion-trigger-icon]]:hidden!">
         <Item
           variant="default"
           className="cursor-pointer transition-colors hover:bg-accent/50 rounded-none"
@@ -110,7 +110,7 @@ export function FlightItem({ flight, itemKey, menuSlot }: FlightItemProps) {
           <ItemSeparator orientation="vertical" className="hidden sm:block" />
           <ChevronRight
             data-slot="accordion-trigger-icon"
-            className="group-data-[state=open]/accordion-trigger:rotate-90 transition-transform duration-200"
+            className="group-aria-expanded/accordion-trigger:rotate-90 transition-transform duration-200"
           />
         </Item>
       </AccordionTrigger>
