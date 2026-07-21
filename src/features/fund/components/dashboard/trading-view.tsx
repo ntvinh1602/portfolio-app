@@ -32,6 +32,9 @@ function TradingViewWidgetComponent() {
       borderDownColor: "#f7525f",
       wickUpColor: "#22ab94",
       wickDownColor: "#f7525f",
+      lineColor: "rgba(249, 202, 36, 1)",
+      topColor: "rgba(249, 202, 36, 0.3)",
+      bottomColor: "rgba(249, 202, 36, 0)",
       colorTheme: "dark",
       isTransparent: true,
       locale: "en",
@@ -74,7 +77,7 @@ function TradingViewWidgetComponent() {
     <div className="h-120">
       <div
         ref={container}
-        className="bg-card shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10 rounded-4xl h-full hidden xl:block tradingview-widget-container"
+        className="bg-card shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10 rounded-xl h-full hidden xl:block tradingview-widget-container"
       >
         <div className="tradingview-widget-container__widget" />
       </div>
