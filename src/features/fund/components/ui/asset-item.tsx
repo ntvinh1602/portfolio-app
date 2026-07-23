@@ -101,7 +101,7 @@ export function AssetItemTopStock({
         <ItemDescription>{ticker}</ItemDescription>
       </ItemContent>
       <ItemContent className="items-end">
-        <ItemTitle>{formatNum(Math.max(total_value, 0))}</ItemTitle>
+        <ItemTitle>{formatNum(total_value)}</ItemTitle>
       </ItemContent>
     </Item>
   )
